@@ -798,7 +798,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      at the end of CLogic), a Building Station's screen at a desk by a watch link (ConstructStationConsole.cs).
     // 474: ship designs fly (DesignParts.cs, step 3): a design makes more elements than before (each RCS quad's four nozzles, its seats,
     //      its flight computer), so a design key names elements an older peer can't make; no message changed.
-    public const ushort ProtocolVersion = 474;
+    // 475: walkable ship designs (DesignParts.*.cs split per kind): a design makes new and changed elements (hull boxes, doors,
+    //      ladders, turned seats, segments and joints, wires), so a design key names elements an older peer builds differently; no message changed.
+    public const ushort ProtocolVersion = 475;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

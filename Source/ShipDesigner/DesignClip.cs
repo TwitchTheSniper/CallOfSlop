@@ -11,7 +11,14 @@ public static partial class DesignScene
     public const double ShellInset = 0.012, HoloInset = 0.022, InteriorInset = 0.03;
 
     /// <summary>Pulls every vertex of a world-space mesh to at least inset inside a body's skin.</summary>
-    public static void ClipToHulls(ShipDesign d, DesignMesh m, double inset, Room? cap = null, double over = 0)
+    public static void ClipToHulls(ShipDesign d, DesignMesh m, double inset, Room? cap = null, double over = 0) => ClipToHulls(d, m, inset, cap, over, 0, int.MaxValue, null);
+
+    /// <summary>
+    /// <see cref="ClipToHulls(ShipDesign, DesignMesh, double, Room?, double)"/> on the vertices <paramref name="from"/> to <paramref name="to"/>
+    /// (counted in vertices, not floats) only, so a big mesh can be clipped a slice at a time. <paramref name="memo"/> (one per mesh, inset, cap and
+    /// over) keeps each corner's answer: a mesh's triangles share their corners, and each is pulled in once.
+    /// </summary>
+    public static void ClipToHulls(ShipDesign d, DesignMesh m, double inset, Room? cap, double over, int from, int to, Dictionary<(double, double, double), (double, double, double)>? memo)
     {
         if (d.Hulls.Count == 0)
             return;
@@ -26,9 +33,16 @@ public static partial class DesignScene
             top = d.Stacked ? dk.Floor - dk.Height - over : dk.Floor + dk.Height + over;
         }
         var p = m.P;
-        for (var i = 0; i + 2 < p.Count; i += 3)
+        var end = (int)Math.Min((long)to * 3, p.Count);
+        for (var i = Math.Max(0, from) * 3; i + 2 < end; i += 3)
         {
             double x = p[i], y = p[i + 1], z = p[i + 2];
+            var key = (x, y, z);
+            if (memo != null && memo.TryGetValue(key, out var was))
+            {
+                (p[i], p[i + 1], p[i + 2]) = was;
+                continue;
+            }
             for (var pass = 0; pass < 3; pass++)
             {
                 HullBody? best = home;
@@ -55,6 +69,8 @@ public static partial class DesignScene
                 else y = Math.Min(y, top);
             }
             (p[i], p[i + 1], p[i + 2]) = (x, y, z);
+            if (memo != null)
+                memo[key] = (x, y, z);
         }
     }
 

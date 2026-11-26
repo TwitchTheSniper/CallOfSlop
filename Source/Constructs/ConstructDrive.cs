@@ -623,7 +623,7 @@ public sealed partial class Construct
     {
         var f = SeatForward();
         if (ControlSeat >= 0 && ControlSeat < PartCount && Rigid(Parts[ControlSeat].Seg))
-            f = DirToRest(Parts[ControlSeat].Seg, Rot24.Apply(Parts[ControlSeat].Rot, -Vector3.UnitZ));
+            f = DirToRest(Parts[ControlSeat].Seg, Parts[ControlSeat].D.SeatAhead(Parts[ControlSeat].Rot));
         f.Y = 0;
         f = f.LengthSquared() > 0.01f ? Vector3.Normalize(f) : -Vector3.UnitZ;
         var along = 0f;

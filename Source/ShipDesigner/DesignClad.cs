@@ -779,6 +779,46 @@ public static partial class DesignScene
     /// <summary>The gap between a room's box and its shell's outer faces, so two rooms' shells sit back to back 8 mm apart, never on one plane.</summary>
     public const double ShellGap = 0.004;
 
+    // ---- Doorways (Check.Doors): each a point, the middle of its foot (world frame), [x, y, z], or [x, y, z, half, top, hole] -------------
+    // half: its clearance either side (0.55 m, a 0.9 m door's); top: how far up from its foot (2.1 m); hole: 1 for a hole through a floor and
+    // the ceiling under it (a shaft's, a boarding hatch's, a cargo hatch's), 0 for a door in a wall (walkable rooms, step 4: a placed door's
+    // W and H, a socket's opening into its room).
+    public const double DoorHalfDefault = 0.55, DoorTopDefault = 2.1;
+
+    /// <summary>How near a room's floor a door's foot must be to be in its walls (m); a hole's, its floor or its ceiling (plus the deck between).</summary>
+    public const double DoorLevel = 0.1, HoleLevel = 0.4;
+
+    public static double[] DoorAt(double[] p, double half = DoorHalfDefault, double top = DoorTopDefault, bool hole = false) =>
+        [p[0], p[1], p[2], half, top, hole ? 1 : 0];
+
+    public static double DoorHalf(double[] q) => q.Length > 3 ? q[3] : DoorHalfDefault;
+
+    public static double DoorTop(double[] q) => q.Length > 4 ? q[4] : DoorTopDefault;
+
+    public static bool IsHole(double[] q) => q.Length > 5 && q[5] > 0.5;
+
+    /// <summary>
+    /// The doorways that cut room r: a door whose foot is at its floor (on its plan, near a wall: a wall cell is cut only where it lies
+    /// within the door's half), a hole whose foot is at its floor or just over its ceiling, over its plan.
+    /// </summary>
+    public static List<double[]> DoorsOf(ShipDesign d, Room r, List<double[]> doors)
+    {
+        var b = d.Box(r);
+        int al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
+        double fl = d.Stacked ? b[5] : b[2], ce = d.Stacked ? b[4] : b[3];
+        double a0 = b[0], a1 = b[1], l0 = d.Stacked ? b[2] : b[4], l1 = d.Stacked ? b[3] : b[5];
+        var o = new List<double[]>();
+        foreach (var q in doors)
+        {
+            const double on = 0.05; // (a door's foot is on the room's wall, a hole's inside its plan)
+            if (q[0] < a0 - on || q[0] > a1 + on || q[al] < l0 - on || q[al] > l1 + on)
+                continue;
+            if (IsHole(q) ? Math.Abs(q[up] - fl) < DoorLevel || Math.Abs(q[up] - ce) < HoleLevel : Math.Abs(q[up] - fl) < DoorLevel)
+                o.Add(q);
+        }
+        return o;
+    }
+
     /// <summary>The most triangles one room's wall cladding and floor dressing may add together; past it the rest is left plain.</summary>
     public const int MaxShellDressTris = 9000;
     const double CorridorFrame = 1.35; // the Corridor lining's frame spacing, m
@@ -801,7 +841,11 @@ public static partial class DesignScene
     /// <see cref="HullShell"/>); a run-on end has no wall. Kept cells are merged into runs, each one box. With no interior cladding, its
     /// walls take their WallStyle's relief; and the floor its Floor's dressing where that is not the interior's plate layer.
     /// </summary>
-    public static DesignMesh RoomShell(ShipDesign d, Room r, List<double[]> doors)
+    /// <param name="boxes">When given, every box of the shell's floor, ceiling and walls (world frame, before the clip to the skin) is added to it: the
+    /// game's walkable room (DesignParts.Rooms.cs) collides as the very boxes the designer draws.</param>
+    /// <param name="strips">When given, a room out to the hull adds each strip of its <see cref="HullShell"/> as its 8 corners (24 numbers: the inner
+    /// face's four, then the outer's), a thin convex piece each.</param>
+    public static DesignMesh RoomShell(ShipDesign d, Room r, List<double[]> allDoors, List<(double[] Lo, double[] Hi)>? boxes = null, List<double[]>? strips = null)
     {
         var m = new DesignMesh();
         m.World();
@@ -811,12 +855,16 @@ public static partial class DesignScene
         int ax = 0, al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
         var lo = new[] { b[0], b[2], b[4] };
         var hi = new[] { b[1], b[3], b[5] };
+        // Only this room's doorways: a door in a wall at its floor, a hole through its floor or its ceiling (walkable rooms, step 4: a door's
+        // clearance once cut a notch in both rooms' floors, and in the ceiling and walls of the room under it).
+        var doors = DoorsOf(d, r, allDoors);
         var colour = r.WallColour.Length == 7 ? DesignMesh.Hex(r.WallColour) : DesignMesh.Tone(DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour), 0.55);
         var hex = $"#{colour.Item1:x2}{colour.Item2:x2}{colour.Item3:x2}";
         var mates = d.Rooms.Where(o => o != r && r.Group != 0 && o.Group == r.Group).Select(d.Box).ToList();
         bool InMate(double[] p) => mates.Any(o => p[0] > o[0] && p[0] < o[1] && p[1] > o[2] && p[1] < o[3] && p[2] > o[4] && p[2] < o[5]);
         // probe: a point just beyond the wall's outer face (in a group-mate: the wall is open, left out).
-        bool Keep(double[] p, double[]? probe = null, bool hull = true)
+        // flat: a cell of the floor or the ceiling (cut only by a hole through it), else of a wall (cut only by a door in it).
+        bool Keep(double[] p, double[]? probe, bool hull, bool flat)
         {
             if (hull && !d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) > 0.01))
                 return false;
@@ -824,15 +872,18 @@ public static partial class DesignScene
                 return false;
             foreach (var q in doors)
             {
+                if (IsHole(q) != flat)
+                    continue;
+                var half = DoorHalf(q);
                 var rise = d.Stacked ? q[up] - p[up] : p[up] - q[up];
-                if (Math.Abs(p[ax] - q[ax]) < 0.55 && Math.Abs(p[al] - q[al]) < 0.55 && rise > -0.3 && rise < 2.1)
+                if (Math.Abs(p[ax] - q[ax]) < half && Math.Abs(p[al] - q[al]) < half && (flat || rise > -0.3 && rise < DoorTop(q)))
                     return false;
             }
             return true;
         }
         var shell = t >= 0.005;
         if (shell && r.ToHull)
-            HullShell(d, r, t, colour, p => Keep(p, p, false), m, doors);
+            HullShell(d, r, t, colour, (p, flat) => Keep(p, p, false, flat), m, doors, strips);
         double[] V(double a, double b2, double u) { var v = new double[3]; v[ax] = a; v[al] = b2; v[up] = u; return v; }
         // A slab: its extent on each world axis, cut along two of them (i, j), the third (n) its thickness; out is the side its outer face is on.
         // A door's opening edges on one world axis (Karl, 2026-11-25: both rooms cut the very same opening, so the cells split at its
@@ -842,10 +893,11 @@ public static partial class DesignScene
             foreach (var q in doors)
                 if (k == up)
                 {
-                    if (d.Stacked) { e.Add(q[up] - 2.1); e.Add(q[up] + 0.3); }
-                    else { e.Add(q[up] - 0.3); e.Add(q[up] + 2.1); }
+                    if (IsHole(q)) { }
+                    else if (d.Stacked) { e.Add(q[up] - DoorTop(q)); e.Add(q[up] + 0.3); }
+                    else { e.Add(q[up] - 0.3); e.Add(q[up] + DoorTop(q)); }
                 }
-                else { e.Add(q[k] - 0.55); e.Add(q[k] + 0.55); }
+                else { e.Add(q[k] - DoorHalf(q)); e.Add(q[k] + DoorHalf(q)); }
         }
         List<double> Breaks(double a, double b, int k)
         {
@@ -888,7 +940,7 @@ public static partial class DesignScene
                         p[j] = (ej[bj] + ej[bj + 1]) / 2;
                         Array.Copy(p, pr, 3);
                         pr[n] = (out_ < 0 ? s0[n] : s1[n]) + out_ * 0.03;
-                        keep = Keep(p, n == up ? null : pr);
+                        keep = Keep(p, n == up ? null : pr, true, n == up);
                     }
                     if (keep && run < 0)
                         run = bi;
@@ -901,6 +953,7 @@ public static partial class DesignScene
                         c0[j] = ej[bj];
                         c1[j] = ej[bj + 1];
                         m.Box(c0[0], c0[1], c0[2], c1[0], c1[1], c1[2], hex);
+                        boxes?.Add(((double[])c0.Clone(), (double[])c1.Clone()));
                         run = -1;
                     }
                 }
@@ -974,7 +1027,7 @@ public static partial class DesignScene
                         return false;
                     var mid = At((s0 + s1) / 2, (h0 + h1) / 2, -t / 2);
                     var probe = At((s0 + s1) / 2, (h0 + h1) / 2, -t - g - 0.03);
-                    if (!Keep(mid, probe))
+                    if (!Keep(mid, probe, true, false))
                         return false;
                     var c0 = At(s0, h0, -0.005);
                     var c1 = At(s1, h1, dd);
@@ -1074,7 +1127,7 @@ public static partial class DesignScene
                             {
                                 if (budget < 4)
                                     break;
-                                if (!Keep(At(s, hh, -t / 2), At(s, hh, -t - g - 0.03)) || holes.Any(o => s > o.S0 - R && s < o.S1 + R && hh > o.H0 - R && hh < o.H1 + R))
+                                if (!Keep(At(s, hh, -t / 2), At(s, hh, -t - g - 0.03), true, false) || holes.Any(o => s > o.S0 - R && s < o.S1 + R && hh > o.H0 - R && hh < o.H1 + R))
                                     continue;
                                 const double rr = R * 0.9;
                                 (double, double, double) Pt(double ang, double dd) { var v = At(s + rr * Math.Cos(ang), hh + rr * Math.Sin(ang), dd); return (v[0], v[1], v[2]); }
@@ -1189,10 +1242,10 @@ public static partial class DesignScene
         var up = d.Stacked ? 2 : 1;
         var o = new List<(double, double, double, double)>();
         foreach (var q in doors)
-            if (Math.Abs(plane - q[n]) < 0.55)
+            if (!IsHole(q) && Math.Abs(plane - q[n]) < 0.55 && Math.Abs(q[up] - fl) < DoorLevel)
             {
                 var hc = sg * (q[up] - fl);
-                o.Add((q[w] - 0.55, q[w] + 0.55, hc - 0.3, hc + 2.1));
+                o.Add((q[w] - DoorHalf(q), q[w] + DoorHalf(q), hc - 0.3, hc + DoorTop(q)));
             }
         return o;
     }
@@ -1394,7 +1447,7 @@ public static partial class DesignScene
     /// same four heights and the same 50 cm slices), so it follows the skin as the hologram does: its outer face 4 mm in from the hologram,
     /// its inner face t further in (Karl, 2026-11-25: inside its own room). A quad whose outside is in a door or a group-mate's room is left out.
     /// </summary>
-    private static void HullShell(ShipDesign d, Room r, double t, (byte, byte, byte) col, Func<double[], bool> keep, DesignMesh m, List<double[]> doors)
+    private static void HullShell(ShipDesign d, Room r, double t, (byte, byte, byte) col, Func<double[], bool, bool> keep, DesignMesh m, List<double[]> doors, List<double[]>? strips)
     {
         const double g = ShellGap;
         var dk = d.DeckOf(r);
@@ -1409,12 +1462,12 @@ public static partial class DesignScene
         var us = new List<double> { 0, hgt / 4, hgt / 2, hgt * 3 / 4, hgt };
         foreach (var q in doors)
         {
-            foreach (var e in new[] { q[va_] - 0.55, q[va_] + 0.55 })
+            foreach (var e in new[] { q[va_] - DoorHalf(q), q[va_] + DoorHalf(q) })
                 if (e > s0 + 0.002 && e < s1 - 0.002)
                     vs.Add(e);
             var fu = d.Stacked ? dk.Floor - q[up_] : q[up_] - dk.Floor;
-            if (Math.Abs(fu) < 0.05)
-                foreach (var e in new[] { fu + 2.1 })
+            if (Math.Abs(fu) < 0.05 && !IsHole(q))
+                foreach (var e in new[] { fu + DoorTop(q) })
                     if (e > 0.002 && e < hgt - 0.002)
                         us.Add(e);
         }
@@ -1427,15 +1480,26 @@ public static partial class DesignScene
         double Up(int k) => us[k];
         var side = DesignMesh.Tone(col, 0.9);
         // Both faces of a strip of shell: inner (off by g) and outer (off by g + t), dir the plan offset per unit of push.
-        void Two(Func<double, ((double, double, double), (double, double, double), (double, double, double), (double, double, double))> at, (byte, byte, byte) c)
+        void Two(Func<double, ((double, double, double), (double, double, double), (double, double, double), (double, double, double))> at, (byte, byte, byte) c, bool flat = false)
         {
             var (pa, _, pc, _) = at(0.03); // just outside its outer face: the probe for a door or a group-mate's room
-            if (!keep([(pa.Item1 + pc.Item1) / 2, (pa.Item2 + pc.Item2) / 2, (pa.Item3 + pc.Item3) / 2]))
+            if (!keep([(pa.Item1 + pc.Item1) / 2, (pa.Item2 + pc.Item2) / 2, (pa.Item3 + pc.Item3) / 2], flat))
                 return;
             var (a, b, cc, dd) = at(-g);
             m.Quad(a, b, cc, dd, c, false);
             var (a2, b2, c2, d2) = at(-(g + t));
             m.Quad(a2, b2, c2, d2, c, false);
+            if (strips is not null)
+            {
+                var s8 = new double[24];
+                var k = 0;
+                foreach (var v in new[] { a, b, cc, dd, a2, b2, c2, d2 })
+                {
+                    (s8[k], s8[k + 1], s8[k + 2]) = v;
+                    k += 3;
+                }
+                strips.Add(s8);
+            }
             // Its rims, so the shell reads solid edge-on.
             m.Quad(a, b, b2, a2, side, false);
             m.Quad(cc, dd, d2, c2, side, false);
@@ -1456,10 +1520,10 @@ public static partial class DesignScene
             }
             var (f0, h0) = Edges(d, r, va, 0);
             var (f1, h1) = Edges(d, r, vb, 0);
-            Two(o => (P(f0 - o, va, -o), P(h0 + o, va, -o), P(h1 + o, vb, -o), P(f1 - o, vb, -o)), col);
+            Two(o => (P(f0 - o, va, -o), P(h0 + o, va, -o), P(h1 + o, vb, -o), P(f1 - o, vb, -o)), col, true);
             var (c0, e0) = Edges(d, r, va, hgt);
             var (c1, e1) = Edges(d, r, vb, hgt);
-            Two(o => (P(c0 - o, va, hgt + o), P(e0 + o, va, hgt + o), P(e1 + o, vb, hgt + o), P(c1 - o, vb, hgt + o)), col);
+            Two(o => (P(c0 - o, va, hgt + o), P(e0 + o, va, hgt + o), P(e1 + o, vb, hgt + o), P(c1 - o, vb, hgt + o)), col, true);
         }
         // Its ends where the hologram's are: at its Span, a run-on end closed across the skin where it stops.
         foreach (var (v, sg) in new[] { (s0, -1.0), (s1, 1.0) })

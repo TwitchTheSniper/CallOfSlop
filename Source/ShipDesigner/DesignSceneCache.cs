@@ -118,7 +118,7 @@ public static partial class DesignScene
     {
         var k = new StringBuilder();
         foreach (var q in doors)
-            k.Append(q[0].ToString("R")).Append(',').Append(q[1].ToString("R")).Append(',').Append(q[2].ToString("R")).Append(';');
+            k.Append(string.Join(",", q.Select(v => v.ToString("R")))).Append(';'); // (a doorway's size and kind too: DesignClad.DoorAt)
         return k.ToString();
     }
 
