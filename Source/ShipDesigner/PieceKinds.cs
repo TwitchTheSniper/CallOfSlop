@@ -179,6 +179,8 @@ public static class PieceKinds
         }),
         // The ammo socket, docking and boarding pieces (Karl, 2026-11-26): DesignDocking.cs.
         .. PieceDocking.Kinds,
+        // Weapon mounts, the shell magazine and the ammo hoist (Karl, 2026-11-26): DesignWeaponMounts.cs.
+        .. PieceWeapons.Kinds,
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>

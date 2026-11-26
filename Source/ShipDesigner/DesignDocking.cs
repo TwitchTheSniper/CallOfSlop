@@ -77,7 +77,7 @@ public static class PieceDocking
     public static (double Hx, double Hz, bool Round)? Footprint(string name) => name switch
     {
         "Magnetic lock" => (0.9, 0.9, false), "Hull grapple" => (0.8, 0.8, true), "Breaching cutter" => (1.25, 1.25, true),
-        _ => ClampFoot(name),
+        _ => ClampFoot(name) ?? PieceWeapons.Footprint(name),
     };
 
     private static (double, double, bool)? ClampFoot(string name)
@@ -208,14 +208,14 @@ public static class PieceDocking
     /// <summary>The gun an ammo socket feeds: the one it was linked to, else the nearest weapon on the ship (null: none).</summary>
     public static Piece? FeedOf(ShipDesign d, Piece p)
     {
-        if (p.Feed != 0 && d.Pieces.Find(q => q.Id == p.Feed) is { } f && PieceKinds.Find(f.Kind)?.Group == "Weapons" && f.Kind != "Ammo socket")
+        if (p.Feed != 0 && d.Pieces.Find(q => q.Id == p.Feed) is { } f && PieceKinds.Find(f.Kind)?.Group == "Weapons" && !PieceWeapons.IsFeeder(f.Kind))
             return f;
         Piece? best = null;
         var bd = double.MaxValue;
         var a = At(d, p);
         foreach (var q in d.Pieces)
         {
-            if (q == p || q.Kind == "Ammo socket" || PieceKinds.Find(q.Kind)?.Group != "Weapons")
+            if (q == p || PieceWeapons.IsFeeder(q.Kind) || PieceKinds.Find(q.Kind)?.Group != "Weapons")
                 continue;
             var b = At(d, q);
             var dd = (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]);

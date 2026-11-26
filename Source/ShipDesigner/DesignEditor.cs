@@ -468,10 +468,16 @@ public sealed class DesignEditor
                 if (o["airD"] is not null) p.AirD = Math.Clamp(Snap(D(o, "airD"), 0.05), 0.6, 6);
                 if (o["doorW"] is not null) p.DoorW = Math.Clamp(Snap(D(o, "doorW"), 0.05), 0.6, 6);
                 if ((string?)o["door"] is { } door && Array.IndexOf(PieceDocking.Doors, door) >= 0) p.Door = door;
+                if ((string?)o["fit"] is { } fit)
+                {
+                    if (fit.Length > 0 && !PieceWeapons.Fits(p.Kind, fit))
+                        return "that weapon doesn't fit this mount";
+                    p.Fit = fit;
+                }
                 if (o["feed"] is not null)
                 {
                     var fid = I(o, "feed");
-                    if (fid != 0 && (d.Pieces.Find(q => q.Id == fid) is not { } f || PieceKinds.Find(f.Kind)?.Group != "Weapons" || f.Kind == "Ammo socket"))
+                    if (fid != 0 && (d.Pieces.Find(q => q.Id == fid) is not { } f || PieceKinds.Find(f.Kind)?.Group != "Weapons" || PieceWeapons.IsFeeder(f.Kind)))
                         return "no such weapon";
                     p.Feed = fid;
                 }
