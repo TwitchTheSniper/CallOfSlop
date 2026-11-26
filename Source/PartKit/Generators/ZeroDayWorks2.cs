@@ -488,9 +488,18 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     break;
                 case "press":
                 {
-                    // (the Press Core's own +x onto the bed; stood by its middle socket, as the old works stands its presses)
-                    var d = by != null ? Vector2.Normalize(_at[by] - core) : flow;
-                    var c = Piece("Press", core, XFacing(d), paint, "-y.4.4", new Vector2(1, 1), chainFirst: true);
+                    // (the Press Core up the flow from the bed's upstream corner cell, its own +x (the bed's W, its weld onto the bed) along the
+                    // flow and its own +z across the bed: the bed's L then runs across the line and the lid's hinge, on the bed's long edge farther
+                    // from the Core's row, lies beside the line, parallel to it, so a piece rolls straight through, Sean 2026-11-26 ("presses need
+                    // to rotate 90 degrees"); its bays (own -z) face out, away from the bed; stood by its middle socket, as the old works stands
+                    // its presses)
+                    var ownZ = new Vector2(-flow.Y, flow.X);
+                    var up0 = lastRow == 0 ? l - 1 : 0;
+                    var mid = Cell(w / 2, up0);
+                    var col = Vector2.Dot(mid - Cell(0, up0), ownZ) > 0 ? 0 : w - 1;
+                    core = Cell(col, up0) - flow * 2;
+                    by = cells[col, up0];
+                    var c = Piece("Press", core, XFacing(flow), paint, "-y.4.4", new Vector2(1, 1), chainFirst: true);
                     if (c != null)
                     {
                         OrdersOnly(c);

@@ -1449,7 +1449,9 @@ public static class MachineBlocks
             for (var k = 0; k < c.RouteCount; k++)
             {
                 ref readonly var r = ref c.Routes[k];
-                if (r.Type != RouteType.Conveyor || r.To >= c.PartCount || !c.DefOf(r.To).IsPanelFormer || c.DefOf(r.To).BlockRole != BlockRole.Core)
+                if (r.Type == RouteType.Conveyor && r.From < c.PartCount && c.DefOf(r.From).IsPress && c.DefOf(r.From).BlockRole == BlockRole.Core)
+                    Console.WriteLine($"[blocks]   {c.DefOf(r.From).Name} (part {r.From}) runs off {(RollerRuns.IsRun(c, k) ? "onto a Roller Tile run" : "onto a conveyor")} from its {ConstructRoutes.PortOf(c.DefOf(r.From), RouteType.Conveyor, r.FromPort)?.Name ?? "?"}, {ConstructConveyor.Length(c, k):0.0} m");
+                if (r.Type != RouteType.Conveyor || r.To >= c.PartCount || !(c.DefOf(r.To).IsPanelFormer || c.DefOf(r.To).IsPress) || c.DefOf(r.To).BlockRole != BlockRole.Core)
                     continue;
                 var port = ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort);
                 Console.WriteLine($"[blocks]   {c.DefOf(r.To).Name} (part {r.To}) fed {(RollerRuns.IsRun(c, k) ? "by a Roller Tile run" : "by a conveyor")} into its {port?.Name ?? "?"}, {ConstructConveyor.Length(c, k):0.0} m");
