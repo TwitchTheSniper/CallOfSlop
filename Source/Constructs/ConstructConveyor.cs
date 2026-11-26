@@ -522,11 +522,23 @@ public static class ConstructConveyor
     /// <summary>
     /// The pick pad a bed machine with no out conveyor hands to: a Lay-down Pad tile within a metre of its Out Table's Piece out (its
     /// pad's owner), or -1. Zero Day Works II's big lines end in their stations' pick pads, laid where the roller lay-bys were (Sean,
-    /// 2026-11-26). Walks the body's parts; called per piece, never per tick.
+    /// 2026-11-26). Kept per body until its structure changes (a walk of its parts once a machine).
     /// </summary>
     public static int OutPad(Construct c, int part)
     {
-        if (c.MachineAsmCount == 0 || !MachineBlocks.TryOf(c, part, out var asm) || MachineBlocks.OutTable(c, asm) is not (>= 0 and var table)
+        if (c.MachineAsmCount == 0 || MachineBlocks.AsmOf(c, part) is not (>= 0 and var a))
+            return -1;
+        // (kept on the machine's assembly, made again with it at each rebuild: a conveyor step asks it for every lead rider at such a
+        // bed, PassesThrough; allocates nothing)
+        ref var asm = ref c.MachineAsms[a];
+        if (asm.OutPad == 0)
+            asm.OutPad = FindOutPad(c, part) is var found and >= 0 ? found + 1 : -1;
+        return asm.OutPad > 0 ? asm.OutPad - 1 : -1;
+    }
+
+    private static int FindOutPad(Construct c, int part)
+    {
+        if (!MachineBlocks.TryOf(c, part, out var asm) || MachineBlocks.OutTable(c, asm) is not (>= 0 and var table)
             || RollerRuns.PortByte(c.DefOf(table), "Piece out") is not (>= 0 and var pb))
             return -1;
         var at = ConstructRoutes.PortPoint(c, table, (byte)pb, RouteType.Conveyor);
@@ -1234,7 +1246,7 @@ public static class ConstructConveyor
         if (to >= c.PartCount || !c.DefOf(to).IsPanelFormer)
             return false;
         if (Out(c, to) is not (>= 0 and var o))
-            return OutPad(c, to) >= 0; // (no out run: onto the pick pad its Out Table butts, which takes it or not: Deliver)
+            return OutPad(c, to) is >= 0 and var pad && ConstructRackPack.Fit(ConstructPads.RackDef(c, pad), d, out _, out _, out _); // (no out run: onto the pick pad its Out Table butts, if that pad could ever hold it: Deliver)
         Size(d, out var across, out var up, out var along);
         return Fits(across, up, c.Routes[o]) && c.Routes[o].FirstCut > c.Routes[o].Count && along <= Length(c, o) + 0.01f;
     }
@@ -1247,7 +1259,7 @@ public static class ConstructConveyor
     private static bool ThroughReaches(ConstructWorld world, Construct c, int to, ConstructPartDef d, int holder, int depth)
     {
         if (depth <= 4 && to < c.PartCount && c.DefOf(to).IsPanelFormer && Out(c, to) < 0 && OutPad(c, to) is >= 0 and var pad)
-            return pad == holder || c.DefOf(holder).IsBuildStation && ConstructStation.IsOwnPad(c, holder, pad); // (its Out Table onto a station's own pick pad)
+            return PassesThrough(c, to, d) && (pad == holder || c.DefOf(holder).IsBuildStation && ConstructStation.IsOwnPad(c, holder, pad)); // (its Out Table onto a station's own pick pad that could hold it)
         if (depth > 4 || !PassesThrough(c, to, d) || Out(c, to) is not (>= 0 and var o))
             return false;
         ref readonly var r = ref c.Routes[o];
@@ -1318,6 +1330,9 @@ public static class ConstructConveyor
             {
                 if (Out(c, to) < 0 && OutPad(c, to) is >= 0 and var pad)
                 {
+                    if (ConstructLogistics.PartOfStore(c, r.Dest) is var holder && holder != pad
+                        && !(holder >= 0 && c.DefOf(holder).IsBuildStation && ConstructStation.IsOwnPad(c, holder, pad)))
+                        return false; // (another holder's piece: it waits here, as with no way on, never left on a pad nothing takes it from)
                     // (no out run: it rolls across the bed onto the pick pad its Out Table butts, Zero Day Works II's big lines, 2026-11-26)
                     var ordered = r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
                     if (!world.RackPut(c, pad, d, ordered))

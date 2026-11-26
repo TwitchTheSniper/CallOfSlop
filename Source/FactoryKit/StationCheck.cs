@@ -178,7 +178,10 @@ public static class StationCheck
         if (Arg("--press-order") is { } pressOrder) // (--press-order PART --oven-at X,Z: an order queued at the Press nearest the point, run and watched)
             return PressOrder(w, q, c, place, pressOrder, Arg("--oven-at"), seconds, keep, Fill, args.Contains("--via-station") ? t : -1);
         if (Arg("--oven-order") is { } ovenOrder)
-            return OvenOrder(w, q, c, place, ovenOrder, Arg("--oven-at"), seconds, args.Contains("--trace"), keep, Fill);
+            using (place.In())
+                RollerRuns.Sync(w, c); // (the stations' roll-outs, as the first conveyor step lays them: an oven's order asks the station that rolls to it)
+        if (Arg("--oven-order") is { } ovenOrder2)
+            return OvenOrder(w, q, c, place, ovenOrder2, Arg("--oven-at"), seconds, args.Contains("--trace"), keep, Fill);
         if (string.IsNullOrEmpty(build))
             return 0;
         if (ConstructStation.Find(build) is not { } target)

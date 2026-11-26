@@ -44,8 +44,6 @@ public static partial class ConstructBakeOven
         // The kit is built at the station nearest the oven whose bay holds it; that station orders the kit's pieces through a Line Console
         // wired into its Orders, so one with none would wait for ever (the works' line A oven took the yard's deck orders, 2026-11-23).
         var bp = BakeKits.BlueprintOf(made)!;
-        if (c.RollersStale && !c.Dirty)
-            RollerRuns.Sync(world, c); // (the stations' roll-outs: a works just spawned or loaded lays its runs on the first conveyor step, after an order)
         int near = -1;
         var nearDist = float.MaxValue;
         for (var s = 0; s < c.PartCount; s++)
