@@ -333,8 +333,22 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 z1 = MathF.Max(z1, c.Y + r);
             }
             LayFloor(x0 - 1, x1 + 1, z0 - 1, z1 + 1);
+            // The big square stations' lay-bys (the two rows of Roller Tiles along each side of the bay, where a line's pieces come to rest)
+            // are their pick pads: laid as Pad Tiles in the same cells, Sean 2026-11-26 ("Swap them to Pad Tiles"), so the rovers pick
+            // from them (a pad lies wholly past a bay side: ConstructStationPads).
+            foreach (var st in items.Where(i => Str(i, "t") == "lab" && Str(i, "id") == "building-station" && Int(i, "w") == Int(i, "l")))
+            {
+                float half = Int(st, "w"), sx = Num(st, "x"), sz = Num(st, "z");
+                foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")))
+                {
+                    float dx = MathF.Abs(Num(it, "x") - sx), dz = MathF.Abs(Num(it, "z") - sz);
+                    if (dx < half && dz > half && dz < half + LayBy)
+                        _layBy.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
+                }
+            }
             foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile"))
-                _tileAt.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
+                if (!_layBy.Contains(Round(new Vector2(Num(it, "x"), -Num(it, "z")))))
+                    _tileAt.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
             foreach (var it in items.Where(i => Str(i, "t") == "rover"))
                 _roverAt.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
 
@@ -368,6 +382,8 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
         {
             switch (name)
             {
+                case "Roller Tile" when _layBy.Contains(Round(new Vector2(Num(it, "x"), -Num(it, "z")))):
+                    return Piece("Pad Tile", at, Facing(new Vector2(-flow.Y, flow.X)), Stock); // (a big station's lay-by: its pick pad, turned so its own z runs along the bay's side: a pad takes a part only along its z, and the line's pieces lie that way)
                 case "Roller Tile":
                     return Piece(Flag(it, "swivel") ? "Turntable Tile" : "Roller Tile", at, Facing(flow), Line);
                 case "Pad Tile":
@@ -505,6 +521,10 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     if (c != null)
                     {
                         OrdersOnly(c);
+                        // Each press starts with a die for the frigate's pressed fittings (a blueprint can't shelve dies on a Die Rack, so the
+                        // rest wait for a player's): housings, the leg pods' brackets, hinges and turret rings, the canopy plates (2026-11-26).
+                        if (_pressDie < PressDies.Length)
+                            Onto(c, "dieslot", PressDies[_pressDie++], "mount");
                         _labs.Add((id, new Vector2(x, -z), c, flow));
                     }
                     break;
