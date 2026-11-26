@@ -389,7 +389,6 @@ public sealed class Piece
         var p = DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id)));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
-        PieceWeapons.Migrate(p); // an old PDC turret, railgun or torpedo sponson: a mount with it fitted (Karl, 2026-11-26)
         return p;
     }
 
