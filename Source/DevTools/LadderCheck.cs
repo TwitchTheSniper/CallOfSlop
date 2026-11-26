@@ -5,7 +5,9 @@ namespace CallOfSlop;
 /// <summary>
 /// <c>--ladder-check [BLUEPRINT,...]</c>: every vertical ladder (a part with "ladder") on the shipped blueprints that hold one
 /// (or the named ones) climbed headless, up from its foot and down from its top, through <see cref="ConstructRide.ClimbLadder"/>
-/// as the player's F does, and played through to its end; a climb that ends inside something names it. A dev tool: it allocates freely.
+/// as the player's F does, and played through to its end; a climb that ends inside something names it. <c>--ladder-check --design NAME|FILE[,...]</c>
+/// climbs a ship design's instead (a shipped or saved design by name, or a design file, built from its elements as <see cref="DesignCheck"/>
+/// builds it). A dev tool: it allocates freely.
 /// </summary>
 public static class LadderCheck
 {
@@ -13,6 +15,8 @@ public static class LadderCheck
     {
         var named = args.SkipWhile(a => !a.Equals("--ladder-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         var names = named == null || named.StartsWith("--") ? null : named.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var designs = args.SkipWhile(a => !a.Equals("--design", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (Maps.Find("Proving Ground") is not { } yard)
         {
             Console.WriteLine("no Proving Ground map");
@@ -21,11 +25,25 @@ public static class LadderCheck
         yard.RestoreProps();
         World.SetMap(yard);
         int bad = 0, ladders = 0;
-        foreach (var bp in ConstructBuild.Blueprints)
+        var prints = new List<ConstructBuild.Blueprint>();
+        if (designs != null)
+            foreach (var what in designs)
+            {
+                if (DesignByName.Blueprint(what, out var why) is { } dbp)
+                    prints.Add(dbp);
+                else
+                {
+                    Console.WriteLine($"{what}: {why}");
+                    bad++;
+                }
+            }
+        else
+            foreach (var bp in ConstructBuild.Blueprints)
+                if (names != null ? names.Any(n => n.Equals(bp.Name, StringComparison.OrdinalIgnoreCase))
+                    : bp.Steps.Any(st => ConstructParts.Find(st.Part) is { LadderTop: > 0 }))
+                    prints.Add(bp);
+        foreach (var bp in prints)
         {
-            if (names != null ? !names.Any(n => n.Equals(bp.Name, StringComparison.OrdinalIgnoreCase))
-                : !bp.Steps.Any(st => ConstructParts.Find(st.Part) is { LadderTop: > 0 }))
-                continue;
             var w = new ConstructWorld();
             var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, 0, 0), 0, out _);
             if (c == null)
@@ -111,5 +129,49 @@ public static class LadderCheck
         var moved = Vector3.Distance(end, nominal);
         Console.WriteLine($"    {(fromTop ? "down" : "up")}: {ticks / (float)World.TickRate:0.0} s{(moved > 0.05f ? $", ends {moved:0.00} m from its usual spot (something stands there)" : "")}");
         return null;
+    }
+}
+
+/// <summary>
+/// A ship design picked by the test tools (<c>--ladder-check --design</c>, <c>--window-shot --design</c>): a design file, or a shipped or saved
+/// design by name (ShipDesignStore), read and registered as <see cref="DesignCheck"/> does, and a blueprint of its body (DesignParts.BlueprintOf).
+/// </summary>
+public static class DesignByName
+{
+    /// <summary>The design's hash, name and canonical text (null: <paramref name="why"/> says why not).</summary>
+    public static (string Hash, string Name, string Text)? Find(string what, out string why)
+    {
+        why = "";
+        var json = File.Exists(what) ? File.ReadAllText(what)
+            : ShipDesignStore.List().FirstOrDefault(x => x.Name.Equals(what, StringComparison.OrdinalIgnoreCase)).Json;
+        if (json == null)
+        {
+            why = $"no ship design \"{what}\" (a file, or one of: {string.Join(", ", ShipDesignStore.List().Select(x => x.Name))})";
+            return null;
+        }
+        if (DesignParts.Canon(json) is not { } text || DesignParts.Register(text) is not { } hash)
+        {
+            why = $"not a design this build reads: {DesignParts.LastRefusal}";
+            return null;
+        }
+        return (hash, DesignParts.Find(hash)?.Name is { Length: > 0 } n ? n : Path.GetFileNameWithoutExtension(what), text);
+    }
+
+    public static ConstructBuild.Blueprint? Blueprint(string what, out string why) =>
+        Find(what, out why) is { } f ? DesignParts.BlueprintOf(f.Hash, f.Name) : null;
+
+    /// <summary>
+    /// The names a design element answers to in the window tool's verbs (near, panel, sit, ...): its element id ("p3"), its name ("Helm
+    /// seat"), its kind ("piece") and what it does ("seat"); null when the part isn't a design's. A dev tool's lookup: it allocates.
+    /// </summary>
+    public static string[]? NamesOf(ConstructPartDef d)
+    {
+        if (DesignParts.EntryOf(d) is not { } e || DesignParts.Elements(e.Hash) is not { } els)
+            return null;
+        var id = d.Name[(d.Name.LastIndexOf(' ') + 1)..];
+        foreach (var el in els)
+            if (el.Id == id)
+                return [el.Id, el.Name, el.Kind, el.Fn, el.Role];
+        return [id];
     }
 }
