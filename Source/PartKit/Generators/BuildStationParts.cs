@@ -10,8 +10,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// player, the keys, the stop, the lamp), a link-stock hopper (Chute in) and the fluid inlet; it holds the job and the power and has no
 /// hold (<c>noHold</c>: every piece goes to its pick pads). Its mouth (+x.0) welds to the bay. A Dock Expansion (small 4 x 2 m, medium
 /// 6 x 4, large 12 x 8) is a dock pad for one more rover of its class, its mouth on the bay's edge. Bay Blocks are 2 x 2 m floor tiles
-/// welded beside it and to each other: the bay is the largest full rectangle of them. The shared 2 m Mast Block stacked on the
-/// rectangle's four corners sets the bay's height. The rovers are drawn, not parts (StationRender.cs).
+/// welded beside it and to each other: the bay is the largest full rectangle of them. It has no height of its own: what
+/// is clear over it and the rovers' reach limit a build (ConstructStation.BaySize, LoaderRefusal). The rovers are drawn, not parts (StationRender.cs).
 /// The look (look.md "Machine look"): white at the ways in, the shared port fitting at every port, the body in the family's green,
 /// three tones; a floor tile's edge and corner trim are seams, drawn only where no tile of the same bay is welded; a dock's deck is dark
 /// with yellow bay lines, a chevron, a charge plate and its class's wheel marks.
@@ -109,7 +109,7 @@ public sealed class BuildStationParts : IPartGenerator
     private static Part Core()
     {
         var p = new Part("Building Station", Small, "Extrusion",
-            "A Building Station's Core: the dock for its first arm rover (a small one: 9 m reach, 8 t), and the console that builds a blueprint in its bay, part by part. Weld its mouth to the edge of a bay of Bay Blocks (up to 32 x 32), stack Mast Blocks on the bay's corners for height, and weld Dock Expansions along the bay's edge for more rovers. Rovers take pieces off pick pads and Part Pads beside the bay. Pick a blueprint on its screen. Needs power.",
+            "A Building Station's Core: the dock for its first arm rover (a small one: 9 m reach, 8 t), and the console that builds a blueprint in its bay, part by part. Weld its mouth to the edge of a bay of Bay Blocks (up to 32 x 32) and weld Dock Expansions along the bay's edge for more rovers. A bay builds as high as is clear over it and its rovers can reach. Rovers take pieces off pick pads and Part Pads beside the bay. Pick a blueprint on its screen. Needs power.",
             role: "storage", tool: "welder", color: Body, group: "Production");
         DockPad(p, 4, 2, 1, true);
         // ---- The console at the pad's back end: a cabinet on the deck, its screen tipped back towards whoever stands in front of it, the job lamp on top.
@@ -187,7 +187,7 @@ public sealed class BuildStationParts : IPartGenerator
     private static Part BayBlock()
     {
         var p = new Part("Bay Block", Small, "Extrusion",
-            "A 2 x 2 m tile of a Building Station's bay. Weld it beside the station's Core or beside another Bay Block: the bay is the largest full rectangle of them, up to 32 x 32 m. Stack Mast Blocks on the bay's four corners to build higher.",
+            "A 2 x 2 m tile of a Building Station's bay. Weld it beside the station's Core or beside another Bay Block: the bay is the largest full rectangle of them, up to 32 x 32 m. A bay has no height of its own: a build fits while nothing stands over it and its rovers reach.",
             group: "Production", color: Body);
         const double e = 0.997, h = Floor, k = 0.12; // (the slab stops 3 mm short of the cell; k: the kerb's width)
         p.Add(Box([-e, 0, -e], [e, h - 0.02, e], MachineLook.Base));

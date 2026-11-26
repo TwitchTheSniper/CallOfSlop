@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Bay Block",
-  "description": "A 2 x 2 m tile of a Building Station's bay. Weld it beside the station's Core or beside another Bay Block: the bay is the largest full rectangle of them, up to 32 x 32 m. Stack Mast Blocks on the bay's four corners to build higher.",
+  "description": "A 2 x 2 m tile of a Building Station's bay. Weld it beside the station's Core or beside another Bay Block: the bay is the largest full rectangle of them, up to 32 x 32 m. A bay has no height of its own: a build fits while nothing stands over it and its rovers reach.",
   "group": "Production",
   "section": "Extrusion",
   "role": "frame",

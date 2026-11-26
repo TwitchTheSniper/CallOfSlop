@@ -149,6 +149,49 @@ public static partial class ConstructStation
         }
     }
 
+    /// <summary>
+    /// Server, as a build starts: why its loaders can't fit one of its parts, or null. A part is fitted by a docked rover that lifts its mass
+    /// and reaches where it goes from the bay (<see cref="StationRovers.Reaches"/>, the test a trip is planned by), or by a crane or arm over
+    /// the bay that lifts it (<see cref="ConstructLifters.MostOverBay"/>). With no height of its own the bay builds as high as that (Sean,
+    /// 2026-11-26), so a part no loader reaches is told here, before anything is ordered, not left waiting at its rank for good.
+    /// </summary>
+    private static string? LoaderRefusal(ConstructWorld world, Construct c, int t, StationJob j)
+    {
+        if (j.Bp is not { } bp || j.Plan is not { } plan || plan.Centre.Length != bp.Steps.Count || j.StepKind.Length != bp.Steps.Count)
+            return null;
+        Span<StationDock> docks = stackalloc StationDock[MaxArms];
+        var n = StationRovers.Docks(c, t, docks);
+        var lift = ConstructLifters.MostOverBay(world, c, t);
+        var g = GroundOf(c, t, j);
+        var roverKg = 0f;
+        for (var a = 0; a < n; a++)
+            roverKg = MathF.Max(roverKg, StationRovers.Classes[docks[a].Cls].Kg);
+        for (var k = 0; k < bp.Steps.Count; k++)
+        {
+            if (ConstructStationTree.External(j, k) || j.StepKind[k] is not (var kind and >= 0) || ConstructParts.Get(j.KindDef[kind]) is not { } d || d.Mass <= lift)
+                continue; // (a use built at another station, or a crane over the bay takes it)
+            var place = ArmTarget(c, t, j, k, d);
+            var heavy = true;
+            var ok = false;
+            for (var a = 0; a < n && !ok; a++)
+            {
+                var rc = StationRovers.Classes[docks[a].Cls];
+                if (d.Mass > rc.Kg)
+                    continue;
+                heavy = false;
+                ok = StationRovers.Reaches(rc, StationRovers.SpotFor(g, rc, place), place);
+            }
+            if (ok)
+                continue;
+            if (n == 0)
+                return "has no rover to fit its parts: weld the station's Core or a Dock Expansion on the bay's edge";
+            return heavy
+                ? $"its rovers can't lift its {d.Name} ({d.Mass / 1000f:0.#} t, theirs at most {roverKg / 1000f:0.#} t): weld a larger Dock Expansion on the bay's edge, or put a crane over the bay"
+                : $"its rovers can't reach its {d.Name}, {place.Y:0.0} m over the bay's floor: weld a larger Dock Expansion on the bay's edge, or put a crane over the bay";
+        }
+        return null;
+    }
+
     // ---- The rovers' tick (server) ---------------------------------------------------------------------------------------
 
     private static StationRovers.Ground GroundOf(Construct c, int t, StationJob j)

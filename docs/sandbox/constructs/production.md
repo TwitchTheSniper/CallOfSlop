@@ -1806,8 +1806,13 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
   2026-11-24; the Core stays on the floor, its screen at hand height; their side sockets at a Pad Tile's, 0.1 m, so a bay welds butted on a pad,
   their recipe at the end of the Assembler's list) welded beside the Core make the bay: the largest full rectangle of them, up to 32 cells a
   side and 512 cells in all, masts included (the station's own limit, `"maxSide"` and `"maxCells"` in its `"machineBlock"`; Sean 2026-11-21,
-  so one station builds the whole 53 m Zero Day in a 30 x 12 bay, 60 x 24 m; every other block machine keeps 16 a side and 128). **Mast Blocks** (the block machines' shared 2 m cube) stacked on its four corner tiles set its
-  height, 2 m a block, by the shortest mast; a bay with no masts builds up to 2 m. With masts the corner cells are theirs, so a build
+  so one station builds the whole 53 m Zero Day in a 30 x 12 bay, 60 x 24 m; every other block machine keeps 16 a side and 128). The bay has **no height of its own** (Sean
+  2026-11-26; masts set it before): it is the clear space over the floor up to the lowest part of the station's body standing over it (a
+  roof truss, a pipe, a lamp), `ConstructStation.OpenSky` (200 m, "open above") with nothing over it. The station's own blocks, lifters and
+  kit arm pieces, and parts standing on the floor (underside under 0.3 m), don't count (`ClearHeight`, kept per body by `StructStamp`). What
+  else limits a build is its **loaders**: as a build starts, each part must be lifted (mass) and reached where it goes (`StationRovers.Reaches`)
+  by a docked rover, or lifted by a crane or arm over the bay (`ConstructLifters.MostOverBay`), or the job stops naming the part and what to
+  weld (`LoaderRefusal`). Mast Blocks on the corners are optional now; where any corner has one, the corner cells are theirs, so a build
   fits when it is no longer than the bay less two cells on one of its sides (`ConstructStation.FitRefusal(need, bay, BayCorner)`).
   `ConstructStation.Bay` gives the box over the rectangle (floor at the tiles' top); no rectangle, no bay, and Start says to weld Bay
   Blocks. The box is drawn (floor, four posts, top) while the station is looked at or its panel is open (amber; red when the picked

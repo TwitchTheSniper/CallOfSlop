@@ -350,6 +350,32 @@ public static partial class ConstructLifters
         return false;
     }
 
+    /// <summary>
+    /// Server: the heaviest piece any lifter that works over station <paramref name="t"/>'s bay (<see cref="NearBay"/>) carries, kg (0: none).
+    /// A Building Station's loader check counts them with its rovers (ConstructStation.LoaderRefusal). Allocates nothing.
+    /// </summary>
+    public static float MostOverBay(ConstructWorld world, Construct sc, int t)
+    {
+        ConstructStation.Bay(sc, t, out var floor, out var bayRot, out var bay);
+        var most = 0f;
+        for (var bi = 0; bi < world.LiftBodies.Count; bi++)
+        {
+            var lb = world.LiftBodies[bi];
+            if (world.Get(lb.Body) is not { } c)
+                continue;
+            for (var i = 0; i < lb.N; i++)
+            {
+                var l = lb.Lifts[i];
+                if (l.Part >= c.PartCount || c.Parts[l.Part].Broken || ConstructLifters.DefOf(c, l.Part) is not { } ld || ld.Payload <= most)
+                    continue;
+                Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
+                if (NearBay(ld, shoulder, lr, floor, bayRot, bay))
+                    most = ld.Payload;
+            }
+        }
+        return most;
+    }
+
     /// <summary>Is pad (<paramref name="padBody"/>, <paramref name="pad"/>) a pick pad of a lifter arm that can fit for station <paramref name="t"/> now?</summary>
     private static bool ArmServes(ConstructWorld world, Construct sc, int t, ushort padBody, int pad)
     {
