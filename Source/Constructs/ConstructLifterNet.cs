@@ -149,6 +149,17 @@ public static partial class ConstructLifters
         return true;
     }
 
+    /// <summary>Does any lifter's edge put into machine <paramref name="dest"/> (what lies at its picks counts by kind, not by chain entry: <see cref="AtPicks"/>)?</summary>
+    public static bool FedByLifter(Construct c, int dest)
+    {
+        if (c.Logi is not { LiftN: > 0 } m)
+            return false;
+        for (var e = 0; e < m.LiftN; e++)
+            if (m.Lifts[e].To == dest)
+                return true;
+        return false;
+    }
+
     /// <summary>
     /// Server: pieces of a kind on their way to machine <paramref name="dest"/> by a lifter: lying at a pick rack or pad whose lifter puts
     /// to it, or in a hand bound for it. A chained order counts them as riding (a piece that reached a pick point lost its rider's tag),

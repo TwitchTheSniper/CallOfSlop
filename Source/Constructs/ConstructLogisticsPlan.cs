@@ -27,6 +27,7 @@ public struct ChainEntry
     public ushort Tried; // server: the plan step of that last try
     public string? NoteText; // server: its order note while it is the first link (ConstructLogisticsPlan.Note), and what it was made from
     public uint NoteKey;
+    public bool Shared; // server: a maker has taken it once, so it never splits again (FindMaker: a press's blanks over its Extruders); not saved
 }
 
 [Flags]
@@ -553,10 +554,12 @@ public static class ConstructLogisticsPlan
         }
         // A press's blanks are shared over the Extruders that lead to it (Sean, 2026-11-26: a second blank Extruder on each small press
         // line, as a blank takes 15-17 s and a stroke 7 s): this entry keeps its share and a sibling entry asks the next maker for the rest,
-        // which then has the shortest queue. Only a fresh entry splits (nothing made yet), so a re-ask never splits again.
+        // which then has the shortest queue. Only an entry no maker has taken yet splits (Shared), so a re-ask after a maker drops its
+        // order never splits again, and never into a press an arm feeds (what lies at its picks counts by kind for every entry: AtPicks).
         var share = count;
-        ways = ways > 0 ? Math.Min(ways, alike) : alike; // (a sibling shares what is left over the makers not yet asked: 6 over two is 3 and 3)
-        if (best >= 0 && ways > 1 && count > 1 && what.IsPiece && c.DefOf(e.Dest).IsPress && e.Made == 0 && count == e.Asked && world.ChainCount < MaxEntries)
+        ways = ways == 0 ? alike : Math.Min(ways, alike); // (a sibling shares what is left over the makers not yet asked: 6 over two is 3 and 3)
+        if (best >= 0 && ways > 1 && count > 1 && !e.Shared && what.IsPiece && c.DefOf(e.Dest).IsPress && e.Made == 0 && count == e.Asked && world.ChainCount < MaxEntries
+            && !ConstructLifters.FedByLifter(c, e.Dest))
             share = (count + ways - 1) / ways;
         if (best >= 0 && WorkOrders.Queue(world, c, best, what with { Count = (ushort)share }) is var no && no == null)
         {
@@ -566,6 +569,7 @@ public static class ConstructLogisticsPlan
             e.Maker = (ushort)best;
             e.Flags &= unchecked((byte)~ChainFlags.Expanded);
             e.Reason = "";
+            e.Shared = true;
             if (share < count)
             {
                 e.Asked = (ushort)share;
@@ -577,6 +581,7 @@ public static class ConstructLogisticsPlan
                 rest.Born = world.ChainStepNo;
                 rest.NoteText = null;
                 rest.NoteKey = 0;
+                rest.Shared = false;
                 // (ranked as this entry, it goes in after it: this entry's ref stays good)
                 var at2 = Insert(world, rest);
                 FindMaker(world, c, net, ref world.Chains[at2], count - share, Math.Max(1, ways - 1));
