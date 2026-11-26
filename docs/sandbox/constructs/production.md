@@ -2462,6 +2462,18 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   and Lower Fore Wall 3 on line B in 136 and 221 s, the Upper Deck Aft still on line C in 317 s (refused at A's oven); the yard's
   frigate order puts 16 walls on A's oven and 15 on B's.
 
+- **The rest of the hull (2026-11-26).** Sean: "hulls should almost always be made exclusively on extrusion lines". The hull pieces that
+  had no listed kit (the Bow, whose dressed skins pass one part's boxes, the Drive Collar, Spine 5, both Torpedo Bays and both upper
+  Ceilings) are box kits in BakeKits.json, the big ones on a `bigBed`; `--bake-kit` passes on each. A refusal that names a catalogue
+  part's maker says which (`WorkOrders.CatalogueMaker`: a Bake Oven, a Press or an Assembler), not "an Assembler's order" for all.
+- **On Zero Day Works II.** Each line's station takes the console of the first line that ends at its bay (nearest its Laser Cutter),
+  wired to every Extruder and Panel Former of the lines that end there (a former takes one input: only this console runs it); the main
+  station takes the press line's console, wired to every Bake Oven, Press and Assembler. Each oven's Core stands by its bed's up-flow
+  row, the tunnel's in end (Sean's card, 2026-11-26: the layout drew them at the out end; a small line's rover dock in the way slides
+  2 m along its bay). `--station-check` starts every stopped Line Console and prints each station's roll-out (into which oven's bed,
+  or why none). The frigate's bill there: every deck, wall, keel and hull piece an oven's order. Open: the big line stations have no
+  pick pad where their runs end, so their rovers never take a kit's pieces.
+
 ## Production Showcase
 
 One shipped blueprint, **Production Showcase** (`Constructs/Blueprints/ProductionShowcase.json`, group Production), with every machine
