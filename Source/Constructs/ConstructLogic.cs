@@ -245,6 +245,9 @@ public static class ConstructLogic
                     case CLogic.AnalogLever:
                         next = AnalogLever.Step(world, c, i, dt);
                         break;
+                    case CLogic.StationConsole:
+                        next = ConstructStationConsole.Done(c, p.Watch); // (on while the station its watch link names has a build done)
+                        break;
                     case CLogic.Cipher:
                         next = p.Mem; // (a data centre terminal's carrier: the server sets it, GameStoryFragments.cs)
                         break;

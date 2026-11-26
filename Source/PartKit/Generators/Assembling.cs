@@ -1111,6 +1111,8 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Large Dock Expansion", 120, 3, m: [("steel", 2000), ("rubber", 200), ("copper", 80)], p: [("Wiring Loom", 3), ("Gear Set", 8)])),
         // (the Die Wall, a Die Rack of twenty shelves for a press pair's Loader Arm, Sean 2026-11-26; after everything: AfterCloche)
         (null, null, Rec("Die Wall", 12, 1, m: [("steel", 120), ("rubber", 10)])),
+        // (the Station Console, a Building Station's screen at a desk, Sean 2026-11-26: the Line Console's recipe; after everything: AfterCloche)
+        (null, null, Rec("Station Console", 3.2, 3, m: [("steel", 8), ("copper", 13)], p: [("Circuit Board", 1)])),
     ];
 
     /// <summary>
@@ -1323,7 +1325,7 @@ public sealed class Assembling : IPartGenerator
 
     /// <summary>Rows added after the Cloche's, in the order added, after them. Closed: a new row goes at the END of this list (its Tail entry too).</summary>
     private static readonly string[] AfterCloche = ["Crane Rail Small 1 m", "Small Crane Bridge", "Works Floor Slab 8 m", .. FactoryShellParts.MillShedNames, .. FactoryShellParts.MillDressingNames, .. CockpitParts.Names, .. FactoryShellParts.PlinthNames, "Press Bed Block", .. LifterParts.BigArmNames,
-        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Crucible Block", "Mould Line", "Head Stand", "Rail Carriage", "Saw Block", "Plank Stacker", "Breaker Core", "Shredder Block", "Die Wall", "Heavy Power Terminal"];
+        "Hearth Block", "Casting Bed", "Arm Core", "Arm Pedestal", "Crucible Block", "Mould Line", "Head Stand", "Rail Carriage", "Saw Block", "Plank Stacker", "Breaker Core", "Shredder Block", "Die Wall", "Heavy Power Terminal", "Station Console"];
 
     /// <summary>An after row's place: AfterFolded's in their order, then the Cloche's (stable: in their Tail order), then AfterCloche's in theirs.</summary>
     private static int AfterKey(string output) => Array.IndexOf(AfterFolded, output) is var i and >= 0 ? i

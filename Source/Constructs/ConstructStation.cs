@@ -428,7 +428,10 @@ public static partial class ConstructStation
     }
 
     /// <summary>The station's screen (panel source <c>station</c>). Either peer; short lines.</summary>
-    public static void FillPanel(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
+    public static void FillPanel(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card) => Fill(world, c, part, card, "BUILDING STATION");
+
+    /// <summary>The station's screen under <paramref name="title"/> (a Station Console's names the station: ConstructStationConsole.cs).</summary>
+    public static void Fill(ConstructWorld world, Construct c, int part, PanelCard card, string title)
     {
         var d = c.DefOf(part);
         if (!d.IsBuildStation || world.StoreOf(c, part) is not { } st)
@@ -441,7 +444,7 @@ public static partial class ConstructStation
             return;
         }
         var j = c.Parts[part].Station;
-        card.Add(0, "BUILDING STATION");
+        card.Add(0, title);
         if (j == null || j.State == StationState.Idle)
         {
             card.State = PanelState.Ok;
@@ -2415,6 +2418,8 @@ public sealed partial class ConstructEdits
         if (refusal != null)
             return refusal;
         var reach = Vector3.Distance(eye, ReachPoint(c, part, eye));
+        if (op != StationOp.Give)
+            reach = MathF.Min(reach, ConstructStationConsole.ReachFrom(c, part, eye)); // (worked from a Station Console that watches it; a part is still given at the station)
         if (op == StationOp.Give && c.Parts[part].Station is { Body: not 0 } held && world.Get(held.Body) is { } build)
             reach = MathF.Min(reach, Vector3.Distance(eye, build.WorldCom) - build.Radius);
         if (reach > ConstructConfig.Reach)
