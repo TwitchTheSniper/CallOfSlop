@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using CallOfSlop.ShipDesigner;
 
@@ -76,6 +77,124 @@ public static partial class DesignCheck
             Console.WriteLine($"[design] hollow: {p.Kind}'s opening ({2 * op.Hx * p.Size * p.Hole:0.00} x {2 * op.Hz * p.Size * p.Hole:0.00} m) at {o.X:0.0}, {o.Y:0.0}, {o.Z:0.0}: its middle {(skin >= PersonRadius ? "is" : "is NOT")} clear of the skin's plates ({skin:0.00} m), {pieces:0.00} m from a piece's collider{(pieces < 0 ? " (inside one: a door's work, package E)" : "")}");
             if (skin < PersonRadius)
                 r.Fail($"{p.Kind}'s opening is plated over");
+        }
+        if (r.Blueprint != null)
+        {
+            Tunnel(r);
+            Rolled(r);
+        }
+    }
+
+    /// <summary>The first of a body's hull colliders a world ray meets (its distance, or NaN).</summary>
+    private static float RayHulls(Construct c, Vector3 o, Vector3 dir, float max)
+    {
+        var best = float.NaN;
+        for (var k = 0; k < c.PartCount; k++)
+        {
+            var q = c.Rot * Rot24.Quat(c.Parts[k].Rot);
+            var back = Quaternion.Conjugate(q);
+            var lo = Vector3.Transform(o - c.ToWorld(c.Parts[k].Pos), back);
+            var ld = Vector3.Transform(dir, back);
+            foreach (var hl in c.DefOf(k).Hulls)
+                if (hl.Ray(lo, ld, max, out var t, out _) && !(t >= best))
+                    best = t;
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// Tunnelling: a chest (a box body) dropped onto the spine from higher and higher, so it meets a thin plate faster each time, and where it
+    /// comes to rest: on the skin, or through it into the ship.
+    /// </summary>
+    private static void Tunnel(Run r)
+    {
+        if (ConstructBuild.FindBlueprint("Chest") is not { } chest)
+        {
+            Console.WriteLine("[design] hollow: no Chest blueprint to drop");
+            return;
+        }
+        foreach (var height in new[] { 3f, 20f, 80f, 320f, 1200f })
+        {
+            var world = new ConstructWorld();
+            var ship = ConstructBuild.BuildOnGround(world, ConstructBuild.ParseBlueprint(r.Blueprint!, "design check.json"), r.Ground, 0, out var why);
+            if (ship == null)
+            {
+                r.Fail($"the tunnelling drop's ship wasn't built: {why}");
+                return;
+            }
+            // Down the middle of its length, over the spine (or whatever stands on it there).
+            var mid = ship.ToWorld((ship.LocalMin + ship.LocalMax) * 0.5f) with { Y = ship.ToWorld(ship.LocalMax).Y + 5 };
+            var top = mid.Y - RayHulls(ship, mid, -Vector3.UnitY, 50);
+            if (float.IsNaN(top))
+            {
+                Console.WriteLine("[design] hollow: no skin under the middle of its spine to drop on");
+                return;
+            }
+            var box = ConstructBuild.BuildOnGround(world, chest, mid with { Y = r.Ground.Y + 200 }, 0, out why, beside: false);
+            if (box == null)
+            {
+                r.Fail($"the chest wasn't built: {why}");
+                return;
+            }
+            box.Pos += new Vector3(mid.X, top + height, mid.Z) - box.WorldCom;
+            box.Vel = new Vector3(0, -MathF.Sqrt(2 * 9.81f * height), 0); // (as fast as it would fall from there)
+            box.Wake();
+            double worst = 0;
+            var meet = MathF.Abs(box.Vel.Y);
+            for (var k = 0; k < 4 * World.TickRate; k++)
+            {
+                var s = Stopwatch.GetTimestamp();
+                world.Step(World.Query, World.TickDt);
+                worst = Math.Max(worst, Ms(s));
+            }
+            // Inside the ship: a collider of it straight above the chest's middle (the skin it came through).
+            var above = RayHulls(ship, box.WorldCom, Vector3.UnitY, 30);
+            var rest = box.WorldCom.Y - top;
+            var through = !float.IsNaN(above);
+            var at = Vector3.Transform(box.WorldCom - ship.Pos, Quaternion.Conjugate(ship.Rot));
+            Console.WriteLine($"[design] hollow: a chest meeting the spine at {meet:0} m/s (from {height:0} m) rests with its middle {rest:+0.00;-0.00} m off the skin's top there, at {at.X:0.00}, {at.Y:0.00}, {at.Z:0.00} in the ship{(through ? $": THROUGH IT ({above:0.00} m under a collider)" : "")}, speed {box.Vel.Length():0.00} m/s; worst step {worst:0.0} ms");
+            if (through)
+                r.Fail($"a chest at {meet:0} m/s went through the hull's plates");
+        }
+    }
+
+    /// <summary>The ship dropped rolled over on the ground (its side on the ground, many plates at once): the step's cost, and it resting.</summary>
+    private static void Rolled(Run r)
+    {
+        foreach (var roll in new[] { 25f, 90f, 25f }) // (25 again: the first ran the contacts' JIT)
+        {
+            var world = new ConstructWorld();
+            var ship = ConstructBuild.BuildOnGround(world, ConstructBuild.ParseBlueprint(r.Blueprint!, "design check.json"), r.Ground, 0, out var why);
+            if (ship == null)
+            {
+                r.Fail($"the rolled drop's ship wasn't built: {why}");
+                return;
+            }
+            var com = ship.WorldCom;
+            ship.Rot = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, roll * MathF.PI / 180) * ship.Rot;
+            ship.Pos += com - ship.WorldCom + new Vector3(0, 12, 0);
+            ship.Wake();
+            double worst = 0, sum = 0;
+            var worstAt = 0f;
+            var n = 8 * World.TickRate;
+            for (var k = 0; k < n; k++)
+            {
+                var s = Stopwatch.GetTimestamp();
+                world.Step(World.Query, World.TickDt);
+                var ms = Ms(s);
+                if (k > 10)
+                    (worst, sum, worstAt) = (Math.Max(worst, ms), sum + ms, ms > worst ? k / (float)World.TickRate : worstAt);
+            }
+            var low = float.MaxValue;
+            for (var k = 0; k < ship.PartCount; k++)
+                foreach (var hl in ship.DefOf(k).Hulls)
+                    foreach (var v in hl.V)
+                        low = MathF.Min(low, ship.ToWorld(ship.Parts[k].Pos + Vector3.Transform(v, Rot24.Quat(ship.Parts[k].Rot))).Y);
+            Console.WriteLine($"[design] hollow: dropped rolled {roll:0} deg from 12 m: {world.Bodies.Count} bodies, lowest collider {low - r.Ground.Y:+0.00;-0.00} m off the ground, speed {ship.Vel.Length():0.00} m/s, asleep {ship.Asleep}; step mean {sum / (n - 11):0.000} ms, worst {worst:0.00} ms at {worstAt:0.00} s");
+            if (low < r.Ground.Y - 0.5f)
+                r.Fail($"rolled {roll:0} deg it sank {r.Ground.Y - low:0.00} m into the ground");
+            if (worst > 8)
+                r.Fail($"rolled {roll:0} deg a step took {worst:0.0} ms");
         }
     }
 
