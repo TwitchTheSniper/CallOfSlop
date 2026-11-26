@@ -369,6 +369,41 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             foreach (var (cell, into) in _intoPress.ToList())
                 if (!Entry(((int)(cell.Item1 - 2 * into.X), (int)(cell.Item2 - 2 * into.Y))))
                     _intoPress.Remove(cell);
+            // The plain Roller Tiles in a press line's row, between its presses and the building station the row ends at (beside the presses'
+            // beds and the block Assembler's), roll toward that station: the layout laid them facing the other way, so a pressed part rode
+            // away from the station and dropped loose (2026-11-26, Sean: carry pressed parts on to the main station). Only their facing
+            // changes; each piece stays where his layout puts it, and pieces roll through the beds on the way (ConstructConveyor.PassesThrough).
+            var stationsAt = items.Where(i => Str(i, "t") == "lab" && Str(i, "id") == "building-station").Select(i => (At: new Vector2(Num(i, "x"), -Num(i, "z")), Span: (float)Math.Max(Int(i, "w"), Int(i, "l")))).ToList();
+            foreach (var pr in items.Where(i => Str(i, "t") == "lab" && Str(i, "id") == "press"))
+            {
+                float half = Int(pr, "w"), px = Num(pr, "x"), pz = -Num(pr, "z");
+                if (stationsAt.Where(v => MathF.Abs(v.At.Y - pz) < v.Span).OrderBy(v => MathF.Abs(v.At.X - px)).Select(v => (Vector2?)v.At).FirstOrDefault() is not { } st)
+                    continue; // (the station the row runs to: the nearest along the row whose side spans it)
+                var toward = MathF.Sign(st.X - px);
+                foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")))
+                {
+                    float tx = Num(it, "x"), tz = -Num(it, "z");
+                    var cell = Round(new Vector2(tx, tz));
+                    if (MathF.Abs(tz - pz) < half && (tx - px) * toward > 0 && (st.X - tx) * toward > 0 && MathF.Abs(tx - px) < PressRow && !_intoPress.ContainsKey(cell) && !_layBy.Contains(cell))
+                        _towardStation[cell] = new Vector2(toward, 0);
+                }
+                // (the Pad Tiles the row ends on, by the station: turned so the pad's own z runs along the row, as a pad takes a part only
+                // along its z and the row's pieces lie along it: a 5.6 m Leg Pod Housing waited at the pad's edge, 2026-11-26)
+                foreach (var it in items.Where(i => Str(i, "name") == "Pad Tile"))
+                {
+                    float tx = Num(it, "x"), tz = -Num(it, "z");
+                    if (MathF.Abs(tz - pz) < half + PadSide && (tx - px) * toward > 0 && (st.X - tx) * toward > 0 && MathF.Abs(tx - px) < PressRow + PadSide)
+                        _padAlong[Round(new Vector2(tx, tz))] = new Vector2(toward, 0);
+                }
+                // (and the tiles between a press and the next press up the row, which the layout also laid facing up it)
+                foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")))
+                {
+                    float tx = Num(it, "x"), tz = -Num(it, "z");
+                    var cell = Round(new Vector2(tx, tz));
+                    if (MathF.Abs(tz - pz) < half && MathF.Abs(tx - px) < half + 2.5f && !_intoPress.ContainsKey(cell) && !_layBy.Contains(cell))
+                        _towardStation[cell] = new Vector2(toward, 0);
+                }
+            }
             foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile"))
                 if (!_layBy.Contains(Round(new Vector2(Num(it, "x"), -Num(it, "z")))))
                     _tileAt.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
@@ -386,6 +421,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 PartItem(it, items);
             foreach (var it in items.Where(i => Str(i, "t") == "rover"))
                 RoverItem(it);
+            PadMasts();
             var g = 0;
             foreach (var it in parts.Where(i => Str(i, "name").StartsWith("Kit Genset")))
                 Genset(new Vector2(Num(it, "x"), -Num(it, "z")), g++);
@@ -409,8 +445,12 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     return Piece("Pad Tile", at, Facing(new Vector2(-flow.Y, flow.X)), Stock); // (a big station's lay-by: its pick pad, turned so its own z runs along the bay's side: a pad takes a part only along its z, and the line's pieces lie that way)
                 case "Roller Tile" when _intoPress.TryGetValue(Round(new Vector2(Num(it, "x"), -Num(it, "z"))), out var into):
                     return Piece("Roller Tile", at, Facing(into), Line); // (a turntable beside a press's bed: a short run into it)
+                case "Roller Tile" when _towardStation.TryGetValue(Round(new Vector2(Num(it, "x"), -Num(it, "z"))), out var on):
+                    return Piece("Roller Tile", at, Facing(on), Line); // (a press line's row: rolling toward its station)
                 case "Roller Tile":
                     return Piece(Flag(it, "swivel") ? "Turntable Tile" : "Roller Tile", at, Facing(flow), Line);
+                case "Pad Tile" when _padAlong.TryGetValue(Round(new Vector2(Num(it, "x"), -Num(it, "z"))), out var along):
+                    return Piece(name, at, Facing(along), Stock); // (a press line's pad by its station: its z along the row)
                 case "Pad Tile":
                     return Piece(name, at, Facing(flow), Stock);
                 case "Hearth Block" or "Crucible Block":
@@ -554,6 +594,28 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     }
                     break;
                 }
+            }
+        }
+
+        /// <summary>
+        /// A Mast Block on each corner tile of the pads the press lines' rows end on (<see cref="_padAlong"/>): a pad holds what lies under
+        /// its corner masts' top, and with none only a metre (a pressed Leg Pod Housing XL is 1.25 m tall; 2026-11-26). Their corners are
+        /// off the row's line, so the run's pieces come onto the pad between them.
+        /// </summary>
+        private void PadMasts()
+        {
+            if (_padAlong.Count == 0 || !_items.TryGetValue("Pad Tile", out var tiles))
+                return;
+            foreach (var side in _padAlong.GroupBy(kv => kv.Value.X))
+            {
+                int x0 = side.Min(kv => kv.Key.Item1), x1 = side.Max(kv => kv.Key.Item1), z0 = side.Min(kv => kv.Key.Item2), z1 = side.Max(kv => kv.Key.Item2);
+                foreach (var (cx, cz) in new[] { (x0, z0), (x0, z1), (x1, z0), (x1, z1) })
+                    foreach (var (at, tile) in tiles)
+                        if (Round(at) == (cx, cz))
+                        {
+                            Paint(Onto(tile, "top", "Mast Block", "bottom"), Steel);
+                            break;
+                        }
             }
         }
 

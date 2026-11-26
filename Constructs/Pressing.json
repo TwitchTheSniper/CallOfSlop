@@ -3473,6 +3473,25 @@
       "by": "across",
       "max": 16
      }
+    },
+    {
+     "id": "servo",
+     "like": "Servo Motor",
+     "label": "servo motor",
+     "preset": "solid 20x20x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Copper Coil",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     }
     }
    ]
   },
@@ -9232,6 +9251,12 @@
    "die": "housing",
    "pattern": "turbopump",
    "blank": "hollow 70x70x50 steel"
+  },
+  {
+   "part": "Servo Motor",
+   "die": "actuator",
+   "pattern": "servo",
+   "blank": "solid 20x20x35 steel"
   },
   {
    "part": "Brace 1:2 1x2 m",

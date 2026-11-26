@@ -371,6 +371,10 @@ public sealed partial class ZeroDayWorks2
         private readonly HashSet<(int, int)> _layBy = new(); // (the big stations' lay-by Roller Tiles, laid as Pad Tiles: their pick pads)
 
         private readonly Dictionary<(int, int), Vector2> _intoPress = new(); // (turntables butting a press bed, laid as Roller Tiles rolling into it: their flow)
+        private readonly Dictionary<(int, int), Vector2> _towardStation = new(); // (a press line row's plain Roller Tiles: their flow, toward the row's station)
+        private readonly Dictionary<(int, int), Vector2> _padAlong = new(); // (the Pad Tiles a press line's row ends on: their pad's z, along the row)
+        private const float PadSide = 6; // (how far either side of a press row's line its station's pad may reach, m)
+        private const float PressRow = 40; // (how far from a press its row's tiles toward the station are looked for, m)
 
         private const float LayBy = 4; // (m past a big station's bay side that its lay-by rows cover: two 2 m rows)
 

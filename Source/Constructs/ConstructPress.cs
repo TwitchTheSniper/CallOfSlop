@@ -660,6 +660,29 @@ public static partial class ConstructPress
         return true;
     }
 
+    /// <summary>
+    /// Does this press use piece or part <paramref name="pd"/>: a blank or the kit of an order queued at it (any, not only its head: a die
+    /// swap may come first), or with no queue a blank its die takes now? A piece rolling across its low bed that it doesn't goes on to the
+    /// bed's out run (ConstructConveyor.Deliver, Zero Day Works II's press lines, 2026-11-26); one it does waits for its bay. Allocates nothing.
+    /// </summary>
+    public static bool Keeps(ConstructWorld world, Construct c, int part, ConstructPartDef pd)
+    {
+        var d = c.Parts[part].D;
+        if (!d.IsPress || d.IsLathe)
+            return false;
+        if (c.Parts[part].Orders is { Bill: false } q)
+        {
+            var key = pd.IsExtrusion ? pd.ExKey with { Growing = false } : default;
+            for (var k = 0; k < q.Count; k++)
+                if (Pressed.SpecOf(q.Items[k]) is { } spec && (pd.IsExtrusion ? spec.Blank == key : spec.Pattern.Bay2?.Part?.Id == pd.Id))
+                    return true;
+            return false;
+        }
+        if (!pd.IsExtrusion)
+            return WantsKitPart(world, c, part, (ushort)pd.Id);
+        return pd.ExKey.Shape != ExShape.Wheel && Refusal(PressTable.Current, c, part, 0, pd.ExKey) == BayRefuse.None;
+    }
+
     /// <summary>Would the hopper take this part now? (A chute looking through its source: nothing is noted.)</summary>
     public static bool WantsKitPart(ConstructWorld world, Construct c, int part, ushort item) =>
         world.StoreOf(c, part) is { } st && SizedDieOf(PressTable.Current, c, part) is { } die && KitWanted(die, c, part, out var need, out _) is { Part: { } want } kit && want.Id == item && KitRoom(st, kit, need) > 0;
@@ -770,7 +793,7 @@ public static partial class ConstructPress
     /// A piece off a conveyor into bay <paramref name="bay"/> (its implicit Piece in: ConstructPorts.cs), by the same rules as a
     /// loose piece left in its mouth: true when it went in (fitted to the bay, a part of the machine's construct). Server.
     /// </summary>
-    public static bool TakeFromConveyor(ConstructWorld world, IWorldQuery query, Construct c, int part, int bay, ConstructPartDef pd, float health, uint paint)
+    public static bool TakeFromConveyor(ConstructWorld world, IWorldQuery query, Construct c, int part, int bay, ConstructPartDef pd, float health, uint paint, bool onBed = false)
     {
         var d = c.Parts[part].D;
         if (!pd.IsExtrusion && d.IsPress && !d.IsLathe && !c.Parts[part].Broken && WantsKitPart(world, c, part, (ushort)pd.Id))
@@ -790,8 +813,8 @@ public static partial class ConstructPress
         if (!pd.IsExtrusion || pd.ExKey.Shape == ExShape.Wheel)
             return false; // (a stamped part riding into a bay waits: only pieces go in)
         var why = Refusal(PressTable.Current, c, part, bay, pd.ExKey);
-        if (why == BayRefuse.None && !Room(world, query, c, part, bay, pd, null))
-            why = BayRefuse.Room;
+        if (why == BayRefuse.None && !onBed && !Room(world, query, c, part, bay, pd, null))
+            why = BayRefuse.Room; // (one rolled in at a low bed's Bed in lies on the bed, drawn on its deck: nothing stands out of the bay's mouth, 2026-11-26: a 1.8 m tall Housing blank met the floor there)
         if (why != BayRefuse.None)
         {
             if (st.Blocked == 0)

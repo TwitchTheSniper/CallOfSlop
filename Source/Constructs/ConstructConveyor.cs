@@ -922,6 +922,12 @@ public static class ConstructConveyor
         return -1;
     }
 
+    /// <summary>
+    /// How much longer than a link a piece it takes from a Turntable Tile may be: half a tile, since it still lies over the turntable it
+    /// turned on (Zero Day Works II's press feed, 2026-11-26: a 5.65 m Housing blank onto the 5.6 m run from the turntable into the bed).
+    /// </summary>
+    private static float TurnOver(Construct c, in CRoute r) => r.From < c.PartCount && c.DefOf(r.From).IsTurntable ? RollerRuns.Cell * 0.5f : 0f;
+
     /// <summary>Whether conveyor <paramref name="o"/> takes piece <paramref name="d"/> at its start now (whole, fits its size, room behind the last on it).</summary>
     private static bool Takes(Construct c, int o, ConstructPartDef d, float startAt)
     {
@@ -929,7 +935,7 @@ public static class ConstructConveyor
         if (r.FirstCut <= r.Count)
             return false;
         Size(d, out var across, out var up, out var along);
-        if (!Fits(across, up, r) || along > Length(c, o) + 0.01f)
+        if (!Fits(across, up, r) || along > Length(c, o) + TurnOver(c, r) + 0.01f)
             return false;
         if (LastOn(c, o) is var last and >= 0)
         {
@@ -1236,6 +1242,18 @@ public static class ConstructConveyor
     public static bool PassesBed(Construct c, int to, in CRider r) => r.Dest != 0 && to < c.PartCount && r.Dest != c.Parts[ConstructPads.Owner(c, to)].Store; // (a pad's tile: its owner's store)
 
     /// <summary>
+    /// Is part <paramref name="core"/> a bed machine a piece may roll on across (a Panel Former's or Laser Cutter's Core, a low-bedded Press's,
+    /// a block Assembler's with a bed: Zero Day Works II's press lines, 2026-11-26, where pressed parts roll on through the next press and
+    /// the Assembler to the main station's pad)? Either peer; allocates nothing.
+    /// </summary>
+    public static bool RollsThrough(Construct c, int core)
+    {
+        if ((uint)core >= (uint)c.PartCount || c.DefOf(core) is not { BlockRole: BlockRole.Core } d)
+            return false;
+        return d.IsPanelFormer || (d.IsPress && !d.IsLathe || d.IsAssembler) && MachineBlocks.TryOf(c, core, out var asm) && asm.W > 0 && (!d.IsPress || asm.LowBed);
+    }
+
+    /// <summary>
     /// Can a piece of kind <paramref name="d"/> that rides past bed Core <paramref name="to"/>'s machine (<see cref="PassesBed"/>) roll on
     /// across its bed onto the machine's out run (its Out Tables' run, the conveyor its made pieces go on), Sean 2026-11-23: "parts rolling
     /// through from the extruder past the panel former, past the laser cutter, if the steps aren't needed, all the way to the building
@@ -1243,7 +1261,7 @@ public static class ConstructConveyor
     /// </summary>
     public static bool PassesThrough(Construct c, int to, ConstructPartDef d)
     {
-        if (to >= c.PartCount || !c.DefOf(to).IsPanelFormer)
+        if (!RollsThrough(c, to))
             return false;
         if (Out(c, to) is not (>= 0 and var o))
             return OutPad(c, to) is >= 0 and var pad && ConstructRackPack.Fit(ConstructPads.RackDef(c, pad), d, out _, out _, out _); // (no out run: onto the pick pad its Out Table butts, if that pad could ever hold it: Deliver)
@@ -1268,8 +1286,8 @@ public static class ConstructConveyor
             var end = ConstructPads.Owner(c, r.To);
             if (end == holder || c.DefOf(holder).IsBuildStation && ConstructStation.IsOwnPad(c, holder, end))
                 return true;
-            if (c.DefOf(r.To).IsPanelFormer && ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is { OnBed: true })
-                return ThroughReaches(world, c, r.To, d, holder, depth + 1);
+            if (RollsThrough(c, r.To) && ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is { OnBed: true })
+                return ThroughReaches(world, c, r.To, d, holder, depth + 1); // (across another bed machine on: a press or an Assembler it only passes, 2026-11-26)
             if (c.DefOf(r.To).IsRouter)
                 return ConstructLogistics.Reaches(c, r.To, holder); // (a Router with a way to the holder sends it on: to the order's holder by a way that takes it, else to storage, never lost; a piece no pad can hold was shorn into offcuts here once pads stopped taking its address, 2026-11-24)
         }
@@ -1348,6 +1366,10 @@ public static class ConstructConveyor
             ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained panel order's sheet: it counts for its link)
             return true;
         }
+        if ((td.IsAssembler || td.IsPress) && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { OnBed: true }
+            && r.Dest != c.Parts[to].Store && PassesThrough(c, to, d)
+            && !(td.IsAssembler ? world.Keeps(c, to, d.Id) : ConstructPress.Keeps(world, c, to, d)))
+            return PassOn(c, to, r, d); // (onto a press's or an Assembler's bed, sent elsewhere and of no use to it: it rolls on across the bed to its out run, Zero Day Works II's press lines, 2026-11-26)
         if (td.IsAssembler)
         {
             // A part its recipe uses, while it has room: the chute's own test (a part it doesn't use waits at its door).
@@ -1360,7 +1382,7 @@ public static class ConstructConveyor
         if (td.IsPress && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { } port)
         {
             var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)
-            if (!ConstructPress.TakeFromConveyor(world, query, c, to, bay, d, r.Health / 255f, r.Paint))
+            if (!ConstructPress.TakeFromConveyor(world, query, c, to, bay, d, r.Health / 255f, r.Paint, port.OnBed))
                 return false;
             ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained press order's blank or kit: it counts for its link, Press phase 4)
             return true;

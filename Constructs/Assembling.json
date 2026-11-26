@@ -4,7 +4,6 @@
   "recipes": [
     {"output": "Bearing", "count": 2, "materials": {"bronze": 2}, "seconds": 2, "techTier": 2, "needs": ["Coolant Loop"]},
     {"output": "Control Unit", "materials": {"steel": 1}, "parts": {"Circuit Board": 1, "Wiring Loom": 1}, "seconds": 6, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Servo Motor", "materials": {"steel": 2}, "parts": {"Copper Coil": 1, "Bearing": 2}, "seconds": 6, "techTier": 2, "needs": ["Power Coupling", "Coolant Loop"]},
     {"output": "Tyre Carcass", "materials": {"rubber": 4, "cloth": 2}, "seconds": 5},
     {"output": "Lens", "materials": {"glass": 1, "bronze": 1}, "seconds": 3, "techTier": 2, "needs": ["Coolant Loop"]},
     {"output": "Turbine Stage", "materials": {"steel": 4, "bronze": 2}, "seconds": 6, "techTier": 2, "needs": ["Coolant Loop"]},
@@ -2789,6 +2788,7 @@
     {"output": "Saw Block", "materials": {"steel": 190, "concrete": 40, "rubber": 40}, "seconds": 45},
     {"output": "Plank Stacker", "materials": {"steel": 50, "concrete": 20}, "seconds": 20},
     {"output": "Breaker Core", "materials": {"steel": 260}, "parts": {"Gear Set": 4, "Wiring Loom": 3}, "seconds": 40, "techTier": 2, "needs": ["Power Coupling"]},
-    {"output": "Shredder Block", "materials": {"steel": 600}, "parts": {"Gear Set": 6}, "seconds": 50, "techTier": 2}
+    {"output": "Shredder Block", "materials": {"steel": 600}, "parts": {"Gear Set": 6}, "seconds": 50, "techTier": 2},
+    {"output": "Heavy Power Terminal", "materials": {"steel": 36, "copper": 60}, "parts": {"Control Unit": 4}, "seconds": 7.4, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]}
   ]
 }

@@ -162,7 +162,7 @@ public static class StationCheck
                         ? $" [{i} out {o}: {ConstructConveyor.Length(c, o):0.0} m to {c.DefOf(c.Routes[o].To).Name} {c.Routes[o].To} at {c.Parts[c.Routes[o].To].Pos.X:0},{c.Parts[c.Routes[o].To].Pos.Z:0}]" : $" [{i} no out]"))
                     + string.Concat(g.Where(i => WorkOrders.TakesOrders(c.DefOf(i)) || c.DefOf(i).IsTurntable).SelectMany(i => Enumerable.Range(0, c.RouteCount)
                         .Where(k => c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].To < c.PartCount && c.Routes[k].From < c.PartCount && (MachineBlocks.Owner(c, c.Routes[k].To) == i || c.Routes[k].From == i))
-                        .Select(k => $" [{i}: link {k} {c.DefOf(c.Routes[k].From).Name} {c.Routes[k].From} at {c.Parts[c.Routes[k].From].Pos.X:0},{c.Parts[c.Routes[k].From].Pos.Z:0} -> {c.DefOf(c.Routes[k].To).Name} {c.Routes[k].To} at {c.Parts[c.Routes[k].To].Pos.X:0},{c.Parts[c.Routes[k].To].Pos.Z:0}]"))));
+                        .Select(k => $" [{i}: link {k} ({ConstructConveyor.Length(c, k):0.0} m) {c.DefOf(c.Routes[k].From).Name} {c.Routes[k].From} at {c.Parts[c.Routes[k].From].Pos.X:0},{c.Parts[c.Routes[k].From].Pos.Z:0} -> {c.DefOf(c.Routes[k].To).Name} {c.Routes[k].To} at {c.Parts[c.Routes[k].To].Pos.X:0},{c.Parts[c.Routes[k].To].Pos.Z:0}]"))));
         }
         if (Arg("--why") is { } whyParts) // (--why "PART;PART": each machine's answer to an order for it)
             foreach (var wn in whyParts.Split(';', StringSplitOptions.RemoveEmptyEntries))
@@ -589,14 +589,30 @@ public static class StationCheck
                 for (var k = 0; k < cq.Count; k++)
                     Console.WriteLine($"  {c.DefOf(i).Name} {i}'s ask: {ConstructCrafting.StateText(c, cq.Items[k])}");
         for (var i = 0; i < c.ConveyedCount; i++)
-            Console.WriteLine($"  riding: {ConstructParts.Def(c.Conveyed[i].Def).Name} on link {c.Conveyed[i].Route} at {c.Conveyed[i].At:0.0} of {ConstructConveyor.Length(c, c.Conveyed[i].Route):0.0} m, to {c.DefOf(c.Routes[c.Conveyed[i].Route].To).Name} {c.Routes[c.Conveyed[i].Route].To}");
+            Console.WriteLine($"  riding: {ConstructParts.Def(c.Conveyed[i].Def).Name} on link {c.Conveyed[i].Route} at {c.Conveyed[i].At:0.0} of {ConstructConveyor.Length(c, c.Conveyed[i].Route):0.0} m, to {c.DefOf(c.Routes[c.Conveyed[i].Route].To).Name} {c.Routes[c.Conveyed[i].Route].To}"
+                + (ConstructPads.Owner(c, c.Routes[c.Conveyed[i].Route].To) is var rto && w.StoreOf(c, rto) is { } rst && ConstructParts.Def(c.Conveyed[i].Def) is { } rdef
+                    ? $" (rack check {ConstructConveyor.RackCheck(c, rto, rst, rdef)}, dest {c.Conveyed[i].Dest}, tag {c.Conveyed[i].Tag}, bounds {rdef.BoundsMax - rdef.BoundsMin}, pad {rto} hold {Hold(ConstructPads.RackDef(c, rto))})" : ""));
         foreach (var b in w.Bodies)
             if (b != c && b.PartCount < 4)
                 Console.WriteLine($"  loose: {b.DefOf(0).Name} at {b.Pos.X:0.0}, {b.Pos.Y:0.0}, {b.Pos.Z:0.0}");
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Orders is { Count: > 0 } mo)
                 Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: {mo.Count} order(s), head x{mo.Items[0].Left}: {mo.Note}");
+        Span<ushort> own = stackalloc ushort[ConstructStation.MaxOwnPads];
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).IsBuildStation && ConstructStation.OwnPads(c, i, own) is var pn)
+                Console.WriteLine($"  station {i}'s pick pads: " + string.Join(", ", own[..pn].ToArray().Select(p => $"{p} at {c.Parts[p].Pos.X:0},{c.Parts[p].Pos.Z:0} holds {w.StoreOf(c, p)?.ItemCount ?? 0}")));
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).IsLayDownPad && ConstructPads.Owner(c, i) == i && w.StoreOf(c, i) is { ItemCount: > 0 } ps)
+                Console.WriteLine($"  pad {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0} holds {ps.ItemCount}" + string.Concat(Enumerable.Range(0, c.PartCount).Where(t => c.DefOf(t).IsBuildStation)
+                    .Select(t => ConstructStation.PadInBay(c, t, i, out var pm, out var ph) ? $"; in station {t}'s bay ({ConstructStation.BaySize(c, t)}): at {pm.X:0.0},{pm.Y:0.0},{pm.Z:0.0} half {ph.X:0.0},{ph.Z:0.0}" : "")));
         return 1;
+    }
+
+    private static string Hold(ConstructPartDef rd)
+    {
+        ConstructRackPack.Hold(rd, out var lo, out var hi);
+        return $"{hi - lo}";
     }
 
     private static int OvenOrder(ConstructWorld w, SelfTest.DriveWorld q, Construct c, VehicleDriveCheck.CheckPlace place, string partName, string? at, int seconds, bool trace,

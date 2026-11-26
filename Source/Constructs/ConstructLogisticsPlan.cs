@@ -618,7 +618,7 @@ public static class ConstructLogisticsPlan
         while (head < tail)
         {
             int at = queue[head++];
-            var passes = at == dest || c.DefOf(at) is var d && (d.Monitor != MonitorKind.Machine || d.IsPanelFormer || d.IsLaserCutter);
+            var passes = at == dest || c.DefOf(at) is var d && (d.Monitor != MonitorKind.Machine || d.IsPanelFormer || d.IsLaserCutter || ConstructConveyor.RollsThrough(c, at)); // (a low press bed or an Assembler's bed a piece rolls on across, 2026-11-26)
             if (!passes)
                 continue; // (it uses what comes in: its own pieces leave it, not what reached it)
             for (var k = 0; k < c.RouteCount; k++)
