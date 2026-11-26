@@ -618,13 +618,16 @@ public static class ConstructLogisticsPlan
         while (head < tail)
         {
             int at = queue[head++];
-            var passes = at == dest || c.DefOf(at) is var d && (d.Monitor != MonitorKind.Machine || d.IsPanelFormer || d.IsLaserCutter || ConstructConveyor.RollsThrough(c, at)); // (a low press bed or an Assembler's bed a piece rolls on across, 2026-11-26)
-            if (!passes)
+            var plain = at == dest || c.DefOf(at) is var d && (d.Monitor != MonitorKind.Machine || d.IsPanelFormer || d.IsLaserCutter);
+            var bedOnly = !plain && ConstructConveyor.RollsThrough(c, at); // (a low press bed or an Assembler's bed a piece rolls on across, 2026-11-26: only by a run onto its bed, never its Piece in or a chute)
+            if (!plain && !bedOnly)
                 continue; // (it uses what comes in: its own pieces leave it, not what reached it)
             for (var k = 0; k < c.RouteCount; k++)
             {
                 ref readonly var r = ref c.Routes[k];
                 if (r.Type is not (RouteType.Conveyor or RouteType.Chute) || !r.FedEnd || Node(c, r.To) != at)
+                    continue;
+                if (bedOnly && (r.Type != RouteType.Conveyor || ConstructRoutes.PortOf(c.DefOf(r.To), RouteType.Conveyor, r.ToPort) is not { OnBed: true }))
                     continue;
                 Mark(Node(c, r.Source), queue, ref tail);
             }

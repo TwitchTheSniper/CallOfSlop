@@ -678,8 +678,8 @@ public static partial class ConstructPress
                     return true;
             return false;
         }
-        if (!pd.IsExtrusion)
-            return WantsKitPart(world, c, part, (ushort)pd.Id);
+        if (!pd.IsExtrusion) // (its kit's part, full hopper or not: it waits at the bed for room rather than rolling past, review 2026-11-26)
+            return SizedDieOf(PressTable.Current, c, part) is { } die && KitWanted(die, c, part, out _, out _) is { Part: { } want } && want.Id == pd.Id;
         return pd.ExKey.Shape != ExShape.Wheel && Refusal(PressTable.Current, c, part, 0, pd.ExKey) == BayRefuse.None;
     }
 

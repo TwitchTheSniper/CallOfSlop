@@ -1368,8 +1368,8 @@ public static class ConstructConveyor
         }
         if ((td.IsAssembler || td.IsPress) && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { OnBed: true }
             && r.Dest != c.Parts[to].Store && PassesThrough(c, to, d)
-            && !(td.IsAssembler ? world.Keeps(c, to, d.Id) : ConstructPress.Keeps(world, c, to, d)))
-            return PassOn(c, to, r, d); // (onto a press's or an Assembler's bed, sent elsewhere and of no use to it: it rolls on across the bed to its out run, Zero Day Works II's press lines, 2026-11-26)
+            && (r.Dest != 0 || !(td.IsAssembler ? world.Keeps(c, to, d.Id) : ConstructPress.Keeps(world, c, to, d))))
+            return PassOn(c, to, r, d); // (onto a press's or an Assembler's bed, sent elsewhere, or sent nowhere and of no use to it: it rolls on across the bed to its out run, Zero Day Works II's press lines, 2026-11-26; a piece sent elsewhere always goes on, or a bed whose recipe uses it took another order's piece)
         if (td.IsAssembler)
         {
             // A part its recipe uses, while it has room: the chute's own test (a part it doesn't use waits at its door).
