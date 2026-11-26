@@ -374,19 +374,20 @@ public sealed class Piece
     // A floodlight's (DesignFittings, Karl 2026-11-26): its aim off the skin's normal and about it (degrees), and its beam's colour.
     public double Pitch = DesignFittings.DefPitch, Yaw = DesignFittings.DefYaw;
     public string Beam = DesignFittings.DefBeam;
+    public string Role = DesignSeats.DefRole; // a seat's (DesignSeats, Karl 2026-11-26): Helm, Captain, Gunner and the rest
 
-    public JsonObject ToJson() => DesignFittings.Write(this, DesignHangar.Write(this, new()
+    public JsonObject ToJson() => DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
         ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
         ["airW"] = ShipDesign.R(AirW), ["airH"] = ShipDesign.R(AirH), ["airD"] = ShipDesign.R(AirD), ["doorW"] = ShipDesign.R(DoorW), ["door"] = Door, ["feed"] = Feed, ["fit"] = Fit,
-    }));
+    })));
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
     public static Piece FromJson(JsonObject o, int id)
     {
-        var p = DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id)));
+        var p = DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id))));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
         return p;

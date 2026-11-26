@@ -445,6 +445,7 @@ public sealed class DesignEditor
                 d.Pieces.Add(p);
                 Attach(p, o);
                 DesignHangar.Init(d, p);
+                DesignSeats.Init(d, p);
                 o["id"] = p.Id;
                 return "";
             }
@@ -486,6 +487,8 @@ public sealed class DesignEditor
                     return herr;
                 if (DesignFittings.Set(p, o) is { Length: > 0 } ferr)
                     return ferr;
+                if (DesignSeats.IsSeat(p.Kind) && DesignSeats.Set(p, o) is { Length: > 0 } serr)
+                    return serr;
                 if (o["room"] is not null)
                 {
                     var rid = I(o, "room");

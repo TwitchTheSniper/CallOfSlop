@@ -39,6 +39,16 @@ public static class DesignParts
     public const float PieceKgPerM2 = 150f; // a piece's drawn surface (drives, guns, legs, masts: machinery, denser than skin)
     public const float HpPerKg = 0.5f; // the part's health from its mass
 
+    // ---- Flight (step 3, Karl 2026-11-26): what the design's drives, RCS and seats do, all here --------------------------------------
+    // Thrust at Size 1, growing with the square of a piece's size (its bell's mouth). The drives and the RCS run on nothing for now: a
+    // design carries no tanks yet, so its thrusters are unfed (EngineFuel.None) in Creative and Survival alike.
+    public const float MainDriveN = 3.0e6f; // a 4 m bell
+    public const float SmallDriveN = 0.8e6f; // a 2 m bell
+    public const float RcsNozzleN = 5e6f; // each of an RCS quad's four nozzles (the Heavy RCS: its scale squared more)
+    public const float MainDriveBell = 3.4f, SmallDriveBell = 1.8f; // m from the skin to a bell's mouth (PieceKinds' drawings)
+    public const float NozzleShare = 0.04f; // of an RCS quad's mass, each nozzle's part
+    public const float SeatKg = 80f, FlightKg = 50f; // a seat with its console; the flight computer
+
     /// <summary>A design's look: one merged mesh in the part's frame, flat normals and a colour a vertex (drawn by Renderer.Design.cs).</summary>
     public sealed class Look
     {
@@ -185,6 +195,13 @@ public static class DesignParts
         public ConvexHull[] Hulls = [];
         public Look Look = new();
         public readonly List<int> Links = []; // the elements it is welded to (by index)
+        /// <summary>What its part does in the game: "" structure, "thrust" (a drive, an RCS nozzle), "seat", "flight" (the flight computer).</summary>
+        public string Fn = "";
+        public string Role = ""; // a seat's (DesignSeats.Roles)
+        public byte Rot; // the part's turn (Rot24): a seat faces its own way; everything else stands in the ship's frame
+        public Vector3 Exhaust, ThrustAt, SeatAt; // thrust: the way its exhaust leaves and where it pushes; a seat: the sitter's feet (the ship's frame, then the part's)
+        public float Force; // thrust: N at full
+        public float Mouth; // thrust: its bell's or nozzle's mouth radius (m), which sizes its flame
         internal LookBuilder? Mesh; // (while it is made, in the ship's frame)
         internal List<Vector3>? Points; // (ditto: its hulls' points, in runs, before they are moved)
         internal List<int>? Runs;
@@ -318,12 +335,16 @@ public static class DesignParts
             var one = DesignScene.PieceMesh(d, p, copies: false);
             if (one.Tris == 0)
                 continue;
-            var sets = new List<(DesignMesh M, int Copy)> { (one, p.Copy) };
+            var w0 = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? DesignScene.Where(h, p);
+            var sets = new List<(DesignMesh M, int Copy, DesignScene.Place W)> { (one, p.Copy, w0) };
             if (p.Mirror)
-                sets.Add((Mirror(one, h.CopyX(Math.Min(p.Copy, h.Copies - 1))), p.Copy)); // (its twin across its own body's centreline)
+            {
+                var cx = h.CopyX(Math.Min(p.Copy, h.Copies - 1));
+                sets.Add((Mirror(one, cx), p.Copy, Mirror(w0, cx))); // (its twin across its own body's centreline)
+            }
             if (p.Pair && h.Copies == 2)
                 for (int k = 0, n = sets.Count; k < n; k++)
-                    sets.Add((Mirror(sets[k].M, 0), 1 - sets[k].Copy)); // (the same on the other body of the pair, across the ship)
+                    sets.Add((Mirror(sets[k].M, 0), 1 - sets[k].Copy, Mirror(sets[k].W, 0))); // (the same on the other body of the pair, across the ship)
             for (var k = 0; k < sets.Count; k++)
             {
                 var m = sets[k].M;
@@ -337,9 +358,11 @@ public static class DesignParts
                 els.Add(e);
                 if (BandAt(p.Hull, sets[k].Copy, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f) is var b and >= 0)
                     Weld(els, b, at);
+                Works(p, e, at, sets[k].W, els);
             }
             yield return els.Count;
         }
+        Flight(els);
         // Rooms' floors: a slab each (solid inside the bands for now), welded to the band of its deck's body there.
         for (var ri = 0; ri < d.Rooms.Count; ri++)
         {
@@ -373,10 +396,16 @@ public static class DesignParts
             }
             var middle = (e.BoxMin + e.BoxMax) * 0.5f;
             e.Origin = ConstructWorld.Quantise(middle);
-            e.BoxMin -= e.Origin;
-            e.BoxMax -= e.Origin;
-            e.Hulls = [.. e.Hulls.Select(hl => hl.MovedInto(null, Quaternion.Identity, -e.Origin))];
-            e.Look = e.Mesh?.Done(-e.Origin) ?? new Look();
+            // Into the part's frame: moved to its origin, then turned back by its Rot (a seat facing its own way; 0 for the rest).
+            var back = Quaternion.Conjugate(Rot24.Quat(e.Rot));
+            var mid = Vector3.Transform(middle - e.Origin, back);
+            var half = Rot24.ApplyHalf(Rot24.Inverse(e.Rot), (e.BoxMax - e.BoxMin) * 0.5f);
+            (e.BoxMin, e.BoxMax) = (mid - half, mid + half);
+            e.Hulls = [.. e.Hulls.Select(hl => hl.MovedInto(null, back, -Vector3.Transform(e.Origin, back)))];
+            e.Exhaust = Vector3.Transform(e.Exhaust, back);
+            e.ThrustAt = Vector3.Transform(e.ThrustAt - e.Origin, back);
+            e.SeatAt = Vector3.Transform(e.SeatAt - e.Origin, back);
+            e.Look = e.Mesh?.Done(-e.Origin, back) ?? new Look();
             e.Mesh = null;
             if (e.Hulls.Length > 0)
                 yield return els.Count;
@@ -447,6 +476,90 @@ public static class DesignParts
                 o.C.Add(m.C[i]); o.C.Add(m.C[i + 1]); o.C.Add(m.C[i + 2]);
             }
         return o;
+    }
+
+    private static DesignScene.Place Mirror(DesignScene.Place w, double cx)
+    {
+        static double[] F(double[] v) => [-v[0], v[1], v[2]];
+        return new DesignScene.Place([2 * cx - w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z));
+    }
+
+    private static Vector3 V(double[] v) => new((float)v[0], (float)v[1], (float)v[2]);
+
+    /// <summary>
+    /// What a piece's element does in the game (step 3, Karl 2026-11-26), from its place <paramref name="w"/> (a mirrored copy's own): a drive
+    /// pushes along its bell's axis, away from its exhaust; an RCS quad gets an element for each of its four nozzles, welded to it; a seat is
+    /// sat in, facing the way its place faces.
+    /// </summary>
+    private static void Works(Piece p, Element e, int at, DesignScene.Place w, List<Element> els)
+    {
+        var s = (float)p.Size;
+        var o = V(w.O) - V(w.Y) * (float)p.Recess;
+        Vector3 x = V(w.X), y = V(w.Y), z = V(w.Z);
+        switch (p.Kind)
+        {
+            case "Main drive" or "Small drive":
+                var main = p.Kind == "Main drive";
+                e.Fn = "thrust";
+                e.Exhaust = Vector3.Normalize(y);
+                e.ThrustAt = o + y * ((main ? MainDriveBell : SmallDriveBell) * s);
+                e.Force = (main ? MainDriveN : SmallDriveN) * s * s;
+                e.Mouth = (main ? 2.0f : 1.0f) * s; // (the bell's mouth in PieceKinds' drawing)
+                break;
+            case "RCS quad" or "Heavy RCS":
+                var k = (float)(p.Kind == "Heavy RCS" ? DesignFittings.HeavyRcs : 1) * s;
+                // The four nozzles as the drawing has them (DesignFittings.Rcs): along its X at 0.55, along its Z at 0.6, 0.3 out.
+                Span<(Vector3 Dir, float Out)> nozzles = [(x, 0.55f), (-x, 0.55f), (z, 0.6f), (-z, 0.6f)];
+                for (var n = 0; n < nozzles.Length; n++)
+                {
+                    var dir = Vector3.Normalize(nozzles[n].Dir);
+                    var mid = o + y * (0.3f * k) + dir * (0.2f * k); // (its box inside the quad's block, under its hull)
+                    var ne = new Element
+                    {
+                        Id = $"{e.Id}.n{n}", Kind = "nozzle", Name = $"{p.Kind} nozzle", Fn = "thrust", Exhaust = dir, ThrustAt = o + y * (0.3f * k) + dir * (nozzles[n].Out * k),
+                        Force = RcsNozzleN * k * k, Mouth = (n < 2 ? 0.08f : 0.1f) * k, Kg = e.Kg * NozzleShare, BoxMin = mid - new Vector3(0.06f * k), BoxMax = mid + new Vector3(0.06f * k),
+                    };
+                    e.Kg -= ne.Kg;
+                    els.Add(ne);
+                    Weld(els, at, els.Count - 1);
+                }
+                break;
+            case DesignSeats.Kind:
+                e.Fn = "seat";
+                e.Role = p.Role;
+                e.Kg = SeatKg * s;
+                e.SeatAt = o + z * (0.3f * s) + y * 0.004f; // (the sitter's feet, at the seat pan's front edge)
+                e.Rot = Facing(-z, y); // (a seat's sitter faces its part's -z: Construct.SeatForward)
+                break;
+        }
+    }
+
+    /// <summary>The Rot24 turn nearest the one that takes a part's +z to <paramref name="zAxis"/> and its +y to <paramref name="up"/>.</summary>
+    private static byte Facing(Vector3 zAxis, Vector3 up)
+    {
+        zAxis = Vector3.Normalize(zAxis);
+        up = Vector3.Normalize(up - zAxis * Vector3.Dot(up, zAxis));
+        var xAxis = Vector3.Cross(up, zAxis);
+        var m = new Matrix4x4(xAxis.X, xAxis.Y, xAxis.Z, 0, up.X, up.Y, up.Z, 0, zAxis.X, zAxis.Y, zAxis.Z, 0, 0, 0, 0, 1);
+        return Rot24.Nearest(Quaternion.CreateFromRotationMatrix(m), out _);
+    }
+
+    /// <summary>
+    /// The flight computer: a design with thrust and a seat gets one Flight Stabilizer of its own (a hidden element inside its helm, else its
+    /// first seat), so the helm flies it with nothing wired: it finds the drives and the nozzles as it finds any thrusters.
+    /// </summary>
+    private static void Flight(List<Element> els)
+    {
+        if (!els.Any(x => x.Fn == "thrust"))
+            return;
+        var seat = els.FindIndex(x => x.Fn == "seat" && x.Role == "Helm");
+        if (seat < 0)
+            seat = els.FindIndex(x => x.Fn == "seat");
+        if (seat < 0)
+            return;
+        var at = ((els[seat].BoxMin + els[seat].BoxMax) * 0.5f) with { Y = els[seat].BoxMin.Y + 0.2f };
+        els.Add(new Element { Id = "flight", Kind = "flight", Name = "flight computer", Fn = "flight", Kg = FlightKg, BoxMin = at - new Vector3(0.08f), BoxMax = at + new Vector3(0.08f) });
+        Weld(els, seat, els.Count - 1);
     }
 
     private static Made? MadeOf(string hash, out string why)
@@ -608,7 +721,7 @@ public static class DesignParts
     private static ConstructPartDef PartOf(Made made, Element e, string name)
     {
         var t = _template ??= ConstructParts.Parse(TemplateJson, "a design part's template");
-        var def = t.ShallowCopy();
+        var def = Working(e) ?? t.ShallowCopy();
         def.Name = name;
         def.File = "";
         def.Description = $"{e.Name} of \"{made.E.Name}\", a ship from the Ship Designer.";
@@ -625,7 +738,7 @@ public static class DesignParts
             (def.BoundsMin, def.BoundsMax) = (Vector3.Min(def.BoundsMin, mn), Vector3.Max(def.BoundsMax, mx));
         }
         def.Hulls = e.Hulls;
-        def.HullCovers = e.Hulls.Length > 0 ? [true] : []; // (its hulls stand for it; a floor, with none, collides as its slab)
+        def.HullCovers = e.Hulls.Length > 0 ? [true] : []; // (its hulls stand for it; a floor, an RCS nozzle or the flight computer, with none, collides as its box: a nozzle's and the computer's are inside their piece's hull)
         // A player meets its hulls as skin (ConstructRideMove.AddSkin, ConstructWorld.SkinBlock), never its bounding box.
         def.HasSkin = def.SkinOnly = e.Hulls.Length > 0;
         def.HullSkin = def.HasSkin ? Enumerable.Repeat(true, e.Hulls.Length).ToArray() : null;
@@ -640,6 +753,26 @@ public static class DesignParts
         def.ColliderBoxes = false;
         def.Sockets = [t.Sockets[0] with { Name = "s0", At = Vector3.Zero }]; // (one socket the welds between elements hang on)
         def.Lamps = [];
+        if (e.Fn == "thrust")
+        {
+            // Pushes away from its exhaust, exactly (Construct.BuildThrusters reads ThrustExhaust); its flame along the nearest axis.
+            def.ThrustExhaust = Vector3.Normalize(e.Exhaust);
+            def.ThrustDir = NearestDir(def.ThrustExhaust);
+            def.ThrustAt = e.ThrustAt;
+            def.ThrustForce = e.Force;
+            def.ThrustSpool = e.Kind == "nozzle" ? 0.15f : 0.5f;
+            // Its flame from its mouth, not its force (a part file's sqrt(F) rule made a 5 MN nozzle's jet 4.5 m wide and 29 m long
+            // from a 12 cm nozzle): a drive's a long plume, a nozzle's a short puff.
+            var r = 0.9f * e.Mouth;
+            def.Flames = [new FlameDef { At = e.ThrustAt, Dir = def.ThrustDir, Radius = r, Length = r * (e.Kind == "nozzle" ? 5f : 4f), Kind = FxKind.Rocket, Source = FlameSource.Thrust }];
+        }
+        else if (e.Fn == "seat")
+        {
+            def.SeatAt = e.SeatAt;
+            var (station, helm) = DesignSeats.StationOf(e.Role);
+            def.Helm = helm;
+            def.DefaultSetting = (byte)station; // (its Station setting: CockpitStations)
+        }
         def.Mass = Math.Clamp(e.Kg, 0.5f, ConstructParts.MaxPartMass);
         def.Health = Math.Clamp(e.Kg * HpPerKg, 1f, ConstructParts.MaxPartHealth);
         def.SurfaceOverride = 0;
@@ -672,6 +805,86 @@ public static class DesignParts
     /// <summary>A key off the wire, as this machine's part id: a plain part when it can't be made (never a dropped packet).</summary>
     internal static ushort ReadWire(string name) => Parse(name) is { } d ? d.Id : ConstructParts.Need("Frame Beam").Id;
 
+    /// <summary>
+    /// The seat F on a design body's hull sits a player in (ConstructEdits.Use; its rooms aren't walkable yet): its helm when free, else its
+    /// first free working seat; -1 when <paramref name="part"/> isn't a design part or the body has no free seat. Not per tick.
+    /// </summary>
+    public static int BoardSeat(Construct c, int part)
+    {
+        if (part < 0 || part >= c.PartCount || !IsDesign(c.DefOf(part)))
+            return -1;
+        var best = -1;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            var d = c.DefOf(i);
+            if (d.Role != PartRole.Seat || !IsDesign(d) || p.Broken || p.SitterPlus1 != 0 || i == c.DriveSeat && c.Driver != 255)
+                continue;
+            if (d.Helm)
+                return i;
+            if (best < 0)
+                best = i;
+        }
+        return best;
+    }
+
+    /// <summary>The working part an element starts from (a thruster, a seat, the flight computer), or null for structure.</summary>
+    private static ConstructPartDef? Working(Element e)
+    {
+        switch (e.Fn)
+        {
+            case "thrust":
+            {
+                var d = (_thrustTemplate ??= ConstructParts.Parse(ThrustJson, "a design thruster's template")).ShallowCopy();
+                d.ThrustFuel = EngineFuel.None; // (unfed: a design carries no tanks yet; ConstructPhysics.ThrusterLive)
+                d.ThrustPower = 0;
+                return d;
+            }
+            case "seat":
+                return (_seatTemplate ??= ConstructParts.Parse(SeatJson, "a design seat's template")).ShallowCopy();
+            case "flight":
+            {
+                // The Flight Stabilizer itself, on Ship keys (its keys setting's default; the rest of its settings as the part's).
+                var d = ConstructParts.Need("Flight Stabilizer").ShallowCopy();
+                d.Config = [.. d.Config.Select(c => c.Id == CfgKey.Keys ? c.Copy(dflt: (float)FlightPattern.Ship) : c)];
+                d.Gyro = 0; // (it turns the ship by its RCS)
+                d.Panels = [];
+                return d;
+            }
+            default:
+                return null;
+        }
+    }
+
+    private static ConstructPartDef? _thrustTemplate, _seatTemplate;
+
+    /// <summary>The nearest of the six directions to <paramref name="v"/> (ConstructParts.DirVector's index).</summary>
+    private static byte NearestDir(Vector3 v)
+    {
+        byte best = 0;
+        var most = float.MinValue;
+        for (byte k = 0; k < 6; k++)
+            if (Vector3.Dot(ConstructParts.DirVector(k), v) is var dot && dot > most)
+                (most, best) = (dot, k);
+        return best;
+    }
+
+    private const string ThrustJson = """
+        {"format":"call-of-slop-construct-part/1","name":"Design thruster","description":"A drive or an RCS nozzle of a ship from the Ship Designer.","group":"Production","section":"Designs",
+         "role":"thruster","tool":"welder","mass":10,"health":100,"material":"steel","color":"#8a8f96","attachSeconds":4,"stage":true,"centreSockets":false,
+         "thruster":{"force":1000,"fuel":"electric","power":1,"exhaust":"-y"},
+         "boxes":[{"min":[-0.5,-0.01,-0.5],"max":[0.5,0.01,0.5]}],
+         "sockets":[{"name":"back","at":[0,-0.01,0],"dir":"-y"}]}
+        """;
+
+    private const string SeatJson = """
+        {"format":"call-of-slop-construct-part/1","name":"Design seat","description":"A seat of a ship from the Ship Designer.","group":"Production","section":"Designs",
+         "role":"seat","tool":"welder","mass":10,"health":100,"material":"steel","color":"#8a8f96","attachSeconds":4,"stage":true,"centreSockets":false,
+         "seat":{"at":[0,0,0]},
+         "boxes":[{"min":[-0.5,-0.01,-0.5],"max":[0.5,0.01,0.5]}],
+         "sockets":[{"name":"back","at":[0,-0.01,0],"dir":"-y"}]}
+        """;
+
     private const string TemplateJson = """
         {"format":"call-of-slop-construct-part/1","name":"Design part","description":"A part of a ship from the Ship Designer.","group":"Production","section":"Designs",
          "role":"frame","tool":"welder","mass":10,"health":100,"material":"steel","color":"#8a8f96","attachSeconds":4,"stage":true,"centreSockets":false,
@@ -702,7 +915,7 @@ public static class DesignParts
                 run.Why = $"its {e.Name} couldn't be made ({LastRefusal})";
                 yield break;
             }
-            partOf[k] = world.AddPart(c, def, e.Origin, 0);
+            partOf[k] = world.AddPart(c, def, e.Origin, e.Rot);
             if (partOf[k] < 0)
             {
                 run.Why = "the world is full";
@@ -880,12 +1093,19 @@ public static class DesignParts
             return L(srgb.X) | L(srgb.Y) << 8 | L(srgb.Z) << 16 | 0xff000000u;
         }
 
-        public Look Done(Vector3 shift)
+        public Look Done(Vector3 shift, Quaternion turn)
         {
             var l = new Look { Pos = [.. _p], Normal = [.. _n], Colour = [.. _c], Min = new Vector3(float.MaxValue), Max = new Vector3(float.MinValue) };
+            var turned = turn != Quaternion.Identity;
             for (var i = 0; i + 2 < l.Pos.Length; i += 3)
             {
                 var v = new Vector3(l.Pos[i] + shift.X, l.Pos[i + 1] + shift.Y, l.Pos[i + 2] + shift.Z);
+                if (turned)
+                {
+                    v = Vector3.Transform(v, turn);
+                    var nv = Vector3.Transform(new Vector3(l.Normal[i], l.Normal[i + 1], l.Normal[i + 2]), turn);
+                    (l.Normal[i], l.Normal[i + 1], l.Normal[i + 2]) = (nv.X, nv.Y, nv.Z);
+                }
                 (l.Pos[i], l.Pos[i + 1], l.Pos[i + 2]) = (v.X, v.Y, v.Z);
                 (l.Min, l.Max) = (Vector3.Min(l.Min, v), Vector3.Max(l.Max, v));
             }

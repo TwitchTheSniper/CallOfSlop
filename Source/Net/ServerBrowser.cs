@@ -796,7 +796,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      u16 ship, u32 bytes, the edited design's text) rebuilds the docked ship as the edited design.
     // 473: the Station Console (Constructs/Parts/Controls/StationConsole.json, a new part file: part ids after it shift; CLogic.StationConsole
     //      at the end of CLogic), a Building Station's screen at a desk by a watch link (ConstructStationConsole.cs).
-    public const ushort ProtocolVersion = 473;
+    // 474: ship designs fly (DesignParts.cs, step 3): a design makes more elements than before (each RCS quad's four nozzles, its seats,
+    //      its flight computer), so a design key names elements an older peer can't make; no message changed.
+    public const ushort ProtocolVersion = 474;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

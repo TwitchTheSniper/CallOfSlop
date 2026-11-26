@@ -19,6 +19,17 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
+    /// <summary>The part "helm": the drive seat of the body nearest this player that has one (a ship design's seats are named by their keys).</summary>
+    private static (Construct? C, int Part) WsHelm(Game g, Player? me)
+    {
+        (Construct? C, int Part) best = (null, -1);
+        var bestD = float.MaxValue;
+        foreach (var c in g.Constructs.Bodies)
+            if (c.DriveSeat >= 0 && c.DriveSeat < c.PartCount && Vector3.Distance(c.WorldCom, me?.Position ?? Vector3.Zero) - c.Radius is var dist && dist < bestD)
+                (best, bestD) = ((c, c.DriveSeat), dist);
+        return best;
+    }
+
     private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion" or "shellwear" or "shellleave" or "shellfix" or "shells" or "hopper" or "shellgantry" or "shellpod" or "modsock";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
@@ -315,7 +326,7 @@ public static partial class Program
                 if (g.IsServer && g.CrewShoot(me, arg) is { } shot)
                     Console.WriteLine($"[windowshot] crewshoot: {shot}");
                 return true;
-            case "sit": // "sit PART[#n]": the use key on that seat (a Seat, a Lifter Cab, a gunner's seat): the host stands by it first; a client is brought by the host ("bring PART")
+            case "sit": // "sit PART[#n]": the use key on that seat (a Seat, a Lifter Cab, a gunner's seat): the host stands by it first; a client is brought by the host ("bring PART"); "sit helm": the drive seat of the nearest body that has one (a ship design's helm: WsFind)
             {
                 var (c, part) = WsFind(g, arg);
                 if (c == null || c.DefOf(part).Role != PartRole.Seat)

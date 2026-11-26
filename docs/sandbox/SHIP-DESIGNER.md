@@ -45,3 +45,21 @@ then copy `OUT/wwwroot/index.html` and `OUT/wwwroot/_framework/*` (not `.br` or 
 `framework/` (an Artifact reserves paths starting with `_`), and publish it to the same Artifact with the `.wasm` files as
 `application/wasm`. File names carry a hash: remove the old ones (null) when they change. The game's own build leaves
 `tools/ship-designer` out (`Directory.Build.props`).
+
+## Flying a design (Karl, 2026-11-26)
+
+A spawned design flies from its own helm on its own drives and RCS; nothing is turned into the shipped parts. All the mapping
+is in `DesignParts.cs` (the bill of materials):
+
+- **Seats** (`DesignSeats.cs`): a Seat socket dropped on the skin by a room (or linked to one) stands on that room's floor,
+  facing the bow (turned by Turn). Its role is Helm, Captain, Gunner, Engineer, Navigation, Sensors, Comms or Passenger; in the
+  game it is a seat part on its own element, the Helm the drive seat, the others the cockpit stations' kinds where one
+  matches. The design checks warn when a ship with drives has no Helm. F on the hull sits you at the free helm.
+- **Thrusters:** a drive pushes along its face's normal (`ThrustExhaust`, any direction, not only an axis), 3 MN for a Main
+  drive and 0.8 MN for a Small one at size 1, by size squared. An RCS quad is four nozzle elements (two across, two along), 5 MN
+  each at size 1 (Heavy RCS 1.6 times its size). **Unfed for now:** `EngineFuel.None`, no tank, no power drawn, in Creative and
+  Survival alike, until designs have tank pieces.
+- **Flight:** a design with thrust gets a hidden flight computer by its helm, a Flight Stabilizer on the Ship pattern with no
+  wires, which takes the helm (Shift up, Ctrl down, W ahead, A/D turn, as any ship).
+- `--design-check [NAME]` prints the flight line and flies a sortie from the helm on the proving ground (lift, hover, ahead,
+  stop, turn, hold, land), judging each leg and the world step's time (`--no-fly` skips it).

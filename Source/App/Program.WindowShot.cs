@@ -422,6 +422,8 @@ public static unsafe partial class Program
     /// <summary>The n-th part (from 1) of a name on the spawned blueprint ("Extruder#2"), or any body when nothing was spawned.</summary>
     private static (Construct? C, int Part) WsFind(Game g, string spec)
     {
+        if (spec.Trim().Equals("helm", StringComparison.OrdinalIgnoreCase))
+            return WsHelm(g, g.Local);
         Construct? only = null; // ("NAME@bN": on body N, past the spawned blueprint; "NAME@w": the newest wrecked loose one of that name)
         if (spec.LastIndexOf("@b", StringComparison.Ordinal) is var ab and > 0 && ushort.TryParse(spec[(ab + 2)..], out var bid))
             (only, spec) = (g.Constructs.Get(bid), spec[..ab]);
