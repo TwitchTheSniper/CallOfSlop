@@ -241,7 +241,9 @@ public sealed partial class Ui
         if (Has(S, "roomView"))
         {
             // Room view: nothing of the ship is drawn (the model sent no hull, connection or piece mesh), only the rooms it lists.
-            DrawRooms(Arr(S, "roomView").Select(x => x.GetInt32()).ToHashSet());
+            var shownRooms = Arr(S, "roomView").Select(x => x.GetInt32()).ToHashSet();
+            DrawRooms(shownRooms);
+            DrawPassages(shownRooms);
             if (_vPerson)
                 DrawPerson();
             ApplyCut();
@@ -323,6 +325,8 @@ public sealed partial class Ui
             DrawConnectors();
         if (Inside || _vXray)
             DrawRisers();
+        if (Inside || _vXray)
+            DrawPassages();
         if (_vHull || Inside)
             DrawHullWindows();
         if (_vLinks && _sdMode != "hull")
@@ -417,7 +421,7 @@ public sealed partial class Ui
         var hasMesh = Found(em) && Get(em, "p").GetArrayLength() > 0;
         if (hasMesh)
             Add(GeoOf(em), new Mat(Alpha: dim ? 0.06f : 0.3f, Transparent: true, DepthWrite: false, Emissive: _selKind == "room" && _selId == I(r, "id") ? 0x2a4f80u : 0),
-                new DesignPick("room", I(r, "id")), !dim || _mergeFrom != 0, default, true);
+                new DesignPick("room", I(r, "id")), !dim || _mergeFrom != 0 || _linking != null, default, true);
         foreach (var e in Arr(r, "exts"))
         {
             var A = Nums(Get(e, "a"));
@@ -450,7 +454,7 @@ public sealed partial class Ui
             }
             var picked = _selKind == "room" && _selId == I(r, "id");
             if (!hasMesh)
-                Add(g, new Mat(col, Alpha: dim ? 0.06f : 0.3f, Transparent: true, DepthWrite: false, Emissive: picked ? 0x2a4f80u : 0), new DesignPick("room", I(r, "id")), !dim || _mergeFrom != 0);
+                Add(g, new Mat(col, Alpha: dim ? 0.06f : 0.3f, Transparent: true, DepthWrite: false, Emissive: picked ? 0x2a4f80u : 0), new DesignPick("room", I(r, "id")), !dim || _mergeFrom != 0 || _linking != null);
             Add(l, new Mat(col, Alpha: dim ? 0.2f : 1, Transparent: dim, Unlit: true));
         }
     }
@@ -475,7 +479,7 @@ public sealed partial class Ui
             // Dimmed off its deck, unless it runs through the deck shown (a room merged across decks, or one rising through them).
             var through = fl is { } f && (stacked ? b[4] < f - 0.1 && b[5] >= f - 0.01 : b[2] <= f + 0.01 && b[3] > f + 0.1);
             var dim = only == null && Inside && rd != _sdDeck && !through;
-            var pickRoom = !dim || _mergeFrom != 0;
+            var pickRoom = !dim || _mergeFrom != 0 || _linking != null;
             var picked = _selKind == "room" && _selId == id;
             var col = HexOf(Str(r, "colour"));
             var ok = B(r, "ok", true);
@@ -702,7 +706,11 @@ public sealed partial class Ui
                     g.Tri(P(pts, a), P(pts, b), P(pts, d));
                     g.Tri(P(pts, a), P(pts, d), P(pts, c));
                 }
-            Add(g, new Mat(B(w, "ok") ? 0x9fd3ffu : 0xff8a70u, Alpha: 0.55f, Transparent: true, DepthWrite: false, Metal: 0.3f, Emissive: picked ? 0x1d4f86u : 0x0b2236u, Order: 5), new DesignPick("hullwin", id), true);
+            var glassMat = new Mat(B(w, "ok") ? 0x9fd3ffu : 0xff8a70u, Alpha: 0.55f, Transparent: true, DepthWrite: false, Metal: 0.3f, Emissive: picked ? 0x1d4f86u : 0x0b2236u, Order: 5);
+            var wn = Nums(Get(w, "n"));
+            var glazed = wn.Length == 3 && D(w, "depth") > 0;
+            if (!glazed || B(w, "double", true))
+                Add(g, glassMat, new DesignPick("hullwin", id), true);
             var ring = new List<Vector3>();
             if (shaped)
                 for (var i = 0; i <= nu; i++)
@@ -717,6 +725,27 @@ public sealed partial class Ui
                     ring.Add(P(pts, (nv - 1) * nu + i));
                 for (var j = nv - 2; j >= 0; j--)
                     ring.Add(P(pts, j * nu));
+            }
+            if (glazed)
+            {
+                // Double glazing: the glass above is the outer pane, on the skin; an inner pane sits depth in along the window's ray,
+                // and a reveal lines the tunnel between their rims. Single glazed: the one pane at that depth instead.
+                var dn = new Vector3((float)wn[0], (float)wn[1], (float)wn[2]) * -(float)Math.Max(0.05, D(w, "depth"));
+                var ig = new GB { M = Matrix4x4.CreateTranslation(dn) };
+                for (var j = 0; j < nv - 1; j++)
+                    for (var i = 0; i < (shaped ? nu : nu - 1); i++)
+                    {
+                        int a = j * nu + i, b = j * nu + (i + 1) % nu, c = a + nu, d = b + nu;
+                        if (3 * Math.Max(c, d) + 2 >= pts.Length)
+                            continue;
+                        ig.Tri(P(pts, a), P(pts, b), P(pts, d));
+                        ig.Tri(P(pts, a), P(pts, d), P(pts, c));
+                    }
+                Add(ig, glassMat, new DesignPick("hullwin", id), true);
+                var rv = new GB();
+                for (var k = 0; k + 1 < ring.Count; k++)
+                    rv.Quad(ring[k], ring[k + 1], ring[k + 1] + dn, ring[k] + dn);
+                Add(rv, new Mat(0x4b5058, Metal: 0.3f), new DesignPick("hullwin", id), true);
             }
             var fl = new GB { Lines = true };
             for (var k = 0; k + 1 < ring.Count; k++)
@@ -1100,6 +1129,150 @@ public sealed partial class Ui
             var top = b[3] + 0.3;
             var h = b[2] + (top - b[2]) * _roomCut / 100;
             ShipDesignerRenderer.Cut = new Vector4(0, -1, 0, (float)h); // keeps y <= h
+        }
+    }
+
+    // ---------- passages through an arm between bodies (Karl, 2026-11-26)
+
+    /// <summary>A centripetal Catmull-Rom curve through the points (three's CatmullRomCurve3), sampled evenly by length.</summary>
+    private static List<Vector3> SplineAt(List<Vector3> p, int n)
+    {
+        var dense = new List<Vector3>();
+        Vector3 Pt(int i) => p[Math.Clamp(i, 0, p.Count - 1)];
+        for (var i = 0; i < p.Count - 1; i++)
+        {
+            Vector3 p0 = i == 0 ? 2 * p[0] - p[1] : Pt(i - 1), p1 = Pt(i), p2 = Pt(i + 1), p3 = i + 2 >= p.Count ? 2 * p[^1] - p[^2] : Pt(i + 2);
+            float Kn(Vector3 a, Vector3 b) => MathF.Max(1e-4f, MathF.Sqrt(Vector3.Distance(a, b)));
+            float t0 = 0, t1 = Kn(p0, p1), t2 = t1 + Kn(p1, p2), t3 = t2 + Kn(p2, p3);
+            for (var k = 0; k < 16; k++)
+            {
+                var t = t1 + (t2 - t1) * k / 16f;
+                var a1 = (t1 - t) / (t1 - t0) * p0 + (t - t0) / (t1 - t0) * p1;
+                var a2 = (t2 - t) / (t2 - t1) * p1 + (t - t1) / (t2 - t1) * p2;
+                var a3 = (t3 - t) / (t3 - t2) * p2 + (t - t2) / (t3 - t2) * p3;
+                var b1 = (t2 - t) / (t2 - t0) * a1 + (t - t0) / (t2 - t0) * a2;
+                var b2 = (t3 - t) / (t3 - t1) * a2 + (t - t1) / (t3 - t1) * a3;
+                dense.Add((t2 - t) / (t2 - t1) * b1 + (t - t1) / (t2 - t1) * b2);
+            }
+        }
+        dense.Add(p[^1]);
+        var L = new float[dense.Count];
+        for (var i = 1; i < dense.Count; i++)
+            L[i] = L[i - 1] + Vector3.Distance(dense[i], dense[i - 1]);
+        var o = new List<Vector3>(n + 1);
+        for (int k = 0, i = 1; k <= n; k++)
+        {
+            var t = L[^1] * k / n;
+            while (i < dense.Count - 1 && L[i] < t)
+                i++;
+            var den = L[i] - L[i - 1];
+            o.Add(Vector3.Lerp(dense[i - 1], dense[i], den > 0 ? Math.Clamp((t - L[i - 1]) / den, 0, 1) : 0));
+        }
+        return o;
+    }
+
+    /// <summary>
+    /// A glass tube along the arm's curved spine from a door in one room to a door in the other, a track along its floor and, for a
+    /// lift, its car halfway (a walkway: a grating). Red when the arm is too thin. Pickable.
+    /// </summary>
+    private void DrawPassages(HashSet<int>? only = null)
+    {
+        foreach (var k in Arr(S, "passages"))
+        {
+            var pts = Nums(Get(k, "pts"));
+            var ups = Nums(Get(k, "ups"));
+            int ka = I(k, "a"), kb = I(k, "b"), id = I(k, "id");
+            if (pts.Length < 6 || (only != null && !only.Contains(ka) && !only.Contains(kb)))
+                continue;
+            var P = new List<Vector3>();
+            var U = new List<Vector3>();
+            for (var i = 0; i + 2 < pts.Length; i += 3)
+            {
+                P.Add(new((float)pts[i], (float)pts[i + 1], (float)pts[i + 2]));
+                U.Add(i + 2 < ups.Length ? Vector3.Normalize(new((float)ups[i], (float)ups[i + 1], (float)ups[i + 2])) : Vector3.UnitY);
+            }
+            var picked = _selKind == "passage" && _selId == id;
+            var ok = B(k, "ok", true);
+            var rad = (float)Math.Max(0.35, Math.Min(0.75, D(k, "clear", 1.2) / 2));
+            var N = Math.Max(24, P.Count * 8);
+            var C = SplineAt(P, N);
+            var pick = new DesignPick("passage", id);
+            Vector3 Tan(int i) => Vector3.Normalize(C[Math.Min(N, i + 1)] - C[Math.Max(0, i - 1)]);
+            Vector3 Up(int i)
+            {
+                var f = Math.Min(U.Count - 1.001f, (float)i / N * (U.Count - 1));
+                return Vector3.Normalize(Vector3.Lerp(U[(int)MathF.Floor(f)], U[(int)MathF.Ceiling(f)], f - MathF.Floor(f)));
+            }
+            // Each sample's frame: side and up square to the tangent.
+            var fr = new (Vector3 S, Vector3 U)[N + 1];
+            for (var i = 0; i <= N; i++)
+            {
+                var sd = Vector3.Normalize(Vector3.Cross(Up(i), Tan(i)));
+                fr[i] = (sd, Vector3.Normalize(Vector3.Cross(Tan(i), sd)));
+            }
+            const int Seg = 14;
+            var tube = new GB();
+            for (var i = 0; i < N; i++)
+                for (var j = 0; j < Seg; j++)
+                {
+                    float a0 = MathF.Tau * j / Seg, a1 = MathF.Tau * (j + 1) / Seg;
+                    Vector3 R(int s, float a) => C[s] + rad * (MathF.Cos(a) * fr[s].S + MathF.Sin(a) * fr[s].U);
+                    tube.Quad(R(i, a0), R(i, a1), R(i + 1, a1), R(i + 1, a0));
+                }
+            Add(tube, new Mat(ok ? 0x9fd3ffu : 0xff6a50u, Alpha: only != null ? 0.18f : 0.32f, Transparent: true, DepthWrite: false, Emissive: picked ? 0x1d4f86u : 0, Order: 5), pick, true);
+            var steel = new Mat(ok ? 0xd8b04au : 0xff5a44u, Metal: 0.5f, Emissive: picked ? 0x1d4f86u : 0, Order: 5);
+            // Its track: two rails on the tube's floor.
+            var rails = new GB();
+            foreach (var sgn in new[] { -1f, 1f })
+                for (var i = 0; i < N; i++)
+                {
+                    var a = C[i] - fr[i].U * rad * 0.82f + fr[i].S * sgn * rad * 0.42f;
+                    var b = C[i + 1] - fr[i + 1].U * rad * 0.82f + fr[i + 1].S * sgn * rad * 0.42f;
+                    for (var j = 0; j < 6; j++)
+                    {
+                        float a0 = MathF.Tau * j / 6, a1 = MathF.Tau * (j + 1) / 6;
+                        Vector3 Rr(Vector3 c, int s, float an) => c + 0.035f * (MathF.Cos(an) * fr[s].S + MathF.Sin(an) * fr[s].U);
+                        rails.Quad(Rr(a, i, a0), Rr(a, i, a1), Rr(b, i + 1, a1), Rr(b, i + 1, a0));
+                    }
+                }
+            Add(rails, steel, pick, true);
+            Matrix4x4 Basis(Vector3 sd, Vector3 up, Vector3 fw, Vector3 at) => new(sd.X, sd.Y, sd.Z, 0, up.X, up.Y, up.Z, 0, fw.X, fw.Y, fw.Z, 0, at.X, at.Y, at.Z, 1);
+            if (Str(k, "kind") == "Lift")
+            {
+                var m = N / 2;
+                var ch = MathF.Min(1.9f, 2 * rad * 0.85f);
+                var car = new GB { M = Basis(fr[m].S, fr[m].U, Tan(m), C[m] + fr[m].U * (-rad * 0.82f + ch / 2 + 0.05f)) };
+                car.Box(rad * 1.2f, ch, MathF.Min(1.4f, rad * 1.8f), 0, 0, 0);
+                Add(car, new Mat(0x9aa3ad, Metal: 0.6f, Emissive: picked ? 0x1d4f86u : 0, Order: 5), pick, true);
+            }
+            else
+            {
+                var len = 0f;
+                for (var i = 0; i < N; i++)
+                    len += Vector3.Distance(C[i], C[i + 1]);
+                var planks = new GB();
+                for (var i = 0; i < N; i += 2)
+                {
+                    planks.M = Basis(fr[i].S, fr[i].U, Tan(i), (C[i] + C[i + 1]) / 2 - fr[i].U * rad * 0.8f);
+                    planks.Box(rad * 1.1f, 0.03f, len / N * 1.6f, 0, 0, 0);
+                }
+                Add(planks, steel);
+            }
+            // A door frame at each end, in the room's wall, facing along the tube.
+            var frames = new GB();
+            foreach (var (at, tg) in new[] { (P[0], Tan(0)), (P[^1], Tan(N)) })
+            {
+                var up = Stacked ? new Vector3(0, 0, -1) : Vector3.UnitY;
+                var flat = tg - up * Vector3.Dot(tg, up);
+                if (flat.LengthSquared() < 1e-6f)
+                    continue;
+                flat = Vector3.Normalize(flat);
+                frames.M = Basis(Vector3.Normalize(Vector3.Cross(up, flat)), up, flat, at);
+                frames.Box(0.1f, 2.1f, 0.2f, -0.5f, 0, 0);
+                frames.Box(0.1f, 2.1f, 0.2f, 0.5f, 0, 0);
+                frames.Box(1.1f, 0.1f, 0.2f, 0, 1.05f, 0);
+            }
+            Add(frames, steel);
         }
     }
 }

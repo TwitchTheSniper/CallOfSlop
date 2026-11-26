@@ -149,18 +149,36 @@ public sealed partial class Ui
             void DeckButtons()
             {
                 EndRow();
+                var hulls = Arr(S, "hulls").ToList();
+                var first = hulls.Count > 0 ? I(hulls[0], "id") : 0;
+                if (_deckBody != 0 && !hulls.Any(h => I(h, "id") == _deckBody))
+                    _deckBody = 0;
+                string BodyName(int id) => Str(ById(hulls, id), "name");
                 for (var i = 0; i < decks.Count; i++)
-                    if (WrapButton($"Deck {i + 1}##sddk{i}", i == _sdDeck))
+                {
+                    var dh = I(decks[i], "hull");
+                    if (_deckBody != 0 && !(dh == _deckBody || (dh == 0 && _deckBody == first)))
+                        continue;
+                    if (WrapButton($"Deck {i + 1}{(dh != 0 ? $" ({BodyName(dh)})" : "")}##sddk{i}", i == _sdDeck))
                     {
                         _sdDeck = i;
                         Rebuild();
                     }
-                if (WrapButton("+ Deck##sdadddeck"))
-                {
-                    Cmd(C("addDeck"));
-                    _sdDeck = Arr(S, "decks").Count() - 1;
-                    Rebuild();
                 }
+                var inBody = _deckBody != 0 && _deckBody != first;
+                if (WrapButton(inBody ? $"+ Deck in {BodyName(_deckBody)}##sdadddeck" : "+ Deck##sdadddeck"))
+                {
+                    var a = inBody ? Cmd(C("addDeck", ("hull", _deckBody))) : Cmd(C("addDeck"));
+                    if (Str(a, "error").Length > 0)
+                        Toast(Str(a, "error"));
+                    else
+                    {
+                        _sdDeck = Arr(S, "decks").Count() - 1;
+                        Rebuild();
+                    }
+                }
+                if (ImGui.IsItemHovered())
+                    ImGuiSafe.SetTooltip(inBody ? "A deck in this body: its rooms clip to its skin" : "A deck over the whole ship");
                 EndRow();
             }
             if (_roomView is { } rv)
@@ -224,6 +242,21 @@ public sealed partial class Ui
                 _sdDeck = 0;
                 Toast("Decks stacked across the ship, floors facing the bow: thrust is down. Undo brings the old ones back.", true);
             }
+            // Which body's decks: a side pod or a nacelle holds its own decks and rooms, clipped to its skin.
+            ImGui.Text("Body"u8);
+            Row();
+            if (WrapButton("All##sdbodyall", _deckBody == 0))
+                _deckBody = 0;
+            var bodies = Arr(S, "hulls").ToList();
+            foreach (var h in bodies)
+                if (WrapButton($"{Str(h, "name")}##sdbody{I(h, "id")}", _deckBody == I(h, "id")))
+                {
+                    _deckBody = I(h, "id");
+                    var i = decks.FindIndex(x => I(x, "hull") == _deckBody || (I(x, "hull") == 0 && I(h, "id") == I(bodies[0], "id")));
+                    if (i >= 0)
+                        _sdDeck = i;
+                    Rebuild();
+                }
             DeckButtons();
             if (Found(d))
             {
@@ -268,7 +301,57 @@ public sealed partial class Ui
             }
             EndRow();
             Hint("Rooms snap to 25 cm. Rooms that share 0.9 m of wall get a door. A Shaft joins the decks it overlaps. A cargo hatch needs a Hold behind it.");
+            H2("Between bodies", $"{Arr(S, "passages").Count()}");
+            foreach (var k in new[] { "Lift", "Walkway" })
+            {
+                if (OnButton($"Link rooms: {k.ToLowerInvariant()}##sdlink{k}", _linking?.Kind == k))
+                {
+                    _linking = _linking?.Kind == k ? null : new SdLink(k);
+                    _sdTip = _linking != null ? "Link rooms: click a room, then a room in the body at the other end of an arm." : SdTips[_sdMode];
+                    Rebuild();
+                }
+                Row();
+            }
+            ImGui.NewLine();
+            Hint("Runs through the arm that joins the two rooms' bodies, along its curve, with a door in each room's wall. The arm needs 1.2 m clear inside.");
         }
+    }
+
+    /// <summary>The Link rooms tool: the passage's kind and the first room clicked (0: none yet).</summary>
+    private sealed class SdLink(string kind)
+    {
+        public string Kind = kind;
+        public int From;
+    }
+
+    private SdLink? _linking;
+    private int _deckBody;
+
+    /// <summary>
+    /// A cutout's sliders: how far the hull cladding keeps clear (reset: auto, from the plates' depth), the hole's size, and a window's
+    /// glazing (the inner pane's depth, double glazed or not).
+    /// </summary>
+    private void CutControls(JsonElement o, Action<(string, JsonNode?)[]> send, string kind, bool glass)
+    {
+        if (kind == "piece" && !B(o, "cut"))
+            return;
+        var dk = Get(Get(CAT, "defaults"), kind);
+        var auto = Math.Round(D(o, "gapAuto", 0.15) * 100);
+        var gap = D(o, "gap", -1);
+        Slider(gap < 0 ? "Cladding clearance (auto)" : "Cladding clearance", gap < 0 ? auto : Math.Round(gap * 100), 0, 100, 1, " cm", v => send([("gap", v / 100)]), kind + "gap",
+            auto, _ => send([("gap", D(dk, "gap", -1))]));
+        Slider("Hole size", Math.Round(D(o, "hole", 1) * 100), 50, 250, 5, "%", v => send([("hole", v / 100)]), kind + "hole", Math.Round(D(dk, "hole", 1) * 100),
+            _ => send([("hole", D(dk, "hole", 1))]));
+        if (!glass)
+            return;
+        Slider("Depth", Math.Round(D(o, "depth", 0.2) * 100), 5, 100, 1, " cm", v => send([("depth", v / 100)]), kind + "gdepth", Math.Round(D(dk, "depth", 0.2) * 100),
+            _ => send([("depth", D(dk, "depth", 0.2))]));
+        Checkbox($"Double glazed##sddg{kind}", B(o, "double", true), v => send([("double", v)]));
+        Row();
+        if (ImGui.SmallButton($"R##sdglz{kind}"))
+            send([("depth", D(dk, "depth", 0.2)), ("double", B(dk, "double", true))]);
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip("Glazing back to its default");
     }
 
     private static float3 DesignMeshHex(string hex)
@@ -845,6 +928,7 @@ public sealed partial class Ui
             Sl("Width", "w", Math.Min(D(w, "w"), D(w, "len")), 30, Math.Max(30, Math.Round(D(w, "len") * 100)), 5, " cm", 100);
             Sl("Height", "h", D(w, "h"), 30, 400, 5, " cm", 100);
             Sl("Sill", "sill", D(w, "sill"), 0, 300, 5, " cm", 100);
+            CutControls(w, kv => Cmd(C("setHullWindow", [("id", wid), .. kv])), "hullWindow", true);
             ImGui.Text("Shape"u8);
             var shape = Str(w, "shape", "Rect");
             foreach (var (k, t) in new[] { ("Rect", "Square"), ("Round", "Round"), ("Oval", "Oval"), ("Arch", "Arched"), ("Hex", "Hexagon") })
@@ -901,6 +985,36 @@ public sealed partial class Ui
             if (ImGui.Button(kind == "Window" ? "Delete##sddd" : "Back to the middle##sddd"))
             {
                 Cmd(C("delDoor", ("id", pid)));
+                Select(null, 0);
+            }
+            return;
+        }
+        if (_selKind == "passage")
+        {
+            var k = ById(Arr(S, "passages"), _selId);
+            if (!Found(k))
+                return;
+            var kid = I(k, "id");
+            string Nm(int id) => ById(rooms, id) is var r && Found(r) ? RoomName(r) : "?";
+            H2(Str(k, "kind"), B(k, "ok", true) ? $"{Fmt(D(k, "clear"))} m clear" : Get(k, "pts").GetArrayLength() > 0 ? "arm too thin" : "see checks");
+            Hint($"From {Nm(I(k, "a"))} through the arm to {Nm(I(k, "b"))}, along the arm's curve, with a door in each room's wall.");
+            foreach (var t in new[] { "Lift", "Walkway" })
+            {
+                if (OnButton($"{t}##sdpsk{t}", Str(k, "kind") == t))
+                    Cmd(C("setPassage", ("id", kid), ("kind", t)));
+                Row();
+            }
+            ImGui.NewLine();
+            foreach (var rid in new[] { I(k, "a"), I(k, "b") })
+            {
+                if (ImGui.Button($"Room view: {Nm(rid)}##sdpsrv{rid}"))
+                    EnterRoomView(rid, true);
+                Row();
+            }
+            ImGui.NewLine();
+            if (ImGui.Button("Delete##sdpsdel"u8))
+            {
+                Cmd(C("delPassage", ("id", kid)));
                 Select(null, 0);
             }
             return;
@@ -1071,6 +1185,7 @@ public sealed partial class Ui
             if (sock)
                 Slider("Cladding", Math.Round(D(p, "clad") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("clad", v / 100))), "pcc");
             Slider("Recess", Math.Round(D(p, "recess") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("recess", v / 100))), "pcr");
+            CutControls(p, kv => Cmd(C("setPiece", [("id", pid), .. kv])), "piece", Str(p, "socket") == "window");
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))
                 Checkbox("Both bodies of the pair##sdpcp", B(p, "pair"), v => Cmd(C("setPiece", ("id", pid), ("pair", v))));
@@ -1370,7 +1485,7 @@ public sealed partial class Ui
             Hint("A shell inside the room's box, so each room has its own walls, back to back with its neighbour's. It stops at the skin and leaves doors between rooms open (0: none).");
             ImGui.Text("Cladding"u8);
             Row();
-            MatCombo("rws" + rid, Str(r, "wallStyle", "Plain"), ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial"], v => SetW(("wallStyle", v)), 120);
+            MatCombo("rws" + rid, Str(r, "wallStyle", "Plain"), ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor"], v => SetW(("wallStyle", v)), 120);
             Row();
             ImGui.Text("Colour"u8);
             Row();
@@ -1383,7 +1498,8 @@ public sealed partial class Ui
             MatCombo("rfl" + rid, Str(r, "floor", "Plates"), ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"], v => SetW(("floor", v)), 120);
             Slider("Seed", I(r, "seed"), 0, 999, 1, "", v => SetW(("seed", (int)v)), "rseed", Dflt("room", "seed"));
             if (ResetAll("rwall", "Cladding, colour, floor and seed back to their defaults"))
-                SetW(DfltOf("room", "wallStyle", "wallColour", "floor", "seed"));
+                SetW([.. DfltOf("room", "wallStyle", "wallColour", "floor", "seed").Where(x => Str(r, "kind") != "Corridor" || x.Item1 is not ("wallStyle" or "floor")),
+                    .. Str(r, "kind") == "Corridor" ? DfltOf("corridor", "wallStyle", "floor") : []]);
             Hint("Cladding is relief on the walls when the interior style is Off (the interior has its own). Plates and Hex floors are the interior's plate layer; the others are laid with or without it.");
             H3("Interior");
             void SetI(JsonObject x)
@@ -1472,6 +1588,12 @@ public sealed partial class Ui
                             Select("room", id);
                         }
                     }
+                    else if (what[0] == "passage")
+                    {
+                        if (_sdMode != "interior")
+                            SetMode("interior");
+                        Select("passage", id);
+                    }
                     else if (what[0] == "piece")
                     {
                         if (_sdMode != "pieces")
@@ -1486,7 +1608,10 @@ public sealed partial class Ui
         H2("Ship");
         var st = Get(S, "stats");
         var cells = new[] { ($"{Fmt(D(st, "length"))} m", "length"), ($"{Fmt(D(st, "beam"))} m", "beam"), ($"{Fmt(D(st, "height"))} m", "height"), ($"{Fmt(D(st, "floor"))} m2", "floor"),
-            ($"{Fmt(D(st, "hold"))} m3", "cargo hold"), ($"{I(st, "bunks")}", "bunks"), ($"{I(st, "rooms")}", "rooms"), ($"{I(st, "pieces")}", "pieces") };
+            ($"{Fmt(D(st, "hold"))} m3", "cargo hold"), ($"{I(st, "bunks")}", "bunks"), ($"{I(st, "rooms")}{(I(st, "podRooms") > 0 ? $" ({I(st, "podRooms")} in pods)" : "")}", "rooms") }
+            .Concat(I(st, "podRooms") > 0 ? [($"{Fmt(D(st, "podFloor"))} m2", "pod floor")] : [])
+            .Concat(I(st, "passages") > 0 ? [($"{I(st, "passages")}", "passages")] : [])
+            .Append(($"{I(st, "pieces")}", "pieces")).ToArray();
         if (ImGui.BeginTable("##sdstats"u8, 2, ImGuiTableFlags.None))
         {
             foreach (var (v, k) in cells)

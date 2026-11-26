@@ -610,6 +610,42 @@ public sealed partial class Ui
                 Select(null, 0);
             return;
         }
+        if (_sdMode == "interior" && _linking is { } lk)
+        {
+            var lh = By("room");
+            if (lh is not { } lr)
+            {
+                _linking = null;
+                _sdTip = SdTips[_sdMode];
+                Rebuild();
+                Toast("Stopped linking.");
+                return;
+            }
+            var lid = lr.O.Pick!.Id;
+            if (lk.From == 0)
+            {
+                lk.From = lid;
+                Select("room", lid);
+                _sdTip = "Now click a room in the body at the arm's other end.";
+                return;
+            }
+            if (lid == lk.From)
+                return;
+            _linking = null;
+            _sdTip = SdTips[_sdMode];
+            var la = Cmd(C("addPassage", ("a", lk.From), ("b", lid), ("kind", lk.Kind)));
+            if (Str(la, "error").Length > 0)
+            {
+                Toast(Str(la, "error"));
+                Rebuild();
+                return;
+            }
+            var pid = I(la, "id");
+            Select("passage", pid);
+            var made = ById(Arr(S, "passages"), pid);
+            Toast(Found(made) && !B(made, "ok", true) ? "Laid, but the arm is too thin: see the checks." : "Linked through the arm.", true);
+            return;
+        }
         if (_sdMode == "interior" && _mergeFrom != 0)
         {
             var h = By("room");
@@ -655,10 +691,10 @@ public sealed partial class Ui
         }
         if (_sdMode == "interior")
         {
-            var rz = By("riser");
-            if (rz is { } rzv && By("riser", "room") is { } first && first.O == rzv.O)
+            var rz = By("riser", "passage");
+            if (rz is { } rzv && By("riser", "passage", "room") is { } first && first.O == rzv.O)
             {
-                Select("riser", rzv.O.Pick!.Id);
+                Select(rzv.O.Pick!.Type, rzv.O.Pick.Id);
                 return;
             }
             var r = By("room");
@@ -1046,6 +1082,12 @@ public sealed partial class Ui
     {
         if (_sdFileOpen)
             _sdFileOpen = false;
+        else if (_linking != null)
+        {
+            _linking = null;
+            _sdTip = SdTips[_sdMode];
+            Rebuild();
+        }
         else if (_mounting != null)
             StopMount();
         else if (_roomView != null)
@@ -1105,6 +1147,7 @@ public sealed partial class Ui
                 "room" => new JsonObject { ["op"] = "delRoom", ["id"] = _selId },
                 "join" => new JsonObject { ["op"] = "delJoin", ["id"] = _selId },
                 "riser" => new JsonObject { ["op"] = "delRiser", ["id"] = _selId },
+                "passage" => new JsonObject { ["op"] = "delPassage", ["id"] = _selId },
                 "door" => new JsonObject { ["op"] = "delDoor", ["id"] = _selId },
                 "hullwin" => new JsonObject { ["op"] = "delHullWindow", ["id"] = _selId },
                 "hull" => new JsonObject { ["op"] = "delHull", ["hull"] = _selId },
