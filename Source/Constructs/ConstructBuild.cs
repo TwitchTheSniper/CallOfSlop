@@ -1629,6 +1629,19 @@ public static class ConstructBuild
             return c;
         }
 
+        /// <summary>Why <see cref="JoinAt"/> would refuse now, or null, counting <paramref name="leaving"/> as gone (its id, parts and joints free).</summary>
+        public string? JoinRefusal(ushort id, Construct? leaving)
+        {
+            if (!_ready || _joined)
+                return "its steps aren't done";
+            if (_run.Body is not { } body)
+                return Why;
+            if (World.AdoptRefusal(_scratch, body, id, leaving) is not { } no)
+                return null;
+            return no == ConstructWorld.AdoptUnusual ? _scratch.Bodies.Count > 1 ? $"it comes apart into {_scratch.Bodies.Count} bodies" : no
+                : no.Length > 0 ? no : "the world is full";
+        }
+
         /// <summary>
         /// Once <see cref="Step"/> is true: the construct joins <see cref="World"/> exactly at <paramref name="pos"/> and <paramref name="rot"/>
         /// (not set down on the ground) as body <paramref name="id"/> (0: a free one), still. A ship rebuilt in place at a Ship Docking Station

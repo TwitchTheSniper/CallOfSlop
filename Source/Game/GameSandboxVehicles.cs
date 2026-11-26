@@ -28,6 +28,12 @@ public sealed class VehicleSpawner(Game game)
     /// <summary>A tick's share of a generation (ms): with the rest of a busy tick, under the 8 ms budget.</summary>
     public const double SliceMs = 2.5;
 
+    /// <summary>This tick's share of <see cref="SliceMs"/> (the rest went to a dock's rebuild: GameSandboxDock.cs), at least <see cref="MinSliceMs"/>.</summary>
+    public double Budget = SliceMs;
+
+    /// <summary>The least a tick's share is (a step is taken whatever the budget: this keeps the spawner moving beside a rebuild).</summary>
+    public const double MinSliceMs = 0.5;
+
     /// <summary>The most requests waiting at once, and from one player.</summary>
     public const int QueueMax = 8, PerPlayer = 2;
 
@@ -442,7 +448,7 @@ public sealed class VehicleSpawner(Game game)
             if (_job == null)
                 return; // (committed, or a blueprint: being set down, or set down at once)
         }
-        if (!_job.Step(SliceMs))
+        if (!_job.Step(Budget))
             return;
         var job = _job;
         _job = null;
@@ -577,7 +583,7 @@ public sealed class VehicleSpawner(Game game)
         var job = _place!;
         if (!job.Ready)
         {
-            job.Step(SliceMs);
+            job.Step(Budget);
             return; // (its join waits for the next tick: a slice and a join together could pass the budget)
         }
         _place = null;

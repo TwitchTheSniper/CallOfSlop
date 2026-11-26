@@ -489,9 +489,14 @@ public sealed partial class Game
         AllocProfile.Mark("sandbox: spawns, pilots, debris");
         var perf = Perf.Measure(PerfArea.SandboxWorld);
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
-        _vehicleSpawn?.Tick(); // faction vehicles made at spawn time, a slice a tick (GameSandboxVehicles.cs)
-        if (_dockJobs.Count > 0)
-            SandboxDockTick(); // ships rebuilt at a Ship Docking Station, a slice a tick (GameSandboxDock.cs)
+        // One build slice a tick (VehicleSpawner.SliceMs), shared: a ship rebuilt at a Ship Docking Station takes its share first
+        // (half while the spawner is busy too: GameSandboxDock.cs), the faction vehicles and big blueprints the rest (GameSandboxVehicles.cs).
+        var dockMs = _dockJobs.Count > 0 ? SandboxDockTick(_vehicleSpawn is { Pending: > 0 } ? VehicleSpawner.SliceMs / 2 : VehicleSpawner.SliceMs) : 0;
+        if (_vehicleSpawn != null)
+        {
+            _vehicleSpawn.Budget = Math.Max(VehicleSpawner.SliceMs - dockMs, VehicleSpawner.MinSliceMs);
+            _vehicleSpawn.Tick();
+        }
         SpawnHeldTick(); // pending spawns of the dead, the gone and the forgotten go (GameSandboxBlueprintGhost.cs)
         SandboxPilotsTick(); // bot pilots of AI aircraft (GameSandboxAircraft.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)

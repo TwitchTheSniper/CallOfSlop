@@ -21,25 +21,12 @@ public sealed partial class ConstructWorld
     /// <param name="id">the id it takes (0: a free one); one in use refuses (a rebuild in place frees its old body's first: GameSandboxDock.cs)</param>
     public Construct? Adopt(ConstructWorld from, Construct c, Vector3 pos, Quaternion rot, out string why, ushort id = 0)
     {
+        if (AdoptRefusal(from, c, id, null) is { } no)
+        {
+            why = no;
+            return null;
+        }
         why = "";
-        if (from.Bodies.Count != 1 || !ReferenceEquals(from.Bodies[0], c))
-        {
-            why = AdoptUnusual; // (a merge that popped a part off, say: the steps' world has more than this body)
-            return null;
-        }
-        for (var i = 0; i < c.PartCount; i++)
-            if (c.Parts[i].Store != 0 && from.Stores[c.Parts[i].Store] is { } st && (st.Items > 0 || st.KindN > 0 || st.MixN > 0 || st.InAmount > 0))
-            {
-                why = AdoptUnusual;
-                return null;
-            }
-        if (Bodies.Count >= BodyCap || Bodies.Count >= ushort.MaxValue - 1 || PartTally + c.PartCount > PartCap || TotalJoints + c.JointCount > JointCap)
-            return null; // ("": the caller says the world is full, as for a body Create refuses)
-        if (id != 0 && _byId.ContainsKey(id))
-        {
-            why = $"body {id} is still in the world";
-            return null;
-        }
         from.Bodies.Clear();
         from._byId.Clear();
         c.Id = id != 0 ? id : FreeId();
@@ -69,6 +56,28 @@ public sealed partial class ConstructWorld
         c.Dirty = true;
         c.Wake();
         return c;
+    }
+
+    /// <summary>
+    /// Why <see cref="Adopt"/> would refuse body <paramref name="c"/> of <paramref name="from"/>, or null: <see cref="AdoptUnusual"/> (more than
+    /// one body, or a store holding parts), "" (this world is full), or the id in use. <paramref name="leaving"/>: a body that goes first
+    /// (a rebuild in place: its id, parts and joints are counted free), so a caller can check before it takes anything away.
+    /// </summary>
+    public string? AdoptRefusal(ConstructWorld from, Construct c, ushort id, Construct? leaving)
+    {
+        if (from.Bodies.Count != 1 || !ReferenceEquals(from.Bodies[0], c))
+            return AdoptUnusual; // (a merge that popped a part off, say: the steps' world has more than this body)
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Store != 0 && from.Stores[c.Parts[i].Store] is { } st && (st.Items > 0 || st.KindN > 0 || st.MixN > 0 || st.InAmount > 0))
+                return AdoptUnusual;
+        int bodies = Bodies.Count, parts = PartTally, joints = TotalJoints;
+        if (leaving != null && _byId.TryGetValue(leaving.Id, out var had) && ReferenceEquals(had, leaving))
+            (bodies, parts, joints) = (bodies - 1, parts - leaving.PartCount, joints - leaving.JointCount);
+        if (bodies >= BodyCap || bodies >= ushort.MaxValue - 1 || parts + c.PartCount > PartCap || joints + c.JointCount > JointCap)
+            return ""; // (the caller says the world is full, as for a body Create refuses)
+        if (id != 0 && _byId.ContainsKey(id) && !(leaving != null && leaving.Id == id))
+            return $"body {id} is still in the world";
+        return null;
     }
 
     /// <summary>The next free body id (wrapping round past 65535 to the ids freed since).</summary>

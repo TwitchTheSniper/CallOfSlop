@@ -162,18 +162,22 @@ public sealed partial class Game
     }
 
     /// <summary>Server, each tick: the rebuilds under way, a slice each; a finished one takes its ship's place. Nothing while none is.</summary>
-    private void SandboxDockTick()
+    /// <summary>
+    /// Server, each tick: the oldest rebuild under way steps for at most <paramref name="budgetMs"/> (its share of the tick's build slice,
+    /// shared with the vehicle spawner: GameSandbox.cs); a finished one takes its ship's place. Returns the ms it used.
+    /// </summary>
+    private double SandboxDockTick(double budgetMs)
     {
-        for (var k = _dockJobs.Count - 1; k >= 0; k--)
+        var start = System.Diagnostics.Stopwatch.GetTimestamp();
+        var j = _dockJobs[0]; // (one at a time: the slice stays one slice whatever the queue)
+        if (j.Job.Step(budgetMs))
         {
-            var j = _dockJobs[k];
-            if (!j.Job.Step(VehicleSpawner.SliceMs))
-                continue;
-            _dockJobs.RemoveAt(k);
+            _dockJobs.RemoveAt(0);
             var why = DockSwap(j);
             SandboxHands.Notices.Add((j.Player, why ?? $"the {j.Name} is rebuilt"));
             Console.WriteLine($"[dock] ship {j.Ship}: {why ?? "rebuilt"} ({j.Job.CpuMs:0} ms in {j.Job.Slices} slices, the longest {j.Job.WorstSliceMs:0.0} ms)");
         }
+        return System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
     }
 
     private string? DockSwap(DockJob j)
@@ -182,8 +186,14 @@ public sealed partial class Game
             return $"the {j.Name} couldn't be built: {j.Job.Why}";
         if (Constructs.Get(j.Ship) is not { } ship)
             return "the ship went before its rebuild was ready";
-        if (Constructs.Bodies.Count > Constructs.BodyCap || Constructs.PartTally - ship.PartCount + fresh.PartCount > Constructs.PartCap)
-            return "the world is too full to rebuild the ship";
+        // Everything that could refuse is asked before the old ship goes: on any refusal it stays as it was.
+        if (j.Job.Bp.Steps.Count > 0)
+            return $"the {j.Name} isn't a design's blueprint"; // (a design's body has no steps, so nothing after its join can refuse: ConstructBuild.FinishBuild)
+        if (j.Job.JoinRefusal(ship.Id, ship) is { } no)
+        {
+            Console.WriteLine($"[dock] REFUSED ship {ship.Id}'s rebuild as \"{j.Name}\" (it is kept as it was): {no}");
+            return $"the ship is kept as it was: the {j.Name} can't replace it ({no}{(no.StartsWith("it comes apart", StringComparison.Ordinal) ? ": join its hulls" : "")})";
+        }
         var (pos, rot, owner, id) = (ship.Pos, ship.Rot, ship.Owner, ship.Id);
         var station = Constructs.Get(j.Station);
         var pad = station != null && j.Part < station.PartCount && station.DefOf(j.Part).ShipDockRange > 0 ? DockPad(station, j.Part) : (Vector3?)null;

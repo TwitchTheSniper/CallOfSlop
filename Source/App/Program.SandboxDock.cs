@@ -62,12 +62,12 @@ public static unsafe partial class Program
     /// <summary>The docked designer shuts (Esc, a reset, the player walked off): nothing is sent, the mouse goes back to aiming.</summary>
     private static void CloseShipDock()
     {
+        if (Ui.ShipDesignerDock != null)
+            Ui.ForceCloseShipDesigner();
+        Ui.ShipDesignerApply = null; // (an apply never waits for a later session)
         if (!_dockOpen)
             return;
         _dockOpen = false;
-        if (Ui.ShipDesignerDock != null)
-            Ui.ForceCloseShipDesigner();
-        Ui.ShipDesignerApply = null;
         if (_session != null && !MenusOpen)
             SetMouseCaptured(true);
         _swallowClick = true; // (the click that closed it mustn't also fire the tool)

@@ -1371,6 +1371,9 @@ public sealed partial class Ui
 
     public void ResetLobby()
     {
+        if (ShipDesignerDock != null)
+            ForceCloseShipDesigner(); // (a docked ship's designer never outlives its session: Program.SandboxDock.cs)
+        ShipDesignerApply = null;
         _page = Page.Main;
         _worlds = null; // (the saved worlds are read again: UiWorlds.cs)
     }

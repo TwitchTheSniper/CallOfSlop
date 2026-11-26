@@ -848,6 +848,7 @@ public static unsafe partial class Program
 
     private static void EndSession(string message)
     {
+        CloseShipDock(); // (the Ship Designer over a docked ship goes with the session, its apply unsent: Program.SandboxDock.cs)
         if (message.Length > 0)
             _lobbyMessage = message;
         if (_session != null)
