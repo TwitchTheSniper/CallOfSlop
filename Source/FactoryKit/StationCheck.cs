@@ -137,6 +137,19 @@ public static class StationCheck
                 if (score > best)
                     (best, t) = (score, i);
             }
+        if (args.Contains("--nets")) // (each station's order network: the machines its Line Console brings in)
+            RollerRuns.Sync(w, c);
+        if (args.Contains("--nets"))
+            for (var i = 0; i < c.PartCount; i++)
+                if (c.DefOf(i).IsBuildStation && ConstructCrafting.NetOf(w, c, i) is var net)
+                    Console.WriteLine($"  station {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0} rolls to oven {(ConstructRollOut.RunOut(c, i) is var ro and >= 0 ? ConstructRollOut.OvenOf(c, ro) : -2)}; network: " + string.Join(", ", Enumerable.Range(0, net.MachineN).Select(m => net.Machines[m])
+                        .Select(m => $"{c.DefOf(m).Name} {m} at {c.Parts[m].Pos.X:0},{c.Parts[m].Pos.Z:0}"))
+                        + "; its consoles run: " + string.Join(", ", Enumerable.Range(0, c.RouteCount).Where(k => c.Routes[k].Type == RouteType.Data && c.Routes[k].To == i
+                            && c.Routes[k].Source < c.PartCount && ProductionLines.IsConsole(c.DefOf(c.Routes[k].Source))).SelectMany(k =>
+                            {
+                                var into = new int[32];
+                                return into.Take(ProductionLines.Machines(c, c.Routes[k].Source, into)).Select(m => $"{c.DefOf(m).Name} {m}").ToArray();
+                            })));
         if (t < 0)
         {
             Console.WriteLine("  no Building Station in it");
@@ -289,7 +302,10 @@ public static class StationCheck
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Orders is { Count: > 0 } mo)
                 for (var k = 0; k < mo.Count; k++)
-                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}");
+                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}"
+                        + (w.StoreOf(c, i) is { } ms ? $" (store {ms.Amount} of {RecyclingTable.Current.NameOf(ms.Material)}, in {ms.InAmount}, busy {ms.Busy}, held {ms.Held}, blocked {ms.Blocked}, refused {(ExtrudeStall)ms.Refused})" : "")
+                        + string.Concat(Enumerable.Range(0, c.RouteCount).Where(k => MachineBlocks.Owner(c, c.Routes[k].From) == i)
+                            .Select(k => $" [route {k} to {c.DefOf(MachineBlocks.Owner(c, c.Routes[k].To)).Name} {ConstructConveyor.Length(c, k):0.0} m, riders {Enumerable.Range(0, c.ConveyedCount).Count(j => c.Conveyed[j].Route == k)}]")));
         for (var i = 0; i < c.ConveyedCount; i++)
         {
             ref readonly var cr = ref c.Conveyed[i];
@@ -621,7 +637,10 @@ public static class StationCheck
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Orders is { Count: > 0 } mo)
                 for (var k = 0; k < mo.Count; k++)
-                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}");
+                    Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: order {mo.Items[k].Name ?? mo.Items[k].Key.ToString()} x{mo.Items[k].Left}: {mo.Note}"
+                        + (w.StoreOf(c, i) is { } ms ? $" (store {ms.Amount} of {RecyclingTable.Current.NameOf(ms.Material)}, in {ms.InAmount}, busy {ms.Busy}, held {ms.Held}, blocked {ms.Blocked}, refused {(ExtrudeStall)ms.Refused})" : "")
+                        + string.Concat(Enumerable.Range(0, c.RouteCount).Where(k => MachineBlocks.Owner(c, c.Routes[k].From) == i)
+                            .Select(k => $" [route {k} to {c.DefOf(MachineBlocks.Owner(c, c.Routes[k].To)).Name} {ConstructConveyor.Length(c, k):0.0} m, riders {Enumerable.Range(0, c.ConveyedCount).Count(j => c.Conveyed[j].Route == k)}]")));
         for (var i = 0; i < c.ConveyedCount; i++)
         {
             ref readonly var cr = ref c.Conveyed[i];
