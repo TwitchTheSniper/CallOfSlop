@@ -82,6 +82,8 @@ public sealed partial class Game
         c.Rebuild();
         var beside = ConstructBuild.SpawnBeside(Constructs, c, bp); // (Zero Day Works II's gensets, each its own body on a heavy power cable)
         var stopped = script.SiteIdle ? SiteStopConsoles(c) : 0;
+        if (SandboxInfiniteParts && ConstructLifters.StockDieWalls(Constructs, c) is var dies and > 0)
+            Log($"[opening] the site's Die Walls start with {dies} press dies (creative)"); // (as its bins start full; survival's are empty: dies come off the Die Lathe)
         // Everyone wakes past its front (the blueprint's low z), facing it.
         var front = c.Pos + Vector3.Transform(new Vector3(mid.X, 0, min.Z - script.SiteGap), rot);
         var wake = ConstructWorld.Ground(World.Query, front);

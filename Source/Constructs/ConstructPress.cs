@@ -1526,7 +1526,7 @@ public static partial class ConstructPress
         else if (why != BayRefuse.None)
             problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && SpecFor(row, bay) is { } want ? ", wants " + Spec(want) : "");
         if (!p.Broken && !st.Busy && DieWanted(c, part) is { } wanted)
-            problem = $"its order needs the {wanted.Family} Die: waits for it from a Die Rack chuted into it"; // (PressDieSwap.cs: from the rack, or given back by a press sharing it)
+            problem = $"its order needs the {wanted.Family} Die: waits for it from a Die Rack (a chute, or a Loader Arm)"; // (PressDieSwap.cs, PressDieArm.cs: from the rack, or given back by a press sharing it)
         string? action = null;
         if (near)
         {
