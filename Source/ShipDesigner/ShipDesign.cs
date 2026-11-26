@@ -362,22 +362,26 @@ public sealed class Piece
     public double Hole = 1; // the cutout (skin hole, frame, ring) scaled across the skin (Karl, 2026-11-25)
     public double Depth = 0.2; // a window's: how far in its inner pane sits behind the outer one (Karl, 2026-11-25)
     public bool Double = true; // a window's: double glazed (an outer and an inner pane, a reveal between)
+    // Hangar pieces' own (DesignHangar, Karl 2026-11-26): a bay's door size and type; a lift's or ramp deck's size and travel; a fitting's bay and spot in it.
+    public double DoorW = 5, DoorH = 3, W = 5, L = 5, Travel = 3, Along, Across;
+    public string DoorType = "Sliding";
+    public int Link;
 
-    public JsonObject ToJson() => new()
+    public JsonObject ToJson() => DesignHangar.Write(this, new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
         ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
-    };
+    });
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
-    public static Piece FromJson(JsonObject o, int id) => new()
+    public static Piece FromJson(JsonObject o, int id) => DesignHangar.Read(o, new()
     {
         Id = id, Kind = (string?)o["kind"] ?? "", Surface = (string?)o["surface"] ?? "skin", Z = ShipDesign.F(o["z"], 0), T = Math.Clamp(ShipDesign.F(o["t"], 0.5), 0, 1),
         U = ShipDesign.F(o["u"], 0), V = ShipDesign.F(o["v"], 0), Side = (int?)o["side"] is -1 ? -1 : 1, Copy = (int?)o["copy"] is 1 ? 1 : 0,
         Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(ShipDesign.F(o["size"], 1), 0.25, 4), Recess = Math.Clamp(ShipDesign.F(o["recess"], 0), 0, 2), Clad = Math.Clamp(ShipDesign.F(o["clad"], 0), 0, 2), Turn = ShipDesign.F(o["turn"], 0), Room = (int?)o["room"] ?? 0,
         Gap = Math.Clamp(ShipDesign.F(o["gap"], -1), -1, 2), Hole = Math.Clamp(ShipDesign.F(o["hole"], 1), 0.5, 2.5), Depth = Math.Clamp(ShipDesign.F(o["depth"], 0.2), 0.05, 1), Double = (bool?)o["double"] ?? true,
-    };
+    });
 }
 
 

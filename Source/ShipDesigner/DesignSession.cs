@@ -94,6 +94,8 @@ public sealed class DesignSession
             ["hullWindow"] = new JsonObject { ["gap"] = -1, ["hole"] = 1.0, ["depth"] = 0.2, ["double"] = true },
             // A corridor's own defaults (Room.KindDefaults), over the room's.
             ["corridor"] = new JsonObject { ["wallStyle"] = "Corridor", ["floor"] = "Grating" },
+            // Each hangar piece's sizes (DesignHangar.Init), by kind.
+            ["hangar"] = DesignHangar.Defaults(),
         };
         return c.ToJsonString();
     }
