@@ -1316,6 +1316,36 @@ function dockControls(p) {
   }
   return [];
 }
+// A hangar piece's own controls (Karl, 2026-11-26): a bay's door (width, height, sliding or hinged); a lift platform's or ramp deck's
+// width, length and travel; a docking arm's or cradle's bay link and its spot in the bay. Resets from CAT.defaults.hangar[kind].
+function hangarControls(p) {
+  const D = CAT.defaults.hangar?.[p.kind]; if (!D) return [];
+  const send = o => cmd({ op: "setPiece", id: p.id, ...o });
+  const m = (label, key, min, max, step, unit = " m") => slider(label, p[key], min, max, step, unit, () => {}, v => send({ [key]: v }), D[key]);
+  if (p.bay) {
+    const ty = el("select", { "aria-label": "Door type" }); for (const t of ["Sliding", "Hinged"]) ty.append(el("option", t === p.bayDoor ? { selected: "" } : {}, t));
+    ty.addEventListener("change", () => send({ bayDoor: ty.value }));
+    return [el("h3", {}, "Hangar door"),
+      m("Door width", "bayDoorW", 5, 48, 0.5), m("Door height", "bayDoorH", 3, 32, 0.5),
+      el("div", { class: "row" }, el("span", {}, "Type"), ty, el("button", { class: "reset", title: "Door back to its defaults", onclick: () => send({ bayDoorW: D.bayDoorW, bayDoorH: D.bayDoorH, bayDoor: D.bayDoor }) }, "Reset all")),
+      el("p", { class: "hint" }, `The bay is ${p.bay[0]} m across, ${p.bay[1]} m tall and ${p.bay[2]} m deep. ${p.bayDoor === "Hinged" ? "The door swings out on motor hinges." : "The door slides aside on a piston."} ${p.fittings} docking fitting${p.fittings === 1 ? "" : "s"} linked.`)];
+  }
+  if (p.w !== undefined)
+    return [el("h3", {}, p.kind),
+      m("Width", "w", 2, 48, 0.5), m("Length", "l", 2, 48, 0.5), m("Travel", "travel", 0.5, 30, 0.1),
+      el("div", { class: "row" }, el("button", { class: "reset", title: "Width, length and travel back to their defaults", onclick: () => send({ w: D.w, l: D.l, travel: D.travel }) }, "Reset all"))];
+  if (p.link !== undefined) {
+    const bays = S.pieces.filter(q => q.bay), ls = el("select", { "aria-label": "Hangar bay" });
+    ls.append(el("option", p.link ? { value: "0" } : { value: "0", selected: "" }, "Not linked"));
+    for (const b of bays) ls.append(el("option", b.id === p.link ? { value: b.id, selected: "" } : { value: b.id }, `${b.kind} #${b.id}`));
+    ls.addEventListener("change", () => send({ link: +ls.value }));
+    const pc = (label, key) => slider(label, Math.round(p[key] * 100), -50, 50, 1, "%", () => {}, v => send({ [key]: v / 100 }), Math.round(D[key] * 100), () => send({ [key]: D[key] }));
+    return [el("h3", {}, "Hangar link"), el("div", { class: "row" }, el("span", {}, "Bay"), ls),
+      pc("Along the bay", "along"), pc("Across the bay", "across"),
+      el("p", { class: "hint" }, p.link ? "Linked to the bay and its door (the dashed lines with Socket links on); it sits on the bay's floor." : "Not linked: it sits where it was dropped. Pick the bay it serves.")];
+  }
+  return [];
+}
 const dfltOf = (kind, keys) => Object.fromEntries(keys.map(k => [k, CAT.defaults[kind][k]]));
 const resetAll = (title, send) => el("button", { class: "reset", title, onclick: send }, "Reset all");
 function joinControls(o, apply, reset = apply) {
@@ -1781,6 +1811,7 @@ function inspector() {
       slider("Recess", Math.round((p.recess ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, recess: v / 100, preview: true, light: true }, !firstRec); firstRec = false; }, v => cmd({ op: "setPiece", id: p.id, recess: v / 100 })),
       ...cutControls(p, o => cmd({ op: "setPiece", id: p.id, ...o }), "piece", p.socket === "window"),
       ...dockControls(p),
+      ...hangarControls(p),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),

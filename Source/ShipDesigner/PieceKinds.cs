@@ -21,7 +21,8 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     public (double Hx, double Hz, bool Round)? Opening => Socket switch
     {
         "airlock" => (1.15, 0.75, false), "window" => (0.55, 0.9, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false),
-        "ramp" => (1.25, 1.6, false), "gangway" => (1.1, 0.6, false), "ladder" => (1.05, 0.55, false), _ => PieceDocking.Opening(Socket),
+        "ramp" => (1.25, 1.6, false), "gangway" => (1.1, 0.6, false), "ladder" => (1.05, 0.55, false),
+        "hangar" => (2.5, 1.5, false), "lift" => (2.5, 2.5, false), "rampdeck" => (2.5, 4.0, false), _ => PieceDocking.Opening(Socket), // hangar pieces sized per piece: DesignHangar.OpeningOf
     };
 
     /// <summary>What keeps hull cladding clear: the opening, or a drive's base on the skin (it cuts no hole). Pieces with one get the
@@ -179,6 +180,8 @@ public static class PieceKinds
         }),
         // The ammo socket, docking and boarding pieces (Karl, 2026-11-26): DesignDocking.cs.
         .. PieceDocking.Kinds,
+        // Hangar bays, their fittings, the lift platform and the ramp deck (Karl, 2026-11-26): DesignHangar.
+        ..DesignHangar.Kinds,
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>

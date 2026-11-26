@@ -444,6 +444,7 @@ public sealed class DesignEditor
                 var p = new Piece { Id = d.NewId(), Kind = kind.Name, Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(D(o, "size", 1), 0.25, 4), Recess = Math.Clamp(D(o, "recess", 0), 0, 2) };
                 d.Pieces.Add(p);
                 Attach(p, o);
+                DesignHangar.Init(d, p);
                 o["id"] = p.Id;
                 return "";
             }
@@ -475,6 +476,8 @@ public sealed class DesignEditor
                         return "no such weapon";
                     p.Feed = fid;
                 }
+                if (DesignHangar.Set(d, p, o) is { Length: > 0 } herr)
+                    return herr;
                 if (o["room"] is not null)
                 {
                     var rid = I(o, "room");
