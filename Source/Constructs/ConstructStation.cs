@@ -171,6 +171,14 @@ public static partial class ConstructStation
     private const float OverheadInset = 0.1f; // m: a part over the bay's edge by less than this (a wall or a rail beside it) doesn't count
     public const int MaxArms = 16; // docks a station takes (the Core and 15 Dock Expansions; ArmStep is this long, and the wire sends a rover by its index)
 
+    public const float NearTop = 32f; // m: how high over the floor a body still counts as in the bay (a bay open to the sky: a craft lifting off has left it)
+
+    /// <summary>How high over the bay's floor a body or a part still counts as in the bay: its clear height, at most <see cref="NearTop"/>.</summary>
+    public static float InTop(Vector3 bay) => MathF.Min(bay.Y, NearTop);
+
+    /// <summary>Half the bay floor's diagonal: what a lifter's reach test adds for the bay (never the height: an open bay is 200 m).</summary>
+    public static float FloorRadius(Vector3 bay) => MathF.Sqrt(bay.X * bay.X + bay.Z * bay.Z) * 0.5f;
+
     /// <summary>Is the bay open to the sky (nothing of its body stands over it)?</summary>
     public static bool IsOpen(Vector3 bay) => bay.Y >= OpenSky - 0.01f;
 
@@ -737,7 +745,7 @@ public static partial class ConstructStation
             if (b.PartCount != 1 || b.HeldBy != 0 || b.GrabbedBy != 255 || b.Id == j.Body)
                 continue;
             var local = Vector3.Transform(b.WorldCom - floor, inv);
-            if (MathF.Abs(local.X) > bay.X * 0.5f || MathF.Abs(local.Z) > bay.Z * 0.5f || local.Y < -0.5f || local.Y > bay.Y)
+            if (MathF.Abs(local.X) > bay.X * 0.5f || MathF.Abs(local.Z) > bay.Z * 0.5f || local.Y < -0.5f || local.Y > InTop(bay))
                 continue;
             var kind = KindOf(j, b.Parts[0].Def);
             if (kind < 0 || j.KindFit[kind] + ConstructCrafting.Holds(tray, b.Parts[0].Def) >= j.KindNeed[kind])
@@ -1520,6 +1528,7 @@ public static partial class ConstructStation
         MakeKinds(j);
         LiftCost(j, run, built); // (each step's place on the body, for the lifters: ConstructLifters.cs)
         Console.WriteLine($"[station] {j.Name}: costed in {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms; {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, {j.KindN} kinds");
+        var fresh = !j.Resume; // (a load's job was checked when it began)
         if (j.Resume)
         {
             j.Resume = false;
@@ -1558,7 +1567,7 @@ public static partial class ConstructStation
             j.Cursor = 0;
         }
         BuildOrder(c, t, j); // (the rovers' order: keel, under the lowest deck, deck by deck; and the build's keep-out ring)
-        if (j.Fitted == 0 && LoaderRefusal(world, c, t, j) is { } loader)
+        if (fresh && LoaderRefusal(world, c, t, j) is { } loader)
         {
             Fail(world, c, t, j, loader); // (no rover or crane over the bay can lift or reach one of its parts: told before anything is ordered)
             return;
@@ -1613,7 +1622,7 @@ public static partial class ConstructStation
         Bay(c, t, out var floor, out var rot, out var bay);
         var local = Vector3.Transform(b.WorldCom - floor, Quaternion.Conjugate(rot));
         var r = b.Radius;
-        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > bay.Y + r || local.Y < -r;
+        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > InTop(bay) + r || local.Y < -r;
     }
 
     /// <summary>Is the bay clear of the construct just built (Repeat waits for it)?</summary>
@@ -1624,7 +1633,7 @@ public static partial class ConstructStation
         Bay(c, t, out var floor, out var rot, out var bay);
         var local = Vector3.Transform(b.WorldCom - floor, Quaternion.Conjugate(rot));
         var r = b.Radius;
-        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > bay.Y + r || local.Y < -r;
+        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > InTop(bay) + r || local.Y < -r;
     }
 
     /// <summary>

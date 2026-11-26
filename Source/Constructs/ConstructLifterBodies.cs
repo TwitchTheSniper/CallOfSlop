@@ -101,7 +101,7 @@ public static partial class ConstructLifters
             return false;
         ConstructStation.Bay(c, station, out var floor, out _, out var bay);
         Frame(c, part, ld, out _, out _, out var shoulder);
-        return Vector3.Distance(floor, shoulder) <= ld.ReachMax + ld.Travel + bay.Length() * 0.5f + ld.Down;
+        return Vector3.Distance(floor, shoulder) <= ld.ReachMax + ld.Travel + ConstructStation.FloorRadius(bay) + ld.Down;
     }
 
     /// <summary>

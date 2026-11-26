@@ -356,6 +356,8 @@ public static partial class ConstructLifters
     /// </summary>
     public static float MostOverBay(ConstructWorld world, Construct sc, int t)
     {
+        if (HasLifter(sc) && !Scanned(world, sc))
+            return float.MaxValue; // (just loaded or placed: the lifters' scan hasn't seen this body yet, so nothing is refused on their account)
         ConstructStation.Bay(sc, t, out var floor, out var bayRot, out var bay);
         var most = 0f;
         for (var bi = 0; bi < world.LiftBodies.Count; bi++)
@@ -366,14 +368,23 @@ public static partial class ConstructLifters
             for (var i = 0; i < lb.N; i++)
             {
                 var l = lb.Lifts[i];
-                if (l.Part >= c.PartCount || c.Parts[l.Part].Broken || ConstructLifters.DefOf(c, l.Part) is not { } ld || ld.Payload <= most)
-                    continue;
+                if (l.Part >= c.PartCount || c.Parts[l.Part].Broken || ConstructLifters.DefOf(c, l.Part) is not { } ld || ld.Payload <= most
+                    || (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0) is 2 or 3 || !CanWorkNow(world, c, l))
+                    continue; // (off or carry only, unpowered, held off or stuck: it fits nothing for a station)
                 Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
                 if (NearBay(ld, shoulder, lr, floor, bayRot, bay))
                     most = ld.Payload;
             }
         }
         return most;
+    }
+
+    private static bool Scanned(ConstructWorld world, Construct c)
+    {
+        for (var bi = 0; bi < world.LiftBodies.Count; bi++)
+            if (world.LiftBodies[bi].Body == c.Id)
+                return world.LiftBodies[bi].Stamp >= 0;
+        return false;
     }
 
     /// <summary>Is pad (<paramref name="padBody"/>, <paramref name="pad"/>) a pick pad of a lifter arm that can fit for station <paramref name="t"/> now?</summary>
@@ -411,7 +422,7 @@ public static partial class ConstructLifters
     /// reach. Every count of what serves a station asks this one test (ServesPad, PadCounts). Allocates nothing.
     /// </summary>
     public static bool NearBay(LifterDef ld, Vector3 shoulder, Quaternion lr, Vector3 floor, Quaternion bayRot, Vector3 bay)
-        => ld.Bridge ? CraneOverBay(ld, shoulder, lr, floor, bayRot, bay) : Vector3.Distance(floor, shoulder) <= ld.ReachMax + ld.Travel + bay.Length() * 0.5f + ld.Down;
+        => ld.Bridge ? CraneOverBay(ld, shoulder, lr, floor, bayRot, bay) : Vector3.Distance(floor, shoulder) <= ld.ReachMax + ld.Travel + ConstructStation.FloorRadius(bay) + ld.Down;
 
     /// <summary>
     /// Does a crane's box (across between its rails, along what both runs share) reach over any of a station's bay floor? A crane's
