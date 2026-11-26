@@ -45,7 +45,7 @@ public sealed class VehicleSpawner(Game game)
     public static bool AtOnce(ConstructBuild.Blueprint bp, ConstructBuild.Blueprint? tow)
     {
         tow ??= bp.Tow.Length > 0 ? ConstructBuild.FindBlueprint(bp.Tow) : null;
-        return bp.Steps.Count + (tow?.Steps.Count ?? 0) <= ImmediateSteps;
+        return bp.DesignHash.Length == 0 && bp.Steps.Count + (tow?.Steps.Count ?? 0) <= ImmediateSteps; // (a ship design's body: always in slices)
     }
 
     /// <summary>Host setting: generated or committed seeds.</summary>

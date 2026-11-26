@@ -86,6 +86,7 @@ public sealed class WorldSnapshot
     public int NoCollideCount;
     public ushort NextTag;
     public PanelDesign[] Designs = []; // the world's shared panel designs (PanelDesigns.cs; the DSGN section)
+    public string[] ShipDesigns = []; // the ship designs its bodies are built of, as text (DesignParts.cs; the SDIG section, ahead of the part names)
     public string[] Baked = []; // the world's baked designs as text (BakedParts.cs; the BAKE section, ahead of the part names)
     public DigOp[] Ops = [];
     public int OpCount;

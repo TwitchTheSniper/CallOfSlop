@@ -448,6 +448,7 @@ public sealed partial class Construct
 
     // Logic (milestone 2; ConstructLogic.cs)
     public bool HasLogic; // any logic part or wire: the logic step runs
+    public bool HasDesign; // a ship design's element among its parts: drawn as the design's merged mesh (DesignParts.cs, Renderer.Design.cs)
     /// <summary>Host: the station whose berth holds this ship in space (0: none), the berth (a dock part), and where it lies in the
     /// station's frame (its centre of mass, its turn): Game.StationMoor (GameStations.cs). A moored ship isn't carried (it may carry craft of its own).</summary>
     public ushort MooredTo, MoorPart;
@@ -1573,7 +1574,7 @@ public sealed partial class Construct
         {
             RestBounds(i, out var mn, out var mx);
             var pm = PartMass(i);
-            com += (mn + mx) * 0.5f * pm;
+            com += MassMiddle(i, mn, mx) * pm; // (a design part: where its mass is, DesignParts.cs)
             Mass += pm;
             if (LoadOf(i, out var lm, out var lc, out _))
             {
@@ -1611,7 +1612,7 @@ public sealed partial class Construct
             for (var b = 0; b < d.SolidBoxes; b++)
             {
                 BoxOf(i, b, out var c, out var h);
-                var m = PartMass(i) * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f);
+                var m = PartMass(i) * (d.BoxMass is { } share ? share[b] : d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z / MathF.Max(vol, 1e-9f)); // (a design part: each box its share of the mass, DesignParts.cs)
                 var s = h * 2;
                 if (turned)
                 {
@@ -1867,6 +1868,9 @@ public sealed partial class Construct
         IsStation = false;
         for (var i = 0; i < PartCount && !IsStation; i++)
             IsStation = Parts[i].D.IsStationPiece; // (the same on every peer: from the parts alone)
+        HasDesign = false;
+        for (var i = 0; i < PartCount && !HasDesign; i++)
+            HasDesign = Parts[i].D.IsNamedRuntime && DesignParts.IsName(Parts[i].D.Name);
         HasRecycler = false;
         HasGatherer = false;
         HasRefiner = false;

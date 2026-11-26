@@ -68,6 +68,7 @@ public sealed partial class Ui
         Materials, // a beacon's bulk materials (UiSandboxBeacon.cs; survival, in range)
         Upgrades, // the local player's tool upgrades (UiSandboxUpgrades.cs)
         Engine, // the Engine Kit's "Make an engine" (UiSandboxEngine.cs; creative worlds)
+        Designs, // ship designs from the Ship Designer (UiSandboxDesigns.cs; creative worlds)
     }
 
     /// <summary>What a tile shows: a part, a blueprint or a tool, its texts made once.</summary>
@@ -390,7 +391,7 @@ public sealed partial class Ui
     /// <summary>The visible tiles (only when the search, size filter, tab or tree node changed): the highlight stays on its item, or moves to the first match.</summary>
     private void SbFilter()
     {
-        if (_sbFilterBuilt == _sbFilterVersion || _sbTab is SbTab.Spawn or SbTab.Builds or SbTab.Materials or SbTab.Upgrades or SbTab.Engine)
+        if (_sbFilterBuilt == _sbFilterVersion || _sbTab is SbTab.Spawn or SbTab.Builds or SbTab.Materials or SbTab.Upgrades or SbTab.Engine or SbTab.Designs)
             return;
         _sbFilterBuilt = _sbFilterVersion;
         _sbVisibleCount = 0;
@@ -495,7 +496,7 @@ public sealed partial class Ui
     /// <summary>Takes the highlighted tile of the current tab, as Enter does (self-test). False when nothing is highlighted.</summary>
     public bool SandboxInventoryTake(Game game)
     {
-        if (_sbTab is SbTab.Spawn or SbTab.Builds or SbTab.Materials or SbTab.Upgrades or SbTab.Engine)
+        if (_sbTab is SbTab.Spawn or SbTab.Builds or SbTab.Materials or SbTab.Upgrades or SbTab.Engine or SbTab.Designs)
             return false;
         SbFilter();
         var items = _sbItems[(int)_sbTab];
@@ -562,6 +563,7 @@ public sealed partial class Ui
                     SbTabItem("Spawn"u8, SbTab.Spawn);
                     SbTabItem("Builds"u8, SbTab.Builds);
                     SbTabItem("Engine"u8, SbTab.Engine);
+                    SbTabItem("Designs"u8, SbTab.Designs);
                 }
                 ImGui.EndTabBar();
             }
@@ -577,6 +579,16 @@ public sealed partial class Ui
             if (_sbTab == SbTab.Engine)
             {
                 SbDrawEngine(game, me); // the Engine Kit (UiSandboxEngine.cs)
+                ImGui.End();
+                if (!open)
+                    CloseSandboxParts();
+                return;
+            }
+            if (_sbTab != SbTab.Designs)
+                _sbDesignsShown = false; // (the list is read again when the tab opens)
+            if (_sbTab == SbTab.Designs)
+            {
+                SbDrawDesigns(game, me); // ship designs (UiSandboxDesigns.cs)
                 ImGui.End();
                 if (!open)
                     CloseSandboxParts();

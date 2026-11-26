@@ -240,6 +240,8 @@ public static partial class ConstructRender
         _helmetStep = Math.Clamp((float)(Now - _leverDrawnAt), 0, 0.25f) / HelmetSeconds; // (a second pass in the same frame moves nothing)
         _leverDrawnAt = Now;
         LogicDisplays.Sample(world, Now);
+        if (!CameraFeeds.InPass)
+            DesignFrame(gfx, world); // (ship design meshes of bodies gone let go: ConstructRenderDesign.cs)
         GlassCount = 0;
         LastBatchBoxes = LastBatchWalked = 0;
         ShellRigsBegin();
@@ -289,6 +291,18 @@ public static partial class ConstructRender
             gfx.Relative = true;
             if (level == 1 && !CameraFeeds.InPass)
                 PostFx.OfferContact(c, body, Vector3.DistanceSquared(pos, cam)); // (its shadow on the ground under it, after the opaque world: PostFx.Contact.cs)
+            if (c.HasDesign)
+            {
+                n += DrawDesignBody(gfx, c, body); // (a ship design's elements: one merged mesh, near or far: ConstructRenderDesign.cs)
+                if (level == 2)
+                {
+                    gfx.Relative = false;
+                    lod++;
+                    if (bt != 0)
+                        PerfBodies.Draw(c, bt, n - n0);
+                    continue;
+                }
+            }
             if (level == 2)
             {
                 n += DrawLod(gfx, c, body);

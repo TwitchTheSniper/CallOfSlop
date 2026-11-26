@@ -327,6 +327,8 @@ public static unsafe partial class Program
             return PackCheck.Cli(args); // welded groups on a pad, packed as one kind and back out as the group (PackedGroups.cs)
         if (args.Any(a => a.Equals("--bake-kit", StringComparison.OrdinalIgnoreCase)))
             return BakeKitCheck.Cli(args); // each bake kit built from its blueprint and baked into its part, then laid at other turns (BakeKits.cs)
+        if (args.Any(a => a.Equals("--design-check", StringComparison.OrdinalIgnoreCase)))
+            return DesignCheck.Cli(args); // a ship design as a body, headless: its elements, the held spawn's build, a drop on the ground, its tick cost, wire and save (DesignParts.cs)
         if (args.Any(a => a.Equals("--bake-check", StringComparison.OrdinalIgnoreCase)))
             return BakeCheck.Cli(args); // bakes a group headless and checks the round trip: boxes, meshes, the design's wire and save copies, un-baking (BakedParts.cs)
         if (args.Any(a => a.Equals("--hull-section", StringComparison.OrdinalIgnoreCase)))

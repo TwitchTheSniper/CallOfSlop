@@ -42,7 +42,7 @@ public static class SavePaths
     public const string MarkerFile = "settings.txt";
 
     /// <summary>The player's own folders (copied over file by file).</summary>
-    public static readonly string[] SaveFolders = ["AudioMixes", WorldStore.RootName, PlayerBlueprints.FolderName];
+    public static readonly string[] SaveFolders = ["AudioMixes", WorldStore.RootName, PlayerBlueprints.FolderName, ShipDesignStore.FolderName];
 
     /// <summary>The game's own folder (game data, logs; and the saves in portable mode).</summary>
     public static string ExeFolder => AppContext.BaseDirectory;

@@ -523,6 +523,7 @@ public sealed partial class ConstructPartDef
     public int Yield; // a material bundle: the units the Recycler gives back (its Setting is the material id); 0: by mass and class (RecyclingTable)
     public CPartBox[] Boxes = []; // solid boxes first, then detail boxes
     public int SolidBoxes; // how many of Boxes are solid
+    public float[]? BoxMass; // each solid box's share of the mass (null: by volume); a design part's are its skin's, decks' and pieces' (DesignParts.cs)
     internal ConvexHull[]? Hulls; // its convex colliders, made on first use (ConstructHulls)
     internal bool[]? HullCovers; // per solid box: a hull stands for it
     internal bool[]? HullSkin; // per hull: made from a "hull" shape (a plate of skin a player stands on as well: ConstructRideMove.Gather)
@@ -1363,6 +1364,8 @@ public static partial class ConstructParts
             return Pressed.Parse(name); // (a pressed part names itself, a preset's key its catalogue part: Pressed.cs)
         if (BakedParts.IsName(name))
             return BakedParts.Parse(name); // (a Bake Oven's baked part names its design by hash: BakedParts.cs)
+        if (DesignParts.IsName(name))
+            return DesignParts.Parse(name); // (an element of a ship design names the design by hash: DesignParts.cs)
         if (name.StartsWith(HullHoles.Prefix, StringComparison.Ordinal))
             return HullHoles.Parse(name); // (a part a cutter holed names itself, its base and its holes: HullHoles.cs)
         if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name) || HullLoft.IsSectionName(name) || HullLoft.IsDressName(name))

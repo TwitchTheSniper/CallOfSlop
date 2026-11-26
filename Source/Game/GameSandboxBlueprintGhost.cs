@@ -157,7 +157,7 @@ public sealed partial class Game
     {
         var peek = r;
         var inner = (CActKind)peek.U8();
-        if (inner is not (CActKind.Blueprint or CActKind.Vehicle or CActKind.FactionVehicle or CActKind.MakeEngine))
+        if (inner is not (CActKind.Blueprint or CActKind.Vehicle or CActKind.FactionVehicle or CActKind.MakeEngine or CActKind.SpawnDesign))
             return "that can't be placed with a ghost";
         if (inner == CActKind.FactionVehicle && peek.U8() == 1)
             return "a convoy is set down as it is";

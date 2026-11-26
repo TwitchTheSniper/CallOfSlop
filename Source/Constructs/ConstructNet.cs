@@ -40,6 +40,7 @@ public enum CBodyKind : byte
     Thrust, // protocol 319: each thruster's level, for its flame: u16 n, u8 each; 464: then u16 count, and u16 index, s8 x, s8 y each swung bell's gimbal (ConstructThrust.WriteShown)
     Link, // protocol 328: one body's linked logistics parts as their panels show them (LinkedLogistics.Write)
     Baked, // protocol 422: one baked part's design: u32 bytes, its text (BakedParts.Write), before any body that names it
+    ShipDesign, // protocol 471: one ship design (Ship Designer JSON): u32 bytes, its text (DesignParts.Write), before any body that names its elements
 }
 
 /// <summary>
@@ -965,6 +966,9 @@ public static partial class ConstructNet
                 break;
             case CBodyKind.Designs:
                 PanelDesigns.Read(ref r, world);
+                break;
+            case CBodyKind.ShipDesign:
+                DesignParts.Read(ref r, world);
                 break;
             case CBodyKind.Baked:
                 BakedParts.Read(ref r, world);

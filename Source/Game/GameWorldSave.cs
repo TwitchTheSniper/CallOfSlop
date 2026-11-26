@@ -569,6 +569,9 @@ public sealed partial class Game
             case WorldSaveWriter.BakedTag:
                 BakedParts.ReadSave(r, Constructs); // (the baked designs, before the names that make their parts: BakedParts.cs)
                 break;
+            case WorldSaveWriter.ShipDesignTag:
+                DesignParts.ReadSave(r, Constructs); // (the ship designs, before the names that make their elements' parts: DesignParts.cs)
+                break;
             case WorldSaveWriter.DesignsTag:
                 PanelDesigns.ReadSave(r, Constructs); // (the world's shared panel designs: PanelDesigns.cs)
                 break;

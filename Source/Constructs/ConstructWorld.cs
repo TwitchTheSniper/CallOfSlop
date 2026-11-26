@@ -460,6 +460,7 @@ public sealed partial class ConstructWorld
         PodReleaseCount = 0;
         PodAuthority = false; // (the pods' first tick in the next world gives any untagged docked shell its tag)
         Designs.Clear(); // (a world's shared panel designs go with it: PanelDesigns.cs)
+        ClearShipDesigns(); // (the ship designs' list too: DesignParts.cs)
         ClearBaked(); // (and its baked designs' list; the shared table keeps them by hash: BakedParts.cs)
         DesignStamp++;
         foreach (var c in Bodies)
@@ -590,6 +591,8 @@ public sealed partial class ConstructWorld
             c.Charge += def.BatteryCapacity; // (a new battery comes charged)
         if (def.IsNamedRuntime && BakedParts.IsName(def.Name))
             BakedParts.NoteInUse(this, def); // (a baked part from a blueprint or a hand: its design goes to everyone before the body)
+        else if (def.IsNamedRuntime && DesignParts.IsName(def.Name))
+            DesignParts.NoteInUse(this, def); // (a ship design's element: its design goes to everyone before the body)
         return i;
     }
 
