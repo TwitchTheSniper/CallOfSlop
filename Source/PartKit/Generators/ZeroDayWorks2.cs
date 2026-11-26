@@ -425,11 +425,15 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             var flow = Flow(rot);
             var paint = PaintOf.GetValueOrDefault(id, Steel);
             var coreSide = id is "building-station" or "extruder" ? -1 : 1;
-            var coreLocal = new Vector2(coreSide * (sx / 2 + 1), Flag(it, "coreFar") ? sz / 2 - 1 : -sz / 2 + 1);
-            var core = Local(x, z, rot, coreLocal.X, coreLocal.Y);
             Vector2 Cell(int i, int j) => Local(x, z, rot, -sx / 2 + 1 + 2 * i, -sz / 2 + 1 + 2 * j);
             // (the row furthest down the flow: a former's and a cutter's Out Tables)
             var lastRow = Vector2.Dot(Cell(0, l - 1) - Cell(0, 0), flow) > 0 ? l - 1 : 0;
+            // A Bake Oven's tunnel runs from its Core's row (its way in) to the far row (its way out): its Core stands by the row up the
+            // flow, so a kit rolled out of its line's station bay comes in at the in end and the baked part rolls on toward the main station
+            // (Sean's layout drew each oven's Core at its down-flow end, where the kits rolled into the tunnel's out end: 2026-11-26).
+            var far = id == "bake-oven" ? lastRow == 0 && l > 1 : Flag(it, "coreFar");
+            var coreLocal = new Vector2(coreSide * (sx / 2 + 1), far ? sz / 2 - 1 : -sz / 2 + 1);
+            var core = Local(x, z, rot, coreLocal.X, coreLocal.Y);
 
             if (id == "extruder")
             {
@@ -448,7 +452,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 }
             // The Core: on the side cell beside its own cell (the bed's edge cell in the Core's row).
             var edge = coreSide > 0 ? w - 1 : 0;
-            var row = Flag(it, "coreFar") ? l - 1 : 0;
+            var row = far ? l - 1 : 0;
             var by = cells[edge, row];
             switch (id)
             {
@@ -473,11 +477,14 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     break;
                 }
                 case "bake-oven":
-                    CoreOn("Bake Oven", "+z", by, core, paint);
+                {
+                    if (CoreOn("Bake Oven", "+z", by, core, paint) is { } c)
+                        _labs.Add((id, new Vector2(x, -z), c, flow));
                     break;
+                }
                 case "building-station":
-                    if (!Flag(it, "noCoreDock"))
-                        CoreOn("Building Station", "+x.0", by, core, paint);
+                    if (!Flag(it, "noCoreDock") && CoreOn("Building Station", "+x.0", by, core, paint) is { } st)
+                        _stations.Add((new Vector2(x, -z), st));
                     break;
                 case "press":
                 {

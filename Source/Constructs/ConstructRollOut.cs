@@ -135,6 +135,20 @@ public static class ConstructRollOut
         return way.Z > 0.9f && local.Z < bed.Along * 0.5f ? oven : -1;
     }
 
+    /// <summary>Why run <paramref name="k"/> rolls into no oven's bed (for a check's report): where it ends and what lies there.</summary>
+    public static string NoOvenWhy(Construct c, int k)
+    {
+        if (!Line(c, k, out _, out var n1, out var dir))
+            return "not a roller run";
+        var at = n1 + dir * (RollerRuns.EndIn + Probe);
+        var oven = OvenAt(c, at);
+        if (oven < 0)
+            return $"its end ({at.X:0.0}, {at.Z:0.0}, heading {dir.X:0.0}, {dir.Z:0.0}) is over no oven's bed";
+        if (!InTunnel(c, oven, at, dir, out var local, out var way, out var bed))
+            return $"the Bake Oven part {oven} there has no bed";
+        return $"it meets the Bake Oven part {oven}'s bed at {local.Z:0.0} m of its {bed.Along:0.0} m tunnel, heading {way.X:0.0}, {way.Z:0.0} in the tunnel's frame (it must enter at the in end, along the tunnel)";
+    }
+
     /// <summary>
     /// Oven <paramref name="part"/>'s way out: a run whose line, run back past its first tile, meets the bed at the tunnel's out end and
     /// leads on along the tunnel. Its link, or -1.
