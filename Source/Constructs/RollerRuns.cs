@@ -356,13 +356,19 @@ public static class RollerRuns
                 _crossHosts[hosts + x.NodeN++] = (ushort)path[i];
             }
             if (x.NodeN < 2 || _crossHosts[hosts + x.NodeN - 1] != x.To)
+            {
+                Console.WriteLine($"[rollers] {c.Id}: a turntable field's way from tile {t} to tile {x.To} turns more than {MaxCrossNodes - 2} times: no crossing, pieces wait on tile {t}");
                 continue; // (a way with more turns than a crossing keeps)
+            }
             // Its ports: out of the first tile's face toward the second node, into the last tile's face it comes in by; or, when the way
             // out of the field is a strip into a bed beside it (the narrow lines' 2 m strip by the Panel Former, too short for a bar lying
             // across it), on into that bed's Bed in: the piece slides off the field sideways onto the bed.
             if (FacePort(c, t, c.Parts[_crossHosts[hosts + 1]].Pos - c.Parts[t].Pos, "Out ") is not (var fp and >= 0)
                 || FacePort(c, x.To, c.Parts[_crossHosts[hosts + x.NodeN - 2]].Pos - c.Parts[x.To].Pos, "In ") is not (var tp and >= 0))
+            {
+                Console.WriteLine($"[rollers] {c.Id}: a turntable field's way from tile {t} to tile {x.To} finds no face port: no crossing, pieces wait on tile {t}");
                 continue;
+            }
             (x.FromPort, x.ToPort) = ((byte)fp, (byte)tp);
             var intoBed = false;
             for (var k = 0; k < c.RouteCount && !intoBed; k++)

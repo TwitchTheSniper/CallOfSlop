@@ -1868,7 +1868,9 @@ public static partial class ConstructStation
         var k = KindOf(j, (ushort)d.Id);
         if (k < 0 || k >= j.KindReady.Length || j.KindLaid[k])
             return false;
-        return j.KindReady[k] <= ConstructLifters.PickPadHolds(world, c, t, (ushort)d.Id);
+        // (one piece of a kind may lie on the pads ahead of its ready steps: a kit that repeats a kind with another between, plate A,
+        // frame B, plate A, would otherwise hold the second A at its maker's bed, and B, queued behind it there, never came: merge review)
+        return j.KindReady[k] + 1 <= ConstructLifters.PickPadHolds(world, c, t, (ushort)d.Id);
     }
 
     /// <summary>Free places in the holding bays (each Piece Rack's free items, as <see cref="HasHoldingBay"/> finds them).</summary>
