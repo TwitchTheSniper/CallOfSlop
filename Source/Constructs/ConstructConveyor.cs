@@ -1330,6 +1330,8 @@ public static class ConstructConveyor
         var td = c.DefOf(to);
         if (td.IsPieceRack)
         {
+            if (td.IsLayDownPad && ConstructStation.PadEarly(world, c, to, d))
+                return false; // (a rover station's piece no step can fit yet: it waits on its run until one can)
             var ordered = r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
             if (!(td.IsBuildStation && ConstructStation.ParkEarly(world, c, to, d)) // (a batched station's early part waits in a holding bay: it counts as delivered)
                 && !world.RackPut(c, to, d, ordered) && !(td.IsBuildStation && (ConstructStation.MakeRoomFor(world, c, to, d) && world.RackPut(c, to, d, ordered) || ConstructStation.ParkEarly(world, c, to, d, full: true))))
@@ -1356,8 +1358,8 @@ public static class ConstructConveyor
                         return false; // (another holder's piece: it waits here, as with no way on, never left on a pad nothing takes it from)
                     // (no out run: it rolls across the bed onto the pick pad its Out Table butts, Zero Day Works II's big lines, 2026-11-26)
                     var ordered = r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
-                    if (!world.RackPut(c, pad, d, ordered))
-                        return false; // (it waits on the bed while the pad can't take it)
+                    if (ConstructStation.PadEarly(world, c, pad, d) || !world.RackPut(c, pad, d, ordered))
+                        return false; // (it waits on the bed while the pad can't take it, or no step of a rover station's can fit it yet)
                     ConstructLogisticsPlan.Arrived(world, c, ConstructPads.Owner(c, pad), r.Tag, d);
                     ConstructLifters.PadArrived(world, c, pad, ordered ? r.Tag : (ushort)0, d);
                     return true;
