@@ -142,6 +142,7 @@ dialog textarea { width: 100%; height: 50vh; font: 12px var(--mono); background:
         <button id="v-person" class="on">Person</button>
         <button id="v-hull" class="on" title="Show or hide the hull (and its connections) outside the Hull tab">Hull shown</button>
         <button id="v-parts" class="on" title="Show or hide the pieces on the hull outside the Pieces tab">Parts shown</button>
+        <button id="v-lights" title="Turn the floodlights on: each lights the scene along its beam">Lights</button>
       </div>
       <div class="tip" id="tip"></div>
     </div>
@@ -186,7 +187,7 @@ let S = null;          // the scene from C#
 let CAT = null;        // the catalogue
 const sel = { kind: null, id: 0, station: -1 };
 let mode = "hull";
-const view = { xray: false, rooms: true, links: true, person: true, hull: true, parts: true };
+const view = { xray: false, rooms: true, links: true, person: true, hull: true, parts: true, lights: false };
 let deck = 0;
 // Room view (Interior tab): only one room (and, ticked, the rooms a door or a riser joins to it) with its walls and interior; the model
 // builds nothing else while it is on. { room, connected } or null.
@@ -432,9 +433,11 @@ function rebuild() {
     world.add(m); pickables.push(m);
   }
   if (view.rooms && (inside() || view.xray || pickRoomFor)) drawRooms();
+  if (view.parts || mode === "pieces") drawBeams();
   if (view.parts) drawConnectors();
   if (inside() || view.xray) drawRisers();
   if (inside() || view.xray) drawPassages();
+  drawReserves();
   if (view.hull || inside()) drawHullWindows();
   if (view.links && mode !== "hull") drawLinks();
   if (inside()) drawDeckPlane();
@@ -621,6 +624,23 @@ function drawRooms(only = null) {
 // corner posts and its car at the lowest stop; amber frames mark where it passes each deck. Pickable in the interior.
 let placingRiser = null, doorFrom = 0, doorKind = "Door";
 const inside = () => mode === "interior" || mode === "connectors";
+// Weapons' reserved volumes behind their mounts (Karl, 2026-11-26; Source/ShipDesigner/DesignWeaponMounts.cs): hologram boxes, red where a
+// room or the skin clips them. Shown in X-ray, inside, and for the picked mount.
+function drawReserves() {
+  for (const p of S.pieces) {
+    if (!p.reserve?.length || !(view.xray || inside() || (sel.kind === "piece" && sel.id === p.id))) continue;
+    for (const r of p.reserve) {
+      const [cx, cy, cz, ax, ay, az, bx, by, bz, dx, dy, dz, bad] = r;
+      const A = new THREE.Vector3(ax, ay, az), B = new THREE.Vector3(bx, by, bz), D = new THREE.Vector3(dx, dy, dz);
+      const mtx = new THREE.Matrix4().makeBasis(A.clone().normalize(), B.clone().normalize(), D.clone().normalize()).setPosition(cx, cy, cz);
+      const geo = new THREE.BoxGeometry(2 * A.length(), 2 * B.length(), 2 * D.length()), col = bad ? 0xff5a44 : 0x46d2ff;
+      const box = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.18, depthWrite: false, depthTest: false }));
+      const edge = new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.9, depthTest: false }));
+      for (const o of [box, edge]) { o.matrixAutoUpdate = false; o.matrix.copy(mtx); o.renderOrder = 7; world.add(o); }
+    }
+  }
+}
+
 function drawRisers() {
   for (const k of S.risers || []) {
     const a = new THREE.Vector3(...k.a), b = new THREE.Vector3(...k.b), len = a.distanceTo(b); if (len < 0.1) continue;
@@ -811,6 +831,28 @@ function drawLinks() {
     line.computeLineDistances(); line.renderOrder = 6; world.add(line);
     const dot = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), new THREE.MeshBasicMaterial({ color: l.ok ? 0x5cd07a : 0xff5a44, depthTest: false }));
     dot.position.set(...l.b); dot.renderOrder = 6; world.add(dot);
+  }
+  // An ammo socket's feed to its gun (Karl, 2026-11-26): an orange line from the socket to the weapon.
+  for (const p of S.pieces) {
+    const g = p.feeds && S.pieces.find(q => q.id === p.feeds); if (!g) continue;
+    const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...p.at), new THREE.Vector3(...g.at)]);
+    const line = new THREE.Line(geo, new THREE.LineDashedMaterial({ color: 0xff9a2e, dashSize: 0.5, gapSize: 0.15, depthTest: false, transparent: true }));
+    line.computeLineDistances(); line.renderOrder = 6; world.add(line);
+  }
+}
+
+// Floodlights' beams (Karl, 2026-11-26): a faint cone along each beam always, brighter with Lights on, and then a real SpotLight too.
+function drawBeams() {
+  for (const p of S.pieces) for (const b of p.beams ?? []) {
+    const at = new THREE.Vector3(...b.at), dir = new THREE.Vector3(...b.dir).normalize(), col = new THREE.Color(p.beam);
+    const len = view.lights ? b.range * 0.3 : Math.min(b.range * 0.2, 12), spread = Math.tan(0.35);
+    const cone = new THREE.Mesh(new THREE.CylinderGeometry(b.r, b.r + len * spread, len, 24, 1, true),
+      new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: view.lights ? 0.08 : 0.06, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); cone.position.copy(at).addScaledVector(dir, len / 2);
+    world.add(cone);
+    if (!view.lights) continue;
+    const s = new THREE.SpotLight(col, 60, b.range, 0.35, 0.45, 1.2);
+    s.position.copy(at); s.target.position.copy(at).addScaledVector(dir, 10); world.add(s, s.target);
   }
 }
 
@@ -1288,6 +1330,85 @@ function cutControls(o, send, kind, glass) {
       el("button", { class: "reset", title: "Glazing back to its default", onclick: () => send({ depth: D.depth, double: D.double }) }, "\u21ba")));
   return out;
 }
+// An airlock's chamber and doors, and an ammo socket's gun (Karl, 2026-11-26; Source/ShipDesigner/DesignDocking.cs).
+function dockControls(p) {
+  const send = o => cmd({ op: "setPiece", id: p.id, ...o }), D = CAT.defaults.piece;
+  if (p.socket === "airlock") {
+    const s = (label, key) => { let f = true; return slider(label, Math.round(p[key] * 100), key === "airD" ? 60 : key === "airH" ? 120 : 60, 600, 5, " cm",
+      v => { cmd({ op: "setPiece", id: p.id, [key]: v / 100, preview: true, light: true }, !f); f = false; }, v => send({ [key]: v / 100 }), Math.round(D[key] * 100), () => send({ [key]: D[key] })); };
+    const type = el("div", { class: "row" }, el("span", {}, "Doors"), ...["sliding", "hinged", "iris"].map(t => el("button", { class: p.door === t ? "on" : "", onclick: () => send({ door: t }) }, t[0].toUpperCase() + t.slice(1))));
+    return [el("h3", {}, "Chamber"), s("Width", "airW"), s("Height", "airH"), s("Depth", "airD"), s("Door width", "doorW"), type,
+      el("div", { class: "row" }, resetAll("Chamber and doors back to their defaults", () => send(dfltOf("piece", ["airW", "airH", "airD", "doorW", "door"])))),
+      el("p", { class: "hint" }, "An outer hatch on the skin, the chamber, and an inner door into the room. Width runs along the hull, height across the hatch.")];
+  }
+  if ((CAT.feeders || ["Ammo socket"]).includes(p.kind)) {
+    const guns = S.pieces.filter(q => q.id !== p.id && !(CAT.feeders || ["Ammo socket"]).includes(q.kind) && CAT.pieces.find(k => k.name === q.kind)?.group === "Weapons");
+    const sel = el("select", { "aria-label": "Gun it feeds", onchange: e => send({ feed: +e.target.value }) }, el("option", { value: "0" }, "Nearest weapon"),
+      ...guns.map(q => el("option", { value: q.id, ...(p.feed === q.id ? { selected: "" } : {}) }, `${q.kind}${q.fit ? " (" + q.fit + ")" : ""} #${q.id}`)));
+    const to = S.pieces.find(q => q.id === p.feeds);
+    return [el("h3", {}, "Feed"), el("div", { class: "row" }, el("span", {}, "Feeds"), sel),
+      el("p", { class: "hint" }, to ? `Feeds the ${to.kind} #${to.id} (the orange line).` : "Feeds nothing: there is no weapon on the ship.")];
+  }
+  return [];
+}
+// A hangar piece's own controls (Karl, 2026-11-26): a bay's door (width, height, sliding or hinged); a lift platform's or ramp deck's
+// width, length and travel; a docking arm's or cradle's bay link and its spot in the bay. Resets from CAT.defaults.hangar[kind].
+function hangarControls(p) {
+  const D = CAT.defaults.hangar?.[p.kind]; if (!D) return [];
+  const send = o => cmd({ op: "setPiece", id: p.id, ...o });
+  const m = (label, key, min, max, step, unit = " m") => slider(label, p[key], min, max, step, unit, () => {}, v => send({ [key]: v }), D[key]);
+  if (p.bay) {
+    const ty = el("select", { "aria-label": "Door type" }); for (const t of ["Sliding", "Hinged"]) ty.append(el("option", t === p.bayDoor ? { selected: "" } : {}, t));
+    ty.addEventListener("change", () => send({ bayDoor: ty.value }));
+    return [el("h3", {}, "Hangar door"),
+      m("Door width", "bayDoorW", 5, 48, 0.5), m("Door height", "bayDoorH", 3, 32, 0.5),
+      el("div", { class: "row" }, el("span", {}, "Type"), ty, el("button", { class: "reset", title: "Door back to its defaults", onclick: () => send({ bayDoorW: D.bayDoorW, bayDoorH: D.bayDoorH, bayDoor: D.bayDoor }) }, "Reset all")),
+      el("p", { class: "hint" }, `The bay is ${p.bay[0]} m across, ${p.bay[1]} m tall and ${p.bay[2]} m deep. ${p.bayDoor === "Hinged" ? "The door swings out on motor hinges." : "The door slides aside on a piston."} ${p.fittings} docking fitting${p.fittings === 1 ? "" : "s"} linked.`)];
+  }
+  if (p.w !== undefined)
+    return [el("h3", {}, p.kind),
+      m("Width", "w", 2, 48, 0.5), m("Length", "l", 2, 48, 0.5), m("Travel", "travel", 0.5, 30, 0.1),
+      el("div", { class: "row" }, el("button", { class: "reset", title: "Width, length and travel back to their defaults", onclick: () => send({ w: D.w, l: D.l, travel: D.travel }) }, "Reset all"))];
+  if (p.link !== undefined) {
+    const bays = S.pieces.filter(q => q.bay), ls = el("select", { "aria-label": "Hangar bay" });
+    ls.append(el("option", p.link ? { value: "0" } : { value: "0", selected: "" }, "Not linked"));
+    for (const b of bays) ls.append(el("option", b.id === p.link ? { value: b.id, selected: "" } : { value: b.id }, `${b.kind} #${b.id}`));
+    ls.addEventListener("change", () => send({ link: +ls.value }));
+    const pc = (label, key) => slider(label, Math.round(p[key] * 100), -50, 50, 1, "%", () => {}, v => send({ [key]: v / 100 }), Math.round(D[key] * 100), () => send({ [key]: D[key] }));
+    return [el("h3", {}, "Hangar link"), el("div", { class: "row" }, el("span", {}, "Bay"), ls),
+      pc("Along the bay", "along"), pc("Across the bay", "across"),
+      el("p", { class: "hint" }, p.link ? "Linked to the bay and its door (the dashed lines with Socket links on); it sits on the bay's floor." : "Not linked: it sits where it was dropped. Pick the bay it serves.")];
+  }
+  return [];
+}
+// A weapon mount's weapon (Karl, 2026-11-26): the dropdown lists the weapons of its size class or smaller.
+function mountControls(p) {
+  if (!p.mountClass) return [];
+  const send = o => { const a = cmd({ op: "setPiece", id: p.id, ...o }); if (a?.error) toast(a.error); }, D = CAT.defaults.piece, cls = "SML";
+  const ws = (CAT.weapons || []).filter(w => w.class <= p.mountClass);
+  const s = el("select", { "aria-label": "Weapon fitted", onchange: e => send({ fit: e.target.value }) }, el("option", { value: "" }, "Empty mount"),
+    ...ws.map(w => el("option", { value: w.name, title: w.desc, ...(p.fit === w.name ? { selected: "" } : {}) }, `${w.name} (${cls[w.class - 1]})`)));
+  const w = (CAT.weapons || []).find(w => w.name === p.fit), bad = p.reserve?.some(r => r[12]);
+  return [el("h3", {}, "Weapon"), el("div", { class: "row" }, el("span", {}, "Fitted"), s,
+      el("button", { class: "reset", title: "Back to an empty mount", onclick: () => send({ fit: D.fit }) }, "\u21ba")),
+    el("p", { class: "hint" }, w ? `${w.desc} It reserves its ${w.reserve} behind the mount (the hologram box)${bad ? ": a room or the skin clips it" : ""}.` : `A size ${cls[p.mountClass - 1]} mount: fit a weapon of that size or smaller.`)];
+}
+// A floodlight's aim and beam colour (Karl, 2026-11-26), with resets from CAT.defaults.fitting; a tow point's note.
+function fittingControls(p) {
+  const send = o => cmd({ op: "setPiece", id: p.id, ...o }), D = CAT.defaults.fitting;
+  if (p.beam !== undefined) {
+    const c = el("input", { type: "color", value: p.beam, "aria-label": "Beam colour" }); c.addEventListener("change", () => send({ beam: c.value }));
+    return [el("h3", {}, "Beam"),
+      slider("Pitch", p.pitch, -90, 90, 1, " deg", () => {}, v => send({ pitch: v }), D.pitch),
+      slider("Yaw", p.yaw, -180, 180, 1, " deg", () => {}, v => send({ yaw: v }), D.yaw),
+      el("div", { class: "row" }, el("span", {}, "Colour"), c, el("button", { class: "reset", title: `Reset beam colour to ${D.beam}`, onclick: () => send({ beam: D.beam }) }, "\u21ba"),
+        resetAll("Aim and colour back to their defaults", () => send(dfltOf("fitting", ["pitch", "yaw", "beam"])))),
+      el("p", { class: "hint" }, "Pitch tilts the beam off the skin towards the bow (negative: the stern); yaw swings it round. Tick Lights in the view bar to light the scene.")];
+  }
+  if (p.kind === "Tow eye" || p.kind === "Tow hitch")
+    return [el("p", { class: "hint" }, "A tow point belongs on the keel or the centreline, or a tow pulls the ship round: press Centre.")];
+  return [];
+}
 const dfltOf = (kind, keys) => Object.fromEntries(keys.map(k => [k, CAT.defaults[kind][k]]));
 const resetAll = (title, send) => el("button", { class: "reset", title, onclick: send }, "Reset all");
 function joinControls(o, apply, reset = apply) {
@@ -1400,12 +1521,12 @@ function leftPanel() {
       slider("Size to place", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }), slider("Recess to place", Math.round(pieceRecess * 100), 0, 200, 5, " cm", v => { pieceRecess = v / 100; })));
     for (const g of groups) {
       const pal = el("div", { class: "pal" });
-      for (const k of CAT.pieces.filter(p => p.group === g)) {
+      for (const k of CAT.pieces.filter(p => p.group === g && !(CAT.legacy || []).includes(p.name))) {
         const b = el("button", { class: k.socket ? "sock" : "", title: k.desc }, el("b", {}, k.name), el("i", {}, k.socket ? `needs ${k.needs}` : (k.where === "skin" ? "on the skin" : "on a hull's end")));
         b.addEventListener("pointerdown", ev => paletteStart(ev, k.name));
         pal.append(b);
       }
-      L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g), pal));
+      L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g === "Docking" ? "Docking clamps and locks" : g === "Boarding" ? "Boarding" : g), pal));
     }
   } else {
     if (roomView) {
@@ -1752,6 +1873,10 @@ function inspector() {
       ...(k.socket ? [(() => { let f = true; return slider("Cladding", Math.round((p.clad ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, clad: v / 100, preview: true, light: true }, !f); f = false; }, v => cmd({ op: "setPiece", id: p.id, clad: v / 100 })); })()] : []),
       slider("Recess", Math.round((p.recess ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, recess: v / 100, preview: true, light: true }, !firstRec); firstRec = false; }, v => cmd({ op: "setPiece", id: p.id, recess: v / 100 })),
       ...cutControls(p, o => cmd({ op: "setPiece", id: p.id, ...o }), "piece", p.socket === "window"),
+      ...dockControls(p),
+      ...hangarControls(p),
+      ...mountControls(p),
+      ...fittingControls(p),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),
@@ -1760,8 +1885,8 @@ function inspector() {
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn - 15 }) }, "Turn left"),
         el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, turn: p.turn + 15 }) }, "Turn right"),
         el("span", { class: "mono" }, `${fmt(p.turn)} deg`)),
-      k.group === "Drives" ? el("p", { class: "hint" }, `Its service socket (feed and access panel) is inside, opposite it, in ${p.room ? (() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })() : "the nearest room it can reach"}.`) : "",
-      k.group === "Drives" ? el("div", { class: "row" },
+      k.service ? el("p", { class: "hint" }, `Its service socket (feed and access panel) is inside, opposite it, in ${p.room ? (() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })() : "the nearest room it can reach"}.`) : "",
+      k.service ? el("div", { class: "row" },
         el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room its service socket goes in."; } }, "Pick its room"),
         p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "") : "",
       k.socket ? el("p", { class: "hint" }, p.room ? `Opens into ${(() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })()}.` : "Opens into the nearest room it can reach.") : "",
@@ -1892,7 +2017,7 @@ $("dload").addEventListener("click", () => {
 });
 $("v-frame").addEventListener("click", frame);
 const toggle = (id, key) => $(id).addEventListener("click", () => { view[key] = !view[key]; $(id).classList.toggle("on", view[key]); rebuild(); });
-toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links"); toggle("v-person", "person"); toggle("v-hull", "hull"); toggle("v-parts", "parts");
+toggle("v-xray", "xray"); toggle("v-rooms", "rooms"); toggle("v-links", "links"); toggle("v-person", "person"); toggle("v-hull", "hull"); toggle("v-parts", "parts"); toggle("v-lights", "lights");
 window.addEventListener("keydown", e => {
   if (e.target.closest?.("input, textarea, select")) return;
   const ctrl = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();

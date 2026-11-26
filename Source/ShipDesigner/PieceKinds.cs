@@ -10,7 +10,7 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     /// <summary>A drive's service socket (Karl, 2026-11-24): placed on the skin, it gets a socket on the inside, opposite it, in the
     /// room behind (its feed and access panel). It cuts no hole and is not a way aboard.</summary>
     /// RCS quads need none (Karl, 2026-11-25): they are fed by their pads, with no way in from inside.
-    public bool Service => Group == "Drives" && Name != "RCS quad";
+    public bool Service => Group == "Drives" && !DesignFittings.NoService(Name);
 
     public double Reach => Service ? 3.0 : Socket switch { "dock" => 2.6, "cargo" => 2.6, "ramp" => RampReach, _ => 2.2 };
 
@@ -21,14 +21,15 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     public (double Hx, double Hz, bool Round)? Opening => Socket switch
     {
         "airlock" => (1.15, 0.75, false), "window" => (0.55, 0.9, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false),
-        "ramp" => (1.25, 1.6, false), "gangway" => (1.1, 0.6, false), "ladder" => (1.05, 0.55, false), _ => null,
+        "ramp" => (1.25, 1.6, false), "gangway" => (1.1, 0.6, false), "ladder" => (1.05, 0.55, false),
+        "hangar" => (2.5, 1.5, false), "lift" => (2.5, 2.5, false), "rampdeck" => (2.5, 4.0, false), _ => PieceDocking.Opening(Socket), // hangar pieces sized per piece: DesignHangar.OpeningOf
     };
 
     /// <summary>What keeps hull cladding clear: the opening, or a drive's base on the skin (it cuts no hole). Pieces with one get the
     /// clearance and hole size sliders (Karl, 2026-11-25).</summary>
     public (double Hx, double Hz, bool Round)? Footprint => Opening ?? Name switch
     {
-        "Main drive" => (1.35, 1.35, true), "Small drive" => (0.7, 0.7, true), "RCS quad" => (0.35, 0.35, false), _ => null,
+        "Main drive" => (1.35, 1.35, true), "Small drive" => (0.7, 0.7, true), "RCS quad" => (0.35, 0.35, false), _ => PieceDocking.Footprint(Name) ?? DesignFittings.Footprint(Name),
     };
 }
 
@@ -177,6 +178,14 @@ public static class PieceKinds
                 m.Box(x, 0.14, -0.25, x + 0.04, 0.18, 0.25, Gun);
             Well(m, 1.05, 0.55, 0.8);
         }),
+        // The ammo socket, docking and boarding pieces (Karl, 2026-11-26): DesignDocking.cs.
+        .. PieceDocking.Kinds,
+        // Hangar bays, their fittings, the lift platform and the ramp deck (Karl, 2026-11-26): DesignHangar.
+        ..DesignHangar.Kinds,
+        // Weapon mounts, the shell magazine and the ammo hoist (Karl, 2026-11-26): DesignWeaponMounts.cs.
+        .. PieceWeapons.Kinds,
+        // Floodlights, the long-range sensor, the heavy RCS and tow points (Karl, 2026-11-26): DesignFittings.
+        ..DesignFittings.Kinds,
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>

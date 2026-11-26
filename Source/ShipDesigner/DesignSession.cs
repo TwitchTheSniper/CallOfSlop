@@ -73,6 +73,10 @@ public sealed class DesignSession
         var j = new HullJoin();
         var h = new HullBody();
         var r = new Room();
+        // Weapon mounts' fittings and the pieces that feed them (Karl, 2026-11-26; DesignWeaponMounts.cs).
+        c["weapons"] = new JsonArray([.. PieceWeapons.Weapons.Select(w => (JsonNode)new JsonObject { ["name"] = w.Name, ["class"] = w.Class, ["desc"] = w.Desc, ["reserve"] = w.Reserve })]);
+        c["feeders"] = new JsonArray([.. PieceWeapons.Feeders.Select(f => (JsonNode)f)]);
+        c["legacy"] = new JsonArray([.. PieceWeapons.Legacy.Select(f => (JsonNode)f)]);
         c["defaults"] = new JsonObject
         {
             ["join"] = new JsonObject
@@ -90,10 +94,15 @@ public sealed class DesignSession
                 ["material"] = h.Material, ["cladMaterial"] = h.CladMaterial, ["damage"] = h.Damage, ["damageSeed"] = h.DamageSeed, ["cladFrom"] = null,
             },
             ["room"] = new JsonObject { ["wallThick"] = r.WallThick, ["ribSpacing"] = r.RibSpacing, ["wallStyle"] = r.WallStyle, ["wallColour"] = r.WallColour, ["seed"] = r.Seed, ["floor"] = r.Floor },
-            ["piece"] = new JsonObject { ["gap"] = -1, ["hole"] = 1.0, ["depth"] = 0.2, ["double"] = true },
+            ["piece"] = new JsonObject { ["gap"] = -1, ["hole"] = 1.0, ["depth"] = 0.2, ["double"] = true,
+                ["airW"] = PieceDocking.AirW, ["airH"] = PieceDocking.AirH, ["airD"] = PieceDocking.AirD, ["doorW"] = PieceDocking.DoorW, ["door"] = "sliding", ["fit"] = "" },
             ["hullWindow"] = new JsonObject { ["gap"] = -1, ["hole"] = 1.0, ["depth"] = 0.2, ["double"] = true },
             // A corridor's own defaults (Room.KindDefaults), over the room's.
             ["corridor"] = new JsonObject { ["wallStyle"] = "Corridor", ["floor"] = "Grating" },
+            // Each hangar piece's sizes (DesignHangar.Init), by kind.
+            ["hangar"] = DesignHangar.Defaults(),
+            // A floodlight's aim and beam (DesignFittings).
+            ["fitting"] = DesignFittings.Defaults(),
         };
         return c.ToJsonString();
     }
@@ -101,7 +110,7 @@ public sealed class DesignSession
     private static string Basic()
     {
         var sb = new StringBuilder("{\"pieces\":[");
-        sb.AppendJoin(',', PieceKinds.All.Select(k => $"{{\"name\":{DesignScene.Q(k.Name)},\"group\":{DesignScene.Q(k.Group)},\"where\":{DesignScene.Q(k.Where)},\"socket\":{(k.Socket is null ? "null" : DesignScene.Q(k.Socket))},\"needs\":{DesignScene.Q(k.Needs)},\"desc\":{DesignScene.Q(k.Desc)}}}"));
+        sb.AppendJoin(',', PieceKinds.All.Select(k => $"{{\"name\":{DesignScene.Q(k.Name)},\"group\":{DesignScene.Q(k.Group)},\"where\":{DesignScene.Q(k.Where)},\"socket\":{(k.Socket is null ? "null" : DesignScene.Q(k.Socket))},\"needs\":{DesignScene.Q(k.Needs)},\"desc\":{DesignScene.Q(k.Desc)},\"service\":{(k.Service ? "true" : "false")}}}"));
         sb.Append("],\"rooms\":[");
         sb.AppendJoin(',', RoomKinds.All.Select(k => $"{{\"name\":{DesignScene.Q(k.Name)},\"colour\":{DesignScene.Q(k.Colour)},\"desc\":{DesignScene.Q(k.Desc)}}}"));
         sb.Append("],\"sections\":[");

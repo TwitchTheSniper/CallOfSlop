@@ -67,7 +67,7 @@ public static partial class DesignScene
         }
         var x = Cross(y, z);
         // A piece with an up and a down (a gangway, a ladder) is turned about its normal on the port side, so its X stays up.
-        if (p.Side < 0 && p.Surface == "skin" && p.Kind is "Gangway" or "Boarding ladder")
+        if (p.Side < 0 && p.Surface == "skin" && p.Kind is "Gangway" or "Boarding ladder" or "Gun sponson")
         {
             x = [-x[0], -x[1], -x[2]];
             z = [-z[0], -z[1], -z[2]];
@@ -136,7 +136,7 @@ public static partial class DesignScene
         var holeCut = new List<(double Gap, double Band, bool CladOnly)>();
         foreach (var p in Holes ? d.Pieces : [])
         {
-            if (p.Hull != h.Id || PieceKinds.Find(p.Kind) is not { } pk || pk.Footprint is not { } op)
+            if (p.Hull != h.Id || PieceKinds.Find(p.Kind) is not { } pk || PieceDocking.FootprintOf(p, pk) is not { } op)
                 continue;
             var fo = pk.Opening is null;
             var hs = p.Size * p.Hole;
@@ -147,6 +147,8 @@ public static partial class DesignScene
                 continue;
             double[] F(double[] v) => [-v[0], v[1], v[2]];
             var w = Where(h, p);
+            if (DesignHangar.OpeningOf(p, w) is { } sized)
+                op = sized;
             if (!own)
                 w = new Place([-w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z));
             holes.Add((w, op.Hx * hs, op.Hz * hs, op.Round));
@@ -1051,6 +1053,9 @@ public static partial class DesignScene
         {
             var h = d.Hull(p.Hull)!;
             var kind = PieceKinds.Find(p.Kind)!;
+            if (DesignHangar.Check(d, p, c, entries))
+                continue;
+            DesignFittings.Check(d, p, c);
             var ok = true;
             if (p.Surface != "skin")
             {
@@ -1136,6 +1141,7 @@ public static partial class DesignScene
             }
             c.PieceOk[p.Id] = ok;
         }
+        PieceWeapons.Check(d, c); // weapons' reserved volumes (Karl, 2026-11-26)
 
         // Every room reachable from a way aboard.
         var queue = new Queue<int>(entries.Distinct());
@@ -1523,9 +1529,9 @@ public static partial class DesignScene
             var p = d.Pieces[i];
             var h = d.Hull(p.Hull)!;
             var kind = PieceKinds.Find(p.Kind)!;
-            var w = Where(h, p);
+            var w = DesignHangar.PlaceOf(d, p) ?? Where(h, p);
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
-            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket == "ramp" ? plans : ""), () =>
+            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket == "ramp" ? plans : "") + DesignHangar.Key(d, p), () =>
             {
                 var m = new DesignMesh();
                 var across = kind.Footprint is not null ? p.Hole : 1;
@@ -1546,9 +1552,22 @@ public static partial class DesignScene
                     PieceKinds.WindowFrame(m);
                     PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
                 }
-                else
+                else if (kind.Socket == "airlock")
+                    PieceDocking.Airlock(m, p); // a chamber sized by the piece (Karl, 2026-11-26)
+                else if (PieceWeapons.MountOf(p.Kind) is { } mk)
+                {
+                    // A weapon mount and the weapon fitted to it, the weapon standing on the mount (Karl, 2026-11-26).
+                    double[] ro = [w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess];
+                    PieceWeapons.Draw(m, p, mk, (lo, ax, ay, az) =>
+                    {
+                        double[] L(double[] v) => [w.X[0] * v[0] + w.Y[0] * v[1] + w.Z[0] * v[2], w.X[1] * v[0] + w.Y[1] * v[1] + w.Z[1] * v[2], w.X[2] * v[0] + w.Y[2] * v[1] + w.Z[2] * v[2]];
+                        var oo = L(lo);
+                        m.Frame(ro[0] + oo[0] * p.Size, ro[1] + oo[1] * p.Size, ro[2] + oo[2] * p.Size, L(ax), L(ay), L(az), p.Size);
+                    });
+                }
+                else if (!DesignHangar.Draw(d, p, w, m) && !DesignFittings.Draw(p, w, m))
                     kind.Draw(m);
-                if (p.Clad > 0 && kind.Opening is { } op)
+                if (p.Clad > 0 && (DesignHangar.OpeningOf(p, w) is { } so ? so : kind.Socket == "airlock" ? PieceDocking.FootprintOf(p, kind) : kind.Opening) is { } op)
                 {
                     // Cladding: a plate band round the opening's frame, flush on the skin (its width in metres, whatever the size).
                     double cl = p.Clad / p.Size, hx = op.Hx + 0.15, hz = op.Hz + 0.15;
@@ -1569,9 +1588,13 @@ public static partial class DesignScene
             sb.Append("{\"id\":").Append(p.Id).Append(",\"kind\":").Append(Q(p.Kind)).Append(",\"hull\":").Append(p.Hull).Append(",\"surface\":").Append(Q(p.Surface))
               .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false").Append(",\"size\":").Append(ShipDesign.S(p.Size)).Append(",\"recess\":").Append(ShipDesign.S(p.Recess)).Append(",\"clad\":").Append(ShipDesign.S(p.Clad))
               .Append(",\"gap\":").Append(ShipDesign.S(p.Gap)).Append(",\"hole\":").Append(ShipDesign.S(p.Hole)).Append(",\"depth\":").Append(ShipDesign.S(p.Depth)).Append(",\"double\":").Append(p.Double ? "true" : "false")
+              .Append(",\"airW\":").Append(ShipDesign.S(p.AirW)).Append(",\"airH\":").Append(ShipDesign.S(p.AirH)).Append(",\"airD\":").Append(ShipDesign.S(p.AirD)).Append(",\"doorW\":").Append(ShipDesign.S(p.DoorW)).Append(",\"door\":").Append(Q(p.Door))
+              .Append(",\"feed\":").Append(p.Feed).Append(",\"feeds\":").Append(PieceWeapons.IsFeeder(p.Kind) && PieceDocking.FeedOf(d, p) is { } fg ? fg.Id : 0)
+              .Append(",\"fit\":").Append(Q(p.Fit)).Append(",\"mountClass\":").Append(PieceWeapons.MountOf(p.Kind)?.Class ?? 0).Append(",\"reserve\":").Append(PieceWeapons.Json(d, p))
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
+              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
             sb.Append(mesh);

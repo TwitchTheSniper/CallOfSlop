@@ -444,6 +444,7 @@ public sealed class DesignEditor
                 var p = new Piece { Id = d.NewId(), Kind = kind.Name, Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(D(o, "size", 1), 0.25, 4), Recess = Math.Clamp(D(o, "recess", 0), 0, 2) };
                 d.Pieces.Add(p);
                 Attach(p, o);
+                DesignHangar.Init(d, p);
                 o["id"] = p.Id;
                 return "";
             }
@@ -463,6 +464,28 @@ public sealed class DesignEditor
                 if (o["hole"] is not null) p.Hole = Math.Clamp(Snap(D(o, "hole"), 0.05), 0.5, 2.5);
                 if (o["depth"] is not null) p.Depth = Math.Clamp(Snap(D(o, "depth"), 0.01), 0.05, 1);
                 if (o["double"] is not null) p.Double = (bool)o["double"]!;
+                if (o["airW"] is not null) p.AirW = Math.Clamp(Snap(D(o, "airW"), 0.05), 0.8, 6);
+                if (o["airH"] is not null) p.AirH = Math.Clamp(Snap(D(o, "airH"), 0.05), 1.2, 6);
+                if (o["airD"] is not null) p.AirD = Math.Clamp(Snap(D(o, "airD"), 0.05), 0.6, 6);
+                if (o["doorW"] is not null) p.DoorW = Math.Clamp(Snap(D(o, "doorW"), 0.05), 0.6, 6);
+                if ((string?)o["door"] is { } door && Array.IndexOf(PieceDocking.Doors, door) >= 0) p.Door = door;
+                if ((string?)o["fit"] is { } fit)
+                {
+                    if (fit.Length > 0 && !PieceWeapons.Fits(p.Kind, fit))
+                        return "that weapon doesn't fit this mount";
+                    p.Fit = fit;
+                }
+                if (o["feed"] is not null)
+                {
+                    var fid = I(o, "feed");
+                    if (fid != 0 && (d.Pieces.Find(q => q.Id == fid) is not { } f || PieceKinds.Find(f.Kind)?.Group != "Weapons" || PieceWeapons.IsFeeder(f.Kind)))
+                        return "no such weapon";
+                    p.Feed = fid;
+                }
+                if (DesignHangar.Set(d, p, o) is { Length: > 0 } herr)
+                    return herr;
+                if (DesignFittings.Set(p, o) is { Length: > 0 } ferr)
+                    return ferr;
                 if (o["room"] is not null)
                 {
                     var rid = I(o, "room");
