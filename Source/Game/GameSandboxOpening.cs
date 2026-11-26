@@ -436,6 +436,7 @@ public sealed class OpeningScript
     public bool Hold; // held still there by its own flight computer instead of going round (a deep-space start: GameSpaceStart.cs)
     public string Site = ""; // a site start: a blueprint built whole on the ground, everyone waking in front of it (GameSiteStart.cs)
     public float SiteGap = 15; // m out past the site's front (its low-z end) where people wake
+    public bool SiteStocked; // "siteStocked": its silos and bunkers come full as the blueprint says, in survival as in creative
     public bool SiteIdle; // its Line Consoles built stopped: nothing is ordered until someone starts one
     public Vector3[] Wake = []; // where people wake in it, in the ship's own metres (from its first part's middle), one each in turn
     /// <summary>A crewed ship of an NPC faction kind going round with the start's ship, <c>Behind</c> m back along its orbit (GameSpaceStart.cs).</summary>
@@ -484,6 +485,8 @@ public sealed class OpeningScript
                 throw new FormatException("\"site\" or \"ship\", not both");
             if (root.TryGetProperty("siteGap", out var sg))
                 t.SiteGap = Math.Clamp(sg.GetSingle(), 3, 100);
+            if (root.TryGetProperty("siteStocked", out var sst))
+                t.SiteStocked = sst.GetBoolean();
             if (root.TryGetProperty("siteIdle", out var si))
                 t.SiteIdle = si.GetBoolean();
             // (at most 150 km: past the World's 200 km reach from the planet's centre a ship is parked, GameSpaceJump.SpaceFarDistance,

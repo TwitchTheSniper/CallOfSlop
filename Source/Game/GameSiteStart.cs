@@ -67,7 +67,9 @@ public sealed partial class Game
         }
         // Built again there: upright on the ground at the spot, its footprint's middle on it, its floor on the highest ground under it.
         var gb = ConstructWorld.Ground(World.Query, best);
-        c = ConstructBuild.BuildOnGround(Constructs, bp, gb, 0, out why, beside: false);
+        Constructs.StockAll = script.SiteStocked;
+        try { c = ConstructBuild.BuildOnGround(Constructs, bp, gb, 0, out why, beside: false); }
+        finally { Constructs.StockAll = false; }
         if (c == null)
         {
             Log($"[opening] the site {script.Site} didn't build at {best.X:0},{best.Z:0}: {why}");
@@ -81,6 +83,15 @@ public sealed partial class Game
         c.NetHistReset();
         c.Rebuild();
         var beside = ConstructBuild.SpawnBeside(Constructs, c, bp); // (Zero Day Works II's gensets, each its own body on a heavy power cable)
+        int stores = 0, full = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (ConstructStoreVolume.HasContents(c.Parts[i].D) && Constructs.StoreOf(c, i) is { } st)
+            {
+                stores++;
+                if (st.Amount > 0)
+                    full++;
+            }
+        Log($"[opening] the site {script.Site}: {full} of {stores} silo(s) and bunker(s) hold stock{(script.SiteStocked ? " (siteStocked)" : "")}");
         var stopped = script.SiteIdle ? SiteStopConsoles(c) : 0;
         // Everyone wakes past its front (the blueprint's low z), facing it.
         var front = c.Pos + Vector3.Transform(new Vector3(mid.X, 0, min.Z - script.SiteGap), rot);
