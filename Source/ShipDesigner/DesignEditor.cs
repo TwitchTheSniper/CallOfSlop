@@ -446,6 +446,7 @@ public sealed class DesignEditor
                 Attach(p, o);
                 DesignHangar.Init(d, p);
                 DesignSeats.Init(d, p);
+                PieceWeapons.Init(p); // a weapon socket's weapon (Karl, 2026-11-27)
                 o["id"] = p.Id;
                 return "";
             }
@@ -474,7 +475,7 @@ public sealed class DesignEditor
                 {
                     if (fit.Length > 0 && !PieceWeapons.Fits(p.Kind, fit))
                         return "that weapon doesn't fit this mount";
-                    p.Fit = fit;
+                    p.Fit = fit.Length == 0 && PieceWeapons.MountOf(p.Kind)?.Only is { } only ? only : fit; // (a weapon socket keeps its weapon)
                 }
                 if (o["feed"] is not null)
                 {

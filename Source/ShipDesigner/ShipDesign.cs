@@ -392,6 +392,7 @@ public sealed class Piece
         var p = DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id)))));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
+        PieceWeapons.Init(p);
         return p;
     }
 

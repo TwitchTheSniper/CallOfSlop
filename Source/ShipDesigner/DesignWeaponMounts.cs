@@ -5,15 +5,19 @@ namespace CallOfSlop.ShipDesigner;
 /// gun sponson, sized from the game's parts in Constructs/Parts/ShipWorks and Hull/GunSponson) takes one weapon (<see cref="Piece.Fit"/>)
 /// of its size class or smaller, chosen per mount. Each weapon reserves an internal volume behind its mount for its breech, loader or
 /// handling room, drawn as a hologram box; a room or the skin clipping it is a warning. Shell magazines and ammo hoists link to a mount as
-/// the ammo socket's feed does. Old designs' PDC turrets, railguns and torpedo sponsons load as a mount with that weapon fitted.
+/// the ammo socket's feed does. Old designs' torpedo sponsons load as a gun sponson with that weapon fitted.
+/// The PDC and the railgun have sockets of their own (Karl, 2026-11-27: the placeholder pieces went): the PDC socket, a turret ring, and
+/// the railgun's two, on the hull (a plate along the skin) or spinal (on the bow's end face, its rails, capacitors and breech run aft
+/// through the interior: its reserved volume is that run). A weapon socket comes with its weapon fitted and takes no other.
 /// </summary>
 public static class PieceWeapons
 {
     private const string Armour = PieceKinds.Armour, Gun = PieceKinds.Gun, Amber = PieceKinds.Amber, Glow = PieceKinds.Glow, Pale = PieceKinds.Pale, Black = PieceKinds.Black, Blue = PieceKinds.Blue;
 
     /// <summary>A mount: its size class (1 S, 2 M, 3 L), its half size on the skin, where a weapon sits on it and how deep its own trunk
-    /// goes in (the reserved volume starts behind that).</summary>
-    public sealed record Mount(string Name, int Class, double Half, double Top, double Base, bool Ring, bool Sponson);
+    /// goes in (the reserved volume starts behind that). Only: a weapon socket's one weapon, fitted when it is placed; Where: the surface
+    /// it goes on (PieceKind.Where); Spinal: its weapon fires out of the end face along the frame's Y, not along the skin.</summary>
+    public sealed record Mount(string Name, int Class, double Half, double Top, double Base, bool Ring, bool Sponson, string? Only = null, string Where = "skin", bool Spinal = false);
 
     /// <summary>The game's sizes: hull mounts 1.5, 2.5 and 4 m square, 30 cm thick; turret rings 1, 1.6 and 2.4 m across with trunks
     /// 0.6, 1 and 1.5 m deep. The gun sponson is the game's tub (0.62 out, 0.8 long) at the ship's scale, three times over.</summary>
@@ -22,6 +26,9 @@ public static class PieceWeapons
         new("Hull mount S", 1, 0.75, 0.07, -0.3, false, false), new("Hull mount M", 2, 1.25, 0.07, -0.3, false, false), new("Hull mount L", 3, 2.0, 0.07, -0.3, false, false),
         new("Turret ring S", 1, 0.5, 0.25, -0.6, true, false), new("Turret ring M", 2, 0.8, 0.32, -1.0, true, false), new("Turret ring L", 3, 1.2, 0.4, -1.5, true, false),
         new("Gun sponson", 2, 1.2, 0, -0.3, false, true),
+        new("PDC socket", 1, 0.6, 0.25, -0.6, true, false, "PDC turret"),
+        new("Railgun socket", 3, 1.1, 0.07, -0.3, false, false, "Railgun"),
+        new("Spinal railgun socket", 3, 1.25, 0.1, -0.3, false, false, "Spinal railgun", "fore", Spinal: true),
     ];
 
     /// <summary>A weapon that fits a mount: its class, its reserved volume behind the mount (half across, depth in, from and to along
@@ -30,12 +37,13 @@ public static class PieceWeapons
 
     public static readonly Weapon[] Weapons =
     [
-        new("PDC turret", 1, "A point defence cannon, twin barrels.", 0.6, 0.9, -0.6, 0.6, "magazine and feed", m => Old(m, "PDC turret")),
+        new("PDC turret", 1, "A point defence cannon, twin barrels, on a turret ring.", 0.6, 0.9, -0.6, 0.6, "magazine and feed", Pdc),
         new("Flak cannon", 1, "The game's flak cannon: twin 3 m barrels on a 1 m mount.", 0.6, 1.1, -0.7, 0.7, "loader", Flak),
         new("Rocket battery", 2, "The game's rocket battery: a box of tubes on a trunnion.", 1.0, 1.7, -1.5, 1.0, "reload room", Rockets),
         new("Naval gun 20 cm", 2, "The game's 20 cm naval gun: a 4 m turret, an 8 m barrel.", 1.1, 2.3, -1.2, 1.2, "barbette and handling room", m => Naval(m, 1.0)),
         new("Torpedo sponson", 2, "Two torpedo tubes in an armoured house, 8 m long.", 1.0, 1.3, -6.0, -1.0, "torpedo loading room", m => Old(m, "Torpedo sponson")),
-        new("Railgun", 3, "A spinal railgun: its rails run 14 m towards the bow.", 0.8, 1.3, -14.0, -2.0, "capacitor bank and breech, along the hull", m => Old(m, "Railgun")),
+        new("Railgun", 3, "A hull-mounted railgun: its rails run 14 m along the skin towards the bow.", 0.8, 1.3, -14.0, -2.0, "capacitor bank and breech, along the hull", Railgun),
+        new("Spinal railgun", 3, "A spinal railgun: its muzzle in the bow, its rails, capacitors and breech 18 m aft through the interior.", 1.0, 18.0, -1.0, 1.0, "rails, capacitor banks and breech, through the interior", Spinal),
         new("Naval gun 40 cm", 3, "The game's 40 cm naval gun, drawn at half its 16 m turret to sit on an L ring.", 1.8, 4.2, -2.0, 2.0, "barbette and shell room", m => Naval(m, 2.0)),
     ];
 
@@ -48,20 +56,32 @@ public static class PieceWeapons
 
     public static Weapon? WeaponOf(string name) => Array.Find(Weapons, w => w.Name == name);
 
-    /// <summary>Whether a weapon fits a mount: its class no bigger than the mount's.</summary>
-    public static bool Fits(string mount, string weapon) => MountOf(mount) is { } m && WeaponOf(weapon) is { } w && w.Class <= m.Class;
+    /// <summary>The weapon socket a weapon goes in, when it has one of its own (null: any mount of its size).</summary>
+    public static string? SocketOf(string weapon) => Array.Find(Mounts, m => m.Only == weapon)?.Name;
+
+    /// <summary>Whether a weapon fits a mount: a weapon socket's own weapon, or on any other mount a weapon with no socket of its own and of
+    /// the mount's class or smaller.</summary>
+    public static bool Fits(string mount, string weapon) => MountOf(mount) is { } m && WeaponOf(weapon) is { } w
+        && (m.Only is { } only ? only == weapon : w.Class <= m.Class && SocketOf(weapon) is null);
 
     /// <summary>The old weapon pieces, kept so old designs draw, and hidden from the Pieces tab.</summary>
-    public static readonly string[] Legacy = ["PDC turret", "Railgun", "Torpedo sponson"];
+    public static readonly string[] Legacy = ["Torpedo sponson"];
 
-    /// <summary>An old weapon piece as a mount of a matching size with that weapon fitted.</summary>
+    /// <summary>A new piece: a weapon socket gets its weapon.</summary>
+    public static void Init(Piece p)
+    {
+        if (p.Fit.Length == 0 && MountOf(p.Kind)?.Only is { } only)
+            p.Fit = only;
+    }
+
+    /// <summary>An old weapon piece as a mount of a matching size with that weapon fitted; a weapon socket with its weapon.</summary>
     public static void Migrate(Piece p)
     {
-        var to = p.Kind switch { "PDC turret" => "Turret ring S", "Railgun" => "Hull mount L", "Torpedo sponson" => "Gun sponson", _ => null };
-        if (to is null)
+        Init(p);
+        if (p.Kind != "Torpedo sponson")
             return;
         p.Fit = p.Kind;
-        p.Kind = to;
+        p.Kind = "Gun sponson";
     }
 
     public static void Migrate(ShipDesign d)
@@ -73,7 +93,10 @@ public static class PieceWeapons
     /// <summary>The new kinds, appended to <see cref="PieceKinds.All"/>: the mounts, the shell magazine and the ammo hoist.</summary>
     public static PieceKind[] Kinds =>
     [
-        .. Mounts.Select(k => new PieceKind(k.Name, "Weapons", "skin", null, "",
+        .. Mounts.Select(k => new PieceKind(k.Name, "Weapons", k.Where, null, "",
+            k.Spinal ? "A spinal railgun socket for the bow's end face: the muzzle in the bow, the gun's rails, capacitors and breech running 18 m aft through the interior (keep rooms out of its hologram)." :
+            k.Only == "Railgun" ? "A railgun socket on the hull: an armoured plate the railgun lies on, its rails 14 m along the skin towards the bow." :
+            k.Only is { } only ? $"A {only} socket: a turret ring {2 * k.Half:0.#} m across, its magazine and feed inside." :
             k.Sponson ? "A gun sponson: an armoured tub bulged out of the side, a turntable on top. Fits an M weapon or smaller." :
             k.Ring ? $"A turret ring {2 * k.Half:0.#} m across, its trunk {-k.Base:0.#} m in. Fits {"SML"[k.Class - 1]} weapons or smaller." :
             $"An armoured hull plate {2 * k.Half:0.#} m square that a gun, launcher or turret ring goes through. Fits {"SML"[k.Class - 1]} weapons or smaller.",
@@ -101,6 +124,14 @@ public static class PieceWeapons
     private static void DrawMount(DesignMesh m, Mount k)
     {
         var a = k.Half;
+        if (k.Spinal)
+        {
+            // The muzzle collar in the bow's face (Y out of the bow), its trunk in through the skin.
+            m.Frustum(k.Base, a * 0.8, 0, a * 0.8, 20, Gun, cap0: true, cap1: false);
+            m.Frustum(0, a, k.Top, a, 20, Armour);
+            m.Frustum(k.Top, a * 0.88, k.Top + 0.04, a * 0.88, 20, Amber, cap0: false);
+            return;
+        }
         if (k.Sponson)
         {
             // The tub: out from the skin along Y, its turntable on top (X up).
@@ -147,7 +178,7 @@ public static class PieceWeapons
     public static string? GamePart(string weapon) => weapon switch
     {
         "PDC turret" => "Zero Day PDC", "Flak cannon" => "Flak Cannon", "Rocket battery" => "Rocket Battery", "Naval gun 20 cm" => "Naval Gun 20 cm",
-        "Railgun" => "Zero Day Railgun", "Naval gun 40 cm" => "Naval Gun 40 cm",
+        "Railgun" or "Spinal railgun" => "Zero Day Railgun", "Naval gun 40 cm" => "Naval Gun 40 cm",
         _ => null,
     };
 
@@ -200,6 +231,44 @@ public static class PieceWeapons
     }
 
     private static void Old(DesignMesh m, string kind) => Array.Find(PieceKinds.All, q => q.Name == kind)?.Draw(m);
+
+    /// <summary>The PDC on its ring: the house with its magazine, twin barrels towards the bow.</summary>
+    private static void Pdc(DesignMesh m)
+    {
+        m.Box(-0.6, 0, -0.7, 0.6, 0.6, 0.6, Gun);
+        m.Box(-0.45, 0.6, -0.55, 0.45, 0.75, 0.45, Armour);
+        m.Barrel(-0.18, 0.3, 0.6, 2.4, 0.07, 8, Black);
+        m.Barrel(0.18, 0.3, 0.6, 2.4, 0.07, 8, Black);
+    }
+
+    /// <summary>The hull railgun on its plate: a breech house, two rails 14 m towards the bow in collars, a glowing muzzle.</summary>
+    private static void Railgun(DesignMesh m)
+    {
+        m.Box(-1.0, 0, -3.0, 1.0, 0.9, 1.5, Armour);
+        m.Box(-0.55, 0.9, -2.0, -0.25, 1.4, 14.0, Gun);
+        m.Box(0.25, 0.9, -2.0, 0.55, 1.4, 14.0, Gun);
+        for (var z = 0.0; z < 13; z += 2.5)
+            m.Box(-0.7, 0.85, z, 0.7, 1.55, z + 0.4, Armour);
+        m.Box(-0.2, 1.0, 13.6, 0.2, 1.3, 14.05, Blue);
+    }
+
+    /// <summary>The spinal railgun, Y out of the bow: its rail tips 1.2 m out of the collar, the rails 18 m aft inside the hull in their
+    /// collars, capacitor banks either side and the breech at the end.</summary>
+    private static void Spinal(DesignMesh m)
+    {
+        m.Box(-0.55, -18.0, -0.3, -0.25, 1.2, 0.3, Gun);
+        m.Box(0.25, -18.0, -0.3, 0.55, 1.2, 0.3, Gun);
+        m.Box(-0.2, 0.9, -0.15, 0.2, 1.25, 0.15, Blue);                    // the muzzle's glow between the rails
+        for (var y = -16.0; y < 0; y += 2.5)
+            m.Box(-0.75, y, -0.5, 0.75, y + 0.4, 0.5, Armour);              // the rail collars
+        for (var y = -15.0; y < -3; y += 4.0)
+        {
+            m.Box(-1.0, y, -0.9, -0.62, y + 3.0, 0.9, Pale);                // capacitor banks, port and starboard
+            m.Box(0.62, y, -0.9, 1.0, y + 3.0, 0.9, Pale);
+            m.Box(-1.02, y + 1.4, -0.92, 1.02, y + 1.5, 0.92, Amber);
+        }
+        m.Box(-0.95, -18.0, -0.95, 0.95, -16.2, 0.95, Armour);             // the breech
+    }
 
     private static void Flak(DesignMesh m)
     {

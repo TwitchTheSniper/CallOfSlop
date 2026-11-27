@@ -1666,7 +1666,7 @@ public static partial class DesignScene
               .Append(",\"gap\":").Append(ShipDesign.S(p.Gap)).Append(",\"hole\":").Append(ShipDesign.S(p.Hole)).Append(",\"depth\":").Append(ShipDesign.S(p.Depth)).Append(",\"double\":").Append(p.Double ? "true" : "false")
               .Append(",\"airW\":").Append(ShipDesign.S(p.AirW)).Append(",\"airH\":").Append(ShipDesign.S(p.AirH)).Append(",\"airD\":").Append(ShipDesign.S(p.AirD)).Append(",\"doorW\":").Append(ShipDesign.S(p.DoorW)).Append(",\"door\":").Append(Q(p.Door))
               .Append(",\"feed\":").Append(p.Feed).Append(",\"feeds\":").Append(PieceWeapons.IsFeeder(p.Kind) && PieceDocking.FeedOf(d, p) is { } fg ? fg.Id : 0)
-              .Append(",\"fit\":").Append(Q(p.Fit)).Append(",\"mountClass\":").Append(PieceWeapons.MountOf(p.Kind)?.Class ?? 0).Append(",\"reserve\":").Append(PieceWeapons.Json(d, p))
+              .Append(",\"fit\":").Append(Q(p.Fit)).Append(",\"mountClass\":").Append(PieceWeapons.MountOf(p.Kind)?.Class ?? 0).Append(",\"mountOnly\":").Append(PieceWeapons.MountOf(p.Kind)?.Only is { } mo ? Q(mo) : "null").Append(",\"reserve\":").Append(PieceWeapons.Json(d, p))
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))

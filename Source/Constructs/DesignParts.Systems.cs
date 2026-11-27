@@ -209,7 +209,9 @@ public static partial class DesignParts
         Reshape(g, weapon);
         // The bore along the drawn barrel (the weapon's +Z, towards the bow on the skin), the muzzle at its tip: the middle of the
         // corners within 2 cm of the furthest along it (a twin mount's two barrels' mouths: the middle between them).
-        var bore = Vector3.Normalize(a.Z);
+        // A spinal mount's gun fires out of the end face it sits in (its frame's Y, Karl 2026-11-27).
+        var spinal = PieceWeapons.MountOf(p.Kind) is { Spinal: true };
+        var bore = Vector3.Normalize(spinal ? a.Y : a.Z);
         var far = float.MinValue;
         for (var i = 0; i + 2 < weapon.P.Count; i += 3)
             far = MathF.Max(far, Vector3.Dot(new Vector3((float)weapon.P[i], (float)weapon.P[i + 1], (float)weapon.P[i + 2]), bore));
@@ -219,7 +221,7 @@ public static partial class DesignParts
                 (sum, n) = (sum + v, n + 1);
         g.ThrustAt = sum / Math.Max(1, n);
         g.Exhaust = bore;
-        g.Rot = Facing(-bore, a.Y); // (a gun fires along its part's -z: ConstructWeapons.BuildHeavy)
+        g.Rot = Facing(-bore, spinal ? a.Z : a.Y); // (a gun fires along its part's -z: ConstructWeapons.BuildHeavy)
         // On a turret ring: its bearing (a turntable) and its trunnion (a motor hinge riding it) first, the weapon on the trunnion, so the
         // Gunner seat's director lays it (ConstructWeapons: AimJoints); else fixed on its mount.
         var (under, seg) = PieceWeapons.MountOf(p.Kind) is { Ring: true } ring ? Turret(a, ring, g, bore) : (a.At, (byte)0);

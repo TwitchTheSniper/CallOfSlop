@@ -1400,11 +1400,16 @@ function hangarControls(p) {
   }
   return [];
 }
-// A weapon mount's weapon (Karl, 2026-11-26): the dropdown lists the weapons of its size class or smaller.
+// A weapon mount's weapon (Karl, 2026-11-26): the dropdown lists the weapons of its size class or smaller. A weapon socket (the PDC's,
+// the railgun's on the hull or spinal, 2026-11-27) holds its own weapon: no dropdown.
 function mountControls(p) {
   if (!p.mountClass) return [];
   const send = o => { const a = cmd({ op: "setPiece", id: p.id, ...o }); if (a?.error) toast(a.error); }, D = CAT.defaults.piece, cls = "SML";
-  const ws = (CAT.weapons || []).filter(w => w.class <= p.mountClass);
+  if (p.mountOnly) {
+    const w = (CAT.weapons || []).find(w => w.name === p.mountOnly), bad = p.reserve?.some(r => r[12]);
+    return [el("h3", {}, "Weapon"), el("p", { class: "hint" }, `${p.mountOnly}. ${w ? `${w.desc} It reserves its ${w.reserve} (the hologram box)${bad ? ": a room or the skin clips it" : ""}.` : ""}`)];
+  }
+  const ws = (CAT.weapons || []).filter(w => w.class <= p.mountClass && !w.socket);
   const s = el("select", { "aria-label": "Weapon fitted", onchange: e => send({ fit: e.target.value }) }, el("option", { value: "" }, "Empty mount"),
     ...ws.map(w => el("option", { value: w.name, title: w.desc, ...(p.fit === w.name ? { selected: "" } : {}) }, `${w.name} (${cls[w.class - 1]})`)));
   const w = (CAT.weapons || []).find(w => w.name === p.fit), bad = p.reserve?.some(r => r[12]);
