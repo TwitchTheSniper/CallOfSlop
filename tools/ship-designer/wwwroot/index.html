@@ -1872,8 +1872,10 @@ function profileEditor(h, i) {
       ev.preventDefault(); c.setPointerCapture(ev.pointerId); dragFirst = true; profDragging = true;
       const move = e2 => {
         const r = svg.getBoundingClientRect(), k2 = W / r.width;
-        const px = (e2.clientX - r.left) * k2, py = (e2.clientY - r.top) * k2;
-        const nx = Math.max(0.05, Math.abs((px - cx) / sc)), ny = (cy - py) / sc;
+        // The point stops at the view's edges and at the centre line (Karl, 2026-11-27), its height between its neighbours'.
+        const px = Math.min(W, Math.max(0, (e2.clientX - r.left) * k2)), py = Math.min(Hh, Math.max(0, (e2.clientY - r.top) * k2));
+        const P = h.stations[i].p, lo = k > 0 ? P[k - 1][1] + 0.05 : -Infinity, hi = k < P.length - 1 ? P[k + 1][1] - 0.05 : Infinity;
+        const nx = Math.max(0.05, (px - cx) / sc), ny = Math.min(hi, Math.max(lo, (cy - py) / sc));
         c.setAttribute("cx", X(nx)); c.setAttribute("cy", Y(ny));
         dragCmd({ op: "setPoint", hull: h.id, i, k, h: nx, y: ny, all: $("allst")?.checked ?? false });
       };

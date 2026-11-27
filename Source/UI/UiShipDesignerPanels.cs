@@ -872,8 +872,17 @@ public sealed partial class Ui
         // throttles by its cost; letting go sends the last one at once.
         if (ImGui.IsItemActive() && _profDrag >= 0 && _profDrag < cur.Count)
         {
-            var nx = Math.Max(0.05, Math.Abs((mouse.X - cx) / sc));
-            var ny = (cy - mouse.Y) / sc;
+            // The point stops at the view's edges and at the centre line (Karl, 2026-11-27): a mouse far outside the view, or across
+            // the middle, no longer carries it out to a spike or mirrors it back out; its height stays between its neighbours', as
+            // the model keeps it.
+            var mx = Math.Clamp(mouse.X, p0.X, p0.X + W);
+            var my = Math.Clamp(mouse.Y, p0.Y, p0.Y + Hh);
+            var nx = Math.Max(0.05, (mx - cx) / sc);
+            var ny = (cy - my) / sc;
+            if (_profDrag > 0)
+                ny = Math.Max(ny, cur[_profDrag - 1].Y + 0.05);
+            if (_profDrag < cur.Count - 1)
+                ny = Math.Min(ny, cur[_profDrag + 1].Y - 0.05);
             cur[_profDrag] = (nx, ny);
             if (Math.Abs(nx - _profLast.X) > 1e-4 || Math.Abs(ny - _profLast.Y) > 1e-4)
             {
