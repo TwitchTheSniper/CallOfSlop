@@ -300,6 +300,7 @@ public sealed class DesignEditor
                 if (o["paintSeed"] is not null) h.PaintSeed = Math.Clamp(I(o, "paintSeed"), 0, 99999);
                 if (o["cladDepth"] is not null) h.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 if (o["cladFore"] is not null) h.CladFore = (bool?)o["cladFore"] ?? true;
+                if (o["cladSmooth"] is not null) h.CladSmooth = (bool?)o["cladSmooth"] ?? false;
                 if (o["bead"] is not null)
                 {
                     if (!HullBody.BeadKinds.Contains(Str(o, "bead")))

@@ -87,6 +87,11 @@ public static partial class DesignScene
             // one wide cap ring a side that wraps the end.
             var ratio = Math.Max(arcA, arcB) / Math.Max(1e-6, Math.Min(arcA, arcB));
             var terminus = i == 0 || i == rings.Count - 2 || ratio > 1.4;
+            // Smooth busy areas (Karl, 2026-11-27: a tapering end was a clutter of small plates at many heights): a terminus, or a band
+            // too short for a plate's length, is laid in plates twice the size, all at one low height, merged as far as they go, no greebles.
+            var smooth = h.CladSmooth && (terminus || len < 1.5 * size);
+            var tsize = smooth ? size * 2 : size;
+            var tnv = smooth ? Math.Clamp((int)Math.Round(len / tsize), 1, 64) : nv;
             var yMid = (Math.Min(ay[0], by[0]) + Math.Max(ay[n - 1], by[n - 1])) / 2;
             // Round the profile by its points, not by length (Karl, 2026-11-27: plates clipped through each other along a chine): point k
             // sits at the same u at both ends, so a corner of the profile runs straight along the band, and the grid's columns break at
@@ -158,17 +163,17 @@ public static partial class DesignScene
                     (double X, double Y, double Z) Nc(double t, double v) => Nrm(Gc(t), v);
                     (double, double, double) Wc(double t, double v, double off) => W(Gc(t), v, off);
                     LayGrid(m, hex ? nu : cols, nv, arc, len, rng, heavy, h.CladDepth, col, hex ? P : Pc, hex ? Nrm : Nc, hex ? W : Wc, blocked,
-                        (u, v, cell) => h.Paint(za + (zb - za) * v, hex ? u : Gc(u), arc, i * 4096 + cell + 777), 0, hex, h.Damage, h.DamageSeed, hex ? null : brk, Gc, knot);
+                        (u, v, cell) => h.Paint(za + (zb - za) * v, hex ? u : Gc(u), arc, i * 4096 + cell + 777), 0, hex, h.Damage, h.DamageSeed, hex ? null : brk, Gc, knot, smooth);
                     continue;
                 }
-                for (var r = 0; r < nv; r++)
+                for (var r = 0; r < tnv; r++)
                 {
-                    double r0 = (double)r / nv, r1 = (double)(r + 1) / nv;
+                    double r0 = (double)r / tnv, r1 = (double)(r + 1) / tnv;
                     var rowArc = arcA + (arcB - arcA) * (r0 + r1) / 2;
                     if (rowArc < 0.05)
                         continue;
-                    var cap = rowArc < 2 * size;
-                    var ru = cap ? 1 : Math.Clamp((int)Math.Round(rowArc / size), 1, 64);
+                    var cap = rowArc < 2 * tsize;
+                    var ru = cap ? 1 : Math.Clamp((int)Math.Round(rowArc / tsize), 1, 64);
                     // Masonry: every other row starts with a half cell, so its seams fall mid-plate of the row before.
                     var stag = !cap && ru > 1 && (r & 1) == 1;
                     var cells = stag ? ru + 1 : ru;
@@ -185,8 +190,8 @@ public static partial class DesignScene
                     (double X, double Y, double Z) Pr(double u, double v) => P(G(u), r0 + (r1 - r0) * v);
                     (double X, double Y, double Z) Nr(double u, double v) => Nrm(G(u), r0 + (r1 - r0) * v);
                     (double, double, double) Wr(double u, double v, double off) => W(G(u), r0 + (r1 - r0) * v, off);
-                    LayGrid(m, cells, 1, rowArc, len / nv, rng, heavy, h.CladDepth, col, Pr, Nr, Wr, blocked,
-                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777), cap ? 1 : 0, hex, h.Damage, h.DamageSeed, null, G, knot);
+                    LayGrid(m, cells, 1, rowArc, len / tnv, rng, heavy, h.CladDepth, col, Pr, Nr, Wr, blocked,
+                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777), cap ? 1 : 0, hex, h.Damage, h.DamageSeed, null, G, knot, smooth);
                 }
             }
         }
@@ -203,6 +208,8 @@ public static partial class DesignScene
     {
         var heavy = h.Clad == "Heavy";
         var col = DesignMesh.Hex(h.Skin);
+        if (h.CladSmooth) // (smooth busy areas: an end cap's rings in plates twice the size, flush and even)
+            size *= 2;
         // The outline as a closed ring (world), round the +x side and back down the -x; the fore cap the other way, so plates face out.
         var ring = new List<(double X, double Y)>();
         foreach (var (hh, y) in s.P)
@@ -276,14 +283,14 @@ public static partial class DesignScene
             }
             var ringLen = reach * (f0 - f1);
             LayPlates(m, cells, 1, rowArc, Math.Max(0.05, ringLen), rng, heavy, h.CladDepth, col, P, N, W, taken,
-                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell), 0, h.Clad == "Hex", h.Damage, h.DamageSeed);
+                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell), 0, h.Clad == "Hex", h.Damage, h.DamageSeed, smooth: h.CladSmooth);
         }
     }
 
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
-        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null)
+        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null, bool smooth = false)
     {
         var taken = new bool[nu, nv];
         var trim = new bool[nu, nv];
@@ -304,7 +311,7 @@ public static partial class DesignScene
             }
         // The trimmed cells' plate heights are drawn from their own seed, so the rest of the grid lays as before.
         var trng = new Random(rng.Next());
-        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed, brk, toU, knots);
+        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed, brk, toU, knots, smooth);
         if (!any)
             return;
         for (var a = 0; a < nu; a++)
@@ -402,7 +409,7 @@ public static partial class DesignScene
     /// </summary>
     internal static void LayPlates(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
-        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null)
+        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null, bool smooth = false)
     {
         if (hex)
         {
@@ -420,12 +427,16 @@ public static partial class DesignScene
                 if (taken[a, b])
                     continue;
                 int big = heavy ? 4 : 3, wu = 1 + rng.Next(big), wv = 1 + rng.Next(big);
-                if (maxAcross > 0)
-                    wu = Math.Min(wu, maxAcross);
                 var hgt = floor + rise * rng.NextDouble();
                 var tone = 0.88 + 0.18 * rng.NextDouble();
                 var greeble = heavy && rng.NextDouble() < 0.35;
                 var gr = (rng.NextDouble(), rng.NextDouble(), rng.NextDouble());
+                if (smooth) // (a busy area smoothed: plates as big as they grow, one low height and tone, no greebles)
+                {
+                    (wu, wv, hgt, tone, greeble) = (4, 4, floor + rise * 0.2, 0.97, false);
+                }
+                if (maxAcross > 0)
+                    wu = Math.Min(wu, maxAcross);
                 // Grow across then along while the cells are free.
                 var cu = 1;
                 while (cu < wu && a + cu < nu && !taken[a + cu, b] && (brk == null || a + cu - 1 >= brk.Length || !brk[a + cu - 1])) // (never across a crease)

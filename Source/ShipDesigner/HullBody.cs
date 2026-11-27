@@ -52,6 +52,8 @@ public sealed class HullBody
     public double CladSize = 1.5, CladDepth = 1;
     /// <summary>Whether the front and back end caps are clad (Karl, 2026-11-27: a tickbox each); the body's own, even when it matches another's cladding.</summary>
     public bool CladFore = true, CladAft = true;
+    /// <summary>Smooth busy areas (Karl, 2026-11-27): tapering ends, short bands and end caps clad in big flush plates at one height.</summary>
+    public bool CladSmooth;
     /// <summary>Beading (Karl, 2026-11-27): a raised strip along each profile point, bow to stern: Off, Creases (the sharp corners) or All.</summary>
     public static readonly string[] BeadKinds = ["Off", "Creases", "All"];
     public string Bead = "Off";
@@ -258,6 +260,7 @@ public sealed class HullBody
         if (Clad != "Off" && CladMaterial != "Hull")
             o["clad"]!["material"] = CladMaterial;
         if (!CladFore) o["cladFore"] = false;
+        if (CladSmooth) o["cladSmooth"] = true;
         if (Bead != "Off")
             o["bead"] = new JsonObject { ["kind"] = Bead, ["size"] = ShipDesign.R(BeadSize), ["colour"] = BeadColour };
         if (!CladAft) o["cladAft"] = false;
@@ -318,6 +321,7 @@ public sealed class HullBody
             h.CladMaterial = MaterialOr((string?)c["material"], "Hull", true);
         }
         h.CladFore = (bool?)o["cladFore"] ?? true;
+        h.CladSmooth = (bool?)o["cladSmooth"] ?? false;
         if (o["bead"] is JsonObject bo)
         {
             var bk = (string?)bo["kind"] ?? "Off";
@@ -352,7 +356,7 @@ public sealed class HullBody
     public HullBody Clone(int id) => new()
     {
         Id = id, Name = Name, X = X, Y = Y, Z = Z, Mirror = Mirror, Cut = Cut, Skin = Skin, Stations = [.. Stations.Select(s => s.Clone())],
-        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth, CladMaterial = CladMaterial, CladFrom = CladFrom, CladFore = CladFore, CladAft = CladAft, Bead = Bead, BeadSize = BeadSize, BeadColour = BeadColour, Material = Material, Damage = Damage, DamageSeed = DamageSeed, RoundFore = RoundFore, RoundAft = RoundAft,
+        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth, CladMaterial = CladMaterial, CladFrom = CladFrom, CladFore = CladFore, CladAft = CladAft, CladSmooth = CladSmooth, Bead = Bead, BeadSize = BeadSize, BeadColour = BeadColour, Material = Material, Damage = Damage, DamageSeed = DamageSeed, RoundFore = RoundFore, RoundAft = RoundAft,
         Accent = Accent, Pattern = Pattern, AccentAmount = AccentAmount, Stripe = Stripe, Wear = Wear, PaintSeed = PaintSeed,
     };
 

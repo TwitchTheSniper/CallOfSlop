@@ -1617,7 +1617,7 @@ public static partial class DesignScene
               .Append(",\"cladOwn\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append(",\"material\":").Append(Q(h.CladMaterial)).Append('}')
               .Append(",\"material\":").Append(Q(h.Material)).Append(",\"damage\":").Append(ShipDesign.S(h.Damage)).Append(",\"damageSeed\":").Append(h.DamageSeed)
               .Append(",\"bead\":{\"kind\":").Append(Q(h.Bead)).Append(",\"size\":").Append(ShipDesign.S(h.BeadSize)).Append(",\"colour\":").Append(Q(h.BeadColour)).Append('}')
-              .Append(",\"cladFore\":").Append(h.CladFore ? "true" : "false").Append(",\"cladAft\":").Append(h.CladAft ? "true" : "false")
+              .Append(",\"cladFore\":").Append(h.CladFore ? "true" : "false").Append(",\"cladAft\":").Append(h.CladAft ? "true" : "false").Append(",\"cladSmooth\":").Append(h.CladSmooth ? "true" : "false")
               .Append(",\"roundFore\":").Append(ShipDesign.S(h.RoundFore)).Append(",\"roundAft\":").Append(ShipDesign.S(h.RoundAft))
               .Append(",\"roundMaxFore\":").Append(ShipDesign.S(h.RoundLimit(false))).Append(",\"roundMaxAft\":").Append(ShipDesign.S(h.RoundLimit(true)))
               .Append(",\"paint\":{\"accent\":").Append(Q(h.Accent)).Append(",\"amount\":").Append(ShipDesign.S(h.AccentAmount)).Append(",\"pattern\":").Append(Q(h.Pattern))

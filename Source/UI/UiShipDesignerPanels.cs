@@ -547,6 +547,8 @@ public sealed partial class Ui
             Checkbox("Clad front##sdhcf", B(h, "cladFore", true), v => Hs(("cladFore", v)));
             Row();
             Checkbox("Clad back##sdhca", B(h, "cladAft", true), v => Hs(("cladAft", v)));
+            Row();
+            Checkbox("Smooth busy areas##sdhcs", B(h, "cladSmooth", false), v => Hs(("cladSmooth", v)));
         }
         if (Found(src))
             Hint($"Follows {Str(src, "name")}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.");
