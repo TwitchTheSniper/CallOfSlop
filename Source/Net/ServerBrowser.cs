@@ -820,7 +820,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      a design holding one builds different elements on an older peer; no message changed.
     // 484: a room out to the hull splits its floor and ceiling strips at a hole's edges (the floor beside a lift platform's well), so a design
     //      holding one builds different colliders on an older peer; no message changed.
-    public const ushort ProtocolVersion = 484;
+    // 485: a Pad Tile pad's columns lie side by side as well as along it: each column on the wire carries its place across and its width
+    //      (ConstructRackPack.Write).
+    public const ushort ProtocolVersion = 485;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

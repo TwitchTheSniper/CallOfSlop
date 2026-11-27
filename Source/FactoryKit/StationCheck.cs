@@ -234,6 +234,31 @@ public static class StationCheck
             var np = ConstructStation.OwnPads(c, t, pads);
             Console.WriteLine($"  station part {t}: {ConstructStation.Arms(c, t)} rovers (docks), {np} pick pads{string.Concat(pads[..np].ToArray().Select(p => $" (part {p} at {c.Parts[p].Pos.X:0}, {c.Parts[p].Pos.Z:0}, hold {ConstructPads.RackDef(c, p).RackHoldMax - ConstructPads.RackDef(c, p).RackHoldMin:0.#})"))}");
         }
+        if (Arg("--pad-pack") is { } pack)
+        {
+            // --pad-pack "W,H,L;W,H,L...": pieces of those sizes (m) put one after another onto an empty copy of each of the station's own
+            // pick pads, as a take-in would: where each lies, or that the pad is full (2026-11-27: a baked deck left no room for a hull piece).
+            Span<ushort> pp = stackalloc ushort[8];
+            var npp = ConstructStation.OwnPads(c, t, pp);
+            for (var k = 0; k < npp; k++)
+            {
+                var rd = ConstructPads.RackDef(c, pp[k]);
+                var st = new CStore();
+                var line = new System.Text.StringBuilder($"  pad-pack: pad {pp[k]} (hold {rd.RackHoldMax - rd.RackHoldMin:0.#}):");
+                var id = (ushort)65000;
+                foreach (var size in pack.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var v = size.Split(',').Select(x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                    var d = new ConstructPartDef { Id = id++, Name = size, BoundsMin = new Vector3(-v[0], 0, -v[2]) * 0.5f, BoundsMax = new Vector3(v[0], 2 * v[1], v[2]) * 0.5f };
+                    var r = ConstructRackPack.Place(rd, st, d, false, out var sl, out var ln);
+                    if (r == 0)
+                        st.AddKind(d.Id, 1);
+                    line.Append(r != 0 ? $" [{size}: {(r == 3 ? "too big" : "full")}]" : $" [{size}: x {st.Slabs![sl].X0Mm / 1000f:0.0}..{(st.Slabs[sl].X0Mm + st.Slabs[sl].WidMm) / 1000f:0.0} z {st.Slabs[sl].Z0Mm / 1000f:0.0}..{(st.Slabs[sl].Z0Mm + st.Slabs[sl].LenMm) / 1000f:0.0}{(ConstructRackPack.Turned(rd, d) ? " turned" : "")}]");
+                }
+                Console.WriteLine(line);
+            }
+            return 0;
+        }
         Console.WriteLine($"  station: part {t}; the bill of {target.Name} as its panel shows it before Start:");
         var preview = new StationPreview();
         preview.Begin(target);

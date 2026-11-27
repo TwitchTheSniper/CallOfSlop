@@ -29,7 +29,8 @@ public static class PadLanding
         public int Seg;
         public double Seen;
         public int SnapN;
-        public readonly ushort[] SnapZ = new ushort[MaxSnap], SnapDef = new ushort[MaxSnap];
+        public readonly uint[] SnapZ = new uint[MaxSnap]; // (each column's place: ConstructRackPack.PlaceKey)
+        public readonly ushort[] SnapDef = new ushort[MaxSnap];
         public readonly byte[] SnapLanes = new byte[MaxSnap * ConstructRackPack.MaxLanes];
     }
 
@@ -44,7 +45,8 @@ public static class PadLanding
 
     private struct Move
     {
-        public ushort Def, Z0Mm;
+        public ushort Def;
+        public uint At; // its column's place (ConstructRackPack.PlaceKey)
         public byte Lane, Layer;
         public Vector3 From;
         public Quaternion FromRot;
@@ -107,7 +109,7 @@ public static class PadLanding
         {
             if (def != AnyKind && st.Slabs![s].Def != def)
                 continue;
-            (n.SnapZ[n.SnapN], n.SnapDef[n.SnapN]) = (st.Slabs![s].Z0Mm, st.Slabs[s].Def);
+            (n.SnapZ[n.SnapN], n.SnapDef[n.SnapN]) = (ConstructRackPack.PlaceKey(st.Slabs![s]), st.Slabs[s].Def);
             Array.Copy(st.SlabLanes!, s * ConstructRackPack.MaxLanes, n.SnapLanes, n.SnapN * ConstructRackPack.MaxLanes, ConstructRackPack.MaxLanes);
             n.SnapN++;
         }
@@ -182,7 +184,7 @@ public static class PadLanding
             if (p.MoveN < MaxMoves && dist > 0.05f)
                 p.Moves[p.MoveN++] = new Move
                 {
-                    Def = st.Slabs[s].Def, Z0Mm = st.Slabs[s].Z0Mm, Lane = (byte)l, Layer = (byte)layer,
+                    Def = st.Slabs[s].Def, At = ConstructRackPack.PlaceKey(st.Slabs[s]), Lane = (byte)l, Layer = (byte)layer,
                     From = n.Pos, FromRot = n.Rot, Start = now, Time = Math.Clamp(dist / SlideSpeed, 0.2f, MaxSlide),
                 };
             Drop(p, k--); // (its piece is in: the note is used)
@@ -214,7 +216,7 @@ public static class PadLanding
             for (var k = 0; k < n.SnapN; k++)
                 if (n.SnapDef[k] == def)
                 {
-                    if (n.SnapZ[k] == st.Slabs[s].Z0Mm)
+                    if (n.SnapZ[k] == ConstructRackPack.PlaceKey(st.Slabs[s]))
                         was = k;
                     snapCols++;
                 }
@@ -229,7 +231,7 @@ public static class PadLanding
                 {
                     var taken = false;
                     for (var m = 0; m < p.MoveN && !taken; m++)
-                        taken = p.Moves[m].Def == def && p.Moves[m].Z0Mm == st.Slabs[s].Z0Mm && p.Moves[m].Lane == l && p.Moves[m].Layer == y;
+                        taken = p.Moves[m].Def == def && p.Moves[m].At == ConstructRackPack.PlaceKey(st.Slabs[s]) && p.Moves[m].Lane == l && p.Moves[m].Layer == y;
                     if (taken)
                         continue;
                     (slab, lane, layer, d) = (s, l, y, sd);
@@ -252,7 +254,7 @@ public static class PadLanding
         for (var m = 0; m < p.MoveN; m++)
         {
             ref readonly var mv = ref p.Moves[m];
-            if (mv.Def != slab.Def || mv.Z0Mm != slab.Z0Mm || mv.Lane != lane || mv.Layer != layer)
+            if (mv.Def != slab.Def || mv.At != ConstructRackPack.PlaceKey(slab) || mv.Lane != lane || mv.Layer != layer)
                 continue;
             var u = (float)Math.Clamp((now - mv.Start) / mv.Time, 0, 1);
             u = u * u * (3 - 2 * u); // (eased: it starts and stops gently)

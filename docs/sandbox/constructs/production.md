@@ -2217,7 +2217,11 @@ points, stock targets, the dock's fill) skip the other tiles. The stack is 1 m w
 tallest column stood on the rectangle; the hold sits inside the kerb and the corner posts, but a mast in the middle of a pad stands in
 its hold. A pad lies flat and open, so one piece wider than its hold may use it to its tiles' edges, and with no mast on it one piece
 of any height lies there alone (`ConstructRackPack.Fit`; Sean, 2026-11-26: Works II's keel Hull Sections, 3.83 m wide and 2 m tall,
-sat on a Laser Cutter's bed for good, as the 4 m lay-by pad it rolls onto could never hold them). The kerb, its white in bands and the three in ports (-z, -x, +x; +z is the implicit Piece out) are seams, so a pad shows
+sat on a Laser Cutter's bed for good, as the 4 m lay-by pad it rolls onto could never hold them). Pieces on a pad lie side by side
+as well as along it (`ConstructRackPack.PadPlace`; Sean, 2026-11-27: a 9.5 m deck took a whole 20 m row of Works II's main station
+pad, centred, and the hull piece the station wanted next sat half on the pad for good): a new column goes in the first free spot by
+its near end, then across, its stacks covering at most half the pad's width; with no spot free the pad's columns (24 at most) are
+laid out again, largest first, and nothing moves unless they all fit. Each column's place across and width go on the wire. The kerb, its white in bands and the three in ports (-z, -x, +x; +z is the implicit Piece out) are seams, so a pad shows
 them only on its open edges. A **Rack Side** is drawn only: a 2 m fence of bars welded to a tile's side; sides end to end show one post
 at each joint (`"seamSame"`: a part's seams hide on faces welded to its own kind, `MachineBlocks.SeamSame`). A tile's own store
 holds nothing while it is in a bigger pad; pieces it held from before it joined show again if it is split off. Not yet: the showcases'
