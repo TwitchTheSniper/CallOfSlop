@@ -126,14 +126,14 @@ public static class PieceKinds
         {
             m.Frustum(0, 1.45, 0.7, 1.35, 16, Armour, cap1: false);
             m.Frustum(0.7, 1.55, 0.85, 1.55, 16, Amber);
-            m.Frustum(0.8, 1.05, 0.88, 1.05, 16, Gun);
+            m.Leaf(0, () => m.Frustum(0.8, 1.05, 0.88, 1.05, 16, Gun)); // its mating hatch (leaf 0: a docking hatch in the game, DesignParts.Doors.cs)
             m.Frustum(-1.4, 1.05, 0, 1.05, 16, Gun, cap0: false, cap1: false);
         }),
         new("Cargo hatch", "Sockets", "skin", "cargo", "a cargo hold", "A 3 m cargo door. Opens into a cargo hold.", m =>
         {
             m.Box(-1.8, 0, -1.8, 1.8, 0.15, 1.8, Armour);
-            m.Box(-1.5, -0.55, -1.5, -0.03, -0.48, 1.5, Gun);
-            m.Box(0.03, -0.55, -1.5, 1.5, -0.48, 1.5, Gun);
+            m.Leaf(0, () => m.Box(-1.5, -0.55, -1.5, -0.03, -0.48, 1.5, Gun)); // its two leaves (0 and 1: doors in the game, hinged at their outer edges)
+            m.Leaf(1, () => m.Box(0.03, -0.55, -1.5, 1.5, -0.48, 1.5, Gun));
             m.Box(-1.8, 0.15, 1.6, 1.8, 0.2, 1.8, Amber);
             m.Box(-1.8, 0.15, -1.8, 1.8, 0.2, -1.6, Amber);
             Well(m, 1.5, 1.5, 1.4);
@@ -141,7 +141,12 @@ public static class PieceKinds
         new("Boarding hatch", "Sockets", "skin", "shaft", "a room on the lowest deck", "A belly hatch over the boarding shaft's ladder (the boarding shaft kit).", m =>
         {
             m.Box(-0.65, 0, -0.65, 0.65, 0.1, -0.5, Armour); m.Box(-0.65, 0, 0.5, 0.65, 0.1, 0.65, Armour); m.Box(-0.65, 0, -0.5, -0.5, 0.1, 0.5, Armour); m.Box(0.5, 0, -0.5, 0.65, 0.1, 0.5, Armour);
-            
+            // Its lid in the frame's opening, flush (leaf 0: a thin door in the game, slid aside, so a ladder's climb finds it: DesignParts.Doors.cs MakeLid).
+            m.Leaf(0, () =>
+            {
+                m.Box(-0.47, 0.03, -0.47, 0.47, 0.08, 0.47, Gun);
+                m.Box(-0.3, 0.083, -0.04, 0.3, 0.1, 0.04, Amber);
+            });
             m.Box(-0.65, 0.1, 0.5, 0.65, 0.16, 0.65, Amber);
             Well(m, 0.5, 0.5, 2.2);
             // The boarding shaft's ladder: two rails and rungs up the shaft (its own frame's -Y is into the ship).

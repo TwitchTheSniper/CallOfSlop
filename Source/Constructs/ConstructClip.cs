@@ -376,6 +376,7 @@ public sealed partial class ConstructClip
             else if (StepOn(k, taken, out var on, out var ts, out var ds, out var spin, ref why, Key))
             {
                 (stepOn, stepSocket, stepOwn) = (on, ts, ds);
+                taken.Add((k, ds)); // (its own socket is held too: a later part can't go on there, as the build would refuse)
                 var td = c.DefOf(on);
                 sb.Append(", \"on\": ").Append(Ref(on)).Append(", \"socket\": ").Append(Quote(ConstructMerge.SocketName(c, on, ts))).Append(", \"by\": ").Append(Quote(d.Sockets[ds].Name)).Append(", \"spin\": ").Append(spin);
                 var at = c.FrameOf(p.Seg) == 0 ? p.Pos - origin : p.Pos; // (step 0 builds at the origin; a freeform piece's numbers are in its own frame)
@@ -473,6 +474,7 @@ public sealed partial class ConstructClip
             ref var l = ref c.Links[e >> 1];
             var (st, sd) = (e & 1) != 0 ? ((int)l.SA, (int)l.SB) : (l.SB, l.SA);
             taken.Add((o, st));
+            taken.Add((k, sd)); // (and its own end: the build marks both ends used)
             var td = c.DefOf(o);
             if (o == on && st == socket && sd == own || st >= c.SocketCount(o) || sd >= d.Sockets.Length)
                 continue; // (the step's own; a link to a merged receiver's centre socket is named "merged ...": ConstructMerge.SocketName)

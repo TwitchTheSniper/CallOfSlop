@@ -1309,6 +1309,58 @@ public static partial class DesignScene
         }
     }
 
+    // ---- Door leaves (walkable designs, step 4: the game makes each a door of its own, DesignParts.Doors.cs) -------------------------------
+
+    /// <summary>
+    /// The leaf of a door placed between rooms a and b (a <see cref="RoomDoor"/> of kind Door), in the doorway <paramref name="q"/> the shells
+    /// cut for it (<see cref="DoorAt"/>, world frame): a slab 4 cm thick in the middle of their shared wall, filling the cut from the higher of
+    /// their floors' tops to the cut's head, with a pull strip on each face. <paramref name="across"/> is the wall's normal axis (0 x, 2 z);
+    /// it opens by sliding along the wall into it. Null for a stacked plan (its rooms' walls are not made so) or a cut too small.
+    /// </summary>
+    public static DesignMesh? RoomDoorLeaf(ShipDesign d, double[] q, Room a, Room b, out int across)
+    {
+        var n = Math.Abs(a.X1 - b.X0) < 0.02 || Math.Abs(b.X1 - a.X0) < 0.02 ? 0 : 2;
+        across = n;
+        if (d.Stacked || IsHole(q))
+            return null;
+        var along = 2 - n;
+        double half = DoorHalf(q) - 0.02, bot = q[1] + Math.Max(FloorTop(a), FloorTop(b)) + 0.004, top = q[1] + DoorTop(q) - 0.004;
+        if (half < 0.2 || top - bot < 0.5)
+            return null;
+        var m = new DesignMesh();
+        m.World();
+        void B(double n0, double n1, double l0, double l1, double y0, double y1, string col)
+        {
+            double[] lo = new double[3], hi = new double[3];
+            (lo[n], hi[n], lo[along], hi[along], lo[1], hi[1]) = (q[n] + n0, q[n] + n1, q[along] + l0, q[along] + l1, y0, y1);
+            m.Box(lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], col);
+        }
+        B(-0.02, 0.02, -half, half, bot, top, PieceKinds.Armour);
+        var mid = bot + Math.Min(1.0, (top - bot) / 2);
+        B(0.02, 0.032, half - 0.16, half - 0.1, mid - 0.25, mid + 0.25, PieceKinds.Amber); // (a pull strip each face, near its leading edge)
+        B(-0.032, -0.02, half - 0.16, half - 0.1, mid - 0.25, mid + 0.25, PieceKinds.Amber);
+        return m;
+    }
+
+    /// <summary>
+    /// A cover for the hole <paramref name="q"/> a socket cuts through room r's floor (walkable designs, step 4: a docking collar's well, which
+    /// the walk would fall down): a plate in the hole a few millimetres under the floor's top, inside the cut, with a lifting bar across. The game
+    /// makes it a door that slides aside under the floor (DesignParts.Doors.cs). Null when the hole isn't in r's floor or r has no shell.
+    /// </summary>
+    public static DesignMesh? HoleCover(ShipDesign d, Room r, double[] q)
+    {
+        var b = d.Box(r);
+        if (d.Stacked || !IsHole(q) || Math.Abs(q[1] - b[2]) > DoorLevel || q[0] < b[0] || q[0] > b[1] || q[2] < b[4] || q[2] > b[5])
+            return null;
+        var half = DoorHalf(q) - 0.006;
+        double top = b[2] + Math.Max(ShellDepth(r), 0.05) - 0.002, bot = Math.Min(b[2] + ShellGap + 0.004, top - 0.03);
+        var m = new DesignMesh();
+        m.World();
+        m.Box(q[0] - half, bot, q[2] - half, q[0] + half, top, q[2] + half, PieceKinds.Armour);
+        m.Box(q[0] - 0.04, top - 0.003, q[2] - half * 0.6, q[0] + 0.04, top + 0.005, q[2] + half * 0.6, PieceKinds.Amber); // (its bar, 3 mm proud of the floor)
+        return m;
+    }
+
     /// <summary>A room's floor in one of the dressings (Karl, 2026-11-25): its pieces in plan a (across) and l (along), u up from what it lies on.</summary>
     private static void FloorDress(ShipDesign d, Room r, DesignMesh m, Func<double, double, double, double[]> V, Func<double, double> Up,
         double a0, double a1, double l0, double l1, double fTop, int ax, int al, Random rnd, ref int budget)

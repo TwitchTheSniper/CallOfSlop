@@ -28,6 +28,8 @@ public static partial class DesignScene
         public readonly Dictionary<int, bool> PieceOk = [];
         public readonly List<(double[] A, double[] B, bool Ok, double Shaft, bool Service, double[] N, string Sock)> Links = [];
         public readonly List<double[]> Doors = [];
+        /// <summary>The ways aboard a socket piece cut (each one an entry of <see cref="Doors"/>, by reference): the piece that cut it.</summary>
+        public readonly Dictionary<double[], Piece> SocketWays = new(ReferenceEqualityComparer.Instance);
         public readonly Dictionary<int, bool> RiserOk = [];
         public readonly List<(int Id, double[] At, double[] S0, double[] S1)> Placed = [];
         public readonly HashSet<int> Reached = [];
@@ -1026,6 +1028,8 @@ public static partial class DesignScene
             c.RiserOk[k.Id] = stops.Count == 0;
             if (stops.Count > 0)
                 c.Issues.Add(new("warn", $"{k.Kind} has no room round it on deck {string.Join(", ", stops)} (it needs a room its whole {2 * k.Half.Hx:0.0} x {2 * k.Half.Hz:0.0} m fits in)", $"riser:{k.Id}"));
+            if (DesignRisers.Of(d, k) is { } lay)
+                DesignRisers.Holes(d, lay, c.Doors); // (its well through each floor over its foot: DesignRisers.cs)
         }
 
         // Passages through the arms between bodies (Karl, 2026-11-26): each joins its two rooms through a door in each one's wall.
@@ -1128,7 +1132,10 @@ public static partial class DesignScene
                     {
                         entries.Add(best!.Id); // a window looks out and a seat sits inside: neither is a way aboard
                         if (SocketDoor(d, p, kind, best, at) is { } way)
-                            c.Doors.Add(way); // (its way into the room, cut in the room's shell as a door between rooms is)
+                        {
+                            c.Doors.Add(way);
+                            c.SocketWays[way] = p;
+                        } // (its way into the room, cut in the room's shell as a door between rooms is)
                     }
                 }
                 else if (kind.Service)
@@ -1208,7 +1215,18 @@ public static partial class DesignScene
         var along = Math.Abs(q[ax] - lo[ax]) < 1e-6 || Math.Abs(q[ax] - hi[ax]) < 1e-6 ? al : ax;
         q[along] = Math.Clamp(q[along], lo[along] + w, hi[along] - w);
         q[up] = fl;
-        var top = Math.Min(kind.Socket == "airlock" ? Math.Max(DoorTopDefault, p.AirH) : DoorTopDefault, hi[up] - lo[up] - 0.05);
+        var top = kind.Socket == "airlock" ? Math.Max(DoorTopDefault, p.AirH) : DoorTopDefault;
+        if (kind.Socket == "airlock" && !d.Stacked && d.Hull(p.Hull) is { } ah)
+        {
+            // As high as the chamber's inner door reaches over this floor (walkable rooms, step 4: on a sloping skin the chamber comes in
+            // tilted, its mouth higher than the room's floor, and a cut AirH high from the floor left its top half walled).
+            var w0 = Where(ah, p);
+            double s = p.Size, ex = p.AirH / 2 * s * p.Hole, dz = Math.Min(p.DoorW, p.AirW) / 2 * s * p.Hole, dd = p.AirD * s + p.Recess;
+            foreach (var sx in new[] { -1.0, 1 })
+                foreach (var sz in new[] { -1.0, 1 })
+                    top = Math.Max(top, w0.O[up] - w0.Y[up] * dd + w0.X[up] * sx * ex + w0.Z[up] * sz * dz - fl + 0.1);
+        }
+        top = Math.Min(top, hi[up] - lo[up] - 0.05);
         return DoorAt(q, w, top);
     }
 
@@ -1465,8 +1483,8 @@ public static partial class DesignScene
         return k.ToString();
     }
 
-    /// <summary>A piece's mesh in the ship's frame (what the scene sends for it); <paramref name="copies"/> false leaves out its mirrored and paired copies (DesignParts' colliders mirror one piece's hull themselves).</summary>
-    public static DesignMesh PieceMesh(ShipDesign d, Piece p, bool copies = true)
+    /// <summary>A piece's mesh in the ship's frame (what the scene sends for it); <paramref name="copies"/> false leaves out its mirrored and paired copies (DesignParts' colliders mirror one piece's hull themselves); <paramref name="shut"/> draws every door leaf shut (the game's doors start so).</summary>
+    public static DesignMesh PieceMesh(ShipDesign d, Piece p, bool copies = true, bool shut = false)
     {
         var h = d.Hull(p.Hull)!;
         var kind = PieceKinds.Find(p.Kind)!;
@@ -1491,7 +1509,7 @@ public static partial class DesignScene
             PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
         }
         else if (kind.Socket == "airlock")
-            PieceDocking.Airlock(m, p); // a chamber sized by the piece (Karl, 2026-11-26)
+            PieceDocking.Airlock(m, p, shut); // a chamber sized by the piece (Karl, 2026-11-26); shut: both its doors shut (the game's, DesignParts.Doors.cs)
         else if (PieceWeapons.MountOf(p.Kind) is { } mk)
         {
             // A weapon mount and the weapon fitted to it, the weapon standing on the mount (Karl, 2026-11-26).
@@ -1782,7 +1800,26 @@ public static partial class DesignScene
               .Append(",\"from\":").Append(k.From).Append(",\"to\":").Append(k.To).Append(",\"w\":").Append(k.W).Append(",\"l\":").Append(k.L).Append(",\"hx\":").Append(ShipDesign.S(k.Half.Hx)).Append(",\"hz\":").Append(ShipDesign.S(k.Half.Hz))
               .Append(",\"ok\":").Append(c.RiserOk.GetValueOrDefault(k.Id) ? "true" : "false")
               .Append(",\"stops\":[").Append(string.Join(',', d.Decks.Where(q => q.Floor >= lo.Floor && q.Floor <= hi.Floor).Select(q => ShipDesign.S(q.Floor)))).Append(']')
-              .Append(",\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S))).Append("]}");
+              .Append(",\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S))).Append(']');
+            // Its rails and rungs, or its shaft and its car at the lowest stop, as the game's parts have them (DesignRisers.cs).
+            if (DesignRisers.Of(d, k) is { } lay)
+            {
+                var rkey = k.ToJson().ToJsonString() + "|" + plans + "|" + (c.RiserOk.GetValueOrDefault(k.Id) ? 1 : 0);
+                sb.Append(",\"mesh\":").Append(MeshPart("k" + k.Id, rkey, () => DesignRisers.Mesh(lay, DesignRisers.Fixed(d, lay))));
+                if (lay.Lift)
+                    sb.Append(",\"car\":").Append(MeshPart("kc" + k.Id, rkey, () => DesignRisers.Mesh(lay, DesignRisers.Car(lay))));
+            }
+            sb.Append('}');
+        }
+        sb.Append("],\"shaftLadders\":[");
+        {
+            // The ladder in each Shaft room's well (on up from a boarding hatch under it), drawn as the game's part is.
+            var shafts = DesignRisers.ShaftLadders(d);
+            for (var i = 0; i < shafts.Count; i++)
+            {
+                var lay = shafts[i];
+                sb.Append(i > 0 ? "," : "").Append(MeshPart("ks" + lay.Id, lay.Id + "|" + plans + "|" + shapes, () => DesignRisers.Mesh(lay, DesignRisers.Fixed(d, lay))));
+            }
         }
         sb.Append("],\"passages\":[");
         for (var i = 0; i < c.Passages.Count; i++)

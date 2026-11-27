@@ -83,6 +83,12 @@ public static partial class DesignParts
     private static readonly Dictionary<ConstructPartDef, (Entry E, Element El)> Info = new(ReferenceEqualityComparer.Instance);
     private static readonly HashSet<string> Unknown = new(StringComparer.Ordinal);
 
+    /// <summary>Designs read from a save written before protocol 476 (no <see cref="SplitMarker"/>), whose pieces' door leaves and guns were part of the piece.</summary>
+    private static readonly HashSet<string> OldSplit = new(StringComparer.Ordinal);
+
+    /// <summary>The first word of a design section from protocol 476 on (an old one starts with its count, never negative).</summary>
+    private const int SplitMarker = -476;
+
     [ThreadStatic] public static string? LastRefusal;
 
     /// <summary>The last design made into its elements: how long it took and what it came to (a check reads these).</summary>
@@ -350,6 +356,8 @@ public static partial class DesignParts
         public readonly ShipDesign D = d;
         public readonly List<Element> Els = els;
         public readonly Dictionary<(int Hull, int Copy), (int First, int Count, double[] Z)> BandOf = new();
+        /// <summary>The designer's checks of the design (its doorways, placed doors: DesignScene.Run), made once by the first stage that needs them.</summary>
+        public DesignScene.Check? Check;
 
         /// <summary>The band of a body's copy at <paramref name="z"/> (its first copy's when it has no such copy), or -1.</summary>
         public int BandAt(int hull, int copy, double z)
@@ -501,7 +509,7 @@ public static partial class DesignParts
 
     private static DesignMesh Mirror(DesignMesh m, double cx)
     {
-        var o = new DesignMesh();
+        var o = new DesignMesh { Leaves = m.Leaves }; // (its triangles in the same order: its door leaves too)
         for (var t = 0; t < m.Tris; t++)
             for (var v = 2; v >= 0; v--)
             {
@@ -670,7 +678,10 @@ public static partial class DesignParts
                 ? $"\"{id}\" is a room's floor slab from before walkable rooms (protocol 475), whose shells are elements \"room<n>\" now: an old body keeps its other parts and loses that floor (spawn the design again for its rooms)"
                 : $"no element \"{id}\" in its design";
         else
+        {
             def = PartOf(made, made.Elements[k], name);
+            OldSplitNote(hash, id, made);
+        }
         lock (Interned)
         {
             if (Interned.TryGetValue(name, out var raced))
@@ -697,6 +708,26 @@ public static partial class DesignParts
     /// </summary>
     private static bool OldRoom(string id) => id.Length > 1 && id[0] == 'r' && id.AsSpan(1).IndexOfAnyExceptInRange('0', '9') < 0;
 
+    /// <summary>
+    /// A piece "p{n}" of a design saved before protocol 476: its door leaves, lids and gun are elements of their own now ("p{n}.d0", ".lid",
+    /// ".gun"), which the old body doesn't hold, so the piece loads without them (an open airlock, an empty mount). Logged once a piece.
+    /// </summary>
+    private static void OldSplitNote(string hash, string id, Made made)
+    {
+        lock (Interned)
+            if (!OldSplit.Contains(hash))
+                return;
+        if (id.Length < 2 || id[0] != 'p' || id.AsSpan(1).IndexOfAnyExceptInRange('0', '9') >= 0)
+            return;
+        var lost = new List<string>();
+        foreach (var e in made.Elements)
+            if (e.Id.Length > id.Length + 1 && e.Id.StartsWith(id, StringComparison.Ordinal) && e.Id[id.Length] == '.')
+                lost.Add(e.Id);
+        if (lost.Count > 0)
+            Console.WriteLine($"[design] a body saved before protocol 476 holds piece \"{id}\" of design #{hash} without its own elements now ({string.Join(", ", lost)}): its door leaves or gun are missing (spawn the design again)");
+    }
+
+
     private static ConstructPartDef PartOf(Made made, Element e, string name)
     {
         var t = Template;
@@ -704,6 +735,7 @@ public static partial class DesignParts
         def.Name = name;
         def.File = "";
         def.Description = $"{e.Name} of \"{made.E.Name}\", a ship from the Ship Designer.";
+        var noBox = false;
         if (e.Boxes is { Count: > 0 } boxes)
         {
             // Its own solid boxes (hidden: its look draws it), each colliding as a box, with its share of the mass.
@@ -725,6 +757,7 @@ public static partial class DesignParts
             def.SolidBoxes = 1;
             def.BoxMass = null;
             (def.BoundsMin, def.BoundsMax) = (centre - half, centre + half);
+            noBox = true;
         }
         else
         {
@@ -744,7 +777,12 @@ public static partial class DesignParts
         def.Hulls = e.Hulls;
         def.HullCovers = e.Hulls.Length > 0 ? [true] : []; // (its hulls stand for it; a floor, an RCS nozzle or the flight computer, with none, collides as its box: a nozzle's and the computer's are inside their piece's hull)
         // A player meets its hulls as skin (ConstructRideMove.AddSkin, ConstructWorld.SkinBlock), never its bounding box.
-        def.HasSkin = def.SkinOnly = e.Hulls.Length > 0;
+        def.HasSkin = e.Hulls.Length > 0;
+        // (and one with no collider: its 1 cm mass box is never met, a wire's hidden relay in a doorway's line among them)
+        // (and a ladder's rails: a Shaft room's ladder stands free in the lower room, from its floor to the well over it, its two posts 0.6 m
+        // apart in the middle of a room 2 m across, so a person, 0.8 m across, could neither pass between nor round them and the room's
+        // doorways either side were cut off from each other; its climb reads its bounds and ends, never its boxes: ConstructRideLadder)
+        def.SkinOnly = def.HasSkin || noBox || e.Kind == "ladder";
         def.HullSkin = def.HasSkin ? Enumerable.Repeat(true, e.Hulls.Length).ToArray() : null;
         (def.SkinMin, def.SkinMax) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
         foreach (var hl in e.Hulls)
@@ -834,7 +872,7 @@ public static partial class DesignParts
     /// Whether F on a design part works the part itself rather than sitting the player at the ship's helm (<see cref="BoardSeat"/>,
     /// ConstructEdits.Use): a door, a ladder, a hitch, a dock or a lamp is used where it is.
     /// </summary>
-    public static bool KeepsUse(ConstructPartDef d) => d.Door != null || d.LadderTop > 0 || d.Role == PartRole.Hitch || d.DockSide > 0 || d.Lamps.Length > 0 || d.LightRange > 0;
+    public static bool KeepsUse(ConstructPartDef d) => d.Door != null || d.LadderTop > 0 || d.Role == PartRole.Hitch || d.DockSide > 0 || d.Lamps.Length > 0 || d.LightRange > 0 || IsLift(d);
 
     /// <summary>
     /// A design's body built in <paramref name="c"/> (ConstructBuild.BuildSteps, for a blueprint of <see cref="BlueprintOf"/>): its elements'
@@ -1017,6 +1055,7 @@ public static partial class DesignParts
 
     public static void WriteSave(SaveWriter w, IReadOnlyList<string> texts)
     {
+        w.I32(SplitMarker);
         w.I32(texts.Count);
         foreach (var t in texts)
             w.Str(t);
@@ -1024,12 +1063,23 @@ public static partial class DesignParts
 
     public static void ReadSave(SaveReader r, ConstructWorld world)
     {
-        var n = r.Count(16);
+        var first = r.I32();
+        var split = first == SplitMarker;
+        var n = split ? r.Count(16) : first;
+        if (n < 0 || !r.Has((int)Math.Min(n * 16L, int.MaxValue)))
+            throw new WorldFileException($"a list of {n} doesn't fit");
         for (var k = 0; k < n; k++)
         {
             var text = r.Str();
             if (Register(text) is { } hash)
+            {
                 world.KeepShipDesign(hash);
+                lock (Interned)
+                    if (split)
+                        OldSplit.Remove(hash);
+                    else
+                        OldSplit.Add(hash);
+            }
             else
                 Console.WriteLine($"[design] REFUSED a saved design: {LastRefusal}");
         }

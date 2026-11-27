@@ -578,6 +578,23 @@ public static partial class ConstructRide
     /// <summary>Would a body standing at <paramref name="feet"/> on part <paramref name="onPart"/> be inside another of the construct's solid boxes?</summary>
     public static bool BlockedOn(Construct c, int onPart, Vector3 feet, float height) => BlockedBy(c, onPart, feet, height) >= 0;
 
+    /// <summary>Is a body (its middle <paramref name="mid"/> in the hulls' frame, <paramref name="up"/> its up there) within a body's radius of any of <paramref name="hulls"/> at its knees, middle or chest?</summary>
+    private static bool InHulls(ConvexHull[] hulls, Vector3 mid, Vector3 up, float height)
+    {
+        var r = World.BodyRadius * 0.7f;
+        foreach (var h in hulls)
+            for (var k = -1; k <= 1; k++)
+            {
+                var pt = mid + up * (k * (height * 0.5f - 0.35f));
+                var far = float.MinValue;
+                for (var f = 0; f + 1 < h.FaceStart.Length && far < r; f++)
+                    far = MathF.Max(far, Vector3.Dot(h.N[f], pt - h.V[h.FaceIdx[h.FaceStart[f]]]));
+                if (far < r)
+                    return true;
+            }
+        return false;
+    }
+
     /// <summary>As <see cref="BlockedOn"/>: the part in the way, or -1.</summary>
     public static int BlockedBy(Construct c, int onPart, Vector3 feet, float height)
     {
@@ -590,12 +607,24 @@ public static partial class ConstructRide
         {
             var i = hits[ci];
             ref var p = ref c.Parts[i];
-            if (p.Broken)
-                continue;
+            if (p.Broken || (p.D.SkinOnly && p.D.Hulls is not { Length: > 0 } && c.MergeOf[i] == 0))
+                continue; // (a design element a player never meets: its mass box only, as Construct.PlayerSolids)
             c.WorldFrame(p.Seg, out var q, out var t);
             var lp = Vector3.Transform(mid - t, Quaternion.Conjugate(q));
+            var hullsTried = false;
             for (var b = 0; b < p.D.SolidBoxes; b++)
             {
+                if (p.D.HullCovers is { } covers && b < covers.Length && covers[b] && p.D.Hulls is { Length: > 0 } hulls)
+                {
+                    // (a box its hulls stand for, a ship design's: the body meets the hulls, never the box round them, which fills the ship;
+                    // the test is the part's whole hull set, so it is made once a part, at its first covered box)
+                    if (hullsTried)
+                        continue;
+                    hullsTried = true;
+                    if (InHulls(hulls, Vector3.Transform(lp - p.Pos, Quaternion.Conjugate(Rot24.Quat(p.Rot))), Rot24.Apply(Rot24.Inverse(p.Rot), Vector3.UnitY), height))
+                        return i;
+                    continue;
+                }
                 c.BoxOf(i, b, out var centre, out var half);
                 var rel = Vector3.Abs(lp - centre);
                 // (a body: radius across, half its height up and down; the floor it stands on is just below)

@@ -11,6 +11,13 @@ public sealed class ConvexHull
 {
     public const int MaxCorners = 32;
 
+    /// <summary>
+    /// The most faces and edge directions a hull of <see cref="MaxCorners"/> corners can have (Euler: at most 2V - 4 faces and 3V - 6
+    /// edges). 2026-11-27: the narrow phase's buffers held 34 and 64, and a design's hull facet with more faces threw in
+    /// <c>ConstructNarrow.Shape.FromHull</c> as the Zero Day, dropped rolled, met the ground (<c>--design-check --hollow</c>).
+    /// </summary>
+    public const int MaxFaces = 2 * MaxCorners - 4, MaxDirs = 3 * MaxCorners - 6;
+
     public Vector3[] V = [];
     public Vector3[] N = [];
     public int[] FaceStart = []; // face f's corners are FaceIdx[FaceStart[f]..FaceStart[f + 1]]

@@ -19,7 +19,7 @@ public static partial class DesignParts
             var p = d.Pieces[pi];
             if (d.Hull(p.Hull) is not { } h || PieceKinds.Find(p.Kind) is null)
                 continue;
-            var one = DesignScene.PieceMesh(d, p, copies: false);
+            var one = DesignScene.PieceMesh(d, p, copies: false, shut: true); // (its doors shut, each leaf its own element: DesignParts.Doors.cs)
             if (one.Tris == 0)
                 continue;
             var w0 = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? DesignScene.Where(h, p);
@@ -37,15 +37,17 @@ public static partial class DesignParts
                 var m = sets[k].M;
                 var e = new Element { Id = sets.Count > 1 ? $"p{pi}.{k}" : $"p{pi}", Kind = "piece", Name = p.Kind, Mesh = new LookBuilder() };
                 for (var tr = 0; tr < m.Tris; tr++)
-                    e.Mesh.AddTri(m, tr, Vector3.One, new Vector3(float.NaN));
+                    if (!InLeaf(m, tr))
+                        e.Mesh.AddTri(m, tr, Vector3.One, new Vector3(float.NaN));
                 e.Area = e.Mesh.Area;
                 e.Kg = e.Area * PieceKgPerM2;
-                HullOf(e, m.P);
+                HullOf(e, Unleaved(m));
                 var at = els.Count;
                 els.Add(e);
                 if (st.BandAt(p.Hull, sets[k].Copy, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f) is var b and >= 0)
                     Weld(els, b, at);
                 Works(new PieceAt(p, e, at, sets[k].W, els));
+                PieceDoors(new PieceAt(p, e, at, sets[k].W, els), m); // (its door leaves, each a door of its own)
             }
             yield return els.Count;
         }
