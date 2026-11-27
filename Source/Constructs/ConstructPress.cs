@@ -493,6 +493,14 @@ public static partial class ConstructPress
     private static void SizedMakes(PanelCard card, int line, PressPattern pattern, ConstructPartDef? preset) =>
         card.Add(line, preset != null ? "Makes " : "Sized ").Add(line, preset?.Name ?? pattern.Label);
 
+    /// <summary>A sized stroke's work until the part is made (the lid shut): creative or not, never shorter than the lid's swing.</summary>
+    private static int StrokeFull(ConstructWorld world, Construct c, int part, PressDie die, in ExtrusionKey blank)
+    {
+        var work = WorkOf(c, part);
+        return world.CreativeRecycling ? CreativeStrokeSteps * work
+            : Math.Max(StrokeMinSteps * work, SizedTicks(die, blank) * Bites(c, part, blank) * Milli); // (a blank longer than the bed goes in bites)
+    }
+
     /// <summary>A step of a press with a sized die. True when parts came or went.</summary>
     private static bool WorkSized(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, PressDie die, bool held)
     {
@@ -514,7 +522,10 @@ public static partial class ConstructPress
         SetStall(world, st, why);
         if (st.LidCool > 0)
             st.LidCool--; // (the lid still opening on the last part: ConstructPressLid.cs)
-        if (why != PressStall.None || held || p.Broken || st.LidCool > 0 && st.JobTicks == 0)
+        // (a stroke already over, its lid opening on the made part: a stop, a power dip or a full tray no longer throws the part away;
+        // only the blank leaving its bay or the press breaking does)
+        var opening = bay >= 0 && st.JobTicks > 0 && HasLid(c, part) && !p.Broken && st.JobTicks >= StrokeFull(world, c, part, die, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
+        if (!opening && (why != PressStall.None || held || p.Broken || st.LidCool > 0 && st.JobTicks == 0))
         {
             st.JobTicks = 0;
             ConstructGatherer.SetBusy(world, st, false);
@@ -529,8 +540,7 @@ public static partial class ConstructPress
         // Zero Day works the part came out while the lid was still shut). Busy falls at the stroke's end, so every peer draws the lid
         // opening (LidAt), while the work runs on for LidOpenSteps; the blank stays on its bay until the part goes.
         var work = WorkOf(c, part);
-        var full = world.CreativeRecycling ? CreativeStrokeSteps * work
-            : Math.Max(StrokeMinSteps * work, SizedTicks(die, blank) * Bites(c, part, blank) * Milli); // (a blank longer than the bed goes in bites)
+        var full = StrokeFull(world, c, part, die, blank);
         var open = HasLid(c, part) ? LidOpenSteps * work : 0;
         if (st.JobTicks == 0)
             MachineScreens.SetProgress(world, st, 0); // (a new stroke: sent at once, so every peer starts its shells' swing: StrokeAt)
@@ -557,7 +567,11 @@ public static partial class ConstructPress
             return false;
         }
         if (!PutOut(world, query, c, part, st, output, 1))
+        {
+            if (open > 0)
+                st.JobTicks = full + open - work; // (the lid stays open on the made part and it tries again next step, not a whole new stroke)
             return false;
+        }
         if (need > 0 && pattern!.Bay2 is { } kit)
         {
             if (kit.Part != null)
