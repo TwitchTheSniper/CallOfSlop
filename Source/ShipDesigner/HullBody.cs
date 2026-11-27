@@ -30,17 +30,13 @@ public sealed class HullBody
     public bool Cut; // off by default (Karl, 2026-11-25): a body cuts others only when asked
     public string Skin = "#c9cdd2";
     public List<Station> Stations = [];
-    /// <summary>Plated cladding on the skin (Off, Plates, Heavy, Hex, Panelled): panels between stations from a seeded grid, merged into plates of
-    /// varied size, each raised a little, Heavy higher and with small box greebles. Panelled (Karl, 2026-11-27, the Zero Day's armour look):
-    /// bevelled graphite armour plates (the paint's accent kept) on wide seams where the hull's skin shows as a light trim, some plates
-    /// stepped with a second slab. Size is a grid cell (m), Depth scales the rise.</summary>
-    public static readonly string[] CladKinds = ["Off", "Plates", "Heavy", "Hex", "Panelled"];
+    /// <summary>Plated cladding on the skin (Off, Plates, Heavy, Hex): panels between stations from a seeded grid, merged into plates of
+    /// varied size, each raised a little, Heavy higher and with small box greebles. Size is a grid cell (m), Depth scales the rise.</summary>
+    public static readonly string[] CladKinds = ["Off", "Plates", "Heavy", "Hex"];
 
     /// <summary>How far a kind's plates rise at most (m, before the depth scale): what an opening's clearance and the plates' heights use.</summary>
-    public static double CladRise(string kind) => kind switch { "Heavy" => 0.20, "Panelled" => 0.16, _ => 0.08 };
+    public static double CladRise(string kind) => kind == "Heavy" ? 0.20 : 0.08;
 
-    /// <summary>Panelled cladding's armour colour (the Zero Day's graphite): its plates are this where the paint isn't the accent.</summary>
-    public const string PanelArmour = "#3b4148";
     /// <summary>How the page draws a body (the mesh is the same for all): Painted is the old look, the rest metals and plastics.</summary>
     public static readonly string[] Materials = ["Painted", "Steel", "Brushed aluminium", "Titanium", "Copper", "Gloss plastic", "Matte plastic", "Carbon"];
     public string Material = "Painted";
@@ -227,8 +223,8 @@ public sealed class HullBody
 
     /// <summary>The paint at a plate or facet: z along the body (local m), u round the profile (0 keel to 1 spine, m round it in arcM),
     /// cell a stable index for it. Deterministic from the seed.</summary>
-    /// <summary>The paint at a point; <paramref name="armour"/>: a Panelled plate's, the graphite armour where the skin colour would be.</summary>
-    public (byte, byte, byte) Paint(double z, double u, double arcM, int cell, bool armour = false)
+    /// <summary>The paint at a point.</summary>
+    public (byte, byte, byte) Paint(double z, double u, double arcM, int cell)
     {
         var amt = Math.Clamp(AccentAmount, 0, 1);
         var w = Math.Max(StripeMin, Stripe);
@@ -249,7 +245,7 @@ public sealed class HullBody
         }
         else
             accent = Hash(PaintSeed, cell, 1) < amt;
-        var c = DesignMesh.Hex(accent ? Accent : armour ? PanelArmour : Skin);
+        var c = DesignMesh.Hex(accent ? Accent : Skin);
         var wear = Math.Clamp(Wear, 0, 1);
         return DesignMesh.Tone(c, 1 - wear * (0.12 + 0.3 * Hash(PaintSeed, cell, 2)));
     }

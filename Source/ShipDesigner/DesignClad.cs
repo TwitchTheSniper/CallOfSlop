@@ -13,9 +13,6 @@ public static partial class DesignScene
 
     private const double CladSeam = 0.02, CladSink = 0.03, CladMin = 0.01;
 
-    /// <summary>Panelled cladding's seam each side of a plate: a 10 cm trim strip of the hull's skin between plates.</summary>
-    private const double PanelSeam = 0.05;
-
     /// <summary>
     /// Plated cladding on one copy of a body's sides (the user's Star Destroyer flank, 2026-11-24): each band between two stations is
     /// a grid of cells along the arc and along z, merged at random into plates of one to four cells each way, each plate inset by a seam,
@@ -60,7 +57,6 @@ public static partial class DesignScene
     {
         var heavy = h.Clad == "Heavy";
         var hex = h.Clad == "Hex";
-        var panel = h.Clad == "Panelled";
         var col = DesignMesh.Hex(h.Skin);
         var ah = new double[HullBody.MaxLoft + 2];
         var ay = new double[HullBody.MaxLoft + 2];
@@ -162,7 +158,7 @@ public static partial class DesignScene
                     (double X, double Y, double Z) Nc(double t, double v) => Nrm(Gc(t), v);
                     (double, double, double) Wc(double t, double v, double off) => W(Gc(t), v, off);
                     LayGrid(m, hex ? nu : cols, nv, arc, len, rng, heavy, h.CladDepth, col, hex ? P : Pc, hex ? Nrm : Nc, hex ? W : Wc, blocked,
-                        (u, v, cell) => h.Paint(za + (zb - za) * v, hex ? u : Gc(u), arc, i * 4096 + cell + 777, panel), 0, hex, h.Damage, h.DamageSeed, panel, hex ? null : brk, Gc, knot);
+                        (u, v, cell) => h.Paint(za + (zb - za) * v, hex ? u : Gc(u), arc, i * 4096 + cell + 777), 0, hex, h.Damage, h.DamageSeed, hex ? null : brk, Gc, knot);
                     continue;
                 }
                 for (var r = 0; r < nv; r++)
@@ -190,7 +186,7 @@ public static partial class DesignScene
                     (double X, double Y, double Z) Nr(double u, double v) => Nrm(G(u), r0 + (r1 - r0) * v);
                     (double, double, double) Wr(double u, double v, double off) => W(G(u), r0 + (r1 - r0) * v, off);
                     LayGrid(m, cells, 1, rowArc, len / nv, rng, heavy, h.CladDepth, col, Pr, Nr, Wr, blocked,
-                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777, panel), cap ? 1 : 0, hex, h.Damage, h.DamageSeed, panel, null, G, knot);
+                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777), cap ? 1 : 0, hex, h.Damage, h.DamageSeed, null, G, knot);
                 }
             }
         }
@@ -280,14 +276,14 @@ public static partial class DesignScene
             }
             var ringLen = reach * (f0 - f1);
             LayPlates(m, cells, 1, rowArc, Math.Max(0.05, ringLen), rng, heavy, h.CladDepth, col, P, N, W, taken,
-                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell, h.Clad == "Panelled"), 0, h.Clad == "Hex", h.Damage, h.DamageSeed, h.Clad == "Panelled");
+                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell), 0, h.Clad == "Hex", h.Damage, h.DamageSeed);
         }
     }
 
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
-        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null)
+        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null)
     {
         var taken = new bool[nu, nv];
         var trim = new bool[nu, nv];
@@ -308,13 +304,13 @@ public static partial class DesignScene
             }
         // The trimmed cells' plate heights are drawn from their own seed, so the rest of the grid lays as before.
         var trng = new Random(rng.Next());
-        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed, panel, brk, toU, knots);
+        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed, brk, toU, knots);
         if (!any)
             return;
         for (var a = 0; a < nu; a++)
             for (var b = 0; b < nv; b++)
                 if (trim[a, b])
-                    TrimCell(m, a, b, nu, nv, arc, len, trng, heavy, depth, col, W, mask.Fine, paint, damage, dseed, panel);
+                    TrimCell(m, a, b, nu, nv, arc, len, trng, heavy, depth, col, W, mask.Fine, paint, damage, dseed);
     }
 
     /// <summary>What may hold cladding: Blocked cells stay bare, Near cells (an opening's clearance reaches them) are trimmed point by point with Fine.</summary>
@@ -328,11 +324,11 @@ public static partial class DesignScene
     /// edge, a skirt on every edge that borders bare.
     /// </summary>
     private static void TrimCell(DesignMesh m, int a, int b, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
-        Func<double, double, double, (double, double, double)> W, Func<(double, double, double), bool> fine, Func<double, double, int, (byte, byte, byte)>? paint, double damage, int dseed, bool panel = false)
+        Func<double, double, double, (double, double, double)> W, Func<(double, double, double), bool> fine, Func<double, double, int, (byte, byte, byte)>? paint, double damage, int dseed)
     {
         double cw = arc / nu, cl = len / nv;
         int nx = Math.Clamp((int)Math.Ceiling(cw / 0.05), 2, 20), ny = Math.Clamp((int)Math.Ceiling(cl / 0.05), 2, 20);
-        var seam = panel ? PanelSeam : CladSeam;
+        var seam = CladSeam;
         double du = seam / arc, dv = seam / len;
         double ua = (double)a / nu + du, ub = (double)(a + 1) / nu - du, va = (double)b / nv + dv, vb = (double)(b + 1) / nv - dv;
         if (ub <= ua || vb <= va)
@@ -351,7 +347,7 @@ public static partial class DesignScene
                 free[i, j] = !(pts[i, j] || pts[i + 1, j] || pts[i, j + 1] || pts[i + 1, j + 1] || fine(W((U(i) + U(i + 1)) / 2, (V(j) + V(j + 1)) / 2, 0)));
                 anyFree |= free[i, j];
             }
-        var rise = HullBody.CladRise(heavy ? "Heavy" : panel ? "Panelled" : "Plates") - CladMin;
+        var rise = HullBody.CladRise(heavy ? "Heavy" : "Plates") - CladMin;
         var hgt = Math.Max((CladMin + rise * rng.NextDouble()) * depth, 0.006);
         var tone = 0.88 + 0.18 * rng.NextDouble();
         if (!anyFree)
@@ -406,17 +402,16 @@ public static partial class DesignScene
     /// </summary>
     internal static void LayPlates(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
-        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null)
+        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null)
     {
         if (hex)
         {
             LayHex(m, nu, nv, arc, len, rng, depth, col, Nrm, W, taken, paint, damage, dseed);
             return;
         }
-        // Panelled: plates 6 to 16 cm proud (scaled by depth), never more than two cells each way, so they read as regular armour panels.
-        var floor = panel ? 0.06 : CladMin;
-        var rise = HullBody.CladRise(heavy ? "Heavy" : panel ? "Panelled" : "Plates") - floor;
-        var seam = panel ? PanelSeam : CladSeam;
+        var floor = CladMin;
+        var rise = HullBody.CladRise(heavy ? "Heavy" : "Plates") - floor;
+        var seam = CladSeam;
         double du = seam / arc, dv = seam / len;
         var last = -1.0;
         for (var b = 0; b < nv; b++)
@@ -424,13 +419,12 @@ public static partial class DesignScene
             {
                 if (taken[a, b])
                     continue;
-                int big = heavy ? 4 : panel ? 2 : 3, wu = 1 + rng.Next(big), wv = 1 + rng.Next(big);
+                int big = heavy ? 4 : 3, wu = 1 + rng.Next(big), wv = 1 + rng.Next(big);
                 if (maxAcross > 0)
                     wu = Math.Min(wu, maxAcross);
                 var hgt = floor + rise * rng.NextDouble();
-                var tone = panel ? 0.9 + 0.12 * rng.NextDouble() : 0.88 + 0.18 * rng.NextDouble();
+                var tone = 0.88 + 0.18 * rng.NextDouble();
                 var greeble = heavy && rng.NextDouble() < 0.35;
-                var stepped = panel && rng.NextDouble() < 0.4;
                 var gr = (rng.NextDouble(), rng.NextDouble(), rng.NextDouble());
                 // Grow across then along while the cells are free.
                 var cu = 1;
@@ -474,20 +468,6 @@ public static partial class DesignScene
                 // Where the top bends with the skin across: at even steps, and at every profile point inside the plate (Karl, 2026-11-27: a
                 // plate laid flat over a point of the profile let the skin poke through its middle, worst on a tapering bow).
                 var us = Stops(pu0, pu1, cu * (fx.Dent > 0 ? 2 : 1), toU, knots);
-                if (panel)
-                {
-                    PanelSlab(m, W, pu0, pu1, pv0, pv1, arc, len, us, cv, fx.Dent > 0 ? 2 : 1, (u, v) => -CladSink, H, 0.07, top, side);
-                    // A stepped plate: a second, smaller slab on its face (the Zero Day's), 2 to 4 cm higher, a shade lighter.
-                    double pw = (pu1 - pu0) * arc, pl = (pv1 - pv0) * len;
-                    if (stepped && pw > 0.7 && pl > 0.7)
-                    {
-                        double su0 = pu0 + (pu1 - pu0) * 0.2, su1 = pu1 - (pu1 - pu0) * 0.14, sv0 = pv0 + (pv1 - pv0) * 0.16, sv1 = pv1 - (pv1 - pv0) * 0.2;
-                        var up = (0.02 + 0.02 * gr.Item1) * depth;
-                        PanelSlab(m, W, su0, su1, sv0, sv1, arc, len, Stops(su0, su1, 1, toU, knots), 1, 1, (u, v) => H(u, v) - 0.01, (u, v) => H(u, v) + up, 0.04,
-                            DesignMesh.Tone(top, 1.08), DesignMesh.Tone(side, 1.08));
-                    }
-                    continue; // (no abrasion or greebles: the armour's look is clean panels)
-                }
                 // The top follows the skin's curve: one quad a cell (a dented plate four).
                 var sub = fx.Dent > 0 ? 2 : 1;
                 int tu = us.Length - 1, tv = cv * sub;
@@ -553,51 +533,6 @@ public static partial class DesignScene
                     m.World();
                 }
             }
-    }
-
-    /// <summary>
-    /// A bevelled slab over u0..u1, v0..v1 (Panelled cladding, Karl 2026-11-27): a skirt from <paramref name="foot"/> up to half its height,
-    /// a bevel drawn in by <paramref name="bevel"/> metres (at most a quarter of its smaller side) up to <paramref name="head"/>, and a top
-    /// that follows the skin, cu by cv quads (times sub). The bevel catches the light, as the Zero Day's armour does.
-    /// </summary>
-    private static void PanelSlab(DesignMesh m, Func<double, double, double, (double, double, double)> W, double u0, double u1, double v0, double v1,
-        double arc, double len, double[] us, int cv, int sub, Func<double, double, double> foot, Func<double, double, double> head, double bevel,
-        (byte, byte, byte) top, (byte, byte, byte) side)
-    {
-        double pw = (u1 - u0) * arc, pl = (v1 - v0) * len;
-        var bv = Math.Min(bevel, Math.Min(pw, pl) / 4);
-        double bu = bv / arc, bvv = bv / len;
-        var lit = DesignMesh.Tone(top, 1.12);
-        int tu = us.Length - 1, tv = cv * sub;
-        double U(int k) => us[k];
-        double V(int k) => v0 + (v1 - v0) * k / tv;
-        double Ui(int k) => u0 + bu + (us[k] - u0) * (u1 - u0 - 2 * bu) / (u1 - u0);
-        double Vi(int k) => v0 + bvv + (v1 - v0 - 2 * bvv) * k / tv;
-        double Mid(double u, double v) // (the bevel starts half way up what stands clear of the skin, or of the plate under it)
-        {
-            double f = foot(u, v), hd = head(u, v);
-            return Math.Max(f + 0.004, hd - (hd - Math.Max(f, 0)) / 2);
-        }
-        (double, double, double) T(double u, double v) => W(u, v, head(u, v));
-        (double, double, double) B(double u, double v) => W(u, v, Mid(u, v));
-        (double, double, double) F(double u, double v) => W(u, v, foot(u, v));
-        for (var x = 0; x < tu; x++)
-            for (var y = 0; y < tv; y++)
-                m.Quad(T(Ui(x), Vi(y)), T(Ui(x + 1), Vi(y)), T(Ui(x + 1), Vi(y + 1)), T(Ui(x), Vi(y + 1)), top, false);
-        for (var x = 0; x < tu; x++)
-        {
-            m.Quad(F(U(x), v0), F(U(x + 1), v0), B(U(x + 1), v0), B(U(x), v0), side, false);
-            m.Quad(B(U(x), v0), B(U(x + 1), v0), T(Ui(x + 1), v0 + bvv), T(Ui(x), v0 + bvv), lit, false);
-            m.Quad(F(U(x), v1), F(U(x + 1), v1), B(U(x + 1), v1), B(U(x), v1), side, false);
-            m.Quad(B(U(x), v1), B(U(x + 1), v1), T(Ui(x + 1), v1 - bvv), T(Ui(x), v1 - bvv), lit, false);
-        }
-        for (var y = 0; y < tv; y++)
-        {
-            m.Quad(F(u0, V(y)), F(u0, V(y + 1)), B(u0, V(y + 1)), B(u0, V(y)), side, false);
-            m.Quad(B(u0, V(y)), B(u0, V(y + 1)), T(u0 + bu, Vi(y + 1)), T(u0 + bu, Vi(y)), lit, false);
-            m.Quad(F(u1, V(y)), F(u1, V(y + 1)), B(u1, V(y + 1)), B(u1, V(y)), side, false);
-            m.Quad(B(u1, V(y)), B(u1, V(y + 1)), T(u1 - bu, Vi(y + 1)), T(u1 - bu, Vi(y)), lit, false);
-        }
     }
 
     /// <summary>
