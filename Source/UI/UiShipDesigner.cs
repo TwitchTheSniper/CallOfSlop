@@ -520,7 +520,18 @@ public sealed partial class Ui
         ImGui.Text("Ship Designer"u8);
         ImGui.PopFont();
         ImGui.SameLine();
-        ImGuiSafe.TextColored(SdDimText, _sdLoaded ? Str(S, "name") : "loading");
+        if (_sdLoaded)
+        {
+            // The design's name: click it to rename (Karl, 2026-11-27); kept in the design, so it saves with it.
+            ImGui.PushStyleColor(ImGuiCol.Text, SdDimText);
+            ImGui.PushStyleColor(ImGuiCol.FrameBg, new float4(0, 0, 0, 0));
+            TextBox("designname", Str(S, "name"), v => Cmd(new JsonObject { ["op"] = "rename", ["name"] = v }), "Ship name", 200 * _scale);
+            ImGui.PopStyleColor(2);
+            if (ImGui.IsItemHovered() && !ImGui.IsItemActive())
+                ImGuiSafe.SetTooltip("Click to rename");
+        }
+        else
+            ImGuiSafe.TextColored(SdDimText, "loading");
         ImGui.SameLine(0, 24 * _scale);
         foreach (var (k, t) in new[] { ("hull", "Hull"), ("pieces", "Pieces"), ("interior", "Interior"), ("connectors", "Connectors") })
         {
@@ -763,13 +774,13 @@ public sealed partial class Ui
     }
 
     /// <summary>A text box that applies when it is left.</summary>
-    private void TextBox(string id, string value, Action<string> set, string hint = "")
+    private void TextBox(string id, string value, Action<string> set, string hint = "", float width = -1)
     {
         if (!_sdTexts.TryGetValue(id, out var t))
             _sdTexts[id] = t = new ImInputString(65);
         if (_sdTextEditing != id)
             ImGuiSafe.SetInput(t, value);
-        ImGui.SetNextItemWidth(-1);
+        ImGui.SetNextItemWidth(width);
         ImGui.InputTextWithHint("##txt" + id, hint, t, ImGuiInputTextFlags.None);
         if (ImGui.IsItemActive())
             _sdTextEditing = id;
