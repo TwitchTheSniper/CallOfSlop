@@ -474,12 +474,24 @@ public static partial class DesignParts
         var car = Leaf($"{id}.car", p.Kind, m, leaf.From, leaf.To, a.X, a.Y, a.Z);
         (car.Fn, car.Door, car.Kind, car.Seg) = ("", null, "lift", (byte)(joints + 1));
         car.Kg = MathF.Max(car.Kg, (float)(p.W * p.L * p.Hole * p.Hole) * DeckKgPerM2);
+        if (p.Kind == "Lift platform" && leaf.To - leaf.From > DesignHangar.LiftDeckTris)
+        {
+            // It collides as its deck alone (Karl, 2026-11-27: the leaf's bounds took in its rams, a solid block as tall as its travel
+            // over the deck, up through the room's floor); the rams and the rim are drawn only.
+            var deck = Leaf($"{id}.car", p.Kind, m, leaf.From, leaf.From + DesignHangar.LiftDeckTris, a.X, a.Y, a.Z);
+            (car.Boxes, car.BoxMin, car.BoxMax) = (deck.Boxes, deck.BoxMin, deck.BoxMax);
+        }
         JointSpec j;
         Vector3 at;
         if (p.Kind == "Lift platform")
         {
-            at = a.O - a.Y * (float)DesignHangar.LiftDeck; // (in the well, over the deck's middle)
-            j = new JointSpec { Type = JointType.Piston, Axis = NearestDir(a.Y), Min = 0, Max = (float)p.Travel, Speed = LiftSpeed, Strength = LiftStrength, Pivot = at };
+            // How far in its deck stows: in its well, or up at its room's floor when flush (DesignHangar.FlushFloor), read off the deck as drawn.
+            var inner = float.MaxValue;
+            for (var v = leaf.From * 9; v < (leaf.From + DesignHangar.LiftDeckTris) * 9 && v + 2 < m.P.Count; v += 3)
+                inner = MathF.Min(inner, Vector3.Dot(new Vector3((float)m.P[v], (float)m.P[v + 1], (float)m.P[v + 2]) - a.O, a.Y));
+            var up = inner < float.MaxValue ? MathF.Max((float)DesignHangar.LiftDeck, -inner) : (float)DesignHangar.LiftDeck;
+            at = a.O - a.Y * up; // (in the well, over the deck's middle)
+            j = new JointSpec { Type = JointType.Piston, Axis = NearestDir(a.Y), Min = 0, Max = (float)p.Travel + up - (float)DesignHangar.LiftDeck, Speed = LiftSpeed, Strength = LiftStrength, Pivot = at };
         }
         else
         {

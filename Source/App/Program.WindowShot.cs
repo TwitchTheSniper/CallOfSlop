@@ -833,11 +833,14 @@ public static unsafe partial class Program
             }
             case "joints": // each joint of the spawned body as this peer has it: its part, type, angle (a piston's metres), limits and input
                 if (WsSpawned(g) is { } jc)
+                {
+                    WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"joints: body at <{jc.Pos.X:0.000}, {jc.Pos.Y:0.000}, {jc.Pos.Z:0.000}> rot {jc.Rot.X:0.00000} {jc.Rot.Y:0.00000} {jc.Rot.Z:0.00000} {jc.Rot.W:0.00000}"));
                     for (var j = 0; j < jc.JointCount; j++)
                     {
                         ref var jt = ref jc.Joints[j];
-                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"joints: {j} {jc.DefOf(jt.Hinge).Name} {jt.Type} at {jt.Angle:0.000} ({jt.Min:0.00}..{jt.Max:0.00}) input {jt.Input:0.00} wired {jt.Wired}"));
+                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"joints: {j} {jc.DefOf(jt.Hinge).Name} {jt.Type} at {jt.Angle:0.000} ({jt.Min:0.00}..{jt.Max:0.00}) input {jt.Input:0.00} wired {jt.Wired} axis {jt.Axis} pivot {jt.Pivot} seg {jc.SegMass[j + 1]:0} kg"));
                     }
+                }
                 else
                     WsSay("joints: no spawned body");
                 return;

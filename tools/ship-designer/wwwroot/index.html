@@ -1446,6 +1446,7 @@ function hangarControls(p) {
   if (p.w !== undefined)
     return [el("h3", {}, p.kind),
       m("Width", "w", 2, 48, 0.5), m("Length", "l", 2, 48, 0.5), m("Travel", "travel", 0.5, 30, 0.1),
+      ...(p.flush !== undefined ? [(() => { const cb = el("input", { type: "checkbox", "aria-label": "Flush with its room's floor" }); cb.checked = !!p.flush; cb.addEventListener("change", () => send({ flush: cb.checked })); return el("label", { class: "row" }, cb, " Flush with its room's floor"); })()] : []),
       el("div", { class: "row" }, el("button", { class: "reset", title: "Width, length and travel back to their defaults", onclick: () => send({ w: D.w, l: D.l, travel: D.travel }) }, "Reset all"))];
   if (p.link !== undefined) {
     const bays = S.pieces.filter(q => q.bay), ls = el("select", { "aria-label": "Hangar bay" });
