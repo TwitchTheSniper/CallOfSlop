@@ -68,7 +68,7 @@ public sealed unsafe partial class Renderer
                     vBodyN = aNormal;
                     vUpL = vec3(uBody[0].y, uBody[1].y, uBody[2].y);
                     vModeI = 0.0;
-                    vColorI = vec4(aCol.rgb, 1.0);
+                    vColorI = aCol; // (glass has its alpha: DesignParts.GlassAlpha, drawn blended in ConstructRender.DrawGlass; the rest is 1)
                     vLayerI = 0.0;
                     gl_Position = uViewProj * w;
                 }

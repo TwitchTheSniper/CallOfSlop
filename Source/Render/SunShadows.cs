@@ -783,12 +783,16 @@ public static unsafe class SunShadows
         if ((sv + verts) * 6 > _shapes.Length)
             Array.Resize(ref _shapes, Math.Max(_shapes.Length * 2, (sv + verts) * 6));
         var p = look.Pos;
+        var kept = 0;
         for (var v = 0; v < verts; v++)
         {
+            if (look.GlassVertices > 0 && DesignParts.IsGlass(look.Colour[v - v % 3]))
+                continue; // (a window's glass lets the sun and the lamps through: Karl, 2026-11-27)
             var at = pos + Rot24.Apply(rot, new Vector3(p[v * 3], p[v * 3 + 1], p[v * 3 + 2]));
-            var so = (sv + v) * 6;
+            var so = (sv + kept++) * 6;
             (_shapes[so], _shapes[so + 1], _shapes[so + 2], _shapes[so + 3], _shapes[so + 4], _shapes[so + 5]) = (at.X, at.Y, at.Z, 0f, 0f, 0f);
         }
+        verts = kept;
         for (var first = 0; first < verts; first += DesignGroupTris * 3)
         {
             var end = Math.Min(verts, first + DesignGroupTris * 3);

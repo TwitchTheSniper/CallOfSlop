@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 namespace CallOfSlop.ShipDesigner;
 
 /// <summary>
-/// The boarding ramp (Karl, 2026-11-27): a hatch 4 m across (60% wider than the 2.5 m it was) and 3.2 m along, and a ramp in it
+/// The boarding ramp (Karl, 2026-11-27): a hatch 2.5 m across and 5.1 m along (60% longer than the 3.2 m it was), and a ramp in it
 /// that works. Stowed, the ramp lies flat in the room's floor over the well, its walking face just under the floor's plane; opened, it
 /// hinges down out of the hatch on its fore edge (at the floor) and then runs its telescoping second section out along itself by
 /// <see cref="Piece.Extend"/>, to reach the ground. The designer draws it lowered and run out; the game builds it stowed, the ramp a
@@ -15,17 +15,17 @@ namespace CallOfSlop.ShipDesigner;
 public static class DesignRamp
 {
     public const string Kind = "Boarding ramp";
-    /// <summary>The hatch's half opening across and along (Karl, 2026-11-27: across 1.25 x 1.6).</summary>
-    public const double Hx = 2.0, Hz = 1.6;
+    /// <summary>The hatch's half opening across and along (Karl, 2026-11-27: along 1.6 x 1.6).</summary>
+    public const double Hx = 1.25, Hz = 2.56;
     // The ramp's plate: across, its far end (aft), its hinge line (fore), its walking face 4 mm out of the floor's plane (no shared plane
     // with the floor round its hole) and its back.
-    private const double LeafHx = 1.92, LeafZ0 = -1.56, LeafZ1 = 1.56, HingeZ = 1.6, LeafY0 = 0.004, LeafY1 = 0.09;
+    private const double LeafHx = 1.17, LeafZ0 = -2.52, LeafZ1 = 2.52, HingeZ = 2.56, LeafY0 = 0.004, LeafY1 = 0.09;
     // The extension, nested under the ramp (out of it) while stowed; it runs out aft, at least Overlap of it kept under the ramp.
-    private const double ExtHx = 1.8, ExtZ0 = -1.5, ExtZ1 = 1.35, ExtY0 = 0.094, ExtY1 = 0.15, Overlap = 0.3;
+    private const double ExtHx = 1.05, ExtZ0 = -2.46, ExtZ1 = 2.31, ExtY0 = 0.094, ExtY1 = 0.15, Overlap = 0.3;
     /// <summary>The extension's longest run in the piece's own units (times its size and hole: metres).</summary>
     public const double SlideMax = ExtZ1 - LeafZ0 - Overlap;
     /// <summary>The designer's slider's range and default (m); a piece's run is held to what its size allows (<see cref="ExtendOf"/>).</summary>
-    public const double MaxExtend = 2.5, DefExtend = 1.5;
+    public const double MaxExtend = 4.0, DefExtend = 1.5;
     /// <summary>Seconds the ramp takes to swing down, and its extension to run out (each).</summary>
     public const double Seconds = 1.75;
 
