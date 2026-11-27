@@ -102,8 +102,11 @@ public static class PieceKinds
         new("Landing leg", "Systems", "skin", null, "", "A landing leg pod for the belly, foot down.", m =>
         {
             m.Box(-0.8, 0, -1.3, 0.8, 0.9, 1.3, Armour);
-            m.Frustum(0.9, 0.22, 3.0, 0.18, 8, Gun);
-            m.Frustum(3.0, 0.85, 3.25, 0.85, 12, Armour);
+            m.Leaf(0, () => // (its leg, strut and pad: landing gear in the game that draws up into the pod, DesignParts.Pieces.cs Leg)
+            {
+                m.Frustum(0.9, 0.22, 3.0, 0.18, 8, Gun);
+                m.Frustum(3.0, 0.85, 3.25, 0.85, 12, Armour);
+            });
             m.Box(-0.82, 0.3, -1.32, 0.82, 0.42, 1.32, Amber);
         }),
         new("Airlock", "Sockets", "skin", "airlock", "any room", "A crew airlock. Opens into the room behind it.", m =>
