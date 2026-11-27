@@ -76,6 +76,55 @@ public sealed partial class Ui
 
     private static bool _wrapInRow;
 
+    /// <summary>
+    /// A palette card (Karl, 2026-11-27): the piece's picture (DesignThumbs.cs) with its name under it, wrapping in rows like
+    /// <see cref="WrapButton"/>; a socket's card has an amber edge. Until its picture is made it shows the name alone.
+    /// </summary>
+    private void PieceTile(string name, bool on, bool socket)
+    {
+        var size = 76 * _scale;
+        var font = 12 * _scale;
+        var nameH = font * 2 + 4 * _scale;
+        var last = ImGui.GetItemRectMax().X;
+        var right = ImGui.GetWindowPos().X + ImGui.GetWindowWidth() - ImGui.GetStyle().WindowPadding.X;
+        if (last + ImGui.GetStyle().ItemSpacing.X + size < right && _wrapInRow)
+            ImGui.SameLine();
+        _wrapInRow = true;
+        var at = ImGui.GetCursorScreenPos();
+        ImGui.InvisibleButton($"##sdpal{name}", new float2(size, size + nameH));
+        var hot = ImGui.IsItemHovered();
+        var dl = ImGui.GetWindowDrawList();
+        var p1 = new float2(at.X + size, at.Y + size + nameH);
+        var r = 4 * _scale;
+        var bg = on ? SdOn : hot ? new float4(SdOff.X + 0.05f, SdOff.Y + 0.06f, SdOff.Z + 0.07f, 1) : SdOff;
+        dl.AddRectFilled(at, p1, Sd8(bg), r);
+        if (socket)
+            dl.AddRect(at, p1, Sd8(SdAmber), r, default, 1.5f * _scale);
+        var pad = size * 0.06f;
+        if (DesignThumbs.TryGet(name, out var tex, out var uv0, out var uv1))
+            dl.AddImage(new ImTextureRef { _TexID = new ImTextureID((nint)tex) }, new float2(at.X + pad, at.Y + pad), new float2(at.X + size - pad, at.Y + size - pad),
+                new float2(uv0.X, uv0.Y), new float2(uv1.X, uv1.Y), new ImColor8(255, 255, 255, 255));
+        // The name, in up to two lines under the picture (split at the space nearest its middle when one line is too wide).
+        ImGui.PushFont(default, font);
+        var lines = new List<string> { name };
+        if (ImGui.CalcTextSize(name).X > size - 4 * _scale && name.Contains(' '))
+        {
+            var mid = name.Length / 2;
+            var cut = Enumerable.Range(0, name.Length).Where(i => name[i] == ' ').MinBy(i => Math.Abs(i - mid));
+            lines = [name[..cut], name[(cut + 1)..]];
+        }
+        dl.PushClipRect(at, p1, true);
+        var y = at.Y + size - 2 * _scale + (lines.Count == 1 ? font * 0.5f : 0);
+        foreach (var line in lines)
+        {
+            var w = ImGui.CalcTextSize(line).X;
+            dl.AddText(new float2(at.X + Math.Max(2 * _scale, (size - w) / 2), y), Sd8(new float4(0.88f, 0.91f, 0.93f, 1)), line);
+            y += font;
+        }
+        dl.PopClipRect();
+        ImGui.PopFont();
+    }
+
     private static void EndRow() => _wrapInRow = false;
 
     private void LeftPanel()
@@ -120,6 +169,7 @@ public sealed partial class Ui
             Checkbox("On a mirrored pair of bodies, put it on both##sdpp", _pPair, v => _pPair = v);
             Slider("Size to place", Math.Round(_pieceSize * 100), 25, 400, 5, "%", v => _pieceSize = v / 100, "ps");
             Slider("Recess to place", Math.Round(_pieceRecess * 100), 0, 200, 5, " cm", v => _pieceRecess = v / 100, "pr");
+            DesignThumbs.Want(); // (the piece pictures: made over the next frames, then kept)
             var pieces = Arr(CAT, "pieces").ToList();
             var groups = pieces.Select(p => Str(p, "group")).Distinct().OrderBy(g => g == "Sockets" ? 0 : 1).ToList();
             foreach (var g in groups)
@@ -130,11 +180,7 @@ public sealed partial class Ui
                 {
                     var name = Str(k, "name");
                     var sock = Has(k, "socket");
-                    if (sock)
-                        ImGui.PushStyleColor(ImGuiCol.Border, SdAmber);
-                    WrapButton($"{name}##sdpal{name}", _paletteDrag?.Kind == name);
-                    if (sock)
-                        ImGui.PopStyleColor();
+                    PieceTile(name, _paletteDrag?.Kind == name, sock);
                     if (ImGui.IsItemActivated())
                         PaletteStart(name);
                     if (ImGui.IsItemHovered())

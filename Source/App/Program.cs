@@ -961,6 +961,8 @@ public static unsafe partial class Program
             SurfaceThumbs.Pump(Gfx); // the texture paint tool's material swatches, while its list asks for them (Source/Render/SurfaceThumbnails.cs)
             if (Ui.WorkbenchOpen)
                 PartThumbs.Pump(Gfx); // workbench part pictures: a few per frame, cached (Source/Render/PartThumbnails.cs)
+            if (Ui.ShipDesignerOpen)
+                DesignThumbs.Pump(Gfx); // the Ship Designer palette's piece pictures: a few per frame once its Pieces panel wants them (Source/Render/DesignThumbs.cs)
             SandboxTiles.Pump(Gfx); // the Sandbox inventory's tile atlas: made over a few frames once the window wants it, then kept (Source/Render/SandboxTiles.cs)
             if (_session != null && InLobbyRoom)
                 RenderLobbyRoom(now); // the lobby's map behind the menu: its assets are drawn (loaded) before the match
