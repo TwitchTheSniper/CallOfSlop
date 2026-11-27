@@ -159,16 +159,20 @@ public static partial class ConstructPress
     /// </summary>
     public static bool DoorFirst(ConstructWorld world, Construct c, int part, ConstructPartDef blank)
     {
-        if (!blank.IsExtrusion || c.Parts[part].Orders is not { Bill: false, Count: > 1 } q || world.StoreOf(c, part) is not { } st)
+        if (!blank.IsExtrusion || c.Parts[part].Broken || c.Parts[part].Orders is not { Bill: false, Count: > 1 } q || world.StoreOf(c, part) is not { } st)
             return false;
+        if (st.DoorAt != 0 && MoverPhysics.Clock - st.DoorAt < DoorEvery)
+            return false; // (at most once a second a press: a blocked door is asked every tick, and two orders' blanks never trade the head back and forth)
+        st.DoorAt = Math.Max(1u, MoverPhysics.Clock);
         var d = c.DefOf(part);
         for (var b = 0; b < d.PressBays.Length; b++)
             if (b != HopperBay && PieceIn(c, part, b) >= 0)
                 return false; // (a blank in: the press works it first; the door's piece waits its turn)
-        if (Pressed.SpecOf(q.Head) is { } head && (blank.ExKey with { Growing = false }) == head.Blank)
-            return false; // (the head's own blank: refused for its size or room, not its order)
+        if (SizedDieOf(PressTable.Current, c, part) is not { } held)
+            return false; // (no die fitted: a swap is under way for the head order, whose die must find it the head when it docks)
         var key = blank.ExKey with { Growing = false };
-        var held = SizedDieOf(PressTable.Current, c, part);
+        if (Pressed.SpecOf(q.Head) is { } head && (key == head.Blank || HeadAtDoor(c, part, head.Blank)))
+            return false; // (the head's own blank is at this door or another: refused for its size or room, or it goes in from there)
         for (var k = 1; k < q.Count; k++)
         {
             if (Pressed.SpecOf(q.Items[k]) is not { } spec || spec.Blank != key)
@@ -182,6 +186,26 @@ public static partial class ConstructPress
             ClearRefusal(world, st);
             Console.WriteLine($"[press] the {d.Name} takes its {o.Count} x {o.Name ?? ConstructParts.Def(o.Part).Name} first: its blank is at the door, ahead of the head order's");
             return true;
+        }
+        return false;
+    }
+
+    /// <summary>Server ticks between two looks of <see cref="DoorFirst"/> at one press.</summary>
+    private const uint DoorEvery = World.TickRate;
+
+    /// <summary>Is a blank of key <paramref name="want"/> the lead piece on any conveyor into press <paramref name="part"/>? (Riders are kept grouped by link, the lead first.)</summary>
+    private static bool HeadAtDoor(Construct c, int part, in ExtrusionKey want)
+    {
+        var prev = -1;
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            int k = c.Conveyed[i].Route;
+            if (k == prev)
+                continue;
+            prev = k;
+            if (k < c.RouteCount && c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].To == part
+                && ConstructParts.Def(c.Conveyed[i].Def) is { IsExtrusion: true } rd && (rd.ExKey with { Growing = false }) == want)
+                return true;
         }
         return false;
     }
