@@ -196,7 +196,9 @@ public sealed partial class Ui
                 }
             }
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Middle))
-                SdMiddleDown(mouse); // held still: the quick wheel; moved: orbit, as before
+                _sdOrbiting = true; // middle drag turns the view
+            if (ImGui.IsMouseClicked(SdWheelButton))
+                SdWheelDown(mouse); // held: the quick wheel
 
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
                 _sdPanning = true;

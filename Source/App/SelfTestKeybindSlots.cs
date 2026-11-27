@@ -8,7 +8,7 @@ public static partial class SelfTest
 {
     /// <summary>
     /// Several bindings per action (binds version 24, Keybinds.Slots): old settings lines (one <c>bind_X</c> per action,
-    /// <c>bind_ToolWheel=-4</c> the middle button) load as the primaries with the new second defaults migrated in where
+    /// <c>bind_ToolWheel=-4</c> the middle button, moved to Mouse 4 by version 36) load as the primaries with the new second defaults migrated in where
     /// free; new lines (<c>bind2_X</c>, <c>bind3_X</c>) load back, cleared ones stay cleared; a saved file's <c>bind_X</c>
     /// lines are plain numbers an older build still reads; any binding works its action (pressed with the first, released
     /// with the last), the Shift chord and context rules work per binding, and the controls screen's clash check sees a
@@ -24,12 +24,13 @@ public static partial class SelfTest
         }
         var d = Keybinds.Defaults;
         var mmb = Keybinds.Mouse(GlfwMouseButton.Middle);
+        var m4 = Keybinds.Mouse(Keybinds.Mouse4); // (the wheel's default from binds version 36; an old file's middle button moves to it)
         var grave = Keybinds.Key(GlfwKey.GraveAccent);
         var alt = Keybinds.Key(GlfwKey.LeftAlt);
         var wheel1 = Keybinds.At(GameAction.ToolWheel, 1);
         var wheel2 = Keybinds.At(GameAction.ToolWheel, 2);
-        Want(d[(int)GameAction.ToolWheel] == mmb && d[wheel1] == grave && d[wheel2] == Keybinds.Unbound && Duplicates(d).Length == 0,
-            $"the tool wheel's defaults aren't the middle button and the grave accent key (or the defaults clash: {Duplicates(d)})");
+        Want(d[(int)GameAction.ToolWheel] == m4 && d[wheel1] == grave && d[wheel2] == Keybinds.Unbound && Duplicates(d).Length == 0,
+            $"the tool wheel's defaults aren't Mouse 4 and the grave accent key (or the defaults clash: {Duplicates(d)})");
 
         var tmp = Path.Combine(Path.GetTempPath(), "callofslop-keyslots-" + Guid.NewGuid().ToString("N") + ".txt");
         try
@@ -42,17 +43,17 @@ public static partial class SelfTest
 
             // 1. A binds version 23 file with only bind_ lines: primaries as written, the wheel's second binding added.
             var s = Load("binds_version=23", "bind_ToolWheel=-4", $"bind_Melee={Keybinds.Key(GlfwKey.V)}");
-            Want(s.Binds[(int)GameAction.ToolWheel] == mmb && s.Binds[wheel1] == grave && s.Binds[wheel2] == Keybinds.Unbound,
+            Want(s.Binds[(int)GameAction.ToolWheel] == m4 && s.Binds[wheel1] == grave && s.Binds[wheel2] == Keybinds.Unbound,
                 $"a version 23 file with bind_ToolWheel=-4 loads the wheel as {Keybinds.Name(s.Binds[(int)GameAction.ToolWheel])} / {Keybinds.Name(s.Binds[wheel1])} / {Keybinds.Name(s.Binds[wheel2])}");
             // 2. ...where the player put the grave accent key on Melee: the wheel's second binding stays unbound (no clash made).
             s = Load("binds_version=23", "bind_ToolWheel=-4", $"bind_Melee={grave}");
             Want(s.Binds[(int)GameAction.Melee] == grave && s.Binds[wheel1] == Keybinds.Unbound,
                 $"a version 23 file with Melee on the grave accent key gave the wheel's second binding {Keybinds.Name(s.Binds[wheel1])}");
-            // 3. A file from before binds_version (version 1) with no tool wheel line at all: middle button and grave accent.
+            // 3. A file from before binds_version (version 1) with no tool wheel line at all: Mouse 4 and grave accent.
             s = Load($"bind_Interact={Keybinds.Key(GlfwKey.E)}", $"bind_Equipment={Keybinds.Key(GlfwKey.F)}");
-            Want(s.Binds[(int)GameAction.ToolWheel] == mmb && s.Binds[wheel1] == grave && s.Binds[(int)GameAction.Interact] == Keybinds.Key(GlfwKey.F),
+            Want(s.Binds[(int)GameAction.ToolWheel] == m4 && s.Binds[wheel1] == grave && s.Binds[(int)GameAction.Interact] == Keybinds.Key(GlfwKey.F),
                 "a version 1 file doesn't get today's tool wheel bindings");
-            // 4. New lines: three bindings, one second binding cleared, a bad line and an out-of-range action skipped.
+            // 4. New lines (Mouse 4 already on the third binding, so version 36 leaves the middle button on the first): three bindings, one second binding cleared, a bad line and an out-of-range action skipped.
             s = Load("binds_version=24", "bind_ToolWheel=-4", $"bind2_ToolWheel={alt}", "bind3_ToolWheel=-5", $"bind2_Jump={Keybinds.Unbound}",
                 $"bind2_Fire={Keybinds.Key(GlfwKey.Enter)},{Keybinds.Key(GlfwKey.K)}", "bind3_COUNT=5", "bind2_999=5", "bind4_Jump=5");
             Want(s.Binds[(int)GameAction.ToolWheel] == mmb && s.Binds[wheel1] == alt && s.Binds[wheel2] == Keybinds.Mouse((GlfwMouseButton)3),
@@ -97,22 +98,22 @@ public static partial class SelfTest
         bool W() => down[(int)GameAction.ToolWheel];
         bool Pressed() => W() && !prev[(int)GameAction.ToolWheel];
         bool Released() => !W() && prev[(int)GameAction.ToolWheel];
-        foreach (var code in new[] { mmb, grave, alt })
+        foreach (var code in new[] { m4, grave, alt })
         {
             Frame(true);
             Frame(true, code);
             Want(W() && Pressed(), $"{Keybinds.Name(code)} alone doesn't open the tool wheel");
         }
         Frame(true);
-        Frame(true, mmb);
+        Frame(true, m4);
         var p1 = Pressed();
-        Frame(true, mmb, grave);
+        Frame(true, m4, grave);
         var p2 = Pressed();
         Frame(true, grave);
         var still = W() && !Released();
         Frame(true);
         var rel = Released();
-        trace.Add($"middle: pressed {p1}; + grave: pressed again {p2}; middle up: still down {still}; grave up: released {rel}");
+        trace.Add($"Mouse 4: pressed {p1}; + grave: pressed again {p2}; Mouse 4 up: still down {still}; grave up: released {rel}");
         Want(p1 && !p2 && still && rel, "the tool wheel isn't pressed once with the first binding and released with the last");
         Frame(false, grave);
         Want(!W(), "a Sandbox action's second binding works outside Sandbox");
@@ -138,14 +139,14 @@ public static partial class SelfTest
             "Left Alt on the tool wheel and the gantry's orbit isn't flagged as a clash, or the orbit lost its key");
         Want(Keybinds.ClashAt(d, (int)GameAction.RotateLeft) == -1 && Keybinds.ClashAt(d, (int)GameAction.Noclip) == -1, "a default key shared across contexts (or allowed) is flagged");
         Keybinds.Clear(binds, GameAction.ToolWheel, 1);
-        Want(binds[wheel1] == Keybinds.Unbound && Keybinds.First(binds, GameAction.ToolWheel) == mmb, "clearing a binding didn't, or the first binding isn't the primary");
+        Want(binds[wheel1] == Keybinds.Unbound && Keybinds.First(binds, GameAction.ToolWheel) == m4, "clearing a binding didn't, or the first binding isn't the primary");
         Keybinds.Clear(binds, GameAction.ToolWheel, 0);
         Keybinds.Assign(binds, GameAction.ToolWheel, 2, grave);
         Want(Keybinds.First(binds, GameAction.ToolWheel) == grave && Keybinds.Has(binds, GameAction.ToolWheel, grave) && !Keybinds.Has(binds, GameAction.ToolWheel, Keybinds.Unbound),
             "with the primary cleared the HUD's key isn't the next binding");
 
         // 10. Nothing allocates.
-        Frame(true, mmb);
+        Frame(true, m4);
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var k = 0; k < 200; k++)
         {

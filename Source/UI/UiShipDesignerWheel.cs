@@ -7,17 +7,17 @@ using CallOfSlop.ShipDesigner;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Ship Designer's quick wheel (Karl, 2026-11-27): hold the middle mouse button still in the yard and a radial
-/// <see cref="RadialMenu"/> opens round the pointer (the Sandbox wheels' look); flick towards a slice and let go to pick it,
-/// let go in the middle (or Esc) to cancel. Moving the mouse before the hold opens it orbits the camera as before, so a
-/// middle drag still turns the view (left drag on empty yard and right drag pan, the wheel zooms, as always).
+/// The Ship Designer's quick wheel (Karl, 2026-11-27): hold Mouse 4 (the back side button, as the Sandbox tool wheel's
+/// default) in the yard and a radial <see cref="RadialMenu"/> opens round the pointer (the Sandbox wheels' look); flick
+/// towards a slice and let go to pick it, let go in the middle (or Esc) to cancel. The middle button only orbits, as before
+/// the wheel (left or middle drag turns the view, right drag pans, the wheel zooms).
 /// Slices: the four modes (Hull, Pieces, Interior, Connectors), then Door and Ladder (the connector tools) and the most used
 /// pieces (Airlock, Window, Seat, Cargo hatch, Boarding ramp, Floodlight M). A piece is carried on the pointer: click the
 /// hull to place it, click off the ship or Esc to drop it.
 /// </summary>
 public sealed partial class Ui
 {
-    private const float SdWheelHold = 0.18f, SdWheelSlop = 6f; // seconds held still, and pixels moved that make it an orbit instead
+    private const ImGuiMouseButton SdWheelButton = (ImGuiMouseButton)3; // Mouse 4 (ImGui's first extra button)
 
     private static readonly (string Label, string Short, string Hint)[] SdWheelSlots =
     [
@@ -40,7 +40,6 @@ public sealed partial class Ui
     private RadialMenu? _sdWheelMenu;
     private RadialIcon? _sdWheelIcons;
     private float2 _sdWheelAt;
-    private (float2 At, double T)? _sdMidPress;
 
     private RadialMenu SdWheel
     {
@@ -74,34 +73,16 @@ public sealed partial class Ui
 
     private bool SdWheelOpen => _sdWheelMenu is { IsOpen: true };
 
-    /// <summary>The middle button went down in the free yard: held still it opens the wheel, moved it orbits.</summary>
-    private void SdMiddleDown(float2 mouse) => _sdMidPress = (mouse, _sdNow);
+    /// <summary>Mouse 4 went down in the free yard: the wheel opens round the pointer.</summary>
+    private void SdWheelDown(float2 mouse) => SdWheelOpenAt(mouse);
 
-    /// <summary>One frame of the wheel and the middle press; true while either holds the mouse (the yard ignores it then).</summary>
+    /// <summary>One frame of the open wheel; true while it holds the mouse (the yard ignores it then).</summary>
     private bool SdWheelFrame(ImGuiIOPtr io, float2 mouse)
     {
-        if (_sdMidPress is { } mp)
-        {
-            if (!ImGui.IsMouseDown(ImGuiMouseButton.Middle))
-                _sdMidPress = null; // (a quick click: nothing)
-            else if (MathF.Sqrt((mouse.X - mp.At.X) * (mouse.X - mp.At.X) + (mouse.Y - mp.At.Y) * (mouse.Y - mp.At.Y)) > SdWheelSlop * _scale)
-            {
-                _sdMidPress = null;
-                _sdOrbiting = true;
-                return false;
-            }
-            else if (_sdNow - mp.T >= SdWheelHold)
-            {
-                _sdMidPress = null;
-                SdWheelOpenAt(mp.At);
-            }
-            else
-                return true;
-        }
         if (!SdWheelOpen)
             return false;
         var w = SdWheel;
-        if (ImGui.IsMouseDown(ImGuiMouseButton.Middle))
+        if (ImGui.IsMouseDown(SdWheelButton))
         {
             w.Move(new Vector2(io.MouseDelta.X, io.MouseDelta.Y), MathF.Max(io.DeltaTime, 1e-4f));
             return true;
@@ -127,7 +108,7 @@ public sealed partial class Ui
         _sdOrbiting = _sdPanning = false;
     }
 
-    /// <summary>Draws the open wheel round where the middle button went down (kept on screen).</summary>
+    /// <summary>Draws the open wheel round where Mouse 4 went down (kept on screen).</summary>
     private void SdWheelDraw()
     {
         if (!SdWheelOpen)
@@ -143,7 +124,6 @@ public sealed partial class Ui
     /// <summary>Shuts the wheel and any piece it put on the pointer (Esc, the screen closing).</summary>
     private void SdWheelReset()
     {
-        _sdMidPress = null;
         if (SdWheelOpen)
             _sdWheelMenu!.Close();
         SdCarryCancel();

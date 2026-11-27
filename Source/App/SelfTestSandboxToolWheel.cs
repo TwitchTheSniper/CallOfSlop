@@ -8,8 +8,8 @@ public static partial class SelfTest
     /// <summary>
     /// "Sandbox tool wheel": the radial widget (RadialMenu.cs) and the Sandbox tool wheel on it (SandboxToolWheel.cs;
     /// docs/sandbox/CONSTRUCTS.md, "The tool wheel"). The direction-to-segment maths (every segment, both edges, the
-    /// wrap-around at the top, the dead zone, other counts), the pointer held within reach; the key (the middle mouse
-    /// button, unshared, added by binds version 10); in an offline Sandbox game a scripted hold-flick-release takes out
+    /// wrap-around at the top, the dead zone, other counts), the pointer held within reach; the key (Mouse 4, unshared: added
+    /// on the middle button by binds version 10, moved by 36); in an offline Sandbox game a scripted hold-flick-release takes out
     /// each tool through the number keys' request, the current tool is marked, letting go in the middle cancels, a tool
     /// still to come says so, and the wheel doesn't open in a seat and closes without choosing on death or a menu; drawn
     /// headless with no ImGui error and nothing allocated per frame while open; and a real client's pick reaches the server.
@@ -55,19 +55,20 @@ public static partial class SelfTest
 
         // ---- The key ----------------------------------------------------------------------------------------------
         var kd = Keybinds.Defaults;
-        var middle = Keybinds.Mouse(Brutal.GlfwApi.GlfwMouseButton.Middle);
+        var middle = Keybinds.Mouse(Keybinds.Mouse4); // (Mouse 4 from binds version 36; the middle button before)
         if (kd[(int)GameAction.ToolWheel] != middle || Duplicates(kd).Length > 0)
-            Fail($"tool wheel: the default key isn't an unshared middle mouse button ({Duplicates(kd)})");
+            Fail($"tool wheel: the default key isn't an unshared Mouse 4 ({Duplicates(kd)})");
         var old = (int[])kd.Clone();
         old[(int)GameAction.ToolWheel] = Keybinds.Unbound;
         var moved = Keybinds.Migrate(old, 9);
         var taken = (int[])kd.Clone();
         taken[(int)GameAction.ToolWheel] = Keybinds.Unbound;
-        taken[(int)GameAction.Melee] = middle;
+        var mmb = Keybinds.Mouse(Brutal.GlfwApi.GlfwMouseButton.Middle);
+        taken[(int)GameAction.Melee] = mmb;
         Keybinds.Migrate(taken, 9);
         Line($"tool wheel key: {Keybinds.Name(kd[(int)GameAction.ToolWheel])}; binds version 9 migrated to it {old[(int)GameAction.ToolWheel] == middle} ({moved.Count} moved); "
-             + $"a file with the middle button on melee keeps it {taken[(int)GameAction.Melee] == middle} (the wheel unbound {taken[(int)GameAction.ToolWheel] == Keybinds.Unbound})");
-        if (old[(int)GameAction.ToolWheel] != middle || moved.Count(a => a == GameAction.ToolWheel) != 1 || taken[(int)GameAction.Melee] != middle || taken[(int)GameAction.ToolWheel] != Keybinds.Unbound)
+             + $"a file with the middle button on melee keeps it {taken[(int)GameAction.Melee] == mmb} (the wheel unbound {taken[(int)GameAction.ToolWheel] == Keybinds.Unbound})");
+        if (old[(int)GameAction.ToolWheel] != middle || moved.Count(a => a == GameAction.ToolWheel) != 1 || taken[(int)GameAction.Melee] != mmb || taken[(int)GameAction.ToolWheel] != Keybinds.Unbound)
             Fail("tool wheel: the binds version 10 migration is wrong");
 
         // ---- In a Sandbox game ------------------------------------------------------------------------------------
