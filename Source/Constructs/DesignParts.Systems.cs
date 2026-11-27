@@ -428,9 +428,9 @@ public static partial class DesignParts
             Bay(a, b);
             if (DesignHangar.LiftsOut(p))
                 LiftOutFloor(a, b, m);
-            if (p.BayDoorType == "Iris")
+            if (p.BayDoorType == "Shutter")
             {
-                IrisBlades(a, m);
+                ShutterSlats(a, m);
                 return;
             }
             if (leaf.To <= leaf.From)
@@ -660,30 +660,27 @@ public static partial class DesignParts
     }
 
     /// <summary>
-    /// An iris bay door's four blades (DesignHangar.DrawIris: leaves 0 to 3), each an event door that swings a quarter turn in the skin's
-    /// plane about its pivot at the mouth's outer corner of its quarter, out of the mouth into the well round it; welded to the bay and to
-    /// the first blade, so F on any blade opens them all.
+    /// A sectional shutter bay door's slats (DesignHangar.Slats, drawn as leaves 0 up): each an event door that slides its side's run
+    /// (DesignHangar.ShutterRun) past the mouth's edge, on under the bay's ceiling where the page lays it open; welded to the bay and to the
+    /// first slat, so F on any opens them all.
     /// </summary>
-    private static void IrisBlades(in PieceAt a, DesignMesh m)
+    private static void ShutterSlats(in PieceAt a, DesignMesh m)
     {
         var (p, e, els) = (a.P, a.E, a.Els);
         var (dx, dz) = DesignHangar.DoorExtent(p, a.W);
-        float hx = (float)(dx / 2 * p.Hole), hz = (float)(dz / 2 * p.Hole);
-        var seconds = MathF.Max(HatchSeconds, MathF.Max(hx, hz) * 2 * BayDoorSecondsPerM);
-        var (x, z) = (Vector3.Normalize(a.X), Vector3.Normalize(a.Z));
-        var dir = NearestDir(a.Y);
+        double hx = dx / 2 * p.Hole, hz = dz / 2 * p.Hole;
+        var th = Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2);
+        var run = (float)DesignHangar.ShutterRun(p, hx, hz);
+        var seconds = MathF.Max(HatchSeconds, run * BayDoorSecondsPerM);
         var first = -1;
-        var k = 0;
-        foreach (var (sx, sz) in new[] { (1, 1), (-1, 1), (-1, -1), (1, -1) })
+        foreach (var sl in DesignHangar.Slats(p, hx, hz, th))
         {
-            var blade = k++;
-            var leaf = m.Leaves?.Find(l => l.Leaf == blade) ?? default;
+            var leaf = m.Leaves?.Find(l => l.Leaf == sl.Leaf) ?? default;
             if (leaf.To <= leaf.From)
                 continue;
-            var door = Leaf($"{e.Id}.d{blade}", $"{p.Kind} iris blade", m, leaf.From, leaf.To, a.X, a.Y, a.Z);
-            var pivot = a.O + x * (sx * hx) + z * (sz * hz);
-            // A quarter turn, the four the same way (either way takes a blade clear of the mouth, out over the side its corner is on).
-            door.Door = new CDoorDef { Slide = false, Axis = dir, Pivot = pivot, Angle = MathF.PI / 2, Seconds = seconds, Hang = 0 };
+            var door = Leaf($"{e.Id}.d{sl.Leaf}", $"{p.Kind} shutter slat", m, leaf.From, leaf.To, a.X, a.Y, a.Z);
+            Slide(door, (sl.Axis == 2 ? a.Z : a.X) * sl.Sign, seconds);
+            door.Door!.Travel = MathF.Min(run, BayDoorMaxTravel);
             els.Add(door);
             Weld(els, a.At, els.Count - 1);
             if (first < 0)
@@ -691,8 +688,8 @@ public static partial class DesignParts
             else
                 Weld(els, first, els.Count - 1);
         }
-        if (k > 0 && first < 0)
-            Console.WriteLine($"[design] the {p.Kind} {e.Id}'s iris draws no blades: its mouth is open");
+        if (first < 0)
+            Console.WriteLine($"[design] the {p.Kind} {e.Id}'s shutter draws no slats: its mouth is open");
     }
 
     /// <summary>Which of a place's axes is nearest the ship's up (0 X, 1 Y, 2 Z), as DesignHangar reads a bay's.</summary>

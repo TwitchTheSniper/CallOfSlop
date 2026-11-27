@@ -1061,6 +1061,20 @@ public sealed partial class Ui
             ImGui.Text("Type");
             Row();
             MatCombo("hgdoor" + pid, Str(p, "bayDoor", ShipDesigner.DesignHangar.DefDoor), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
+            if (Str(p, "bayDoor") == "Shutter")
+            {
+                var two = I(p, "shutterRollers", 1) == 2;
+                ImGui.Text("Rollers");
+                Row();
+                MatCombo("hgsr" + pid, two ? "Two (split in the middle)" : "One", ["One", "Two (split in the middle)"], v => Cmd(C("setPiece", ("id", pid), ("shutterRollers", v == "One" ? 1 : 2))));
+                ImGui.Text(two ? "Split" : "Roller at");
+                Row();
+                var side = Str(p, "shutterSide", "Fore");
+                string[] sides = two ? ["Fore and aft", "Left and right"] : ShipDesigner.DesignHangar.ShutterSides;
+                var shown = two ? (side is "Fore" or "Aft" ? sides[0] : sides[1]) : side;
+                MatCombo("hgss" + pid, shown, sides, v => Cmd(C("setPiece", ("id", pid), ("shutterSide", v == "Fore and aft" ? "Fore" : v == "Left and right" ? "Right" : v))));
+                Slider("Slats", I(p, "shutterSlats", 4), 1, ShipDesigner.DesignHangar.ShutterMaxSlats, 1, two ? " each" : "", v => Cmd(C("setPiece", ("id", pid), ("shutterSlats", (int)v))), "hgsl" + pid, 4);
+            }
             H3("Hangar floor");
             ImGui.Text("Floor");
             Row();
@@ -1074,7 +1088,7 @@ public sealed partial class Ui
                 Hint($"The bay is {Fmt(size[0])} m across, {Fmt(size[1])} m tall and {Fmt(size[2])} m deep. {Str(p, "bayDoor") switch
                 {
                     "Rolling" => "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.",
-                    "Iris" => "Four blades inside the mouth swing out to the sides like a shutter.",
+                    "Shutter" => "A sectional garage door: its slats run on tracks to the side you pick and on along the bay's ceiling there, or split in the middle to both sides.",
                     "Hinged" => "The door swings out on motor hinges.",
                     _ => "The door slides aside inside the well on a piston.",
                 }} {n} docking fitting{(n == 1 ? "" : "s")} linked.");
