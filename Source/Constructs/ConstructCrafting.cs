@@ -1197,10 +1197,16 @@ public static class ConstructCrafting
 
     /// <summary>
     /// Which machines count as alike for a split: the extrusion lines' machines, an Extruder or a Former with its kind, a Panel Former with a
-    /// Panel Former (never with a Laser Cutter). 0: not split (a Press or an Assembler keeps its dies and recipes; ovens go by LeastOven).
+    /// Panel Former (never with a Laser Cutter), a Press with a Press (Sean, 2026-11-27: Zero Day Works II sent every pressed part to the east
+    /// line's first press, which swapped dies all run while the west line's presses stood idle; a press that would have to swap its die
+    /// counts <see cref="DieSwapLoad"/> more, so a press already holding the die is picked first). 0: not split (an Assembler keeps its
+    /// recipes, a Die Lathe its dies; ovens go by LeastOven).
     /// </summary>
     private static int SplitClass(ConstructPartDef d) =>
-        d.IsBakeOven || d.IsPress || d.IsAssembler ? 0 : d.IsLaserCutter ? 1 : d.IsPanelFormer ? 2 : d.IsExtruder ? 3 : 0;
+        d.IsBakeOven || d.IsAssembler || d.IsLathe ? 0 : d.IsPress ? 4 : d.IsLaserCutter ? 1 : d.IsPanelFormer ? 2 : d.IsExtruder ? 3 : 0;
+
+    /// <summary>The extra work a press that holds another die counts in a split (<see cref="SplitLoad"/>'s units: a piece's worth, as a swap takes about one stroke and its blank's wait).</summary>
+    private const int DieSwapLoad = 100;
 
     /// <summary>An order's work, per piece: an extrusion by its length (whole metres or less count as 1 m), anything else as 1 m.</summary>
     private static int SplitWeight(in WorkOrder o) => o.IsPiece ? Math.Max(100, (int)o.Key.L) : 100;
@@ -1238,13 +1244,17 @@ public static class ConstructCrafting
             return 0; // (no lines of its own: the first machine with a way, as before; never split over every line the conveyors join)
         var cls = SplitClass(c.DefOf(first));
         var what = o.What with { Count = (ushort)ask, Made = 0 };
+        var spec = cls == 4 ? Pressed.SpecOf(what) : null; // (a press's split: the die the order needs)
         var n = 0;
         for (var i = 0; i < net.MachineN && n < ms.Length; i++)
         {
             var m = net.Machines[i];
             if (m != first && (own[..on].IndexOf(m) < 0 || net.MachineWay[i] != way || SplitClass(c.DefOf(m)) != cls || LooseRefusal(world, c, m) != null || WorkOrders.Refusal(world, c, m, what) != null))
                 continue;
-            (ms[n], load[n], share[n]) = (m, SplitLoad(c, m), 0);
+            var swap = cls == 4 && spec != null && !ReferenceEquals(ConstructPress.SizedDieOf(PressTable.Current, c, m), spec.Die);
+            if (swap && m != first && DieClaimed(world, c, net, m, spec!.Die, ms[..n]))
+                continue; // (the rack's die is already another press's to fetch: this one would wait on it)
+            (ms[n], load[n], share[n]) = (m, SplitLoad(c, m) + (swap ? DieSwapLoad : 0), 0);
             n++;
         }
         var w = SplitWeight(o.What);
@@ -1281,6 +1291,31 @@ public static class ConstructCrafting
             asked += share[at];
         }
         return asked;
+    }
+
+    /// <summary>
+    /// A press split (<see cref="SplitAsk"/>): would press <paramref name="m"/>, which holds another die, have to wait for <paramref name="die"/>
+    /// because another press fetches it from the same rack? That press either has an order queued that needs it and doesn't hold it yet, or
+    /// is in this split (<paramref name="taken"/>) needing it too. Zero Day Works II's west presses share a Die Wall's one Housing Die: both
+    /// were given housings, one fetched the die and the other stood waiting on it all run (2026-11-27). Allocates nothing.
+    /// </summary>
+    private static bool DieClaimed(ConstructWorld world, Construct c, CraftNet net, int m, PressDie die, ReadOnlySpan<int> taken)
+    {
+        if (!ConstructPress.DieRackOf(world, c, m, die, out var body, out var rack))
+            return false;
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var p = net.Machines[i];
+            if (p == m || !c.DefOf(p).IsPress || ReferenceEquals(ConstructPress.SizedDieOf(PressTable.Current, c, p), die))
+                continue;
+            var claims = taken.IndexOf(p) >= 0;
+            if (!claims && c.Parts[p].Orders is { Bill: false } q)
+                for (var k = 0; k < q.Count && !claims; k++)
+                    claims = q.Items[k].Left > 0 && Pressed.SpecOf(q.Items[k]) is { } ps && ReferenceEquals(ps.Die, die);
+            if (claims && ConstructPress.DieRackOf(world, c, p, die, out var pb, out var pr) && ReferenceEquals(pb, body) && pr == rack)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
