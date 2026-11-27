@@ -1345,7 +1345,8 @@ function cutControls(o, send, kind, glass) {
   const auto = Math.round((o.gapAuto ?? 0.15) * 100);
   const out = [
     slider(o.gap < 0 ? "Cladding clearance (auto)" : "Cladding clearance", o.gap < 0 ? auto : Math.round(o.gap * 100), 0, 100, 1, " cm", () => {}, v => send({ gap: v / 100 }), auto, () => send({ gap: D.gap })),
-    slider("Hole size", Math.round((o.hole ?? 1) * 100), 50, 250, 5, "%", () => {}, v => send({ hole: v / 100 }), Math.round(D.hole * 100), () => send({ hole: D.hole }))];
+    ...(o.socket === "ramp" ? [] : [ // (a ramp's hole is its own width and length: rampControls)
+      slider("Hole size", Math.round((o.hole ?? 1) * 100), 50, 250, 5, "%", () => {}, v => send({ hole: v / 100 }), Math.round(D.hole * 100), () => send({ hole: D.hole }))])];
   if (glass) out.push(
     slider("Depth", Math.round((o.depth ?? 0.2) * 100), 5, 100, 1, " cm", () => {}, v => send({ depth: v / 100 }), Math.round(D.depth * 100), () => send({ depth: D.depth })),
     el("div", { class: "row" }, el("label", {}, el("input", { type: "checkbox", ...(o.double !== false ? { checked: "" } : {}), onchange: e => send({ double: e.target.checked }) }), "Double glazed"),
@@ -1406,11 +1407,16 @@ function hangarControls(p) {
   }
   return [];
 }
-// A weapon mount's weapon (Karl, 2026-11-26): the dropdown lists the weapons of its size class or smaller.
+// A weapon mount's weapon (Karl, 2026-11-26): the dropdown lists the weapons of its size class or smaller. A weapon socket (the PDC's,
+// the railgun's on the hull or spinal, 2026-11-27) holds its own weapon: no dropdown.
 function mountControls(p) {
   if (!p.mountClass) return [];
   const send = o => { const a = cmd({ op: "setPiece", id: p.id, ...o }); if (a?.error) toast(a.error); }, D = CAT.defaults.piece, cls = "SML";
-  const ws = (CAT.weapons || []).filter(w => w.class <= p.mountClass);
+  if (p.mountOnly) {
+    const w = (CAT.weapons || []).find(w => w.name === p.mountOnly), bad = p.reserve?.some(r => r[12]);
+    return [el("h3", {}, "Weapon"), el("p", { class: "hint" }, `${p.mountOnly}. ${w ? `${w.desc} It reserves its ${w.reserve} (the hologram box)${bad ? ": a room or the skin clips it" : ""}.` : ""}`)];
+  }
+  const ws = (CAT.weapons || []).filter(w => w.class <= p.mountClass && !w.socket);
   const s = el("select", { "aria-label": "Weapon fitted", onchange: e => send({ fit: e.target.value }) }, el("option", { value: "" }, "Empty mount"),
     ...ws.map(w => el("option", { value: w.name, title: w.desc, ...(p.fit === w.name ? { selected: "" } : {}) }, `${w.name} (${cls[w.class - 1]})`)));
   const w = (CAT.weapons || []).find(w => w.name === p.fit), bad = p.reserve?.some(r => r[12]);
@@ -1432,6 +1438,8 @@ function seatControls(p) {
 function rampControls(p) {
   if (p.extend === undefined) return [];
   return [el("h3", {}, "Ramp"),
+    slider("Hatch width", Math.round((p.rampW ?? 2.5) * 100), 150, 500, 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, rampW: v / 100 }), dflt("ramp", "rampW", 100)),
+    slider("Hatch length", Math.round((p.rampL ?? 5.1) * 100), 200, 800, 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, rampL: v / 100 }), dflt("ramp", "rampL", 100)),
     slider("Extension", Math.round(p.extend * 100), 0, Math.round((p.extendMax ?? 2.5) * 100), 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, extend: v / 100 }), dflt("ramp", "extend", 100)),
     el("p", { class: "hint" }, "F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.")];
 }
@@ -1676,7 +1684,7 @@ function stationPanel(h) {
   box.append(el("h3", {}, "Cladding"),
     el("div", { class: "row" }, el("span", {}, "Match body"), matchSel),
     ...(src ? [el("p", { class: "hint" }, `Follows ${src.name}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.`)] : [
-    el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
+    el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex", "Panelled"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
     ...(clad.kind === "Off" ? [] : [el("div", { class: "row" }, el("span", {}, "Material"), matSel(clad.material || "Hull", ["Hull", ...MAT_NAMES], "Cladding material", v => hs({ cladMaterial: v })),
       resetAll("Cladding material back to the hull's", () => hs(dfltOf("hull", ["cladMaterial"]))))]),
     ...(clad.kind === "Off" ? [] : [
@@ -1686,7 +1694,7 @@ function stationPanel(h) {
       el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => hs(dfltOf("hull", ["cladSize", "cladDepth"])))),
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
         el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
-    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare."));
+    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across; Panelled: bevelled graphite armour, 6-16 cm, on light trim seams of the hull's skin); the depth slider scales that. Windows and sockets stay bare."));
   // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
   box.append(el("h3", {}, "Damage"),
     slider("Damage", Math.round((h.damage ?? 0) * 100), 0, 100, 1, "%", () => {}, v => hs({ damage: v / 100 }), dflt("hull", "damage", 100)),
@@ -1903,7 +1911,7 @@ function inspector() {
       el("h3", {}, "Cladding"),
       matchBox("matchClad", !!j.matchClad),
       ...(j.matchClad ? [matchHint] : [
-      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex", "Panelled"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
       ...(clad.kind === "Off" ? [] : [
         slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 }), dflt("join", "cladSize", 100)),
         slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 }), dflt("join", "cladDepth", 100)),
@@ -1914,7 +1922,7 @@ function inspector() {
       el("h3", {}, "Buttress cladding"),
       matchBox("matchButtress", !!j.matchButtress),
       ...(j.matchButtress ? [matchHint.cloneNode(true)] : [
-      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex", "Panelled"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
       ...(bcl.kind === "Off" ? [] : [
         slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 }), dflt("join", "buttressSize", 100)),
         slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 }), dflt("join", "buttressDepth", 100)),

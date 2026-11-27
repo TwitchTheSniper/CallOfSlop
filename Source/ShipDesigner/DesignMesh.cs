@@ -29,6 +29,12 @@ public sealed class DesignMesh
     }
 
     /// <summary>
+    /// The glass drawn in it (Karl, 2026-11-27: windows weren't see-through in the game): a run of its triangles each, From to To. The game
+    /// draws these blended after everything solid and casts no shadow from them (DesignParts.LookBuilder marks them). Null: none.
+    /// </summary>
+    public List<(int From, int To)>? Panes;
+
+    /// <summary>
     /// Its lit runs (light bars, Karl 2026-11-27): triangles From to To that are a lamp's face, drawn unlit and bright (the page and the
     /// designer as an unlit mesh, the game's design shader unlit with bloom). Null: none.
     /// </summary>
@@ -65,6 +71,26 @@ public sealed class DesignMesh
             o.C.AddRange(C.GetRange(t * 9, 9));
         }
         return (a, b);
+    }
+
+    /// <summary>Draws glass (<paramref name="draw"/>'s triangles), tagged as a pane.</summary>
+    public void Pane(Action draw)
+    {
+        var from = Tris;
+        draw();
+        if (Tris > from)
+            (Panes ??= []).Add((from, Tris));
+    }
+
+    /// <summary>Is triangle <paramref name="t"/> glass (<see cref="Panes"/>)?</summary>
+    public bool InPane(int t)
+    {
+        if (Panes is not { } ps)
+            return false;
+        foreach (var q in ps)
+            if (t >= q.From && t < q.To)
+                return true;
+        return false;
     }
 
     // The frame: origin and the three axes.

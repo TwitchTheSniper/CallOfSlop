@@ -13,6 +13,9 @@ public static partial class DesignScene
 
     private const double CladSeam = 0.02, CladSink = 0.03, CladMin = 0.01;
 
+    /// <summary>Panelled cladding's seam each side of a plate: a 10 cm trim strip of the hull's skin between plates.</summary>
+    private const double PanelSeam = 0.05;
+
     /// <summary>
     /// Plated cladding on one copy of a body's sides (the user's Star Destroyer flank, 2026-11-24): each band between two stations is
     /// a grid of cells along the arc and along z, merged at random into plates of one to four cells each way, each plate inset by a seam,
@@ -57,6 +60,7 @@ public static partial class DesignScene
     {
         var heavy = h.Clad == "Heavy";
         var hex = h.Clad == "Hex";
+        var panel = h.Clad == "Panelled";
         var col = DesignMesh.Hex(h.Skin);
         var ah = new double[HullBody.MaxLoft + 2];
         var ay = new double[HullBody.MaxLoft + 2];
@@ -121,7 +125,7 @@ public static partial class DesignScene
                 }
                 if (!terminus)
                 {
-                    LayGrid(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, blocked, (u, v, cell) => h.Paint(za + (zb - za) * v, u, arc, i * 4096 + cell + 777), 0, hex, h.Damage, h.DamageSeed);
+                    LayGrid(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, blocked, (u, v, cell) => h.Paint(za + (zb - za) * v, u, arc, i * 4096 + cell + 777, panel), 0, hex, h.Damage, h.DamageSeed, panel);
                     continue;
                 }
                 for (var r = 0; r < nv; r++)
@@ -149,7 +153,7 @@ public static partial class DesignScene
                     (double X, double Y, double Z) Nr(double u, double v) => Nrm(G(u), r0 + (r1 - r0) * v);
                     (double, double, double) Wr(double u, double v, double off) => W(G(u), r0 + (r1 - r0) * v, off);
                     LayGrid(m, cells, 1, rowArc, len / nv, rng, heavy, h.CladDepth, col, Pr, Nr, Wr, blocked,
-                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777), cap ? 1 : 0, hex, h.Damage, h.DamageSeed);
+                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777, panel), cap ? 1 : 0, hex, h.Damage, h.DamageSeed, panel);
                 }
             }
         }
@@ -239,14 +243,14 @@ public static partial class DesignScene
             }
             var ringLen = reach * (f0 - f1);
             LayPlates(m, cells, 1, rowArc, Math.Max(0.05, ringLen), rng, heavy, h.CladDepth, col, P, N, W, taken,
-                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell), 0, h.Clad == "Hex", h.Damage, h.DamageSeed);
+                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell, h.Clad == "Panelled"), 0, h.Clad == "Hex", h.Damage, h.DamageSeed, h.Clad == "Panelled");
         }
     }
 
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
-        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
+        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false)
     {
         var taken = new bool[nu, nv];
         var trim = new bool[nu, nv];
@@ -267,13 +271,13 @@ public static partial class DesignScene
             }
         // The trimmed cells' plate heights are drawn from their own seed, so the rest of the grid lays as before.
         var trng = new Random(rng.Next());
-        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed);
+        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed, panel);
         if (!any)
             return;
         for (var a = 0; a < nu; a++)
             for (var b = 0; b < nv; b++)
                 if (trim[a, b])
-                    TrimCell(m, a, b, nu, nv, arc, len, trng, heavy, depth, col, W, mask.Fine, paint, damage, dseed);
+                    TrimCell(m, a, b, nu, nv, arc, len, trng, heavy, depth, col, W, mask.Fine, paint, damage, dseed, panel);
     }
 
     /// <summary>What may hold cladding: Blocked cells stay bare, Near cells (an opening's clearance reaches them) are trimmed point by point with Fine.</summary>
@@ -287,11 +291,12 @@ public static partial class DesignScene
     /// edge, a skirt on every edge that borders bare.
     /// </summary>
     private static void TrimCell(DesignMesh m, int a, int b, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
-        Func<double, double, double, (double, double, double)> W, Func<(double, double, double), bool> fine, Func<double, double, int, (byte, byte, byte)>? paint, double damage, int dseed)
+        Func<double, double, double, (double, double, double)> W, Func<(double, double, double), bool> fine, Func<double, double, int, (byte, byte, byte)>? paint, double damage, int dseed, bool panel = false)
     {
         double cw = arc / nu, cl = len / nv;
         int nx = Math.Clamp((int)Math.Ceiling(cw / 0.05), 2, 20), ny = Math.Clamp((int)Math.Ceiling(cl / 0.05), 2, 20);
-        double du = CladSeam / arc, dv = CladSeam / len;
+        var seam = panel ? PanelSeam : CladSeam;
+        double du = seam / arc, dv = seam / len;
         double ua = (double)a / nu + du, ub = (double)(a + 1) / nu - du, va = (double)b / nv + dv, vb = (double)(b + 1) / nv - dv;
         if (ub <= ua || vb <= va)
             return;
@@ -309,7 +314,7 @@ public static partial class DesignScene
                 free[i, j] = !(pts[i, j] || pts[i + 1, j] || pts[i, j + 1] || pts[i + 1, j + 1] || fine(W((U(i) + U(i + 1)) / 2, (V(j) + V(j + 1)) / 2, 0)));
                 anyFree |= free[i, j];
             }
-        var rise = (heavy ? 0.20 : 0.08) - CladMin;
+        var rise = HullBody.CladRise(heavy ? "Heavy" : panel ? "Panelled" : "Plates") - CladMin;
         var hgt = Math.Max((CladMin + rise * rng.NextDouble()) * depth, 0.006);
         var tone = 0.88 + 0.18 * rng.NextDouble();
         if (!anyFree)
@@ -364,27 +369,31 @@ public static partial class DesignScene
     /// </summary>
     internal static void LayPlates(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
-        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0)
+        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false)
     {
         if (hex)
         {
             LayHex(m, nu, nv, arc, len, rng, depth, col, Nrm, W, taken, paint, damage, dseed);
             return;
         }
-        var rise = (heavy ? 0.20 : 0.08) - CladMin;
-        double du = CladSeam / arc, dv = CladSeam / len;
+        // Panelled: plates 6 to 16 cm proud (scaled by depth), never more than two cells each way, so they read as regular armour panels.
+        var floor = panel ? 0.06 : CladMin;
+        var rise = HullBody.CladRise(heavy ? "Heavy" : panel ? "Panelled" : "Plates") - floor;
+        var seam = panel ? PanelSeam : CladSeam;
+        double du = seam / arc, dv = seam / len;
         var last = -1.0;
         for (var b = 0; b < nv; b++)
             for (var a = 0; a < nu; a++)
             {
                 if (taken[a, b])
                     continue;
-                int big = heavy ? 4 : 3, wu = 1 + rng.Next(big), wv = 1 + rng.Next(big);
+                int big = heavy ? 4 : panel ? 2 : 3, wu = 1 + rng.Next(big), wv = 1 + rng.Next(big);
                 if (maxAcross > 0)
                     wu = Math.Min(wu, maxAcross);
-                var hgt = CladMin + rise * rng.NextDouble();
-                var tone = 0.88 + 0.18 * rng.NextDouble();
+                var hgt = floor + rise * rng.NextDouble();
+                var tone = panel ? 0.9 + 0.12 * rng.NextDouble() : 0.88 + 0.18 * rng.NextDouble();
                 var greeble = heavy && rng.NextDouble() < 0.35;
+                var stepped = panel && rng.NextDouble() < 0.4;
                 var gr = (rng.NextDouble(), rng.NextDouble(), rng.NextDouble());
                 // Grow across then along while the cells are free.
                 var cu = 1;
@@ -399,7 +408,7 @@ public static partial class DesignScene
                 // Staggered: never within 5 mm of the plate before (a 5 mm step, and at least 1 cm up).
                 hgt = Math.Round(hgt / 0.005) * 0.005;
                 if (Math.Abs(hgt - last) < 0.005)
-                    hgt += hgt + 0.005 <= CladMin + rise ? 0.005 : -0.005;
+                    hgt += hgt + 0.005 <= floor + rise ? 0.005 : -0.005;
                 last = hgt;
                 hgt *= depth;
                 hgt = Math.Max(hgt, 0.004 + 0.002);
@@ -424,6 +433,20 @@ public static partial class DesignScene
                     if (fx.Dent > 0)
                         e -= fx.Dent * Math.Sin(Math.PI * Math.Clamp(su, 0, 1)) * Math.Sin(Math.PI * Math.Clamp((v - pv0) / (pv1 - pv0), 0, 1));
                     return Math.Max(e, 0.006);
+                }
+                if (panel)
+                {
+                    PanelSlab(m, W, pu0, pu1, pv0, pv1, arc, len, cu, cv, fx.Dent > 0 ? 2 : 1, (u, v) => -CladSink, H, 0.07, top, side);
+                    // A stepped plate: a second, smaller slab on its face (the Zero Day's), 2 to 4 cm higher, a shade lighter.
+                    double pw = (pu1 - pu0) * arc, pl = (pv1 - pv0) * len;
+                    if (stepped && pw > 0.7 && pl > 0.7)
+                    {
+                        double su0 = pu0 + (pu1 - pu0) * 0.2, su1 = pu1 - (pu1 - pu0) * 0.14, sv0 = pv0 + (pv1 - pv0) * 0.16, sv1 = pv1 - (pv1 - pv0) * 0.2;
+                        var up = (0.02 + 0.02 * gr.Item1) * depth;
+                        PanelSlab(m, W, su0, su1, sv0, sv1, arc, len, 1, 1, 1, (u, v) => H(u, v) - 0.01, (u, v) => H(u, v) + up, 0.04,
+                            DesignMesh.Tone(top, 1.08), DesignMesh.Tone(side, 1.08));
+                    }
+                    continue; // (no abrasion or greebles: the armour's look is clean panels)
                 }
                 // The top follows the skin's curve: one quad a cell (a dented plate four).
                 var sub = fx.Dent > 0 ? 2 : 1;
@@ -490,6 +513,51 @@ public static partial class DesignScene
                     m.World();
                 }
             }
+    }
+
+    /// <summary>
+    /// A bevelled slab over u0..u1, v0..v1 (Panelled cladding, Karl 2026-11-27): a skirt from <paramref name="foot"/> up to half its height,
+    /// a bevel drawn in by <paramref name="bevel"/> metres (at most a quarter of its smaller side) up to <paramref name="head"/>, and a top
+    /// that follows the skin, cu by cv quads (times sub). The bevel catches the light, as the Zero Day's armour does.
+    /// </summary>
+    private static void PanelSlab(DesignMesh m, Func<double, double, double, (double, double, double)> W, double u0, double u1, double v0, double v1,
+        double arc, double len, int cu, int cv, int sub, Func<double, double, double> foot, Func<double, double, double> head, double bevel,
+        (byte, byte, byte) top, (byte, byte, byte) side)
+    {
+        double pw = (u1 - u0) * arc, pl = (v1 - v0) * len;
+        var bv = Math.Min(bevel, Math.Min(pw, pl) / 4);
+        double bu = bv / arc, bvv = bv / len;
+        var lit = DesignMesh.Tone(top, 1.12);
+        int tu = cu * sub, tv = cv * sub;
+        double U(int k) => u0 + (u1 - u0) * k / tu;
+        double V(int k) => v0 + (v1 - v0) * k / tv;
+        double Ui(int k) => u0 + bu + (u1 - u0 - 2 * bu) * k / tu;
+        double Vi(int k) => v0 + bvv + (v1 - v0 - 2 * bvv) * k / tv;
+        double Mid(double u, double v) // (the bevel starts half way up what stands clear of the skin, or of the plate under it)
+        {
+            double f = foot(u, v), hd = head(u, v);
+            return Math.Max(f + 0.004, hd - (hd - Math.Max(f, 0)) / 2);
+        }
+        (double, double, double) T(double u, double v) => W(u, v, head(u, v));
+        (double, double, double) B(double u, double v) => W(u, v, Mid(u, v));
+        (double, double, double) F(double u, double v) => W(u, v, foot(u, v));
+        for (var x = 0; x < tu; x++)
+            for (var y = 0; y < tv; y++)
+                m.Quad(T(Ui(x), Vi(y)), T(Ui(x + 1), Vi(y)), T(Ui(x + 1), Vi(y + 1)), T(Ui(x), Vi(y + 1)), top, false);
+        for (var x = 0; x < tu; x++)
+        {
+            m.Quad(F(U(x), v0), F(U(x + 1), v0), B(U(x + 1), v0), B(U(x), v0), side, false);
+            m.Quad(B(U(x), v0), B(U(x + 1), v0), T(Ui(x + 1), v0 + bvv), T(Ui(x), v0 + bvv), lit, false);
+            m.Quad(F(U(x), v1), F(U(x + 1), v1), B(U(x + 1), v1), B(U(x), v1), side, false);
+            m.Quad(B(U(x), v1), B(U(x + 1), v1), T(Ui(x + 1), v1 - bvv), T(Ui(x), v1 - bvv), lit, false);
+        }
+        for (var y = 0; y < tv; y++)
+        {
+            m.Quad(F(u0, V(y)), F(u0, V(y + 1)), B(u0, V(y + 1)), B(u0, V(y)), side, false);
+            m.Quad(B(u0, V(y)), B(u0, V(y + 1)), T(u0 + bu, Vi(y + 1)), T(u0 + bu, Vi(y)), lit, false);
+            m.Quad(F(u1, V(y)), F(u1, V(y + 1)), B(u1, V(y + 1)), B(u1, V(y)), side, false);
+            m.Quad(B(u1, V(y)), B(u1, V(y + 1)), T(u1 - bu, Vi(y + 1)), T(u1 - bu, Vi(y)), lit, false);
+        }
     }
 
     /// <summary>The primer under a missing plate (Karl, 2026-11-25): dark and matte, no paint pattern.</summary>
@@ -795,7 +863,7 @@ public static partial class DesignScene
 
     public static double DoorTop(double[] q) => q.Length > 4 ? q[4] : DoorTopDefault;
 
-    public static bool IsHole(double[] q) => q.Length > 5 && q[5] > 0.5;
+    public static bool IsHole(double[] q) => q.Length > 5 && q[5] > 0.5 && q[5] < 1.5; // (2: a window's opening, DesignWindows.cs)
 
     /// <summary>
     /// The doorways that cut room r: a door whose foot is at its floor (on its plan, near a wall: a wall cell is cut only where it lies
@@ -813,7 +881,8 @@ public static partial class DesignScene
             const double on = 0.05; // (a door's foot is on the room's wall, a hole's inside its plan)
             if (q[0] < a0 - on || q[0] > a1 + on || q[al] < l0 - on || q[al] > l1 + on)
                 continue;
-            if (IsHole(q) ? Math.Abs(q[up] - fl) < DoorLevel || Math.Abs(q[up] - ce) < HoleLevel : Math.Abs(q[up] - fl) < DoorLevel)
+            if (IsWindow(q) ? (d.Stacked ? fl - q[up] : q[up] - fl) is var sill && sill > -DoorLevel && sill < Math.Abs(ce - fl) - 0.1
+                : IsHole(q) ? Math.Abs(q[up] - fl) < DoorLevel || Math.Abs(q[up] - ce) < HoleLevel : Math.Abs(q[up] - fl) < DoorLevel)
                 o.Add(q);
         }
         return o;
@@ -858,6 +927,7 @@ public static partial class DesignScene
         // Only this room's doorways: a door in a wall at its floor, a hole through its floor or its ceiling (walkable rooms, step 4: a door's
         // clearance once cut a notch in both rooms' floors, and in the ceiling and walls of the room under it).
         var doors = DoorsOf(d, r, allDoors);
+        doors.AddRange(RoomWindows(d, r)); // (its walls open behind its windows: DesignWindows.cs)
         var colour = r.WallColour.Length == 7 ? DesignMesh.Hex(r.WallColour) : DesignMesh.Tone(DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour), 0.55);
         var hex = $"#{colour.Item1:x2}{colour.Item2:x2}{colour.Item3:x2}";
         var mates = d.Rooms.Where(o => o != r && r.Group != 0 && o.Group == r.Group).Select(d.Box).ToList();
@@ -900,6 +970,14 @@ public static partial class DesignScene
                     continue;
                 var half = DoorHalf(q);
                 var rise = d.Stacked ? q[up] - p[up] : p[up] - q[up];
+                if (IsWindow(q))
+                {
+                    // A window's opening: from its sill to its head, along its wall, any wall cell up to its reach along the wall's normal.
+                    int wn = (int)q[6], wa = wn == ax ? al : ax;
+                    if (Math.Abs(p[wn] - q[wn]) < q[7] && Math.Abs(p[wa] - q[wa]) < half && rise > 0 && rise < DoorTop(q))
+                        return false;
+                    continue;
+                }
                 if (Math.Abs(p[ax] - q[ax]) < half && Math.Abs(p[al] - q[al]) < half && (flat || rise > -0.3 && rise < DoorTop(q)))
                     return false;
             }
@@ -918,10 +996,11 @@ public static partial class DesignScene
                 if (k == up)
                 {
                     if (IsHole(q)) { }
+                    else if (IsWindow(q)) { e.Add(q[up]); e.Add(d.Stacked ? q[up] - DoorTop(q) : q[up] + DoorTop(q)); }
                     else if (d.Stacked) { e.Add(q[up] - DoorTop(q)); e.Add(q[up] + 0.3); }
                     else { e.Add(q[up] - 0.3); e.Add(q[up] + DoorTop(q)); }
                 }
-                else { e.Add(q[k] - DoorHalf(q)); e.Add(q[k] + DoorHalf(q)); }
+                else if (!IsWindow(q) || (int)q[6] != k) { e.Add(q[k] - DoorHalf(q)); e.Add(q[k] + DoorHalf(q)); }
             foreach (var x in exts)
                 if (x.Side != "up" && (k == ax) == (x.Side is "z0" or "z1"))
                 {
@@ -1275,7 +1354,16 @@ public static partial class DesignScene
         var up = d.Stacked ? 2 : 1;
         var o = new List<(double, double, double, double)>();
         foreach (var q in doors)
-            if (!IsHole(q) && Math.Abs(plane - q[n]) < 0.55 && Math.Abs(q[up] - fl) < DoorLevel)
+            if (IsWindow(q))
+            {
+                // A window's opening (DesignWindows.cs): from its sill to its head, on the wall it was cut for.
+                if ((int)q[6] == n && Math.Abs(plane - q[n]) < q[7])
+                {
+                    var hs = sg * (q[up] - fl);
+                    o.Add((q[w] - DoorHalf(q), q[w] + DoorHalf(q), hs, hs + DoorTop(q)));
+                }
+            }
+            else if (!IsHole(q) && Math.Abs(plane - q[n]) < 0.55 && Math.Abs(q[up] - fl) < DoorLevel)
             {
                 var hc = sg * (q[up] - fl);
                 o.Add((q[w] - DoorHalf(q), q[w] + DoorHalf(q), hc - 0.3, hc + DoorTop(q)));
@@ -1320,15 +1408,27 @@ public static partial class DesignScene
         {
             var head = o.H1 < top - 0.06;
             double jt = head ? o.H1 - 0.003 : top - 0.004, ft = head ? Math.Min(o.H1 + 0.08, top - 0.004) : top - 0.004;
+            // A window's opening stands on a sill (DesignWindows.cs): its jambs start there, and a sill lining and trim run under it.
+            var sill = o.H0 > bot + 0.1;
+            double jb = sill ? o.H0 + 0.003 : bot + 0.004, fb = sill ? Math.Max(o.H0 - 0.08, bot + 0.004) : bot + 0.004;
             if (o.S0 > w0 + 0.1 && o.S0 < w1)
             {
-                box(o.S0 + 0.003, o.S0 + 0.04, bot + 0.004, jt, back, front - 0.012, lining);
-                box(o.S0 - 0.08, o.S0 + 0.043, bot + 0.004, ft, -0.005, front, trim);
+                box(o.S0 + 0.003, o.S0 + 0.04, jb, jt, back, front - 0.012, lining);
+                box(o.S0 - 0.08, o.S0 + 0.043, fb, ft, -0.005, front, trim);
             }
             if (o.S1 < w1 - 0.1 && o.S1 > w0)
             {
-                box(o.S1 - 0.04, o.S1 - 0.003, bot + 0.004, jt, back, front - 0.012, lining);
-                box(o.S1 - 0.043, o.S1 + 0.08, bot + 0.004, ft, -0.005, front, trim);
+                box(o.S1 - 0.04, o.S1 - 0.003, jb, jt, back, front - 0.012, lining);
+                box(o.S1 - 0.043, o.S1 + 0.08, fb, ft, -0.005, front, trim);
+            }
+            if (sill)
+            {
+                double a = Math.Max(o.S0, w0 + 0.004), b = Math.Min(o.S1, w1 - 0.004);
+                if (b - a > 0.1)
+                {
+                    box(a + 0.041, b - 0.041, o.H0 + 0.003, o.H0 + 0.04, back, front - 0.012, lining);
+                    box(Math.Max(o.S0 - 0.083, w0 + 0.004), Math.Min(o.S1 + 0.083, w1 - 0.004), fb, o.H0 + 0.043, -0.005, front + 0.004, trim);
+                }
             }
             if (head)
             {
@@ -1668,7 +1768,13 @@ public static partial class DesignScene
                 if (e > s0 + 0.002 && e < s1 - 0.002)
                     vs.Add(e);
             var fu = d.Stacked ? dk.Floor - q[up_] : q[up_] - dk.Floor;
-            if (Math.Abs(fu) < 0.05 && !IsHole(q))
+            if (IsWindow(q))
+            {
+                foreach (var e in new[] { fu, fu + DoorTop(q) })
+                    if (e > 0.002 && e < hgt - 0.002)
+                        us.Add(e);
+            }
+            else if (Math.Abs(fu) < 0.05 && !IsHole(q))
                 foreach (var e in new[] { fu + DoorTop(q) })
                     if (e > 0.002 && e < hgt - 0.002)
                         us.Add(e);

@@ -380,6 +380,7 @@ public sealed class Piece
     // A light bar's (DesignLightBars, Karl 2026-11-27): its length (m) and brightness (0 to 1; its colour is Beam); a room bar's mount and its height over the floor (m).
     public double BarLen = DesignLightBars.DefLen, Bright = DesignLightBars.DefBright, BarUp = DesignLightBars.DefUp;
     public string BarOn = "Wall";
+    public double RampW = DesignRamp.DefWidth, RampL = DesignRamp.DefLength; // a boarding ramp's hatch across and along, metres (DesignRamp)
 
     public JsonObject ToJson() => DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {
@@ -395,6 +396,7 @@ public sealed class Piece
         var p = DesignLightBars.Read(o, DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id))))));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
+        PieceWeapons.Init(p);
         return p;
     }
 

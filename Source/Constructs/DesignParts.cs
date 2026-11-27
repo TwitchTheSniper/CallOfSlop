@@ -32,7 +32,7 @@ namespace CallOfSlop;
 /// tables (<see cref="KindTable"/>), the part a key names (<see cref="PartOf"/>), the body built (<see cref="BuildSteps"/>), the look, the wire and the save.</item>
 /// <item>DesignParts.Hull.cs: the bands, the joins and the colliders taken from a mesh. DesignParts.Pieces.cs: the pieces, the drives, RCS,
 /// seats and the flight computer. DesignParts.Rooms.cs: the rooms. DesignParts.Doors.cs, DesignParts.Risers.cs, DesignParts.Systems.cs:
-/// doors and hatches; ladders and lifts; tow points, lights, clamps, guns and turrets. DesignParts.Lights.cs: the rooms' lamps, and what a
+/// doors and hatches; ladders and lifts; tow points, lights, clamps, guns and turrets. DesignParts.Windows.cs: the hull windows' glass. DesignParts.Lights.cs: the rooms' lamps, and what a
 /// player is told and given on aiming at a design (its names, the board-at-the-helm redirect). DesignParts.Templates.cs: the part files a working def starts from.</item>
 /// </list>
 /// A kind file gives the pipeline a stage (<c>AddX(Steps)</c>, called in order from <see cref="ElementSteps"/>) and fills the tables in its
@@ -70,6 +70,7 @@ public static partial class DesignParts
         public uint[] Colour = [];
         public int Vertices => Pos.Length / 3;
         public Vector3 Min, Max;
+        public int GlassVertices; // (its vertices that are glass: IsGlass)
         internal object? Gpu; // (the render thread's buffers: Renderer.Design.cs)
     }
 
@@ -389,6 +390,8 @@ public static partial class DesignParts
             yield return n;
         foreach (var n in AddPieces(st)) // DesignParts.Pieces.cs (and the flight computer)
             yield return n;
+        foreach (var n in AddWindows(st)) // DesignParts.Windows.cs (the hull windows' glass)
+            yield return n;
         foreach (var n in AddRooms(st)) // DesignParts.Rooms.cs
             yield return n;
         foreach (var n in AddDoors(st)) // DesignParts.Doors.cs
@@ -516,7 +519,7 @@ public static partial class DesignParts
 
     private static DesignMesh Mirror(DesignMesh m, double cx)
     {
-        var o = new DesignMesh { Leaves = m.Leaves, Glows = m.Glows }; // (its triangles in the same order: its door leaves and lit runs too)
+        var o = new DesignMesh { Leaves = m.Leaves, Panes = m.Panes, Glows = m.Glows }; // (its triangles in the same order: its door leaves, glass and lit runs too)
         for (var t = 0; t < m.Tris; t++)
             for (var v = 2; v >= 0; v--)
             {
@@ -971,6 +974,18 @@ public static partial class DesignParts
 
     private static Vector3 Rgb(uint hex) => new Vector3((hex >> 16) & 255, (hex >> 8) & 255, hex & 255) / 255f;
 
+    /// <summary>
+    /// A glass vertex's alpha (of 255) in a look's colour: every other vertex is 255. The renderer draws a look's glass blended after
+    /// everything solid (ConstructRenderDesign.cs) and the shadows leave it out (SunShadows.AddDesign).
+    /// </summary>
+    public const uint GlassAlpha = 90;
+
+    /// <summary>A lit vertex's alpha (a light bar's strip, a lit room's ceiling strips: DesignMesh.Glows): the design shader draws it unlit and bright.</summary>
+    public const uint GlowAlpha = 254;
+
+    /// <summary>Is a look's vertex colour glass (<see cref="GlassAlpha"/>)?</summary>
+    public static bool IsGlass(uint colour) => colour >> 24 is not (0xff or GlowAlpha);
+
     /// <summary>Gathers triangles into one mesh: flat normals, each turned out from a middle (a hull's axis), colours tinted and made linear.</summary>
     internal sealed class LookBuilder
     {
@@ -980,9 +995,10 @@ public static partial class DesignParts
         public List<float> Pos => _p; // (its corners so far, x y z a corner: what a collider is cut from)
 
         /// <param name="middle">What a normal faces away from: a point, or (NaN z) a line along z through x, y; all NaN: the triangle's own side (as drawn).</param>
-        /// <param name="glow">Drawn unlit and bright (a lamp's face: its colour's alpha 0, which the design shader reads as glow).</param>
+        /// <param name="glow">Drawn unlit and bright (a lamp's face: <see cref="GlowAlpha"/>, which the design shader reads as glow).</param>
         public void AddTri(DesignMesh m, int t, Vector3 tint, Vector3 middle, bool glow = false)
         {
+            var glass = m.InPane(t);
             var i = t * 9;
             var a = new Vector3((float)m.P[i], (float)m.P[i + 1], (float)m.P[i + 2]);
             var b = new Vector3((float)m.P[i + 3], (float)m.P[i + 4], (float)m.P[i + 5]);
@@ -1007,7 +1023,7 @@ public static partial class DesignParts
                 _n.Add(n.X); _n.Add(n.Y); _n.Add(n.Z);
                 var ci = (t * 3 + k) * 3;
                 var col = ci + 2 < m.C.Count ? new Vector3(m.C[ci], m.C[ci + 1], m.C[ci + 2]) / 255f * tint : tint;
-                _c.Add(glow ? Pack(col) & 0x00ffffffu : Pack(col));
+                _c.Add(glass ? Pack(col) & 0x00ffffffu | GlassAlpha << 24 : glow ? Pack(col) & 0x00ffffffu | GlowAlpha << 24 : Pack(col));
             }
         }
 
@@ -1035,6 +1051,9 @@ public static partial class DesignParts
                 (l.Pos[i], l.Pos[i + 1], l.Pos[i + 2]) = (v.X, v.Y, v.Z);
                 (l.Min, l.Max) = (Vector3.Min(l.Min, v), Vector3.Max(l.Max, v));
             }
+            foreach (var c in l.Colour)
+                if (IsGlass(c))
+                    l.GlassVertices++;
             return l;
         }
     }

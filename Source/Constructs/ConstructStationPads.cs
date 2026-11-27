@@ -300,7 +300,7 @@ public static partial class ConstructStation
     {
         var r = 0;
         for (var b = 0; b < MaxArms; b++)
-            if (b != a && OnPadTrip(j, b, j.ArmPad[a], j.ArmDef[a]) && (j.ArmStart[b] < j.ArmStart[a] || j.ArmStart[b] == j.ArmStart[a] && b < a))
+            if (b != a && OnPadTrip(j, b, j.ArmPad[a], j.ArmDef[a]) && (j.ArmSetOut[b] < j.ArmSetOut[a] || j.ArmSetOut[b] == j.ArmSetOut[a] && b < a))
                 r++;
         return r;
     }

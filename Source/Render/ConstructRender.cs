@@ -1948,12 +1948,13 @@ public static partial class ConstructRender
     {
         var n = GlassCount;
         LastGlass = 0;
-        if (n == 0)
+        if (n == 0 && _designGlassCount == 0)
             return;
         gfx.SetBlend(true);
         gfx.SetDepthWrite(false);
         eye -= gfx.Origin; // (the panes were kept relative to the render origin, as their bodies were drawn)
         gfx.Relative = true;
+        DrawDesignGlass(gfx, eye); // (ship design windows: ConstructRenderDesign.cs)
         for (var k = 0; k < n; k++)
         {
             _glassOrder[k] = k;
