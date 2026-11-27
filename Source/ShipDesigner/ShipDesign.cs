@@ -390,19 +390,22 @@ public sealed class Piece
     public double RampW = DesignRamp.DefWidth, RampL = DesignRamp.DefLength; // a boarding ramp's hatch across and along, metres (DesignRamp)
     public int Segments = DesignRamp.DefSegments; // a boarding ramp's telescoping sections (DesignRamp)
     public double RampAngle; // a boarding ramp's set angle, degrees; 0: the automatic one (DesignRamp.Angle)
+    // A stand-off armour plate's (DesignArmour, Karl 2026-11-27): width along, height round, thickness and stand-off (m); its outer face's cladding and panel size.
+    public double ArmW = DesignArmour.DefW, ArmH = DesignArmour.DefH, ArmT = DesignArmour.DefT, ArmOff = DesignArmour.DefOff, ArmCladSize = DesignArmour.DefCladSize;
+    public string ArmClad = DesignArmour.DefClad;
 
-    public JsonObject ToJson() => DesignRecess.Write(this, DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
+    public JsonObject ToJson() => DesignArmour.Write(this, DesignRecess.Write(this, DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
         ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
         ["airW"] = ShipDesign.R(AirW), ["airH"] = ShipDesign.R(AirH), ["airD"] = ShipDesign.R(AirD), ["doorW"] = ShipDesign.R(DoorW), ["door"] = Door, ["feed"] = Feed, ["fit"] = Fit,
-    }))))));
+    })))))));
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
     public static Piece FromJson(JsonObject o, int id)
     {
-        var p = DesignRecess.Read(o, DesignLightBars.Read(o, DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id)))))));
+        var p = DesignArmour.Read(o, DesignRecess.Read(o, DesignLightBars.Read(o, DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id))))))));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
         PieceWeapons.Init(p);

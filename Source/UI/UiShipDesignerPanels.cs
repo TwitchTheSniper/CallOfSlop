@@ -134,7 +134,7 @@ public sealed partial class Ui
     private ImInputString? _palFind;
 
     /// <summary>The outside groups in the gallery's order (any other group the catalogue names goes after them).</summary>
-    private static readonly string[] OutsideGroups = ["Sockets", "Boarding", "Docking", "Hangar", "Drives", "Weapons", "Systems", "Lights"];
+    private static readonly string[] OutsideGroups = ["Sockets", "Boarding", "Docking", "Hangar", "Drives", "Weapons", "Armour", "Systems", "Lights"];
 
     private static string GroupTitle(string g) => g == "Sockets" ? "Airlocks, docks and hatches" : g;
 
@@ -1542,6 +1542,26 @@ public sealed partial class Ui
                     Hint(BarCladHint(Str(p, "barClad", ShipDesigner.DesignLightBars.DefClad), B(p, "barCladOn")));
                     Hint("Along the hull it follows the skin's curve; turned it runs straight across. In the game it lights what is round it, always on.");
                 }
+            }
+            if (B(p, "armour"))
+            {
+                // A stand-off armour plate (DesignArmour, Karl 2026-11-27): its size, thickness, stand-off and its outer face's cladding.
+                H3("Armour plate");
+                Slider("Width (along)", D(p, "armW"), ShipDesigner.DesignArmour.MinW, ShipDesigner.DesignArmour.MaxW, 0.05, " m",
+                    v => Cmd(C("setPiece", ("id", pid), ("armW", v))), "pcaw", Dflt("armour", "armW"));
+                Slider("Height (round)", D(p, "armH"), ShipDesigner.DesignArmour.MinH, ShipDesigner.DesignArmour.MaxH, 0.05, " m",
+                    v => Cmd(C("setPiece", ("id", pid), ("armH", v))), "pcah", Dflt("armour", "armH"));
+                Slider("Thickness", Math.Round(D(p, "armT") * 100), Math.Round(ShipDesigner.DesignArmour.MinT * 100), Math.Round(ShipDesigner.DesignArmour.MaxT * 100), 1, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("armT", v / 100))), "pcat", Dflt("armour", "armT", 100));
+                Slider("Stand-off", Math.Round(D(p, "armOff") * 100), Math.Round(ShipDesigner.DesignArmour.MinOff * 100), Math.Round(ShipDesigner.DesignArmour.MaxOff * 100), 5, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("armOff", v / 100))), "pcao", Dflt("armour", "armOff", 100));
+                ImGui.Text("Outer cladding"u8);
+                Row();
+                MatCombo("pcac" + pid, Str(p, "armClad", ShipDesigner.DesignArmour.DefClad), ShipDesigner.HullBody.CladKinds, v => Cmd(C("setPiece", ("id", pid), ("armClad", v))));
+                if (Str(p, "armClad") != "Off")
+                    Slider("Panel size", D(p, "armCladSize"), ShipDesigner.HullBody.CladSizeMin, ShipDesigner.HullBody.CladSizeMax, 0.05, " m",
+                        v => Cmd(C("setPiece", ("id", pid), ("armCladSize", v))), "pcas", Dflt("armour", "armCladSize"));
+                Hint("It follows the hull's shape at its stand-off, held off the skin on struts. Its outer face takes a hull cladding style; its inner face is plain panels. Solid in the game.");
             }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))

@@ -541,6 +541,8 @@ public sealed class DesignEditor
                     return serr;
                 if (DesignLightBars.Set(p, o) is { Length: > 0 } lerr)
                     return lerr;
+                if (DesignArmour.Set(p, o) is { Length: > 0 } aerr)
+                    return aerr;
                 if (o["room"] is not null)
                 {
                     var rid = I(o, "room");

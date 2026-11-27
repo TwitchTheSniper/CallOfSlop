@@ -277,6 +277,9 @@ public static partial class DesignParts
             return Info.TryGetValue(d, out var i) ? i.El : null;
     }
 
+    /// <summary>Whether a design part is a stand-off armour plate (DesignArmour): F lets it go of its struts' sockets (ConstructWorld.DetachPart).</summary>
+    public static bool IsArmour(ConstructPartDef d) => ElementOf(d) is { Kind: "piece" } e && e.Name == ShipDesigner.DesignArmour.Kind;
+
     /// <summary>Whether a design part is a lift's (its shaft, a ram or its car): F works it where it is (<see cref="KeepsUse"/>).</summary>
     public static bool IsLift(ConstructPartDef d) => ElementOf(d) is { Kind: "lift" };
 
