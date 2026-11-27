@@ -319,7 +319,7 @@ public static partial class DesignCheck
 
     /// <summary>
     /// Boarding from the ground (<c>--board</c>): standing on its legs, a person stands on the ground under the boarding hatch, at the foot of
-    /// its ladder: F there first says the ladder is stowed; F lets the drop down and opens the lid (ConstructRide.OpenWay, as GameSandbox's F
+    /// its ladder: F there first says the ladder is stowed; F opens the lid and then lets the drop down (ConstructRide.OpenWay, as GameSandbox's F
     /// does); then the climb from the ground, played through in the movement step's climb, ends standing clear inside the ship.
     /// </summary>
     private static string? Board(Run r)
@@ -346,7 +346,7 @@ public static partial class DesignCheck
             var s = new MoveState { Position = fw with { Y = g + 0.02f }, Grounded = true };
             var stowed = ConstructRide.ClimbLadder(ref s, c, i, height, frame: true);
             var opened = ConstructRide.OpenWay(world, c, i);
-            for (var k = 0; k < 3 * World.TickRate; k++)
+            for (var k = 0; k < 5 * World.TickRate; k++) // (the lid, then the ladder's sections: DesignParts.Pieces.cs HatchDrop)
                 world.Step(World.Query, World.TickDt);
             s = new MoveState { Position = fw with { Y = g + 0.02f }, Grounded = true };
             var why = ConstructRide.ClimbLadder(ref s, c, i, height, frame: true);

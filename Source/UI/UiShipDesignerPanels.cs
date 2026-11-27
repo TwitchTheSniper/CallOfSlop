@@ -1511,6 +1511,14 @@ public sealed partial class Ui
                 H3("Weapon");
                 Hint($"{Str(p, "fit")}. {Str(wk, "desc")} It reserves its {Str(wk, "reserve")} (the hologram box){(Arr(p, "reserve").Any(r => r.GetArrayLength() > 12 && r[12].GetDouble() > 0) ? ": a room or the skin clips it" : "")}.");
             }
+            if (Str(p, "kind") == ShipDesigner.DesignRamp.HatchKind)
+            {
+                // The boarding hatch's ladder (Karl, 2026-11-27): 1 to 3 telescoping sections down to the ground.
+                H3("Boarding ladder");
+                Slider("Segments", D(p, "ladderSegs", 1), ShipDesigner.DesignRamp.MinLadderSegments, ShipDesigner.DesignRamp.MaxLadderSegments, 1, "",
+                    v => Cmd(C("setPiece", ("id", pid), ("ladderSegs", v))), "pcls", Dflt("ramp", "ladderSegs"));
+                Hint("On a ship with landing legs, F opens the hatch, then the ladder's sections telescope down to the ground; F again draws the ladder up, then the hatch shuts. More sections reach further from a high belly.");
+            }
             if (Str(p, "kind") == ShipDesigner.DesignRamp.Kind)
             {
                 // A boarding ramp's extension (DesignRamp, Karl 2026-11-27): how far its second section runs out once it is down.

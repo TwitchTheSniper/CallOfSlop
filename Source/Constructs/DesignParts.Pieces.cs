@@ -119,7 +119,8 @@ public static partial class DesignParts
     // Its foot's spring (the XL leg pod's, whose keel stands about as high: LegPodParts), the travel by the piece's size.
     private const float FootTravel = 0.1375f, FootHz = 2.283f, FootDamping = 0.6f;
     // The boarding hatch's ladder as the piece draws it: 2.2 m of well (PieceKinds "Boarding hatch"); its drop's rails just outside the well's
-    // ladder's (x 0.25-0.3) and its rungs a half step off theirs, so nothing lies on a face of the fixed ladder; its foot this high over the ground.
+    // ladder's (x 0.25-0.3) and its rungs a half step off theirs, so nothing lies on a face of the fixed ladder; its foot this high over the ground;
+    // each section's run (s).
     private const float HatchWell = 2.2f, DropFootClear = 0.35f, DropSeconds = 1.5f;
 
     /// <summary>
@@ -187,11 +188,14 @@ public static partial class DesignParts
 
     /// <summary>
     /// A boarding hatch's drop (step 4: from the ground nobody could reach the belly ladder's foot, 3.2 m up on the Zero Day's legs): a short
-    /// ladder, two rails and rungs stowed up the hatch's well beside the drawn ladder's rails, a slide door that lets it down out of the hatch
-    /// until its foot is <see cref="DropFootClear"/> over the ground the design stands on with its legs down (at most the well's depth). The
-    /// risers' stage welds it to the hatch's ladder and lowers that ladder's foot by its travel (<see cref="DropOnto"/>): F on the ladder lets
-    /// it down with the lid (ConstructRide.OpenWay), a climb waits for it (StowedFoot), and the climb starts from the ground. None when the
-    /// design has no legs or its belly is a step up.
+    /// ladder of 1 to 3 telescoping sections (the piece's <see cref="Piece.Segments"/>, Karl 2026-11-27), each two rails and rungs stowed up
+    /// the hatch's well beside the drawn ladder's rails, each nested in front of the one before, and each a slide door: section k runs out
+    /// k + 1 shares of the reach in the same time, so they telescope out together until the last's foot is <see cref="DropFootClear"/> over
+    /// the ground the design stands on with its legs down. Each section is as long as the well holds, and keeps <see cref="DropOverlap"/> of
+    /// itself in the one above. The sections and the hatch's lid are one staged group (<see cref="CDoorDef.Seq"/>): the lid opens first and the
+    /// ladder comes down once it rests open; shutting, the ladder comes up first and then the lid shuts. The risers' stage welds them to the
+    /// hatch's ladder and lowers that ladder's foot by the reach (<see cref="DropOnto"/>): F on the ladder (or on the drop, once it is down)
+    /// climbs it, a climb waits for it (StowedFoot), and the climb starts from the ground. None when the design has no legs or its belly is a step up.
     /// </summary>
     private static void HatchDrop(in PieceAt a, ShipDesign d)
     {
@@ -199,49 +203,76 @@ public static partial class DesignParts
             return; // (no legs; or the hatch isn't on a belly: it has no ladder, DesignParts.Risers.cs)
         var p = a.P;
         var s = a.S;
-        var drop = MathF.Min(a.O.Y - ground - DropFootClear, HatchWell * s); // (from its foot on the skin, where the drawn ladder's rails end)
-        if (drop < 0.3f)
+        var n = DesignRamp.LadderSegmentsOf(p);
+        var gap = a.O.Y - ground - DropFootClear; // (from its foot on the skin, where the drawn ladder's rails end)
+        var well = HatchWell * s;
+        var over = n > 1 ? DropOverlap * s : 0;
+        var step = MathF.Min(gap / n, well - over); // (each section's run out of the one above)
+        if (step * n < 0.3f)
             return;
+        var len = (step + over) / s; // (each section's length, the hatch's frame: stowed, from len into the ship to the skin)
         var across = PieceKinds.Find(p.Kind)?.Footprint is not null ? (float)p.Hole : 1f;
         var w = a.W;
-        var m = new DesignMesh();
-        m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across);
-        var len = drop / s; // (the hatch's frame: stowed, from len into the ship to the skin)
-        m.Box(-0.35, -len, 0.385, -0.305, 0, 0.425, PieceKinds.Amber);
-        m.Box(0.305, -len, 0.385, 0.35, 0, 0.425, PieceKinds.Amber);
-        for (var r = -len + 0.15; r < -0.05; r += 0.3)
-            m.Box(-0.305, r, 0.395, 0.305, r + 0.04, 0.415, PieceKinds.Gun);
-        var e = new Element { Id = $"{a.E.Id}.drop", Kind = "ladder", Name = "Boarding ladder drop", Fn = "door", Mesh = new LookBuilder() };
-        for (var t = 0; t < m.Tris; t++)
-            e.Mesh.AddTri(m, t, Vector3.One, new Vector3(float.NaN));
         var (o, ax, ay, az) = (a.O, a.X, a.Y, a.Z);
         Vector3 P(float x, float y, float z) => o + s * (ax * (x * across) + ay * y + az * (z * across));
-        e.Boxes = [];
-        foreach (var (x0, x1) in new[] { (-0.35f, -0.305f), (0.305f, 0.35f) })
+        var seq = (ushort)(a.At + 1); // (the hatch's own group: its piece element's index is unique on the body)
+        for (var k = 0; k < n; k++)
         {
-            var (b0, b1) = (P(x0, (float)-len, 0.385f), P(x1, 0, 0.425f));
-            e.Boxes.Add(new ElementBox(Vector3.Min(b0, b1), Vector3.Max(b0, b1)));
+            // Section k in front of the one before (towards the well's middle, away from the drawn ladder at the well's wall), on rails just
+            // outside the drawn ladder's, its rungs a half step off theirs: nothing lies on another's face.
+            var z0 = 0.385f - DropNest * k;
+            var m = new DesignMesh();
+            m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across);
+            m.Box(-0.35, -len, z0, -0.305, 0, z0 + 0.04, PieceKinds.Amber);
+            m.Box(0.305, -len, z0, 0.35, 0, z0 + 0.04, PieceKinds.Amber);
+            for (var r = -len + 0.15; r < -0.05; r += 0.3)
+                m.Box(-0.305, r, z0 + 0.01, 0.305, r + 0.04, z0 + 0.03, PieceKinds.Gun);
+            var e = new Element { Id = k == 0 ? $"{a.E.Id}.drop" : $"{a.E.Id}.drop{k + 1}", Kind = "ladder", Name = "Boarding ladder", Fn = "door", Mesh = new LookBuilder() };
+            for (var t = 0; t < m.Tris; t++)
+                e.Mesh.AddTri(m, t, Vector3.One, new Vector3(float.NaN));
+            // One box over its rails and rungs (the look's ray finds it anywhere on it; a ladder meets nobody: SkinOnly).
+            var (b0, b1) = (P(-0.35f, -len, z0), P(0.35f, 0, z0 + 0.04f));
+            e.Boxes = [new ElementBox(Vector3.Min(b0, b1), Vector3.Max(b0, b1))];
+            (e.BoxMin, e.BoxMax) = (e.Boxes[0].Min, e.Boxes[0].Max);
+            e.Area = e.Mesh.Area;
+            e.Kg = MathF.Max(5f, (step + over) * DropKgPerM);
+            e.Door = new CDoorDef { Slide = true, Axis = NearestDir(a.Y), Travel = Math.Clamp(step * (k + 1), 0.05f, 20f), Seconds = DropSeconds, Hang = 0, Seq = seq, SeqStage = ConstructDoors.SeqFollows };
+            a.Els.Add(e);
+            Weld(a.Els, a.At, a.Els.Count - 1);
         }
-        (e.BoxMin, e.BoxMax) = (Vector3.Min(e.Boxes[0].Min, e.Boxes[1].Min), Vector3.Max(e.Boxes[0].Max, e.Boxes[1].Max));
-        e.Area = e.Mesh.Area;
-        e.Kg = MathF.Max(5f, drop * DropKgPerM);
-        e.Door = new CDoorDef { Slide = true, Axis = NearestDir(a.Y), Travel = Math.Clamp(drop, 0.05f, 20f), Seconds = DropSeconds, Hang = 0 };
-        a.Els.Add(e);
-        Weld(a.Els, a.At, a.Els.Count - 1);
+        if (LidOf(a.Els, a.E.Id) is var lid and >= 0 && a.Els[lid].Door is { } ld)
+            (ld.Seq, ld.SeqStage) = (seq, ConstructDoors.SeqLeads); // (the lid leads: open before the ladder comes down, shut after it is up)
+        else
+            Console.WriteLine($"[design] the {p.Kind} {a.E.Id} has no lid: its ladder comes down on its own");
     }
 
-    private const float DropKgPerM = 12f; // (two light rails and their rungs)
+    private const float DropKgPerM = 12f; // (two light rails and their rungs, a section)
+    private const float DropOverlap = 0.3f, DropNest = 0.05f; // (each section kept in the one above; each nested this far in front of it)
 
     /// <summary>
     /// The risers' stage, a boarding hatch's ladder just made (element <paramref name="ladder"/>, hatch piece <paramref name="piece"/>): welded to
-    /// the hatch's drop if it has one, and its foot let down by the drop's travel, so the climb runs from the drop's foot to the ladder's top.
+    /// each section of the hatch's drop if it has one, and its foot let down by the drop's reach (its last section's travel), so the climb runs
+    /// from the drop's foot to the ladder's top.
     /// </summary>
     private static void DropOnto(List<Element> els, int ladder, int piece)
     {
-        if (els.FindIndex(x => x.Id == $"p{piece}.drop" || x.Id == $"p{piece}.0.drop") is not (var k and >= 0) || els[k].Door is not { } dd)
-            return;
-        els[ladder].LadderFoot -= dd.Travel;
-        Weld(els, k, ladder);
+        var reach = 0f;
+        for (var k = 0; k < els.Count; k++)
+            if (els[k].Door is { } dd && IsDropOf(els[k].Id, piece))
+            {
+                reach = MathF.Max(reach, dd.Travel);
+                Weld(els, k, ladder);
+            }
+        els[ladder].LadderFoot -= reach;
+    }
+
+    /// <summary>Whether element id <paramref name="id"/> is a section of hatch piece <paramref name="piece"/>'s drop ("p3.drop", "p3.0.drop2" ...).</summary>
+    private static bool IsDropOf(string id, int piece)
+    {
+        foreach (var head in (ReadOnlySpan<string>)[$"p{piece}.drop", $"p{piece}.0.drop"])
+            if (id.StartsWith(head, StringComparison.Ordinal) && (id.Length == head.Length || char.IsDigit(id[head.Length])))
+                return true;
+        return false;
     }
 
     /// <summary>A drive pushes along its bell's axis, away from its exhaust.</summary>
