@@ -1124,7 +1124,7 @@ public static partial class DesignScene
                 // inside of the wall the thruster is on, like every other (Karl, 2026-11-24); it needs a room within reach of it.
                 if (kind.Service && !straight)
                     bestPt = [at[0] - n[0] * 0.15, at[1] - n[1] * 0.15, at[2] - n[2] * 0.15];
-                var shaft = best is not null && p.Room != 0 && bestD > kind.Reach && bestD <= MaxConnector ? (kind.Opening is { } op ? Math.Max(0.8, 2 * Math.Min(op.Hx, op.Hz)) : 1.1) * p.Size : 0;
+                var shaft = best is not null && p.Room != 0 && bestD > kind.Reach && bestD <= MaxConnector ? ((p.Kind == DesignRamp.Kind ? DesignRamp.OpeningOf(p) : kind.Opening) is { } op ? Math.Max(0.8, 2 * Math.Min(op.Hx, op.Hz)) : 1.1) * p.Size : 0;
                 var linked = best is not null && (bestD <= kind.Reach || shaft > 0);
                 if (linked)
                 {
@@ -1191,7 +1191,7 @@ public static partial class DesignScene
         double[] lo = [bx[0], bx[2], bx[4]], hi = [bx[1], bx[3], bx[5]];
         if (hi[ax] - lo[ax] < 0.2 || hi[al] - lo[al] < 0.2)
             return null;
-        var op = kind.Opening;
+        var op = p.Kind == DesignRamp.Kind ? DesignRamp.OpeningOf(p) : kind.Opening; // (a ramp: its own width and length)
         var size = Math.Max(0.2, p.Size);
         var q = new double[3];
         for (var k = 0; k < 3; k++)
@@ -1497,7 +1497,8 @@ public static partial class DesignScene
             // A boarding ramp starts flush with the floor of the room it opens into (Karl, 2026-11-24): its well runs in from the
             // skin to that floor, and its ramp lies in that floor, lowered out of the hatch and run out (Karl, 2026-11-27: DesignRamp).
             var t = RampDepth(d, p, w);
-            PieceKinds.RampFrame(m, t ?? 1.0);
+            var rop = DesignRamp.OpeningOf(p);
+            PieceKinds.RampFrame(m, (t ?? 1.0) / p.Size, rop.Hx, rop.Hz);
             DesignRamp.Draw(m, p, w, t ?? 0, shut);
             m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across); // (its cladding on the skin)
         }

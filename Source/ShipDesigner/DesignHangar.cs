@@ -198,6 +198,8 @@ public static class DesignHangar
     /// <summary>The hole a sized socket cuts, in the units the hole code scales by Size x Hole; null for other pieces.</summary>
     public static (double Hx, double Hz, bool Round)? OpeningOf(Piece p, DesignScene.Place w)
     {
+        if (p.Kind == DesignRamp.Kind)
+            return DesignRamp.OpeningOf(p);
         if (IsBay(p.Kind))
         {
             var (ex, ez) = DoorExtent(p, w);
