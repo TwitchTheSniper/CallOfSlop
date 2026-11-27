@@ -667,6 +667,7 @@ public static partial class ConstructStation
             // (a station with no hold, the rover docks, batches too: Sean, 2026-11-26, "have the other lines start production as well ... can
             // be run in batches". Its pick pads queue pieces ahead while they have room, PadEarly; the rest waits upstream, on its runs and beds.)
             j.PadBatched = HasPickPads(world, c, t, j);
+            NoteNextKit(world, c, t, j); // (the kit its oven bakes next, whose pieces it orders ahead: ConstructStationAhead.cs)
         }
         if (j.ParkFail > 0)
             j.ParkFail--;
@@ -687,6 +688,8 @@ public static partial class ConstructStation
             if (j.PadBatched)
                 OrderBatches(world, c, t, tray, j, near, true, ref placed);
         }
+        if (j.PadBatched && placed < OrdersAStep)
+            OrderNextKit(world, c, t, j, ref placed); // (a kit station: the next kit's pieces once this one's are all asked, Sean 2026-11-27)
         if (j.Fitted >= j.Steps)
             return; // (its links: NextLink's own note)
         // The next part to fit can't come in (a full hold: at the door, or kept in a Router's storage): room is made by moving out what no
@@ -894,7 +897,7 @@ public static partial class ConstructStation
         world.StationChanged(c);
     }
 
-    private static void CancelOrders(ConstructWorld world, Construct c, int t)
+    private static void CancelOrders(ConstructWorld world, Construct c, int t, StationJob? keep = null)
     {
         if (world.StoreOf(c, t) is { } hold)
             world.Reserve.Release(world, hold.Handle, ConstructLifters.PadClaim); // (its claims on its arms' pick pads: lifters phase 5)
@@ -903,7 +906,8 @@ public static partial class ConstructStation
         Span<ushort> ids = stackalloc ushort[ConstructCrafting.MaxOrders];
         var n = 0;
         for (var k = 0; k < q.Count; k++)
-            ids[n++] = q.Items[k].Id;
+            if (keep == null || !NextHas(keep, ConstructCrafting.KindOf(ref q.Items[k])))
+                ids[n++] = q.Items[k].Id; // (a done kit keeps the orders of the next kit's kinds: its line goes on making them, ConstructStationAhead.cs)
         for (var k = 0; k < n; k++)
             ConstructCrafting.Cancel(world, c, t, ids[k]);
     }
@@ -1483,7 +1487,7 @@ public static partial class ConstructStation
         Free(world, b, j);
         j.State = StationState.Done;
         j.Note = "";
-        CancelOrders(world, c, t); // (every part is in: what it still had ordered is closed, its unstarted lines off their machines' queues, and its pad claims go: leftovers 3, a cut panel's order left open after `station stock`)
+        CancelOrders(world, c, t, keep: j); // (every part is in: what it still had ordered is closed, its unstarted lines off their machines' queues, and its pad claims go: leftovers 3, a cut panel's order left open after `station stock`)
         var s = (Stopwatch.GetTimestamp() - j.Started) / (double)Stopwatch.Frequency;
         Console.WriteLine($"[station] {j.Name}: done in {s:0.0} s ({j.Steps} parts, {j.Links} links); costing {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms");
         world.StationChanged(c);
@@ -1613,6 +1617,8 @@ public static partial class ConstructStation
     /// <summary>Is the bay clear of this body (a sub-job's body carried off frees its station)?</summary>
     public static bool BayClearOf(ConstructWorld world, Construct c, int t, Construct b)
     {
+        if (b != c && GoneToOven(world, c, b))
+            return true; // (rolling onto an oven's bed, or on it: the oven's now, though a long kit on a bed by the bay still reaches into it, 2026-11-27)
         Bay(c, t, out var floor, out var rot, out var bay);
         var local = Vector3.Transform(b.WorldCom - floor, Quaternion.Conjugate(rot));
         var r = b.Radius;
@@ -1622,12 +1628,18 @@ public static partial class ConstructStation
     /// <summary>Is the bay clear of the construct just built (Repeat waits for it)?</summary>
     private static bool BayClear(ConstructWorld world, Construct c, int t, StationJob j)
     {
-        if (world.Get(j.Body) is not { } b)
-            return true;
-        Bay(c, t, out var floor, out var rot, out var bay);
-        var local = Vector3.Transform(b.WorldCom - floor, Quaternion.Conjugate(rot));
-        var r = b.Radius;
-        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > InTop(bay) + r || local.Y < -r;
+        return world.Get(j.Body) is not { } b || BayClearOf(world, c, t, b);
+    }
+
+    /// <summary>Is body <paramref name="b"/> rolling onto a Bake Oven's bed of <paramref name="c"/>, or lying on one (ConstructRollOut.FromStation's kits)?</summary>
+    private static bool GoneToOven(ConstructWorld world, Construct c, Construct b)
+    {
+        if (world.BodyRolls.Count > 0 && ConstructRollOut.Of(world, b.Id) is { } roll)
+            return roll.Host == c.Id && roll.Oven >= 0;
+        if (b.HeldBy != 0 && b.HeldBy != c.Id || c.MachineAsmCount == 0)
+            return false;
+        c.WorldFrame(0, out var q, out var o);
+        return ConstructRollOut.OvenAt(c, Vector3.Transform(b.WorldCom - o, Quaternion.Conjugate(q))) >= 0;
     }
 
     /// <summary>
@@ -1884,7 +1896,9 @@ public static partial class ConstructStation
         if (!c.DefOf(t).StationNoHold || c.Parts[t].Station is not { State: StationState.Building, PadBatched: true } j)
             return false;
         var k = KindOf(j, (ushort)d.Id);
-        if (k < 0 || k >= j.KindReady.Length || j.KindLaid[k])
+        if (k < 0)
+            return NextHas(j, (ushort)d.Id); // (the next kit's piece, ordered ahead: it queues on the pads as early pieces do, ConstructStationAhead.cs)
+        if (k >= j.KindReady.Length || j.KindLaid[k])
             return false;
         // (one piece of a kind may lie on the pads ahead of its ready steps: a kit that repeats a kind with another between, plate A,
         // frame B, plate A, would otherwise hold the second A at its maker's bed, and B, queued behind it there, never came: merge review)

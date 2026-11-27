@@ -549,8 +549,13 @@ public static partial class ConstructLifters
     public static void PadArrived(ConstructWorld world, Construct b, int pad, ushort tag, ConstructPartDef d)
     {
         pad = ConstructPads.Owner(b, pad);
-        if (world.StationOpen.Count == 0 || !b.DefOf(pad).IsLayDownPad) // (no lifters at all: a station's own pad still counts, ServesPad)
+        if (!b.DefOf(pad).IsLayDownPad)
             return;
+        if (world.StationOpen.Count == 0)
+        {
+            KeptArrived(world, b, pad, d);
+            return;
+        }
         // (the pad's own station first, then one an arm or crane fits for from it: order ids are each station's own, so lines A and B
         // both had an order 1 for the same piece, and a piece on line B's own pad counted for line A's, 2026-11-24)
         for (var pass = tag == 0 ? 2 : 0; pass < 4; pass++)
@@ -565,6 +570,20 @@ public static partial class ConstructLifters
                 Console.WriteLine($"[lifter] a {d.Name} landed on the pick pad (body {b.Id} part {pad}) for the station (body {sc.Id} part {t})");
                 return;
             }
+        }
+        KeptArrived(world, b, pad, d);
+    }
+
+    /// <summary>
+    /// A piece landed on the pick pad of a station between two kits that kept the next kit's orders (ConstructStationAhead.cs): it counts
+    /// for them, or the next kit would count it twice, on the pad and as still asked, and wait for ever for a piece it never ordered again.
+    /// </summary>
+    private static void KeptArrived(ConstructWorld world, Construct b, int pad, ConstructPartDef d)
+    {
+        if (ConstructStation.KeptOrderStation(b, pad, (ushort)d.Id) is var t and >= 0)
+        {
+            ConstructCrafting.Arrived(world, b, t, d);
+            Console.WriteLine($"[lifter] a {d.Name} landed on the pick pad (body {b.Id} part {pad}) for the next kit of the station (body {b.Id} part {t})");
         }
     }
 
