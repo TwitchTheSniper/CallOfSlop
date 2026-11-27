@@ -47,8 +47,11 @@ public static class DesignHangar
     public static BaySize? Bay(string kind) => Array.Find(Bays, b => b.Name == kind);
 
     /// <summary>A bay piece's own size (its volume and door as set on it), or null for other pieces. Everything that draws, checks or
-    /// builds a bay reads this, never the kind's starting size.</summary>
-    public static BaySize? Of(Piece p) => Bay(p.Kind) is { } b ? b with { W = p.BayW, H = p.BayH, D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH } : null;
+    /// builds a bay reads this, never the kind's starting size.
+    /// With Match door on (Karl, 2026-11-27) its width and height are its door opening's, so the bay is a straight tunnel the door's size.</summary>
+    public static BaySize? Of(Piece p) => Bay(p.Kind) is not { } b ? null : p.BayMatch
+        ? b with { W = Math.Max(BayMinW, p.BayDoorW * p.Hole), H = Math.Max(BayMinH, p.BayDoorH * p.Hole), D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH }
+        : b with { W = p.BayW, H = p.BayH, D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH };
     public static bool IsBay(string kind) => Bay(kind) is not null;
     public static bool IsFitting(string kind) => kind is "Docking arm" or "Docking cradle";
     public static bool IsDeck(string kind) => kind is "Lift platform" or "Ramp deck";
@@ -96,7 +99,7 @@ public static class DesignHangar
         {
             var p = new Piece { Kind = k.Name };
             Init(new ShipDesign(), p);
-            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["bayFloor"] = p.BayFloor, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
+            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["bayFloor"] = p.BayFloor, ["bayMatch"] = p.BayMatch, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
         }
         return o;
     }
@@ -108,7 +111,7 @@ public static class DesignHangar
         if (IsBay(p.Kind))
         {
             o["bayW"] = ShipDesign.R(p.BayW); o["bayH"] = ShipDesign.R(p.BayH); o["bayD"] = ShipDesign.R(p.BayD);
-            o["bayDoorW"] = ShipDesign.R(p.BayDoorW); o["bayDoorH"] = ShipDesign.R(p.BayDoorH); o["bayDoor"] = p.BayDoorType; o["bayFloor"] = p.BayFloor;
+            o["bayDoorW"] = ShipDesign.R(p.BayDoorW); o["bayDoorH"] = ShipDesign.R(p.BayDoorH); o["bayDoor"] = p.BayDoorType; o["bayFloor"] = p.BayFloor; o["bayMatch"] = p.BayMatch;
         }
         else if (IsDeck(p.Kind))
         {
@@ -131,6 +134,7 @@ public static class DesignHangar
         p.BayDoorH = Math.Clamp(ShipDesign.F(o["bayDoorH"], p.BayDoorH), DoorMinH, DoorMaxH);
         p.BayDoorType = DoorType((string?)o["bayDoor"]);
         p.BayFloor = (string?)o["bayFloor"] == "Lift-out" ? "Lift-out" : "Fixed";
+        p.BayMatch = (bool?)o["bayMatch"] ?? false;
         p.W = Math.Clamp(ShipDesign.F(o["w"], p.W), DeckMin, DeckMax);
         p.L = Math.Clamp(ShipDesign.F(o["l"], p.L), DeckMin, DeckMax);
         p.Travel = Math.Clamp(ShipDesign.F(o["travel"], p.Travel), TravelMin, TravelMax);
@@ -156,6 +160,13 @@ public static class DesignHangar
             p.BayDoorH = Math.Clamp(Math.Min(p.BayDoorH, p.BayH), DoorMinH, DoorMaxH);
         }
         if (o["bayDoor"] is not null) p.BayDoorType = DoorType((string?)o["bayDoor"]);
+        if (o["bayMatch"] is not null)
+        {
+            var match = (bool)o["bayMatch"]!;
+            if (p.BayMatch && !match && Of(p) is { } was)
+                (p.BayW, p.BayH) = (Math.Clamp(was.W, BayMinW, BayMaxW), Math.Clamp(was.H, BayMinH, BayMaxH)); // (unticked, it keeps the door's size)
+            p.BayMatch = match;
+        }
         if (o["bayFloor"] is not null) p.BayFloor = (string?)o["bayFloor"] == "Lift-out" ? "Lift-out" : "Fixed";
         if (o["w"] is not null) p.W = Math.Clamp(Sn((double)o["w"]!, 0.5), DeckMin, DeckMax);
         if (o["l"] is not null) p.L = Math.Clamp(Sn((double)o["l"]!, 0.5), DeckMin, DeckMax);
@@ -177,7 +188,7 @@ public static class DesignHangar
     {
         var sb = new StringBuilder();
         if (Of(p) is { } b)
-            sb.Append(",\"bayDoorW\":").Append(ShipDesign.S(p.BayDoorW)).Append(",\"bayDoorH\":").Append(ShipDesign.S(p.BayDoorH)).Append(",\"bayDoor\":").Append(DesignScene.Q(p.BayDoorType)).Append(",\"bayFloor\":").Append(DesignScene.Q(p.BayFloor))
+            sb.Append(",\"bayDoorW\":").Append(ShipDesign.S(p.BayDoorW)).Append(",\"bayDoorH\":").Append(ShipDesign.S(p.BayDoorH)).Append(",\"bayDoor\":").Append(DesignScene.Q(p.BayDoorType)).Append(",\"bayFloor\":").Append(DesignScene.Q(p.BayFloor)).Append(",\"bayMatch\":").Append(p.BayMatch ? "true" : "false")
               .Append(",\"bay\":[").Append(ShipDesign.S(b.W)).Append(',').Append(ShipDesign.S(b.H)).Append(',').Append(ShipDesign.S(b.D)).Append(']')
               .Append(",\"fittings\":").Append(d.Pieces.Count(q => IsFitting(q.Kind) && q.Link == p.Id));
         else if (IsDeck(p.Kind))
