@@ -816,7 +816,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      elements, so a design holding one builds different elements on an older peer; no message changed.
     // 482: wraparound windows on design bodies (DesignWrapWindows.cs, DesignParts.WrapWindows.cs) are elements of their own, so a design
     //      holding one builds different elements on an older peer; no message changed.
-    public const ushort ProtocolVersion = 482;
+    // 483: a design's lift platform collides as its deck alone and may stow flush with its room's floor (a longer piston, plated deck), so
+    //      a design holding one builds different elements on an older peer; no message changed.
+    public const ushort ProtocolVersion = 483;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -393,6 +393,7 @@ public sealed class Piece
     public string BayDoorType = DesignHangar.DefDoor;
     public int ShutterRollers = 1, ShutterSlats = 4; // a shutter bay door's rollers (1 or 2) and slats on each (DesignHangar.Slats)
     public string ShutterSide = "Fore"; // the side its one roller is at, or the axis two split across
+    public bool LiftFlush = true; // a lift platform stows with its deck flush with its room's floor, plated as it is (DesignHangar.FlushFloor), Karl 2026-11-27
     public bool BayOnFloor; // a bay linked to a room (Room) is as tall as takes its floor to that room's floor (DesignHangar.Fit), Karl 2026-11-27
     public bool BayMatch; // a bay as wide and tall as its door opening (DesignHangar.Of), Karl 2026-11-27
     public string BayFloor = "Fixed"; // a bay's floor: Fixed or Lift-out (DesignHangar.FloorBox)

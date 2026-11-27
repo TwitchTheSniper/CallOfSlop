@@ -485,8 +485,13 @@ public static partial class DesignParts
         Vector3 at;
         if (p.Kind == "Lift platform")
         {
-            at = a.O - a.Y * (float)DesignHangar.LiftDeck; // (in the well, over the deck's middle)
-            j = new JointSpec { Type = JointType.Piston, Axis = NearestDir(a.Y), Min = 0, Max = (float)p.Travel, Speed = LiftSpeed, Strength = LiftStrength, Pivot = at };
+            // How far in its deck stows: in its well, or up at its room's floor when flush (DesignHangar.FlushFloor), read off the deck as drawn.
+            var inner = float.MaxValue;
+            for (var v = leaf.From * 9; v < (leaf.From + DesignHangar.LiftDeckTris) * 9 && v + 2 < m.P.Count; v += 3)
+                inner = MathF.Min(inner, Vector3.Dot(new Vector3((float)m.P[v], (float)m.P[v + 1], (float)m.P[v + 2]) - a.O, a.Y));
+            var up = inner < float.MaxValue ? MathF.Max((float)DesignHangar.LiftDeck, -inner) : (float)DesignHangar.LiftDeck;
+            at = a.O - a.Y * up; // (in the well, over the deck's middle)
+            j = new JointSpec { Type = JointType.Piston, Axis = NearestDir(a.Y), Min = 0, Max = (float)p.Travel + up - (float)DesignHangar.LiftDeck, Speed = LiftSpeed, Strength = LiftStrength, Pivot = at };
         }
         else
         {

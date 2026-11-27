@@ -1138,6 +1138,8 @@ public sealed partial class Ui
             M("Width", "w", ShipDesigner.DesignHangar.DeckMin, ShipDesigner.DesignHangar.DeckMax, 0.5);
             M("Length", "l", ShipDesigner.DesignHangar.DeckMin, ShipDesigner.DesignHangar.DeckMax, 0.5);
             M("Travel", "travel", ShipDesigner.DesignHangar.TravelMin, ShipDesigner.DesignHangar.TravelMax, 0.1);
+            if (Has(p, "flush"))
+                Checkbox($"Flush with its room's floor##sdlfl{pid}", B(p, "flush"), v => Cmd(C("setPiece", ("id", pid), ("flush", v))));
             if (ResetAll("hgdeck" + pid, "Width, length and travel back to their defaults"))
                 Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "w", "l", "travel")]));
             return;

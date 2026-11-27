@@ -104,7 +104,7 @@ public static class DesignHangar
         {
             var p = new Piece { Kind = k.Name };
             Init(new ShipDesign(), p);
-            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["bayFloor"] = p.BayFloor, ["bayMatch"] = p.BayMatch, ["bayOnFloor"] = p.BayOnFloor, ["shutterRollers"] = p.ShutterRollers, ["shutterSide"] = p.ShutterSide, ["shutterSlats"] = p.ShutterSlats, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
+            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["bayFloor"] = p.BayFloor, ["bayMatch"] = p.BayMatch, ["bayOnFloor"] = p.BayOnFloor, ["shutterRollers"] = p.ShutterRollers, ["shutterSide"] = p.ShutterSide, ["shutterSlats"] = p.ShutterSlats, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["flush"] = p.LiftFlush, ["along"] = p.Along, ["across"] = p.Across };
         }
         return o;
     }
@@ -122,6 +122,8 @@ public static class DesignHangar
         else if (IsDeck(p.Kind))
         {
             o["w"] = ShipDesign.R(p.W); o["l"] = ShipDesign.R(p.L); o["travel"] = ShipDesign.R(p.Travel);
+            if (p.Kind == "Lift platform")
+                o["flush"] = p.LiftFlush;
         }
         else if (IsFitting(p.Kind))
         {
@@ -148,6 +150,7 @@ public static class DesignHangar
         p.W = Math.Clamp(ShipDesign.F(o["w"], p.W), DeckMin, DeckMax);
         p.L = Math.Clamp(ShipDesign.F(o["l"], p.L), DeckMin, DeckMax);
         p.Travel = Math.Clamp(ShipDesign.F(o["travel"], p.Travel), TravelMin, TravelMax);
+        p.LiftFlush = (bool?)o["flush"] ?? true;
         p.Link = (int?)o["link"] ?? 0;
         p.Along = Math.Clamp(ShipDesign.F(o["along"], 0), -0.5, 0.5);
         p.Across = Math.Clamp(ShipDesign.F(o["across"], 0), -0.5, 0.5);
@@ -185,6 +188,7 @@ public static class DesignHangar
         if (o["w"] is not null) p.W = Math.Clamp(Sn((double)o["w"]!, 0.5), DeckMin, DeckMax);
         if (o["l"] is not null) p.L = Math.Clamp(Sn((double)o["l"]!, 0.5), DeckMin, DeckMax);
         if (o["travel"] is not null) p.Travel = Math.Clamp(Sn((double)o["travel"]!, 0.1), TravelMin, TravelMax);
+        if (o["flush"] is not null) p.LiftFlush = (bool)o["flush"]!;
         if (o["along"] is not null) p.Along = Math.Clamp(Sn((double)o["along"]!, 0.01), -0.5, 0.5);
         if (o["across"] is not null) p.Across = Math.Clamp(Sn((double)o["across"]!, 0.01), -0.5, 0.5);
         if (o["link"] is not null)
@@ -208,6 +212,8 @@ public static class DesignHangar
               .Append(",\"fittings\":").Append(d.Pieces.Count(q => IsFitting(q.Kind) && q.Link == p.Id));
         else if (IsDeck(p.Kind))
             sb.Append(",\"w\":").Append(ShipDesign.S(p.W)).Append(",\"l\":").Append(ShipDesign.S(p.L)).Append(",\"travel\":").Append(ShipDesign.S(p.Travel));
+        if (p.Kind == "Lift platform")
+            sb.Append(",\"flush\":").Append(p.LiftFlush ? "true" : "false");
         else if (IsFitting(p.Kind))
             sb.Append(",\"link\":").Append(p.Link).Append(",\"along\":").Append(ShipDesign.S(p.Along)).Append(",\"across\":").Append(ShipDesign.S(p.Across));
         return sb.ToString();
@@ -417,7 +423,7 @@ public static class DesignHangar
         if (IsDeck(p.Kind))
         {
             m.Frame(o[0], o[1], o[2], w.X, w.Y, w.Z, 1, 1);
-            if (p.Kind == "Lift platform") DrawLift(m, p, shut); else DrawRamp(m, p, shut);
+            if (p.Kind == "Lift platform") DrawLift(m, p, shut, FlushFloor(d, p, w)); else DrawRamp(m, p, shut);
             return true;
         }
         if (IsFitting(p.Kind))
@@ -786,19 +792,36 @@ public static class DesignHangar
     /// <summary>The triangles of a lift platform's deck at the start of its leaf (one box: DrawLift draws it first); the game collides with these alone.</summary>
     public const int LiftDeckTris = 12;
 
-    private static void DrawLift(DesignMesh m, Piece p, bool shut)
+    private static void DrawLift(DesignMesh m, Piece p, bool shut, (double Rise, string Colour, string Groove)? flush)
     {
         double hx = p.W / 2 * p.Hole, hz = p.L / 2 * p.Hole, t = p.Travel;
+        // Flush (Karl, 2026-11-27): stowed with its deck's top at its room's floor, plated as the floor is, in a lined well from the skin
+        // up to it; it lowers the farther, to the same spot under the ship, and has no rams standing up into the room.
+        var e = flush is { } f ? f.Rise - LiftDeck : 0;
         Ring(m, hx, hz, 0.25, 0, 0.18, PieceKinds.Armour);
         Ring(m, hx + 0.25, hz + 0.25, 0.1, 0.18, 0.22, PieceKinds.Amber);
-        Ring(m, hx, hz, 0.06, -1.0, 0.02, PieceKinds.Gun);
+        Ring(m, hx, hz, 0.06, flush is null ? -1.0 : -LiftDeck - e - 0.02, 0.02, PieceKinds.Gun);
         // Lowered by its travel out of the belly, on four pistons (shut, the game's: up flush in its well, the rams up inside the ship; the
         // deck, its rim and the rams are one leaf, which its piston lowers by its travel).
-        var y = shut ? -LiftDeck - t : 0;
+        var y = shut ? -LiftDeck - t - e : 0;
         m.Leaf(0, () =>
         {
-            m.Box(-hx + 0.05, t + y, -hz + 0.05, hx - 0.05, t + 0.2 + y, hz - 0.05, PieceKinds.Gun); // (first: LiftDeckTris)
+            m.Box(-hx + 0.05, t + y, -hz + 0.05, hx - 0.05, t + 0.2 + y, hz - 0.05, flush?.Groove ?? PieceKinds.Gun); // (first: LiftDeckTris)
             Ring(m, hx - 0.05, hz - 0.05, 0.08, t + 0.2 + y, t + 0.26 + y, PieceKinds.Amber);
+            if (flush is { } fl)
+            {
+                // Plated as its room's floor is: plates over the deck's groove-coloured top, as proud of it as the floor's are of the floor.
+                double ax = 2 * (hx - 0.05), az = 2 * (hz - 0.05);
+                int nx = Math.Clamp((int)Math.Round(ax / FlushPlate), 1, 24), nz = Math.Clamp((int)Math.Round(az / FlushPlate), 1, 24);
+                double sx = ax / nx, sz = az / nz;
+                for (var i = 0; i < nx; i++)
+                    for (var k = 0; k < nz; k++)
+                    {
+                        double x0 = -hx + 0.05 + i * sx, z0 = -hz + 0.05 + k * sz;
+                        m.Box(x0 + 0.015, t + y - FlushProud, z0 + 0.015, x0 + sx - 0.015, t + y + 0.01, z0 + sz - 0.015, fl.Colour);
+                    }
+                return;
+            }
             foreach (var sx in new[] { -1, 1 })
                 foreach (var sz in new[] { -1, 1 })
                 {
@@ -806,12 +829,48 @@ public static class DesignHangar
                     m.Box(px - 0.1, shut ? -LiftDeck - 0.05 - t : t * 0.5, pz - 0.1, px + 0.1, shut ? -LiftDeck : t, pz + 0.1, PieceKinds.Amber);
                 }
         });
+        if (flush is not null)
+            return;
         foreach (var sx in new[] { -1, 1 })
             foreach (var sz in new[] { -1, 1 })
             {
                 double px = sx * (hx - 0.5), pz = sz * (hz - 0.5);
                 m.Box(px - 0.18, -1.0, pz - 0.18, px + 0.18, shut ? -LiftDeck - 0.05 : t * 0.5, pz + 0.18, PieceKinds.Pale);
             }
+    }
+
+    /// <summary>The most a flush lift platform's stowed deck rises over its skin to its room's floor (m).</summary>
+    public const double FlushMaxRise = 4;
+
+    /// <summary>A flush lift platform's plates: about this size (m, at most 24 a side), and how proud of its deck (the floor's are 13 mm).</summary>
+    public const double FlushPlate = 0.6, FlushProud = 0.013;
+
+    /// <summary>
+    /// A flush lift platform's room floor over it (Karl, 2026-11-27): how far in from its frame's foot (the skin, past its recess) the
+    /// floor's top is, along its frame, and the colour of that floor's plates. Null when it isn't flush, or no room's floor is over it.
+    /// </summary>
+    public static (double Rise, string Colour, string Groove)? FlushFloor(ShipDesign d, Piece p, DesignScene.Place w)
+    {
+        if (p.Kind != "Lift platform" || !p.LiftFlush || d.Stacked || w.Y[1] > -0.7)
+            return null;
+        var o = Add(w.O, w.Y, -p.Recess);
+        (double Rise, string Colour, string Groove)? best = null;
+        foreach (var r in d.Rooms)
+        {
+            if (p.Room != 0 && r.Id != p.Room)
+                continue;
+            var b = d.Box(r);
+            if (o[0] < b[0] || o[0] > b[1] || o[2] < b[4] || o[2] > b[5])
+                continue;
+            var rise = (d.DeckOf(r).Floor + DesignScene.FloorTop(r) - o[1]) / -w.Y[1];
+            if (rise <= LiftDeck || rise > FlushMaxRise || best is { } bb && bb.Rise <= rise)
+                continue;
+            // (the floor plates' tone of its panel colour, over the 0.7 a box's underside is shaded by: its walked-on face is its -Y)
+            var c = DesignMesh.Tone(DesignMesh.Hex(r.PanelColour), (r.Interior == "Industrial" ? 0.55 : 0.82) / 0.7);
+            var g = DesignMesh.Tone(DesignMesh.Hex(r.Interior == "Industrial" ? "#202326" : "#3a3f45"), 1 / 0.7); // (the floor's groove base: DesignInterior)
+            best = (rise, $"#{c.Item1:x2}{c.Item2:x2}{c.Item3:x2}", $"#{g.Item1:x2}{g.Item2:x2}{g.Item3:x2}");
+        }
+        return best;
     }
 
     /// <summary>The angle a ramp deck is lowered to (radians about its aft edge: its far end its travel out of the skin).</summary>
