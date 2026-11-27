@@ -651,11 +651,17 @@ function drawRisers() {
     const steel = new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.6, roughness: 0.4, emissive: picked ? 0x1d4f86 : 0x000000 });
     const box = (w, h, d, x, y, z, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); g.add(o); return o; };
     const lo = Math.min(...k.stops);
-    for (const f of k.stops) {
+    if (k.mesh) {
+      // As the game's parts have it (DesignRisers.cs): its rails and rungs, or its shaft and its car at the lowest stop (world frame).
+      const em = picked ? 0x1d4f86 : 0x000000;
+      for (const part of [k.mesh, k.car]) if (part) { const o = meshFrom(part, { metalness: 0.5, roughness: 0.4, emissive: em }); o.renderOrder = 5; world.add(o); }
+    }
+    for (const f of k.mesh ? [] : k.stops) {
       const y = Math.abs(f - lo) + 0.02, w = 2 * k.hx + 0.1, d = 2 * k.hz + 0.1;
       box(w, 0.05, 0.08, 0, y, d / 2, amber); box(w, 0.05, 0.08, 0, y, -d / 2, amber); box(0.08, 0.05, d, w / 2, y, 0, amber); box(0.08, 0.05, d, -w / 2, y, 0, amber);
     }
-    if (k.kind === "Lift") {
+    if (k.mesh) { }
+    else if (k.kind === "Lift") {
       for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) box(0.08, len, 0.08, x * k.hx, len / 2, z * k.hz, steel);
       box(2 * k.hx - 0.1, 0.12, 2 * k.hz - 0.1, 0, 0.06, 0, steel);                          // the car's floor at the lowest stop
       box(2 * k.hx - 0.1, 0.05, 2 * k.hz - 0.1, 0, 2.3, 0, steel);                            // and its roof
@@ -669,6 +675,8 @@ function drawRisers() {
     g.traverse(o => { o.renderOrder = 5; });
     world.add(g); g.updateMatrixWorld(true); pickables.push(hit);
   }
+  // The ladder in each Shaft room's well, as the game's part is (DesignRisers.cs; the shaft room itself is what is picked).
+  for (const m of S.shaftLadders || []) { const o = meshFrom(m, { metalness: 0.5, roughness: 0.4 }); o.renderOrder = 5; world.add(o); }
 }
 // Passages through an arm between bodies (Karl, 2026-11-26): a glass tube along the arm's curved spine from a door in one room
 // to a door in the other, a track along its floor and, for a lift, its car halfway. Red when the arm is too thin. Pickable.

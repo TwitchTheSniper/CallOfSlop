@@ -1026,6 +1026,8 @@ public static partial class DesignScene
             c.RiserOk[k.Id] = stops.Count == 0;
             if (stops.Count > 0)
                 c.Issues.Add(new("warn", $"{k.Kind} has no room round it on deck {string.Join(", ", stops)} (it needs a room its whole {2 * k.Half.Hx:0.0} x {2 * k.Half.Hz:0.0} m fits in)", $"riser:{k.Id}"));
+            if (DesignRisers.Of(d, k) is { } lay)
+                DesignRisers.Holes(d, lay, c.Doors); // (its well through each floor over its foot: DesignRisers.cs)
         }
 
         // Passages through the arms between bodies (Karl, 2026-11-26): each joins its two rooms through a door in each one's wall.
@@ -1782,7 +1784,26 @@ public static partial class DesignScene
               .Append(",\"from\":").Append(k.From).Append(",\"to\":").Append(k.To).Append(",\"w\":").Append(k.W).Append(",\"l\":").Append(k.L).Append(",\"hx\":").Append(ShipDesign.S(k.Half.Hx)).Append(",\"hz\":").Append(ShipDesign.S(k.Half.Hz))
               .Append(",\"ok\":").Append(c.RiserOk.GetValueOrDefault(k.Id) ? "true" : "false")
               .Append(",\"stops\":[").Append(string.Join(',', d.Decks.Where(q => q.Floor >= lo.Floor && q.Floor <= hi.Floor).Select(q => ShipDesign.S(q.Floor)))).Append(']')
-              .Append(",\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S))).Append("]}");
+              .Append(",\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S))).Append(']');
+            // Its rails and rungs, or its shaft and its car at the lowest stop, as the game's parts have them (DesignRisers.cs).
+            if (DesignRisers.Of(d, k) is { } lay)
+            {
+                var rkey = k.ToJson().ToJsonString() + "|" + plans + "|" + (c.RiserOk.GetValueOrDefault(k.Id) ? 1 : 0);
+                sb.Append(",\"mesh\":").Append(MeshPart("k" + k.Id, rkey, () => DesignRisers.Mesh(lay, DesignRisers.Fixed(d, lay))));
+                if (lay.Lift)
+                    sb.Append(",\"car\":").Append(MeshPart("kc" + k.Id, rkey, () => DesignRisers.Mesh(lay, DesignRisers.Car(lay))));
+            }
+            sb.Append('}');
+        }
+        sb.Append("],\"shaftLadders\":[");
+        {
+            // The ladder in each Shaft room's well (on up from a boarding hatch under it), drawn as the game's part is.
+            var shafts = DesignRisers.ShaftLadders(d);
+            for (var i = 0; i < shafts.Count; i++)
+            {
+                var lay = shafts[i];
+                sb.Append(i > 0 ? "," : "").Append(MeshPart("ks" + lay.Id, lay.Id + "|" + plans + "|" + shapes, () => DesignRisers.Mesh(lay, DesignRisers.Fixed(d, lay))));
+            }
         }
         sb.Append("],\"passages\":[");
         for (var i = 0; i < c.Passages.Count; i++)

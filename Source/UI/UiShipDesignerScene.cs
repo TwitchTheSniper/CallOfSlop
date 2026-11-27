@@ -658,7 +658,15 @@ public sealed partial class Ui
                 amber.Box(0.08f, 0.05f, d, -w / 2, y, 0);
             }
             var lift = Str(k, "kind") == "Lift";
-            if (lift)
+            var em0 = picked ? 0x1d4f86u : 0;
+            if (Has(k, "mesh"))
+            {
+                // As the game's parts have it (DesignRisers.cs): its rails and rungs, or its shaft and its car at the lowest stop.
+                Add(GeoOf(Get(k, "mesh")), new Mat(0xffffff, Metal: 0.5f, Emissive: em0, Order: 5), null, false, default, true);
+                if (Has(k, "car"))
+                    Add(GeoOf(Get(k, "car")), new Mat(0xffffff, Metal: 0.6f, Emissive: em0, Order: 5), null, false, default, true);
+            }
+            else if (lift)
             {
                 foreach (var (x, z) in new[] { (-1, -1), (1, -1), (-1, 1), (1, 1) })
                     steel.Box(0.08f, len, 0.08f, x * hx, len / 2, z * hz);
@@ -674,12 +682,18 @@ public sealed partial class Ui
                     steel.Box(0.44f, 0.035f, 0.035f, 0, y, z);
             }
             var em = picked ? 0x1d4f86u : 0;
-            Add(amber, new Mat(B(k, "ok") ? 0xd8b04au : 0xff5a44u, Metal: 0.5f, Emissive: em, Order: 5));
-            Add(steel, new Mat(0x9aa3ad, Metal: 0.6f, Emissive: em, Order: 5));
+            if (!Has(k, "mesh"))
+            {
+                Add(amber, new Mat(B(k, "ok") ? 0xd8b04au : 0xff5a44u, Metal: 0.5f, Emissive: em, Order: 5));
+                Add(steel, new Mat(0x9aa3ad, Metal: 0.6f, Emissive: em, Order: 5));
+            }
             var hit = new GB { M = m };
             hit.Box(2 * hx, len, 2 * hz, 0, len / 2, 0);
             Add(hit, new Mat(lift ? 0x9fd3ffu : 0xd8b04au, Alpha: lift ? 0.14f : 0.06f, Transparent: true, DepthWrite: false, Unlit: true, Order: 5), new DesignPick("riser", I(k, "id")), true);
         }
+        // The ladder in each Shaft room's well, as the game's part is (not picked: the shaft room is).
+        foreach (var lm in Arr(S, "shaftLadders"))
+            Add(GeoOf(lm), new Mat(0xffffff, Metal: 0.5f, Order: 5), null, false, default, true);
     }
 
     // Windows in the hull: glass laid on the skin from a grid of points, so it follows the contour, with a frame round its edge.

@@ -1260,6 +1260,8 @@ public sealed partial class ConstructEdits
             part = board;
             d = c.DefOf(part);
         }
+        if (DesignParts.LiftUse(c, part, eye) is { } lift)
+            return lift.Length == 0 ? null : lift; // (a design's lift: its car to its next stop, or called to the player's deck: DesignParts.Risers.cs)
         if (d.ToolDock)
             return DockUse(world, player, c, part);
         if (d.ModPart == ModPart.Socket || d.ModPart == ModPart.Plug && ModuleSockets.ModuleOfPart(c, part) is var mp and >= 0 && (c.Modules[mp].Socket >= 0 || c.Modules[mp].OnStand))
