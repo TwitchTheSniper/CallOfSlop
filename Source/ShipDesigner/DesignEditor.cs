@@ -758,6 +758,8 @@ public sealed class DesignEditor
                 if (o["hole"] is not null) w.Hole = Math.Clamp(Snap(D(o, "hole"), 0.05), 0.5, 2.5);
                 if (o["depth"] is not null) w.Depth = Math.Clamp(Snap(D(o, "depth"), 0.01), 0.05, 1);
                 if (o["double"] is not null) w.Double = (bool)o["double"]!;
+                if (o["frameOut"] is not null) w.FrameOut = (bool)o["frameOut"]!;
+                if (o["frameIn"] is not null) w.FrameIn = (bool)o["frameIn"]!;
                 return "";
             }
             case "delHullWindow":

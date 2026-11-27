@@ -447,7 +447,7 @@ public sealed partial class Ui
         var gap = D(o, "gap", -1);
         Slider(gap < 0 ? "Cladding clearance (auto)" : "Cladding clearance", gap < 0 ? auto : Math.Round(gap * 100), 0, 100, 1, " cm", v => send([("gap", v / 100)]), kind + "gap",
             auto, _ => send([("gap", D(dk, "gap", -1))]));
-        if (!(kind == "piece" && Str(o, "socket") == "ramp")) // (a ramp's hole is its own width and length: its Ramp section)
+        if (!(kind == "piece" && Str(o, "socket") == "ramp") && !(kind == "hullWindow" && !B(o, "frameOut", true))) // (a ramp's hole is its own width and length: its Ramp section; a frameless window's is its glass)
             Slider("Hole size", Math.Round(D(o, "hole", 1) * 100), 50, 250, 5, "%", v => send([("hole", v / 100)]), kind + "hole", Math.Round(D(dk, "hole", 1) * 100),
                 _ => send([("hole", D(dk, "hole", 1))]));
         if (!glass)
@@ -460,6 +460,15 @@ public sealed partial class Ui
             send([("depth", D(dk, "depth", 0.2)), ("double", B(dk, "double", true))]);
         if (ImGui.IsItemHovered())
             ImGuiSafe.SetTooltip("Glazing back to its default");
+        if (kind != "hullWindow")
+            return;
+        // Its frames (Karl, 2026-11-27): without one, the cladding on that side runs up to the glass.
+        Checkbox("Outside frame##sdfo", B(o, "frameOut", true), v => send([("frameOut", v)]));
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip("The boarding round the glass on the hull. Off: the hull plates run up to the glass");
+        Checkbox("Inside frame##sdfi", B(o, "frameIn", true), v => send([("frameIn", v)]));
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip("The lining and trim round the room wall's opening. Off: the wall panels run up to it");
     }
 
     private static float3 DesignMeshHex(string hex)

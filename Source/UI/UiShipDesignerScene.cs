@@ -764,10 +764,13 @@ public sealed partial class Ui
                     rv.Quad(ring[k], ring[k + 1], ring[k + 1] + dn, ring[k] + dn);
                 Add(rv, new Mat(0x4b5058, Metal: 0.3f), new DesignPick("hullwin", id), true);
             }
-            var fl = new GB { Lines = true };
-            for (var k = 0; k + 1 < ring.Count; k++)
-                fl.Seg(ring[k], ring[k + 1]);
-            Add(fl, new Mat(picked ? 0x6fb0ffu : 0x2f3237u, Unlit: true, Order: 6));
+            if (B(w, "frameOut", true) || picked) // (the rim's line is its outside frame's edge; picked, it shows the selection)
+            {
+                var fl = new GB { Lines = true };
+                for (var k = 0; k + 1 < ring.Count; k++)
+                    fl.Seg(ring[k], ring[k + 1]);
+                Add(fl, new Mat(picked ? 0x6fb0ffu : 0x2f3237u, Unlit: true, Order: 6));
+            }
             // Boarding round the glass: a band 10 cm wide laid on the skin by the same rays as the glass (fpts).
             int fnu = I(w, "fnu"), fnv = I(w, "fnv");
             if (fnu < 2 || fnv < 2)

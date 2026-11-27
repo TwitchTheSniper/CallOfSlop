@@ -1818,9 +1818,10 @@ public static partial class DesignScene
                   .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill)).Append(",\"shape\":").Append(Q(w.Shape))
                   .Append(",\"ok\":").Append(ok ? "true" : "false").Append(",\"gap\":").Append(ShipDesign.S(gap)).Append(",\"len\":").Append(ShipDesign.S(len))
                   .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]");
-                var (fp, fnu, fnv, _, _, _) = LayOnce(d, w, WindowGrow(d, w), 0.045);
+                var (fp, fnu, fnv, _, _, _) = w.FrameOut ? LayOnce(d, w, WindowGrow(d, w), 0.045) : ([], 0, 0, 0, false, 0); // (no boarding without its outside frame)
                 var wf = WindowFrame(d, w);
                 t.Append(",\"hole\":").Append(ShipDesign.S(w.Hole)).Append(",\"gap\":").Append(ShipDesign.S(w.Gap)).Append(",\"depth\":").Append(ShipDesign.S(w.Depth)).Append(",\"double\":").Append(w.Double ? "true" : "false")
+                  .Append(",\"frameOut\":").Append(w.FrameOut ? "true" : "false").Append(",\"frameIn\":").Append(w.FrameIn ? "true" : "false")
                   .Append(",\"n\":[").Append(wf is { } wq ? string.Join(',', wq.N.Select(ShipDesign.S)) : "0,0,0").Append(']');
                 t.Append(",\"fnu\":").Append(fnu).Append(",\"fnv\":").Append(fnv).Append(",\"fpts\":[").Append(string.Join(',', fp.Select(ShipDesign.S))).Append("]}");
                 return t.ToString();
