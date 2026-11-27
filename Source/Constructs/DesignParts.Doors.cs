@@ -4,18 +4,16 @@ using CallOfSlop.ShipDesigner;
 namespace CallOfSlop;
 
 /// <summary>
-/// Design parts, the doors (DesignParts.cs has the map of the files): the sockets' doors, airlocks and hatches, and the rooms' doors (walkable
+/// Design parts, the doors (DesignParts.cs has the map of the files): the sockets' doors and hatches, and the rooms' doors (walkable
 /// designs, step 4, the plan's package E). Every door is the designer's own leaf, nothing drawn a second time: the triangles a piece's drawing
-/// tags as a leaf (<see cref="DesignMesh.Leaf"/>: the airlock's outer hatch and inner door, a docking hatch's lid, a docking collar's mating hatch,
+/// tags as a leaf (<see cref="DesignMesh.Leaf"/>: a docking hatch's lid, a docking collar's mating hatch,
 /// a cargo hatch's two leaves, a boarding hatch's lid), a placed door's leaf between two rooms (<see cref="DesignScene.RoomDoorLeaf"/>) and the
 /// cover of a docking collar's or a boarding hatch's hole through a room's floor (<see cref="DesignScene.HoleCover"/>), each taken out of its piece's look and collider.
 /// <list type="bullet">
 /// <item>Each is an element of its own (<c>Fn "door"</c>, its def an event door, ConstructDoors): box-only (one solid box round its leaf, in a
 /// frame turned as its piece faces) on segment 0, so a settle moves only its own collider leaf (ConstructCollider.MovePart moves nothing with hulls).
 /// F opens and shuts it (ConstructEdits.Use, past the helm redirect: KeepsUse); the server sends its moves (CBodyKind.Door) as for any door.</item>
-/// <item>An airlock is its two doors and its chamber (the piece itself): each door welded to the piece and to the other, so F on either
-/// opens both (Karl, 2026-11-27: an open airlock showed its shut inner door, not the room). A cargo hatch's leaves are welded to each
-/// other too (ConstructDoors.Use works a linked door with it).</item>
+/// <item>A cargo hatch's leaves are welded to each other (ConstructDoors.Use works a linked door with it).</item>
 /// <item>A docking collar's mating hatch and a docking hatch's lid are docking hatches (<see cref="CDoorDef.Dock"/>): the server opens them as
 /// the body docks (ConstructDoors.StepDocks), F doesn't.</item>
 /// <item>Sliding and iris doors slide (an iris has no game form yet: Karl's call, 2026-11-26) along their opening by the leaf's own width;
@@ -155,26 +153,6 @@ public static partial class DesignParts
         }
         switch (kind.Socket)
         {
-            case "airlock":
-            {
-                var first = els.Count;
-                foreach (var (leaf, type, _, _, _) in PieceDocking.AirlockDoors(p))
-                {
-                    var (f, t) = Range(leaf);
-                    if (t <= f)
-                        continue;
-                    var e = Leaf($"{a.E.Id}.d{leaf}", leaf == 0 ? "Airlock outer hatch" : "Airlock inner door", m, f, t, a.X, a.Y, a.Z);
-                    if (type == "hinged")
-                        Swing(e, m, f, t, a.Z, a.X, -a.Y, HatchSeconds); // (on its hinge along its +Z edge, into the ship)
-                    else
-                        Slide(e, a.Z, HatchSeconds); // (sliding, and an iris as a slide for now)
-                    els.Add(e);
-                    Weld(els, a.At, els.Count - 1);
-                }
-                if (els.Count == first + 2)
-                    Weld(els, first, first + 1); // (F on either opens both, so an open airlock is a way through: Karl, 2026-11-27)
-                break;
-            }
             case "cargo":
             {
                 var first = els.Count;

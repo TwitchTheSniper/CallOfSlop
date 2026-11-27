@@ -1184,7 +1184,7 @@ public static partial class DesignScene
                 if (c.Reached.Add(nb))
                     queue.Enqueue(nb);
         if (d.Rooms.Count > 0 && entries.Count == 0)
-            c.Issues.Add(new("error", anySocket ? "No airlock, dock or boarding hatch opens into a room: nobody can get aboard" : "No way aboard: add an airlock, a docking collar or a boarding hatch", ""));
+            c.Issues.Add(new("error", anySocket ? "No dock or boarding hatch opens into a room: nobody can get aboard" : "No way aboard: add a docking collar or a boarding hatch", ""));
         else
             foreach (var r in d.Rooms)
                 if (!c.Reached.Contains(r.Id))
@@ -1197,7 +1197,7 @@ public static partial class DesignScene
     /// <summary>
     /// Where a socket's way aboard opens into its room (walkable rooms, step 4), as a doorway (<see cref="DoorAt"/>): from the skin point at,
     /// through the room's wall nearest it as a door at its floor, or (the socket under or over the room's plan) as a hole through its floor or
-    /// ceiling; as wide as the socket's opening (an airlock: its inner door), at least a person's door. Null for a hangar's, which is
+    /// ceiling; as wide as the socket's opening (a cargo hatch: its whole opening), at least a person's door. Null for a hangar's, which is
     /// laid apart (DesignHangar), or a room with no box.
     /// </summary>
     public static double[]? SocketDoor(ShipDesign d, Piece p, PieceKind kind, Room r, double[] at)
@@ -1227,23 +1227,20 @@ public static partial class DesignScene
             return DoorAt(q, half, DoorTopDefault, hole: true);
         }
         // A door in the wall: on the face nearest the socket, at the floor.
-        var w = kind.Socket == "airlock" ? p.DoorW / 2 + 0.1 : op is { } o2 ? Math.Max(DoorHalfDefault, o2.Hx * size) : DoorHalfDefault;
+        var w = op is { } o2 ? Math.Max(DoorHalfDefault, o2.Hx * size) : DoorHalfDefault;
         var wallLen = Math.Abs(q[ax] - lo[ax]) < 1e-6 || Math.Abs(q[ax] - hi[ax]) < 1e-6 ? hi[al] - lo[al] : hi[ax] - lo[ax];
         w = Math.Min(w, Math.Max(0.3, wallLen / 2 - 0.05));
         var along = Math.Abs(q[ax] - lo[ax]) < 1e-6 || Math.Abs(q[ax] - hi[ax]) < 1e-6 ? al : ax;
         q[along] = Math.Clamp(q[along], lo[along] + w, hi[along] - w);
         q[up] = fl;
-        var top = kind.Socket == "airlock" ? Math.Max(DoorTopDefault, p.AirH) : DoorTopDefault;
-        if (kind.Socket is "airlock" or "cargo" && !d.Stacked && d.Hull(p.Hull) is { } ah)
+        var top = DoorTopDefault;
+        if (kind.Socket == "cargo" && !d.Stacked && d.Hull(p.Hull) is { } ah)
         {
-            // As high as the chamber's inner door reaches over this floor (walkable rooms, step 4: on a sloping skin the chamber comes in
-            // tilted, its mouth higher than the room's floor, and a cut AirH high from the floor left its top half walled). A cargo hatch's
-            // cut reaches its 3 m opening's top (Karl, 2026-11-27: a door's 2.1 m left its upper part walled, a dark panel from inside and out).
+            // A cargo hatch's cut reaches its 3 m opening's top (Karl, 2026-11-27: a door's 2.1 m left its upper part walled, a dark panel
+            // from inside and out), however its sloping skin tilts it.
             var w0 = Where(ah, p);
-            var cargo = kind.Socket == "cargo";
-            double s = p.Size, ex = (cargo ? op!.Value.Hx : p.AirH / 2) * s * p.Hole, dz = (cargo ? op!.Value.Hz : Math.Min(p.DoorW, p.AirW) / 2) * s * p.Hole,
-                dd = (cargo ? CargoWell(d, p, kind) : p.AirD) * s + p.Recess;
-            foreach (var de in cargo ? new[] { p.Recess, dd } : [dd]) // (a hatch's opening on the skin and at its well's inner end)
+            double s = p.Size, ex = op!.Value.Hx * s * p.Hole, dz = op!.Value.Hz * s * p.Hole, dd = CargoWell(d, p, kind) * s + p.Recess;
+            foreach (var de in new[] { p.Recess, dd }) // (a hatch's opening on the skin and at its well's inner end)
                 foreach (var sx in new[] { -1.0, 1 })
                     foreach (var sz in new[] { -1.0, 1 })
                         top = Math.Max(top, w0.O[up] - w0.Y[up] * de + w0.X[up] * sx * ex + w0.Z[up] * sz * dz - fl + 0.1);
@@ -1571,8 +1568,6 @@ public static partial class DesignScene
         }
         else if (kind.Socket == "cargo")
             PieceKinds.CargoHatch(m, CargoWell(d, p, kind)); // (its well runs in to its room's wall and no further: DesignWindows.cs)
-        else if (kind.Socket == "airlock")
-            PieceDocking.Airlock(m, p, shut); // a chamber sized by the piece (Karl, 2026-11-26); shut: both its doors shut (the game's, DesignParts.Doors.cs)
         else if (PieceWeapons.MountOf(p.Kind) is { } mk)
         {
             // A weapon mount and the weapon fitted to it, the weapon standing on the mount (Karl, 2026-11-26).
@@ -1590,10 +1585,10 @@ public static partial class DesignScene
         {
             // Its recess's walls clad (DesignRecess): round its opening, or round a piece with none at its own reach.
             m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across);
-            var ro = DesignHangar.OpeningOf(p, w) ?? (kind.Socket == "airlock" ? PieceDocking.FootprintOf(p, kind) : kind.Opening);
+            var ro = DesignHangar.OpeningOf(p, w) ?? kind.Opening;
             DesignRecess.Draw(d, p, m, ro is { } rq ? rq.Hx + 0.15 : 0.6, ro is { } rq2 ? rq2.Hz + 0.15 : 0.6);
         }
-        if (p.Clad > 0 && (DesignHangar.OpeningOf(p, w) is { } so ? so : kind.Socket == "airlock" ? PieceDocking.FootprintOf(p, kind) : kind.Opening) is { } op)
+        if (p.Clad > 0 && (DesignHangar.OpeningOf(p, w) is { } so ? so : kind.Opening) is { } op)
         {
             // Cladding: a plate band round the opening's frame, flush on the skin (its width in metres, whatever the size).
             double cl = p.Clad / p.Size, hx = op.Hx + 0.15, hz = op.Hz + 0.15;
@@ -1747,7 +1742,6 @@ public static partial class DesignScene
               .Append(",\"mirror\":").Append(p.Mirror ? "true" : "false").Append(",\"pair\":").Append(p.Pair ? "true" : "false").Append(",\"size\":").Append(ShipDesign.S(p.Size)).Append(",\"recess\":").Append(ShipDesign.S(p.Recess)).Append(",\"clad\":").Append(ShipDesign.S(p.Clad))
               .Append(",\"recessClad\":").Append(p.RecessClad ? "true" : "false").Append(",\"cladHull\":").Append(p.CladHull ? "true" : "false").Append(",\"revealClad\":").Append(p.RevealClad ? "true" : "false")
               .Append(",\"gap\":").Append(ShipDesign.S(p.Gap)).Append(",\"hole\":").Append(ShipDesign.S(p.Hole)).Append(",\"depth\":").Append(ShipDesign.S(p.Depth)).Append(",\"double\":").Append(p.Double ? "true" : "false")
-              .Append(",\"airW\":").Append(ShipDesign.S(p.AirW)).Append(",\"airH\":").Append(ShipDesign.S(p.AirH)).Append(",\"airD\":").Append(ShipDesign.S(p.AirD)).Append(",\"doorW\":").Append(ShipDesign.S(p.DoorW)).Append(",\"door\":").Append(Q(p.Door))
               .Append(",\"feed\":").Append(p.Feed).Append(",\"feeds\":").Append(PieceWeapons.IsFeeder(p.Kind) && PieceDocking.FeedOf(d, p) is { } fg ? fg.Id : 0)
               .Append(",\"fit\":").Append(Q(p.Fit)).Append(",\"mountClass\":").Append(PieceWeapons.MountOf(p.Kind)?.Class ?? 0).Append(",\"mountOnly\":").Append(PieceWeapons.MountOf(p.Kind)?.Only is { } mo ? Q(mo) : "null").Append(",\"reserve\":").Append(PieceWeapons.Json(d, p))
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")

@@ -1,7 +1,7 @@
 namespace CallOfSlop.ShipDesigner;
 
 /// <summary>
-/// What can go on a hull: drives, guns and systems on the skin, and the sockets (airlock, dock, cargo hatch, boarding hatch) that join the
+/// What can go on a hull: drives, guns and systems on the skin, and the sockets (dock, cargo hatch, boarding hatch) that join the
 /// outside to a room inside. Each draws itself in its own frame: X across, Y out of the skin, Z towards the bow (on an end: towards the roof).
 /// </summary>
 public sealed record PieceKind(string Name, string Group, string Where, string? Socket, string Needs, string Desc, Action<DesignMesh> Draw)
@@ -20,7 +20,7 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     /// <summary>The hole a socket cuts through the skin, in its own frame (half sizes across and along; Round: a circle of radius Hx).</summary>
     public (double Hx, double Hz, bool Round)? Opening => Socket switch
     {
-        "airlock" => (1.15, 0.75, false), "window" => (0.55, 0.9, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false),
+        "window" => (0.55, 0.9, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false),
         "ramp" => (DesignRamp.Hx, DesignRamp.Hz, false), "gangway" => (1.1, 0.6, false), "ladder" => (1.05, 0.55, false),
         "hangar" => (2.5, 1.5, false), "lift" => (2.5, 2.5, false), "rampdeck" => (2.5, 4.0, false), _ => PieceDocking.Opening(Socket), // hangar pieces sized per piece: DesignHangar.OpeningOf
     };
@@ -91,17 +91,6 @@ public static class PieceKinds
                 m.Frustum(3.0, 0.85, 3.25, 0.85, 12, Armour);
             });
             m.Box(-0.82, 0.3, -1.32, 0.82, 0.42, 1.32, Amber);
-        }),
-        new("Airlock", "Sockets", "skin", "airlock", "any room", "A crew airlock. Opens into the room behind it.", m =>
-        {
-            m.Box(-1.35, 0, -0.95, 1.35, 0.22, -0.75, Armour);
-            m.Box(-1.35, 0, 0.75, 1.35, 0.22, 0.95, Armour);
-            m.Box(-1.35, 0, -0.75, -1.15, 0.22, 0.75, Armour);
-            m.Box(1.15, 0, -0.75, 1.35, 0.22, 0.75, Armour);
-            m.Box(-1.15, -0.7, -0.75, 1.15, -0.62, 0.75, Gun); // the outer door, set in the well
-            m.Box(-1.2, -0.62, -0.05, 1.2, -0.58, 0.05, Amber);
-            m.Box(0.9, 0.22, -0.9, 1.05, 0.3, -0.8, Glow);
-            Well(m, 1.15, 0.75, 1.2);
         }),
         new("Window", "Sockets", "skin", "window", "any room", "A viewport: armoured glass in a frame, cut through the skin. Opens onto the room behind it.", m =>
         {

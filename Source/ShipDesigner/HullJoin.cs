@@ -615,13 +615,17 @@ public sealed class HullJoin
             {
                 var hid = i == 0 ? A.Hull : B.Hull;
                 var f = i == 0 ? OpenA : OpenB;
-                // Each end's own size (and the bias's thicker half, so the hole covers it).
-                var mh = rh * f * (1 + Math.Abs(Bias));
-                ends.Add(new Mouth(hid, c, t, rs, upv, rw * f, mh, SquareHole));
+                // Each end's own size, centred on the biased section: the bias keeps its height (one half grows as the other shrinks)
+                // but moves its middle Bias * rh / 2 up the ring. The hole was centred on the line and grown by |Bias|, so it stood
+                // that much past the strut on its thin side (Karl, 2026-11-27: holes a little higher than the nacelles' arms).
+                var mh = rh * f;
+                var off = Bias * rh / 2;
+                double[] mc = [c[0] + upv[0] * off, c[1] + upv[1] * off, c[2] + upv[2] * off];
+                ends.Add(new Mouth(hid, mc, t, rs, upv, rw * f, mh, SquareHole));
                 if (mouths is not null)
-                mouths.Add(new Mouth(hid, c, t, rs, upv, rw * f, mh, SquareHole));
+                mouths.Add(new Mouth(hid, mc, t, rs, upv, rw * f, mh, SquareHole));
                 if (mouths is not null && Mirror && Math.Abs(a.P[0]) > 0.3)
-                    mouths.Add(new Mouth(hid, [-c[0], c[1], c[2]], [-t[0], t[1], t[2]], [-rs[0], rs[1], rs[2]], [-upv[0], upv[1], upv[2]], rw * f, mh, SquareHole));
+                    mouths.Add(new Mouth(hid, [-mc[0], mc[1], mc[2]], [-t[0], t[1], t[2]], [-rs[0], rs[1], rs[2]], [-upv[0], upv[1], upv[2]], rw * f, mh, SquareHole));
             }
             var r = new (double, double, double)[ring.Count];
             for (var j = 0; j < ring.Count; j++)

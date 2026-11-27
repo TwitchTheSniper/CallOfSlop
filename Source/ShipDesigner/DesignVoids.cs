@@ -17,12 +17,9 @@ public static partial class DesignScene
         }
     }
 
-    /// <summary>How far past an airlock's chamber its inner doorway clears a room's wall (m).</summary>
-    private const double AirlockThrough = 1.0;
-
     /// <summary>
-    /// The spaces every hangar bay and airlock keeps clear (each copy: mirrored and paired as the pieces are): a bay its whole volume, an
-    /// airlock its chamber and its inner doorway on through the room's wall behind it. Room shells leave out every cell in one.
+    /// The spaces every hangar bay keeps clear (each copy: mirrored and paired as the pieces are): its whole volume. Room shells leave
+    /// out every cell in one. (The airlock's chamber was one too, until the airlock was taken out for rework: Karl, 2026-11-27.)
     /// </summary>
     public static List<Void> PieceVoids(ShipDesign d)
     {
@@ -31,23 +28,11 @@ public static partial class DesignScene
         {
             if (d.Hull(p.Hull) is not { } h)
                 continue;
-            var air = PieceKinds.Find(p.Kind)?.Socket == "airlock";
-            var bay = DesignHangar.Of(p);
-            if (!air && bay is null)
+            if (DesignHangar.Of(p) is not { } b)
                 continue;
             var w = Where(h, p);
-            var boxes = new List<(double[] Lo, double[] Hi)>();
-            if (bay is { } b)
-            {
-                var (ex, ey, ez) = DesignHangar.Extent(b, w);
-                boxes.Add(([-ex / 2, -ey - 0.3, -ez / 2], [ex / 2, 0.5, ez / 2]));
-            }
-            else
-            {
-                double s = p.Size, hx = p.AirH / 2 * s, hw = p.AirW / 2 * s, dz = Math.Min(p.DoorW, p.AirW) / 2 * s, dp = p.AirD * s;
-                boxes.Add(([-hx, -dp - 0.05, -Math.Max(hw, dz)], [hx, 0.5, Math.Max(hw, dz)])); // (its throat and chamber)
-                boxes.Add(([-hx, -dp - AirlockThrough, -dz], [hx, -dp + 0.05, dz])); // (its inner doorway, through the wall behind it)
-            }
+            var (ex, ey, ez) = DesignHangar.Extent(b, w);
+            var boxes = new List<(double[] Lo, double[] Hi)> { ([-ex / 2, -ey - 0.3, -ez / 2], [ex / 2, 0.5, ez / 2]) };
             var o0 = Add(w.O, w.Y, -p.Recess);
             var places = new List<Place> { w with { O = o0 } };
             if (p.Mirror)

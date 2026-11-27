@@ -856,6 +856,7 @@ public sealed partial class ConstructPartDef
     public float RackLength;
     public int RackCount;
     public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
+    public bool RackFlipX, RackFlipZ; // ...a Pad Tile pad's places drawn mirrored along its x or z, so pieces fill it from the side away from its feed (ConstructPads.FeedFlip)
     public bool IsPanelFormer; // a Panel Former (also IsExtruder and IsWheelFormer; ConstructPanelFormer.cs): it forms named panels from its bin, by order
     public bool IsBakeOven; // a Bake Oven's Core (storage "bake": ConstructBakeOven.cs): its bed blocks and the roller hearth tunnel over them
     public float BakeBedTop, BakeRollTop, BakeKwBlock, BakeDoorSeconds, BakePartSeconds; // ...the bed's top and the hearth rollers' (m), each bed block's heat (kW), a door's swing (s), seconds a subpart on 12 blocks

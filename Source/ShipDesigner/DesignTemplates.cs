@@ -188,7 +188,6 @@ public static class DesignTemplates
         At("RCS quad", 44.5, 1, 6.0, mirror: true);
         Keel("Landing leg", 18.2, 0.08, mirror: true);
         Keel("Landing leg", 35.4, 0.08, mirror: true);
-        At("Airlock", 11, -1, 1.6);
         At("Cargo hatch", 21, -1, 1.5);
         Keel("Docking collar", 29);
         Keel("Boarding hatch", 14);

@@ -515,11 +515,6 @@ public sealed class DesignEditor
                 if (o["hole"] is not null) p.Hole = Math.Clamp(Snap(D(o, "hole"), 0.05), 0.5, 2.5);
                 if (o["depth"] is not null) p.Depth = Math.Clamp(Snap(D(o, "depth"), 0.01), 0.05, 1);
                 if (o["double"] is not null) p.Double = (bool)o["double"]!;
-                if (o["airW"] is not null) p.AirW = Math.Clamp(Snap(D(o, "airW"), 0.05), 0.8, 6);
-                if (o["airH"] is not null) p.AirH = Math.Clamp(Snap(D(o, "airH"), 0.05), 1.2, 6);
-                if (o["airD"] is not null) p.AirD = Math.Clamp(Snap(D(o, "airD"), 0.05), 0.6, 6);
-                if (o["doorW"] is not null) p.DoorW = Math.Clamp(Snap(D(o, "doorW"), 0.05), 0.6, 6);
-                if ((string?)o["door"] is { } door && Array.IndexOf(PieceDocking.Doors, door) >= 0) p.Door = door;
                 if ((string?)o["fit"] is { } fit)
                 {
                     if (fit.Length > 0 && !PieceWeapons.Fits(p.Kind, fit))
