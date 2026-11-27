@@ -102,6 +102,32 @@ public sealed class RoverPlan
         h = Bh[k - 1] + StationRovers.Wrap(Bh[k] - Bh[k - 1]) * u;
     }
 
+    /// <summary>
+    /// A carry's times from its hook keys (the same on every peer, since the keys are on the wire): when the piece is back up off its pad
+    /// (<paramref name="lift"/>), when it is over its place (<paramref name="over"/>) and when it is down in its place for the weld
+    /// (<paramref name="place"/>; the weld runs from there to <see cref="FitT"/>). All <see cref="GripT"/> for a trip with no piece.
+    /// </summary>
+    public void CarryTimes(out float lift, out float over, out float place)
+    {
+        lift = over = place = GripT;
+        if (Home || FitT <= GripT || NH < 3)
+            return;
+        const float eps = 0.02f; // (the wire rounds times to a tick)
+        var f = NH - 1;
+        while (f > 0 && Ht[f] > FitT + eps)
+            f--;
+        if (f < 2)
+            return;
+        place = Math.Clamp(Ht[f - 1], GripT, FitT);
+        over = Math.Clamp(Ht[f - 2], GripT, place);
+        for (var k = 0; k < f; k++)
+            if (Ht[k] > GripT + eps)
+            {
+                lift = Math.Min(Ht[k], over);
+                break;
+            }
+    }
+
     /// <summary>The hook's offset from the body at <paramref name="t"/>: round the mast in angle, radius and height between its keys.</summary>
     public Vector3 HookAt(float t)
     {
