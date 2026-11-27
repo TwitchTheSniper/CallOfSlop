@@ -28,13 +28,13 @@ public static class DesignRecess
         return p;
     }
 
-    /// <summary>The colour the recess's lining takes: its hull's cladding (Panelled's graphite, else the skin's paint) or armour plate.</summary>
+    /// <summary>The colour the recess's lining takes: its hull's cladding (the skin's paint) or armour plate.</summary>
     public static string RecessColour(ShipDesign d, Piece p)
     {
         if (!p.CladHull || d.Hull(p.Hull) is not { } h)
             return PieceKinds.Armour;
         var s = d.CladSource(h);
-        return s.Clad == "Panelled" ? HullBody.PanelArmour : s.Skin;
+        return s.Skin;
     }
 
     /// <summary>The colour a window's reveal is lined in: its room's wall panels, or plain grey.</summary>

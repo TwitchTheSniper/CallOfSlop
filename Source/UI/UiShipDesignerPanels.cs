@@ -576,7 +576,7 @@ public sealed partial class Ui
                 SeedRow("hcseed", I(clad, "seed", 1), v => Hs(("cladSeed", v)));
             }
         }
-        Hint("Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across; Panelled: bevelled graphite armour, 6-16 cm, on light trim seams of the hull's skin); the depth slider scales that. Windows and sockets stay bare.");
+        Hint("Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare.");
 
         // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
         H3("Damage");

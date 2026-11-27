@@ -1722,7 +1722,7 @@ function stationPanel(h) {
       el("label", {}, el("input", { type: "checkbox", ...(h.cladFore !== false ? { checked: "" } : {}), onchange: e => hs({ cladFore: e.target.checked }) }), "Clad front"),
       el("label", {}, el("input", { type: "checkbox", ...(h.cladAft !== false ? { checked: "" } : {}), onchange: e => hs({ cladAft: e.target.checked }) }), "Clad back"))]),
     ...(src ? [el("p", { class: "hint" }, `Follows ${src.name}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.`)] : [
-    el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex", "Panelled"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
+    el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
     ...(clad.kind === "Off" ? [] : [el("div", { class: "row" }, el("span", {}, "Material"), matSel(clad.material || "Hull", ["Hull", ...MAT_NAMES], "Cladding material", v => hs({ cladMaterial: v })),
       resetAll("Cladding material back to the hull's", () => hs(dfltOf("hull", ["cladMaterial"]))))]),
     ...(clad.kind === "Off" ? [] : [
@@ -1732,7 +1732,7 @@ function stationPanel(h) {
       el("div", { class: "row" }, resetAll("Panel size and depth back to their defaults", () => hs(dfltOf("hull", ["cladSize", "cladDepth"])))),
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
         el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
-    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across; Panelled: bevelled graphite armour, 6-16 cm, on light trim seams of the hull's skin); the depth slider scales that. Windows and sockets stay bare."));
+    el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare."));
   // Beading (Karl, 2026-11-27): raised strips along the profile's points, bow to stern.
   const bead = h.bead || { kind: "Off", size: 0.06, colour: "" };
   box.append(el("h3", {}, "Beading"),
@@ -1959,7 +1959,7 @@ function inspector() {
       el("h3", {}, "Cladding"),
       matchBox("matchClad", !!j.matchClad),
       ...(j.matchClad ? [matchHint] : [
-      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex", "Panelled"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => jc({ clad: k }) }, k))),
       ...(clad.kind === "Off" ? [] : [
         slider("Panel size", Math.round(clad.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ cladSize: v / 100 }), dflt("join", "cladSize", 100)),
         slider("Depth", Math.round(clad.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ cladDepth: v / 100 }), dflt("join", "cladDepth", 100)),
@@ -1970,7 +1970,7 @@ function inspector() {
       el("h3", {}, "Buttress cladding"),
       matchBox("matchButtress", !!j.matchButtress),
       ...(j.matchButtress ? [matchHint.cloneNode(true)] : [
-      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex", "Panelled"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
+      el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: bcl.kind === k ? "on" : "", onclick: () => jc({ buttressClad: k }) }, k))),
       ...(bcl.kind === "Off" ? [] : [
         slider("Panel size", Math.round(bcl.size * 100), 40, 600, 5, " cm", () => {}, v => jc({ buttressSize: v / 100 }), dflt("join", "buttressSize", 100)),
         slider("Depth", Math.round(bcl.depth * 100), 25, 250, 5, "%", () => {}, v => jc({ buttressDepth: v / 100 }), dflt("join", "buttressDepth", 100)),
