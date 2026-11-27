@@ -97,8 +97,7 @@ public sealed class DesignSession
                 ["material"] = h.Material, ["cladMaterial"] = h.CladMaterial, ["damage"] = h.Damage, ["damageSeed"] = h.DamageSeed, ["cladFrom"] = null,
             },
             ["room"] = new JsonObject { ["wallThick"] = r.WallThick, ["ribSpacing"] = r.RibSpacing, ["wallStyle"] = r.WallStyle, ["wallColour"] = r.WallColour, ["seed"] = r.Seed, ["floor"] = r.Floor },
-            ["piece"] = new JsonObject { ["gap"] = -1, ["hole"] = 1.0, ["depth"] = 0.2, ["double"] = true,
-                ["airW"] = PieceDocking.AirW, ["airH"] = PieceDocking.AirH, ["airD"] = PieceDocking.AirD, ["doorW"] = PieceDocking.DoorW, ["door"] = "sliding", ["fit"] = "" },
+            ["piece"] = new JsonObject { ["gap"] = -1, ["hole"] = 1.0, ["depth"] = 0.2, ["double"] = true, ["fit"] = "" },
             ["hullWindow"] = new JsonObject { ["gap"] = -1, ["hole"] = 1.0, ["depth"] = 0.2, ["double"] = true },
             // A corridor's own defaults (Room.KindDefaults), over the room's.
             ["corridor"] = new JsonObject { ["wallStyle"] = "Corridor", ["floor"] = "Grating" },

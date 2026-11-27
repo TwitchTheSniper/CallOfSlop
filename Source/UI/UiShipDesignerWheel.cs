@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// towards a slice and let go to pick it, let go in the middle (or Esc) to cancel. The middle button only orbits, as before
 /// the wheel (left or middle drag turns the view, right drag pans, the wheel zooms).
 /// Slices: the four modes (Hull, Pieces, Interior, Connectors), then Door and Ladder (the connector tools) and the most used
-/// pieces (Airlock, Window, Seat, Cargo hatch, Boarding ramp, Floodlight M). A piece is carried on the pointer: click the
+/// pieces (Window, Seat, Cargo hatch, Boarding ramp, Floodlight M). A piece is carried on the pointer: click the
 /// hull to place it, click off the ship or Esc to drop it.
 /// </summary>
 public sealed partial class Ui
@@ -27,7 +27,6 @@ public sealed partial class Ui
         ("Connectors", "Connec-\ntors", "doors, ladders and lifts"),
         ("Door", "Door", "click a room, then the room it opens into"),
         ("Ladder", "Ladder", "click a deck: it runs to the deck above"),
-        ("Airlock", "Airlock", "carried: click the hull to place it"),
         ("Window", "Window", "carried: click the hull to place it"),
         (DesignSeats.Kind, "Seat", "carried: click the hull by a room"),
         ("Cargo hatch", "Cargo\nhatch", "carried: click the hull by a hold"),

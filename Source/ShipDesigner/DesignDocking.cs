@@ -1,18 +1,12 @@
 namespace CallOfSlop.ShipDesigner;
 
 /// <summary>
-/// The adjustable airlock, the ammo socket, docking and boarding pieces (Karl, 2026-11-26). The airlock is a chamber like the game's
-/// (Constructs/Parts/WallBays: AirlockChamber, AirlockInnerDoor, AirlockOuterHatch): an outer hatch on the skin, a chamber in, and an
-/// inner door to the room, each sized by the piece (<see cref="Piece.AirW"/> and the rest). Its defaults are the old single piece's size.
+/// The ammo socket, docking and boarding pieces (Karl, 2026-11-26; the airlock was taken out for rework, Karl 2026-11-27).
 /// The ammo socket sits inside the hull and feeds a gun (<see cref="Piece.Feed"/>, 0: the nearest weapon).
 /// </summary>
 public static class PieceDocking
 {
     private const string Armour = PieceKinds.Armour, Gun = PieceKinds.Gun, Amber = PieceKinds.Amber, Glow = PieceKinds.Glow, Pale = PieceKinds.Pale, Black = PieceKinds.Black, Blue = PieceKinds.Blue;
-
-    /// <summary>The airlock's settings' defaults: today's single piece (a 2.3 x 1.5 m hatch, a well 1.2 m deep).</summary>
-    public const double AirW = 1.5, AirH = 2.3, AirD = 1.2, DoorW = 1.5;
-    public static readonly string[] Doors = ["sliding", "hinged", "iris"];
 
     /// <summary>The docking clamps' ring radii, S to Capital.</summary>
     private static readonly (string Name, double R)[] Clamps = [("S", 0.8), ("M", 1.3), ("L", 2.0), ("Capital", 3.4)];
@@ -91,9 +85,9 @@ public static class PieceDocking
         return null;
     }
 
-    /// <summary>A piece's own opening or footprint: an airlock's from its outer hatch's size, the rest from its kind.</summary>
+    /// <summary>A piece's own opening or footprint: a hull light bar's from its length, the rest from its kind.</summary>
     public static (double Hx, double Hz, bool Round)? FootprintOf(Piece p, PieceKind k) =>
-        k.Socket == "airlock" ? (p.AirH / 2, Math.Min(p.DoorW, p.AirW) / 2, p.Door == "iris") : p.Kind == DesignLightBars.Hull ? DesignLightBars.FootprintOf(p) : k.Footprint;
+        p.Kind == DesignLightBars.Hull ? DesignLightBars.FootprintOf(p) : k.Footprint;
 
     /// <summary>A docking clamp: a ring on a base, four jaws round it, open.</summary>
     private static void Clamp(DesignMesh m, double r)
@@ -112,117 +106,6 @@ public static class PieceDocking
             double ix = cx - sx * 2.2 * t, iz = cz - sz * 2.2 * t;
             m.Box(Math.Min(cx, ix) - (sx == 0 ? wx : 0), h + 2 * t, Math.Min(cz, iz) - (sz == 0 ? wz : 0),
                   Math.Max(cx, ix) + (sx == 0 ? wx : 0), h + 3 * t, Math.Max(cz, iz) + (sz == 0 ? wz : 0), Amber); // its hook over the ring
-        }
-    }
-
-    /// <summary>
-    /// The airlock as a chamber (in its frame: X across the hatch, Y out of the skin, Z along): the outer hatch's frame on the skin and
-    /// the hatch, shut, just in; the chamber's walls p.AirD deep, p.AirH across and p.AirW along; at its back the inner door into the
-    /// room, open, p.DoorW wide; a lamp by each door. Its door type (sliding, hinged, iris) shapes both doors.
-    /// </summary>
-    public static void Airlock(DesignMesh m, Piece p, bool shut = false)
-    {
-        double hx = p.AirH / 2, hw = p.AirW / 2, dz = Math.Min(p.DoorW, p.AirW) / 2, d = p.AirD, iris = p.Door == "iris" ? 1 : 0;
-        // The outer frame on the skin round the hatch.
-        m.Box(-hx - 0.2, 0, -dz - 0.2, hx + 0.2, 0.22, -dz, Armour);
-        m.Box(-hx - 0.2, 0, dz, hx + 0.2, 0.22, dz + 0.2, Armour);
-        m.Box(-hx - 0.2, 0, -dz, -hx, 0.22, dz, Armour);
-        m.Box(hx, 0, -dz, hx + 0.2, 0.22, dz, Armour);
-        m.Box(hx - 0.25, 0.22, -dz - 0.15, hx - 0.1, 0.3, -dz - 0.05, Glow);
-        // The hatch's throat from the skin to the chamber, then the chamber itself (its walls 6 cm thick, outside its size).
-        Walls(m, hx, dz, 0.02, -0.3);
-        if (hw > dz)
-        {
-            m.Box(-hx - 0.06, -0.36, -hw - 0.06, hx + 0.06, -0.3, -dz, Gun); // the chamber's outer wall beside the hatch
-            m.Box(-hx - 0.06, -0.36, dz, hx + 0.06, -0.3, hw + 0.06, Gun);
-        }
-        Walls(m, hx, hw, -0.3, -d);
-        m.Box(-hx, -d + 0.02, -hw, -hx + 0.03, -0.32, hw, Black); // the chamber's floor or wall plating, 3 cm in from its wall
-        m.Box(hx - 0.35, -0.9 * d, -hw + 0.05, hx - 0.05, -0.4, -hw + 0.12, Pale); // a suit locker
-        m.Box(-hx * 0.2, -0.7 * d, hw - 0.08, hx * 0.2, -0.6 * d, hw - 0.03, Blue); // the cycle panel
-        // The outer hatch, shut, 12 cm in (leaf 0).
-        Door(m, p.Door, hx, dz, -0.12, false, 0);
-        // The inner door's wall at the back, round its opening (as tall as the hatch, p.DoorW wide), the door open.
-        if (hw > dz)
-        {
-            m.Box(-hx - 0.06, -d - 0.06, -hw - 0.06, hx + 0.06, -d, -dz, Gun);
-            m.Box(-hx - 0.06, -d - 0.06, dz, hx + 0.06, -d, hw + 0.06, Gun);
-        }
-        Door(m, p.Door, hx, dz, -d, !shut, 1); // (leaf 1; the game builds it shut: DesignParts.Doors.cs)
-        m.Box(hx - 0.25, -d - 0.1, dz + 0.02, hx - 0.1, -d - 0.04, dz + 0.1 + iris * 0.05, Amber);
-    }
-
-    /// <summary>Four walls round a rectangle hx by hz from y0 down to y1.</summary>
-    private static void Walls(DesignMesh m, double hx, double hz, double y0, double y1)
-    {
-        m.Box(-hx - 0.06, y1, -hz - 0.06, hx + 0.06, y0, -hz, Gun);
-        m.Box(-hx - 0.06, y1, hz, hx + 0.06, y0, hz + 0.06, Gun);
-        m.Box(-hx - 0.06, y1, -hz, -hx, y0, hz, Gun);
-        m.Box(hx, y1, -hz, hx + 0.06, y0, hz, Gun);
-    }
-
-    /// <summary>The airlock's two doors (walkable designs, step 4): each its leaf number in the piece's mesh (<see cref="DesignMesh.Leaves"/>),
-    /// its type, and the opening it shuts (half sizes across X and along Z, in its frame, at depth Y). Leaf 0 is the outer hatch, 1 the inner door.</summary>
-    public static (int Leaf, string Type, double Hx, double Hz, double Y)[] AirlockDoors(Piece p)
-    {
-        double hx = p.AirH / 2, dz = Math.Min(p.DoorW, p.AirW) / 2;
-        return [(0, p.Door, hx, dz, -0.12), (1, p.Door, hx, dz, -p.AirD)];
-    }
-
-    /// <summary>A door across a hx by hz opening at depth y: sliding (two leaves, or slid into the wall when open), hinged (a leaf
-    /// swung in on its hinge when open), or iris (a ring of blades, drawn back to a rim when open). What moves is tagged as leaf
-    /// <paramref name="leaf"/> (<see cref="DesignMesh.Leaf"/>); its track, hinges and rim stay with the piece.</summary>
-    private static void Door(DesignMesh m, string type, double hx, double hz, double y, bool open, int leaf)
-    {
-        const double t = 0.05;
-        switch (type)
-        {
-            case "hinged":
-                m.Leaf(leaf, () =>
-                {
-                    if (open)
-                        m.Box(-hx + 0.02, y - 0.04 - 2 * hz + 0.04, hz - 0.01, hx - 0.02, y - 0.04, hz + t - 0.01, Armour); // swung 90 degrees into the room
-                    else
-                    {
-                        m.Box(-hx + 0.02, y - t, -hz + 0.02, hx - 0.02, y, hz - 0.02, Armour);
-                        m.Box(-hx * 0.3, y + 0.003, hz - 0.2, hx * 0.3, y + 0.03, hz - 0.12, Amber); // its wheel bar
-                    }
-                });
-                m.Box(-hx + 0.1, y - 0.09, hz - 0.04, -hx + 0.3, y + 0.01, hz + 0.02, Pale);    // the hinges
-                m.Box(hx - 0.3, y - 0.09, hz - 0.04, hx - 0.1, y + 0.01, hz + 0.02, Pale);
-                break;
-            case "iris":
-            {
-                // A rim, and eight blades: shut, they meet at the middle; open, only their ends show inside the rim.
-                var r = Math.Min(hx, hz);
-                m.Frustum(y - 0.08, r + 0.02, y + 0.01, r + 0.02, 16, Armour, cap0: false, cap1: false);
-                var reach = open ? r * 0.18 : r;
-                m.Leaf(leaf, () =>
-                {
-                    for (var i = 0; i < 4; i++)
-                    {
-                        double ax = i % 2 == 0 ? 1 : 0, az = 1 - ax, s = i < 2 ? 1 : -1, yy = y - 0.03 - 0.008 * i;
-                        double x0 = ax * s * (r - reach), x1 = ax * s * r, z0 = az * s * (r - reach), z1 = az * s * r;
-                        var half = r * 0.72;
-                        m.Box(Math.Min(x0, x1) - az * half, yy - 0.02, Math.Min(z0, z1) - ax * half, Math.Max(x0, x1) + az * half, yy, Math.Max(z0, z1) + ax * half, i % 2 == 0 ? Gun : Armour);
-                    }
-                });
-                break;
-            }
-            default: // sliding
-                m.Leaf(leaf, () =>
-                {
-                    if (open)
-                        m.Box(-hx + 0.02, y - t, hz + 0.08, hx - 0.02, y, hz + 0.08 + Math.Min(2 * hz, 0.4), Armour); // slid back into the wall's pocket
-                    else
-                    {
-                        m.Box(-hx + 0.02, y - t, -hz + 0.02, hx - 0.02, y, -0.01, Armour);
-                        m.Box(-hx + 0.02, y - t, 0.01, hx - 0.02, y, hz - 0.02, Armour);
-                        m.Box(-hx + 0.02, y + 0.003, -0.01, hx - 0.02, y + 0.02, 0.01, Amber);
-                    }
-                });
-                m.Box(hx - 0.06, y - t - 0.02, -hz, hx + 0.02, y + 0.02, hz + 0.5, Pale); // the track
-                break;
         }
     }
 

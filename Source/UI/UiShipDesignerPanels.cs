@@ -136,7 +136,7 @@ public sealed partial class Ui
     /// <summary>The outside groups in the gallery's order (any other group the catalogue names goes after them).</summary>
     private static readonly string[] OutsideGroups = ["Sockets", "Boarding", "Docking", "Hangar", "Drives", "Weapons", "Armour", "Systems", "Lights"];
 
-    private static string GroupTitle(string g) => g == "Sockets" ? "Airlocks, docks and hatches" : g;
+    private static string GroupTitle(string g) => g == "Sockets" ? "Windows, docks and hatches" : g;
 
     /// <summary>
     /// The Pieces palette as a gallery (Karl, 2026-11-27): filters for outside the hull, inside a room and each category, a search over names
@@ -245,7 +245,7 @@ public sealed partial class Ui
         else if (_sdMode == "pieces")
         {
             H2("Pieces");
-            Hint("Drag a picture onto the hull. An airlock brings its own airlock room.");
+            Hint("Drag a picture onto the hull.");
             Checkbox("Mirror on its own body##sdpm", _pMirror, v => _pMirror = v);
             Checkbox("On a mirrored pair of bodies, put it on both##sdpp", _pPair, v => _pPair = v);
             Slider("Size to place", Math.Round(_pieceSize * 100), 25, 400, 5, "%", v => _pieceSize = v / 100, "ps");

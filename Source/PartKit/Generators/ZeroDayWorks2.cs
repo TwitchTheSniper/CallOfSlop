@@ -599,7 +599,6 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 PartItem(it, items);
             foreach (var it in items.Where(i => Str(i, "t") == "rover"))
                 RoverItem(it);
-            PadMasts();
             BigAssembler();
             var g = 0;
             foreach (var it in parts.Where(i => Str(i, "name").StartsWith("Kit Genset")))
@@ -844,34 +843,6 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
 
         private const float BigAsmX = -35, BigAsmZ = -23, BigArmX = -23, BigArmZ = -25; // (the big Assembler's Core and its Line Arm, site metres: Core 2 m cells at odd metres as the others; the bed's north masts 2 m clear of the west press row's Assembler bed, or the masts join the two beds into one machine)
         private VPart? _bigAsm;
-
-        /// <summary>
-        /// A Mast Block on each corner tile of the pads the press lines' rows end on (<see cref="_padAlong"/>): a pad holds what lies under
-        /// its corner masts' top, and with none only a metre (a pressed Leg Pod Housing XL is 1.25 m tall; 2026-11-26). Their corners are
-        /// off the row's line, so the run's pieces come onto the pad between them.
-        /// </summary>
-        private const int PadMastBlocks = 3;
-
-        private void PadMasts()
-        {
-            if (_padAlong.Count == 0 || !_items.TryGetValue("Pad Tile", out var tiles))
-                return;
-            foreach (var side in _padAlong.GroupBy(kv => kv.Value.X))
-            {
-                int x0 = side.Min(kv => kv.Key.Item1), x1 = side.Max(kv => kv.Key.Item1), z0 = side.Min(kv => kv.Key.Item2), z1 = side.Max(kv => kv.Key.Item2);
-                foreach (var (cx, cz) in new[] { (x0, z0), (x0, z1), (x1, z0), (x1, z1) })
-                    foreach (var (at, tile) in tiles)
-                        if (Round(at) == (cx, cz))
-                        {
-                            // (three high: the big Assembler's tallest piece, the Shuttle Ladder, stands 4.3 m on the pad, 2026-11-26)
-                            var m = Onto(tile, "top", "Mast Block", "bottom");
-                            Paint(m, Steel);
-                            for (var k = 1; k < PadMastBlocks; k++)
-                                Paint(m = Onto(m, "top", "Mast Block", "bottom"), Steel);
-                            break;
-                        }
-            }
-        }
 
         /// <summary>
         /// A Sheet Extruder: its Core on an Extruder Plinth beside the die bank, w Die Blocks welded along its own +x on plinths, the die face

@@ -7,8 +7,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The design check's doors (DesignCheck.cs): <c>--doors</c>. Every door element of the built body (DesignParts.Doors.cs) opened with F
 /// (ConstructEdits.Use, the player's own path) and shut again, each settling back where it was built, its collider moved in place (no rebuild),
-/// and the world step's cost while it settles; a docking hatch is the server's (StepDocks), commanded instead. Then a person from outside
-/// through the airlock: stood in its throat, F on the outer hatch, into the chamber, F on the inner door, on to the room's doorway. Then a joined
+/// and the world step's cost while it settles; a docking hatch is the server's (StepDocks), commanded instead. Then a joined
 /// client's copy of the body (its Full, then the host's door events through the wire) agreeing on every door. And what one door move costs the
 /// renderer (none: a design's doors are drawn apart from its merged mesh, ConstructRenderDesign.cs, DesignMover; the merge it would have cost is timed).
 /// </summary>
@@ -45,7 +44,7 @@ public static partial class DesignCheck
             }
             return worst;
         }
-        int Ticks(int part) => c.DefOf(part).Door!.Ticks + 20;
+        int Ticks(int part) => ConstructDoors.GroupTicks(c, part) + 20; // (a boarding hatch's ladder waits for its lid, and its lid for it: one F moves both in turn)
         // All shut to start with (the walk, before, opened the doors between rooms).
         var wasOpen = doors.Where(i => ConstructDoors.TargetOpen(c, i)).ToList();
         foreach (var i in wasOpen)
@@ -92,7 +91,6 @@ public static partial class DesignCheck
         if (worstStep > 8)
             r.Fail($"doors: a world step took {worstStep:0.0} ms while a door settled (at most 8)");
         PassRoomDoors(r, edits, Settle, Ticks);
-        Airlock(r, edits, Mid, Settle, Ticks);
         Client(r, doors, edits, Mid, Settle, Ticks);
         MergeCost(r);
     }
@@ -187,7 +185,7 @@ public static partial class DesignCheck
                 Console.WriteLine($"[design] walk: F on {e.Id} ({e.Name}) refused: {refused}");
             else
                 opened++;
-            ticks = Math.Max(ticks, c.DefOf(i).Door!.Ticks + 20);
+            ticks = Math.Max(ticks, ConstructDoors.GroupTicks(c, i) + 20);
         }
         for (var t = 0; t < ticks; t++)
             w.Step(World.Query, World.TickDt);
@@ -211,170 +209,6 @@ public static partial class DesignCheck
             if (ElementOf(r, i)?.Id == id)
                 return i;
         return -1;
-    }
-
-    /// <summary>A person from outside the airlock to the room behind it, through both its doors by F.</summary>
-    private static void Airlock(Run r, ConstructEdits edits, Func<int, Vector3> mid, Func<int, double> settle, Func<int, int> ticks)
-    {
-        var (w, c) = (r.World, r.Body);
-        var d = ShipDesign.FromJson(r.Text);
-        var pi = d.Pieces.FindIndex(p => PieceKinds.Find(p.Kind)?.Socket == "airlock");
-        if (pi < 0)
-        {
-            Console.WriteLine("[design] airlock: the design has none");
-            return;
-        }
-        var p = d.Pieces[pi];
-        var el = r.Els.FirstOrDefault(e => e.Id == $"p{pi}" || e.Id == $"p{pi}.0");
-        if (el == null)
-        {
-            r.Fail("airlock: no element for it");
-            return;
-        }
-        int outer = PartOfElement(r, el.Id + ".d0"), inner = PartOfElement(r, el.Id + ".d1");
-        if (outer < 0 || inner < 0)
-        {
-            r.Fail($"airlock: its doors aren't parts (outer {outer}, inner {inner})");
-            return;
-        }
-        // The design's frame to the body's, as the walk has it: every element's part stands at its Origin, moved alike.
-        var p0 = PartOfElement(r, r.Els[0].Id);
-        var shift = c.Parts[p0].Pos - r.Els[0].Origin;
-        var h = d.Hull(p.Hull)!;
-        var place = DesignScene.Where(h, p);
-        Vector3 V(double[] v) => new((float)v[0], (float)v[1], (float)v[2]);
-        Vector3 o = V(place.O) - V(place.Y) * (float)p.Recess, x = V(place.X), y = V(place.Y);
-        var down = -Vector3.UnitY;
-        var floorSide = Vector3.Dot(x, down) > 0 ? x : -x; // (on a side wall its X is up: the chamber's floor is its -X side)
-        var hx = (float)(p.AirH / 2 * p.Size * p.Hole);
-        var chamberFloor = o + floorSide * hx;
-        Vector3 At(float depth, float overFloor) => chamberFloor - y * depth - floorSide * overFloor + shift; // (body frame: depth in from the skin)
-        string Fmt(Vector3 v) => $"({v.X:0.00}, {v.Y:0.00}, {v.Z:0.00})";
-        var legs = new List<string>();
-        var ok = true;
-        void Tick(ref MoveState s, Buttons bt, Vector3 toward)
-        {
-            var wd = c.ToWorld(toward) - s.Position;
-            World.Simulate(ref s, new InputCmd { Buttons = bt, Yaw = MathF.Atan2(wd.X, -wd.Z), SpeedPct = 100 });
-            w.BlockPlayer(ref s, World.HeightOf(s.Stance), server: true, who: 1);
-        }
-        // What is just ahead of a person at body point l, heading for goal: the parts whose rest bounds hold a point there at knee or chest height.
-        string Near(Vector3 l, Vector3 goal)
-        {
-            var dir = goal - l;
-            dir.Y = 0;
-            dir = dir.LengthSquared() > 1e-6f ? Vector3.Normalize(dir) : Vector3.UnitX;
-            var hits = new List<string>();
-            foreach (var probe in new[] { l + dir * 0.45f + new Vector3(0, 0.3f, 0), l + dir * 0.45f + new Vector3(0, 1.2f, 0) })
-                for (var i = 0; i < c.PartCount && hits.Count < 5; i++)
-                {
-                    c.RestBounds(i, out var lo, out var hi);
-                    if (probe.X >= lo.X && probe.Y >= lo.Y && probe.Z >= lo.Z && probe.X <= hi.X && probe.Y <= hi.Y && probe.Z <= hi.Z && ElementOf(r, i) is { } e && !hits.Contains($"{e.Id} ({e.Name})"))
-                        hits.Add($"{e.Id} ({e.Name})");
-                }
-            return hits.Count == 0 ? "nothing's bounds" : string.Join(", ", hits);
-        }
-        bool WalkTo(ref MoveState s, Vector3 goal, string what)
-        {
-            var best = float.MaxValue;
-            var lastBest = 0;
-            for (var t = 0; t < 20 * World.TickRate; t++)
-            {
-                var l = c.ToLocal(s.Position);
-                var dist = new Vector2(goal.X - l.X, goal.Z - l.Z).Length();
-                if (l.Y < goal.Y - 1f)
-                {
-                    legs.Add($"{what}: fell to {Fmt(l - shift)}");
-                    return false;
-                }
-                if (dist < 0.35f && MathF.Abs(l.Y - goal.Y) < 0.6f)
-                {
-                    legs.Add($"{what}: reached {Fmt(l - shift)} in {t} ticks");
-                    return true;
-                }
-                if (dist < best - 0.05f)
-                    (best, lastBest) = (dist, t);
-                else if (t - lastBest > World.TickRate)
-                {
-                    legs.Add($"{what}: stuck {dist:0.0} m short at {Fmt(l - shift)}, facing ({goal.X - l.X:0.0}, {goal.Z - l.Z:0.0}); in the way {Near(l, goal)}");
-                    return false;
-                }
-                Tick(ref s, Buttons.Forward, goal);
-            }
-            legs.Add($"{what}: out of time");
-            return false;
-        }
-        // 1. A person on the throat's sill at the skin, the hatch shut: it keeps them out. Then F on it from there, and in to the chamber.
-        var depth = (float)(p.AirD * p.Size);
-        // (just outside the skin, level with the throat's sill, stepping straight in: nothing outside holds a person up there)
-        var s = new MoveState { Position = c.ToWorld(At(-0.3f, 0.05f)) };
-        var sill = s;
-        legs.Add($"outside the outer hatch at {Fmt(c.ToLocal(s.Position) - shift)}, stepping in");
-        if (WalkTo(ref s, At(depth * 0.6f, 0), "into the chamber with the hatch shut"))
-        {
-            legs.Add("the shut outer hatch let them through");
-            ok = false;
-        }
-        s = sill;
-        var eyeOut = s.Position + Vector3.Transform(Vector3.UnitY * 1.6f, c.Rot);
-        if (edits.Use(w, 1, eyeOut, c.Id, outer) is { } no)
-        {
-            legs.Add($"F on the outer hatch from outside refused: {no}");
-            ok = false;
-        }
-        settle(ticks(outer));
-        c.EnsureDoors();
-        ok &= ConstructDoors.SettledOpen(c, outer);
-        ok = ok && WalkTo(ref s, At(depth * 0.6f, 0), "into the chamber, the hatch open");
-        // 2. The inner door, shut, keeps them in the chamber; then F on the outer hatch behind (shut) and the inner door ahead (open).
-        if (ok)
-        {
-            var inChamber = s;
-            if (WalkTo(ref s, At(depth + 0.5f, 0), "on with the inner door shut"))
-            {
-                legs.Add("the shut inner door let them through");
-                ok = false;
-            }
-            s = inChamber;
-        }
-        var eye = s.Position + Vector3.Transform(Vector3.UnitY * 1.6f, c.Rot);
-        if (ok && edits.Use(w, 1, eye, c.Id, outer) is { } no2)
-            legs.Add($"F on the outer hatch from inside refused: {no2}");
-        if (ok && edits.Use(w, 1, eye, c.Id, inner) is { } no3)
-        {
-            legs.Add($"F on the inner door refused: {no3}");
-            ok = false;
-        }
-        settle(Math.Max(ticks(outer), ticks(inner)));
-        c.EnsureDoors();
-        if (ok && (ConstructDoors.SettledOpen(c, outer) || !ConstructDoors.SettledOpen(c, inner)))
-        {
-            legs.Add($"the doors didn't cycle: outer {(ConstructDoors.SettledOpen(c, outer) ? "open" : "shut")}, inner {(ConstructDoors.SettledOpen(c, inner) ? "open" : "shut")}");
-            ok = false;
-        }
-        // 3. On through the inner door to the room's doorway the socket opens into (the nearest of the design's doorways to the airlock).
-        if (ok)
-        {
-            var check = DesignScene.Run(d);
-            var way = check.Doors.Where(q => !DesignScene.IsHole(q)).OrderBy(q => Vector3.Distance(V(q), o)).FirstOrDefault();
-            if (way == null)
-                legs.Add("no doorway into a room near it");
-            else
-            {
-                var room = V(way) + shift;
-                ok = WalkTo(ref s, At(depth + 0.4f, 0) with { Y = room.Y }, "through the inner door") && WalkTo(ref s, room - Vector3.Normalize(y with { Y = 0 }) * 0.6f, "into the room");
-            }
-        }
-        Console.WriteLine($"[design] airlock from outside: {(ok ? "through" : "not through")}");
-        foreach (var l in legs)
-            Console.WriteLine($"[design]   {l}");
-        if (!ok)
-            r.Fail("airlock: a person from outside couldn't get through it to the room");
-        // Both shut again, for what follows.
-        foreach (var part in new[] { outer, inner })
-            if (ConstructDoors.TargetOpen(c, part))
-                ConstructDoors.Command(w, c, c.DoorOf(part), false);
-        settle(Math.Max(ticks(outer), ticks(inner)));
     }
 
     /// <summary>A joined client's copy (the host's Full of the body, then each door's move as the wire sends it) agreeing with the host on every door.</summary>

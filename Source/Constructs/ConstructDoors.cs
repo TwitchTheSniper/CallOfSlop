@@ -346,6 +346,27 @@ public static class ConstructDoors
         }
     }
 
+    /// <summary>
+    /// Ticks a door's F takes to settle everything it sets moving: its own, or for a door of a staged group (<see cref="CDoorDef.Seq"/>)
+    /// its group's longest first stage and then its longest second (a boarding hatch's lid, then its ladder: checks wait this long).
+    /// </summary>
+    public static int GroupTicks(Construct c, int part)
+    {
+        var dd = c.Parts[part].D.Door!;
+        if (dd.Seq == 0)
+            return dd.Ticks;
+        int leads = 0, follows = 0;
+        for (var k = 0; k < c.DoorCount; k++)
+            if (c.Parts[c.Doors[k].Part].D.Door! is { } od && od.Seq == dd.Seq)
+            {
+                if (od.SeqStage == SeqLeads)
+                    leads = Math.Max(leads, od.Ticks);
+                else
+                    follows = Math.Max(follows, od.Ticks);
+            }
+        return leads + follows;
+    }
+
     /// <summary>Whether every door of stage <paramref name="stage"/> of group <paramref name="seq"/> rests open (or shut), not moving.</summary>
     private static bool StageRests(Construct c, ushort seq, byte stage, bool open)
     {

@@ -2,7 +2,7 @@
 
 Karl (2026-11-23): an in-game ship designer, based on the Zero Day: choose hull segments and shape the hull as you like (the hull
 pieces), put external pieces on it, set docking points, lay out the interior (decks, rooms, cargo holds), connect sockets such
-as airlocks, docks and cargo hatches to the rooms inside, look round it in 3D, drag parts on and off, and cut open where two
+as docks and cargo hatches to the rooms inside, look round it in 3D, drag parts on and off, and cut open where two
 hull bodies meet (an option a body). First as an Artifact in C#, then in the game.
 
 **State.** Phase 1: the designer's model in C# (`Source/ShipDesigner`, built into the game and, unchanged, into the web page)
@@ -20,7 +20,7 @@ centreline), y up, z along the ship with the bow at the smallest z, metres.
 - `HullBody`: a lofted, faceted body between stations, each a half profile of 3 to 8 points keel first (the Zero Day's `At`,
   `SkinHalf` and `MustFit`, and a Hull Section's profile). Every station of a body has the same point count. Offset, Mirror
   (a pair at -x) and Cut (where it meets another body, the skin inside the other is left out).
-- `PieceKinds`: drives (on a body's end face), RCS, guns, systems, and the sockets: Airlock, Docking collar, Cargo hatch and
+- `PieceKinds`: drives (on a body's end face), RCS, guns, systems, and the sockets (the Airlock was taken out for rework, Karl 2026-11-27; old designs load without it): Docking collar, Cargo hatch and
   Boarding hatch (the boarding shaft kit's belly hatch). Each draws itself in its own frame (X across, Y out of the skin, Z
   towards the bow). A piece sits at a station position and a place round the profile, or on an end face.
 - `WrapWindow` (`DesignWrapWindows.cs`, Karl 2026-11-27): cockpit glass that wraps round a body from a ring on its skin

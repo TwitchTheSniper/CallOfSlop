@@ -327,7 +327,14 @@ public static class ConstructRackPack
         Vector3 b0 = Lo(rd, d), s = Hi(rd, d) - b0; // (a piece lying turned: its turned box, Turned)
         var used = sl.Lanes * s.X + (sl.Lanes - 1) * GapX;
         var x = lo.X + (hi.X - lo.X - used) * 0.5f + lane * (s.X + GapX);
-        return new Vector3(x, lo.Y + layer * (s.Y + GapY), lo.Z + sl.Z0Mm * 0.001f) - b0;
+        var z = lo.Z + sl.Z0Mm * 0.001f;
+        // (a Pad Tile pad fed from its -z end or -x side is drawn mirrored, so it fills from the far side and a piece coming in passes
+        // none parked: ConstructPads.FeedFlip; the packing, the store and the wire are the same either way)
+        if (rd.RackFlipX)
+            x = lo.X + hi.X - x - s.X;
+        if (rd.RackFlipZ)
+            z = lo.Z + hi.Z - z - s.Z;
+        return new Vector3(x, lo.Y + layer * (s.Y + GapY), z) - b0;
     }
 
     /// <summary>A stack as one box (rack frame): its pieces from the bed to the top one.</summary>
@@ -354,8 +361,10 @@ public static class ConstructRackPack
                 first = l;
             last = l;
         }
-        min = Origin(rd, sl, d, Math.Max(first, 0), 0) + Lo(rd, d);
-        max = Origin(rd, sl, d, Math.Max(last, 0), Math.Max(top - 1, 0)) + Hi(rd, d);
+        Vector3 a = Origin(rd, sl, d, Math.Max(first, 0), 0) + Lo(rd, d), b = Origin(rd, sl, d, Math.Max(last, 0), Math.Max(top - 1, 0)) + Hi(rd, d);
+        var e = Hi(rd, d) - Lo(rd, d); // (a mirrored pad's first stack is on its +x side: the box spans both ends' stacks)
+        min = Vector3.Min(a, b - e);
+        max = Vector3.Max(b, a + e);
     }
 
     /// <summary>

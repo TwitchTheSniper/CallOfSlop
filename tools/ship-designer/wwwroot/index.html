@@ -1283,8 +1283,6 @@ function paletteDrop() {
     flush();
     if (p.id) take(api.Scene()); // now cut its opening
     if (p.id) {
-      // An airlock comes with its chamber: an Airlock room behind it, in the same undo step.
-      if (CAT.pieces.find(k => k.name === p.kind)?.socket === "airlock") { const n = S.rooms.length, a = cmd({ op: "autoRoom", id: p.id }, true); if (!a.error) toast(S.rooms.length > n ? "Airlock placed, with an airlock room behind it." : "Airlock placed: it opens into the room already there.", true); }
       select("piece", p.id);
     }
   }
@@ -1385,17 +1383,9 @@ function cutControls(o, send, kind, glass) {
       el("input", { type: "checkbox", ...(o.frameIn !== false ? { checked: "" } : {}), onchange: e => send({ frameIn: e.target.checked }) }), "Inside frame")));
   return out;
 }
-// An airlock's chamber and doors, and an ammo socket's gun (Karl, 2026-11-26; Source/ShipDesigner/DesignDocking.cs).
+// An ammo socket's gun (Karl, 2026-11-26; Source/ShipDesigner/DesignDocking.cs).
 function dockControls(p) {
   const send = o => cmd({ op: "setPiece", id: p.id, ...o }), D = CAT.defaults.piece;
-  if (p.socket === "airlock") {
-    const s = (label, key) => { let f = true; return slider(label, Math.round(p[key] * 100), key === "airD" ? 60 : key === "airH" ? 120 : 60, 600, 5, " cm",
-      v => { cmd({ op: "setPiece", id: p.id, [key]: v / 100, preview: true, light: true }, !f); f = false; }, v => send({ [key]: v / 100 }), Math.round(D[key] * 100), () => send({ [key]: D[key] })); };
-    const type = el("div", { class: "row" }, el("span", {}, "Doors"), ...["sliding", "hinged", "iris"].map(t => el("button", { class: p.door === t ? "on" : "", onclick: () => send({ door: t }) }, t[0].toUpperCase() + t.slice(1))));
-    return [el("h3", {}, "Chamber"), s("Width", "airW"), s("Height", "airH"), s("Depth", "airD"), s("Door width", "doorW"), type,
-      el("div", { class: "row" }, resetAll("Chamber and doors back to their defaults", () => send(dfltOf("piece", ["airW", "airH", "airD", "doorW", "door"])))),
-      el("p", { class: "hint" }, "An outer hatch on the skin, the chamber, and an inner door into the room. Width runs along the hull, height across the hatch.")];
-  }
   if ((CAT.feeders || ["Ammo socket"]).includes(p.kind)) {
     const guns = S.pieces.filter(q => q.id !== p.id && !(CAT.feeders || ["Ammo socket"]).includes(q.kind) && CAT.pieces.find(k => k.name === q.kind)?.group === "Weapons");
     const sel = el("select", { "aria-label": "Gun it feeds", onchange: e => send({ feed: +e.target.value }) }, el("option", { value: "0" }, "Nearest weapon"),
@@ -1708,7 +1698,7 @@ function leftPanel() {
     if (h) L.append(stationPanel(h));
   } else if (mode === "pieces") {
     const groups = [...new Set(CAT.pieces.map(p => p.group))].sort((a, b) => (b === "Sockets") - (a === "Sockets"));
-    L.append(el("div", { class: "sec" }, el("h2", {}, "Pieces"), el("p", { class: "hint" }, "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside; an airlock brings its own airlock room."),
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Pieces"), el("p", { class: "hint" }, "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside."),
       el("label", { class: "row" }, el("input", { type: "checkbox", id: "pmirror", checked: "" }), "Mirror on its own body"),
       el("label", { class: "row" }, el("input", { type: "checkbox", id: "ppair", checked: "" }), "On a mirrored pair of bodies, put it on both"),
       slider("Size to place", Math.round(pieceSize * 100), 25, 400, 5, "%", v => { pieceSize = v / 100; }), slider("Recess to place", Math.round(pieceRecess * 100), 0, 200, 5, " cm", v => { pieceRecess = v / 100; })));
@@ -1719,7 +1709,7 @@ function leftPanel() {
         b.addEventListener("pointerdown", ev => paletteStart(ev, k.name));
         pal.append(b);
       }
-      L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Airlocks, docks and hatches" : g === "Docking" ? "Docking clamps and locks" : g === "Boarding" ? "Boarding" : g), pal));
+      L.append(el("div", { class: "sec" }, el("h2", {}, g === "Sockets" ? "Windows, docks and hatches" : g === "Docking" ? "Docking clamps and locks" : g === "Boarding" ? "Boarding" : g), pal));
     }
   } else {
     if (roomView) {
