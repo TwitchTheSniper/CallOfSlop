@@ -230,6 +230,17 @@ public sealed class DesignEditor
                 d.Hulls.Add(h);
                 return "";
             }
+            case "pasteHullStyle":
+            {
+                // Another body's settings onto this one (Karl, 2026-11-27): profile, cladding, beading, paint and the rest, not its place,
+                // name or mirroring.
+                var h = H();
+                var from = d.Hull(I(o, "from")) ?? throw new InvalidOperationException("no such hull to copy from");
+                if (from == h)
+                    return "";
+                h.PasteStyle(from);
+                return "";
+            }
             case "delHull":
             {
                 if (d.Hulls.Count == 1)

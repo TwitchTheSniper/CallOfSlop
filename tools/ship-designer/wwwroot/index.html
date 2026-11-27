@@ -1587,6 +1587,7 @@ function placeJoin() {
   conn.joinId = a.id; conn.step = "set";
   conn.hullId = conn.newBody ? S.hulls[S.hulls.length - 1].id : 0;
 }
+let styleFrom = 0; // the body Copy settings remembered
 let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
 function setMode(m) {
@@ -1808,6 +1809,8 @@ function stationPanel(h) {
   box.append(el("div", { class: "row" }, el("span", { class: "hint" }, one ? "This station:" : "Every station:"), pts));
   box.append(el("div", { class: "row" },
     el("button", { onclick: () => cmd({ op: "copyHull", hull: h.id }) }, "Copy body"),
+    el("button", { title: "Remember this body's profile, cladding, beading and paint", onclick: () => { styleFrom = h.id; toast("Settings copied.", true); panels(); } }, "Copy settings"),
+    el("button", { title: "Take the copied body's settings; this body keeps its place", ...(styleFrom && styleFrom !== h.id && S.hulls.some(b => b.id === styleFrom) ? {} : { disabled: "" }), onclick: () => { const a = cmd({ op: "pasteHullStyle", hull: h.id, from: styleFrom }); if (a.error) toast(a.error); } }, "Paste settings"),
     el("button", { onclick: () => { cmd({ op: "delHull", hull: h.id }); select(null, 0); } }, "Remove body")));
   return box;
 }

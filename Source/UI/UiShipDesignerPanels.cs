@@ -13,6 +13,7 @@ public sealed partial class Ui
 {
     private string _shapePick = "Zero Day beam";
     private string _newBody = "Main hull";
+    private int _styleFrom; // the body whose settings Copy settings remembered
 
     /// <summary>The Connect tool's settings (the page's cOpt): the section, the numbers by their command keys, and three ticks.</summary>
     private sealed class JoinOpt
@@ -696,6 +697,18 @@ public sealed partial class Ui
         }
         if (ImGui.Button("Copy body##sdcopyb"u8))
             Cmd(C("copyHull", ("hull", hid)));
+        Row();
+        if (ImGui.Button("Copy settings##sdcopys"u8))
+            _styleFrom = hid;
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip("Remember this body's profile, cladding, beading and paint, to paste onto another");
+        Row();
+        ImGui.BeginDisabled(_styleFrom == 0 || _styleFrom == hid);
+        if (ImGui.Button("Paste settings##sdpastes"u8))
+            Cmd(C("pasteHullStyle", ("hull", hid), ("from", _styleFrom)));
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGuiSafe.SetTooltip(_styleFrom == 0 ? "Copy another body's settings first" : "Take the copied body's settings; this body keeps its place");
         Row();
         if (ImGui.Button("Remove body##sddelb"u8))
         {

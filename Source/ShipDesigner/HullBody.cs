@@ -356,6 +356,16 @@ public sealed class HullBody
         Accent = Accent, Pattern = Pattern, AccentAmount = AccentAmount, Stripe = Stripe, Wear = Wear, PaintSeed = PaintSeed,
     };
 
+    /// <summary>Takes every setting of <paramref name="o"/> but its id, name, place and mirroring (the nacelles' Copy/Paste settings).</summary>
+    public void PasteStyle(HullBody o)
+    {
+        var c = o.Clone(Id);
+        c.Name = Name; c.X = X; c.Y = Y; c.Z = Z; c.Mirror = Mirror;
+        foreach (var f in typeof(HullBody).GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
+            f.SetValue(this, f.GetValue(c));
+        Tidy();
+    }
+
     /// <summary>
     /// Keeps the shape buildable: stations in order and apart, each profile's heights rising from the keel (a point at least 5 cm over the last),
     /// half widths from 5 cm to 16 m (a Hull Section's reach, HullLoft.SectionMaxHalfCm).
