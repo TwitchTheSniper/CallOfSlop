@@ -21,6 +21,7 @@ public static partial class DesignScene
         var g = new DesignMesh();
         if (r.Interior == "Off")
             return (m, g);
+        doors = [.. doors, .. RoomWindows(d, r)]; // (its panels open behind its windows: DesignWindows.cs)
         m.World();
         g.World();
         var ind = r.Interior == "Industrial";

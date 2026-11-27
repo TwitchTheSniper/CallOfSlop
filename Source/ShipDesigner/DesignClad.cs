@@ -795,7 +795,7 @@ public static partial class DesignScene
 
     public static double DoorTop(double[] q) => q.Length > 4 ? q[4] : DoorTopDefault;
 
-    public static bool IsHole(double[] q) => q.Length > 5 && q[5] > 0.5;
+    public static bool IsHole(double[] q) => q.Length > 5 && q[5] > 0.5 && q[5] < 1.5; // (2: a window's opening, DesignWindows.cs)
 
     /// <summary>
     /// The doorways that cut room r: a door whose foot is at its floor (on its plan, near a wall: a wall cell is cut only where it lies
@@ -813,7 +813,8 @@ public static partial class DesignScene
             const double on = 0.05; // (a door's foot is on the room's wall, a hole's inside its plan)
             if (q[0] < a0 - on || q[0] > a1 + on || q[al] < l0 - on || q[al] > l1 + on)
                 continue;
-            if (IsHole(q) ? Math.Abs(q[up] - fl) < DoorLevel || Math.Abs(q[up] - ce) < HoleLevel : Math.Abs(q[up] - fl) < DoorLevel)
+            if (IsWindow(q) ? (d.Stacked ? fl - q[up] : q[up] - fl) is var sill && sill > -DoorLevel && sill < Math.Abs(ce - fl) - 0.1
+                : IsHole(q) ? Math.Abs(q[up] - fl) < DoorLevel || Math.Abs(q[up] - ce) < HoleLevel : Math.Abs(q[up] - fl) < DoorLevel)
                 o.Add(q);
         }
         return o;
@@ -858,6 +859,7 @@ public static partial class DesignScene
         // Only this room's doorways: a door in a wall at its floor, a hole through its floor or its ceiling (walkable rooms, step 4: a door's
         // clearance once cut a notch in both rooms' floors, and in the ceiling and walls of the room under it).
         var doors = DoorsOf(d, r, allDoors);
+        doors.AddRange(RoomWindows(d, r)); // (its walls open behind its windows: DesignWindows.cs)
         var colour = r.WallColour.Length == 7 ? DesignMesh.Hex(r.WallColour) : DesignMesh.Tone(DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour), 0.55);
         var hex = $"#{colour.Item1:x2}{colour.Item2:x2}{colour.Item3:x2}";
         var mates = d.Rooms.Where(o => o != r && r.Group != 0 && o.Group == r.Group).Select(d.Box).ToList();
@@ -900,6 +902,14 @@ public static partial class DesignScene
                     continue;
                 var half = DoorHalf(q);
                 var rise = d.Stacked ? q[up] - p[up] : p[up] - q[up];
+                if (IsWindow(q))
+                {
+                    // A window's opening: from its sill to its head, along its wall, any wall cell up to its reach along the wall's normal.
+                    int wn = (int)q[6], wa = wn == ax ? al : ax;
+                    if (Math.Abs(p[wn] - q[wn]) < q[7] && Math.Abs(p[wa] - q[wa]) < half && rise > 0 && rise < DoorTop(q))
+                        return false;
+                    continue;
+                }
                 if (Math.Abs(p[ax] - q[ax]) < half && Math.Abs(p[al] - q[al]) < half && (flat || rise > -0.3 && rise < DoorTop(q)))
                     return false;
             }
@@ -918,10 +928,11 @@ public static partial class DesignScene
                 if (k == up)
                 {
                     if (IsHole(q)) { }
+                    else if (IsWindow(q)) { e.Add(q[up]); e.Add(d.Stacked ? q[up] - DoorTop(q) : q[up] + DoorTop(q)); }
                     else if (d.Stacked) { e.Add(q[up] - DoorTop(q)); e.Add(q[up] + 0.3); }
                     else { e.Add(q[up] - 0.3); e.Add(q[up] + DoorTop(q)); }
                 }
-                else { e.Add(q[k] - DoorHalf(q)); e.Add(q[k] + DoorHalf(q)); }
+                else if (!IsWindow(q) || (int)q[6] != k) { e.Add(q[k] - DoorHalf(q)); e.Add(q[k] + DoorHalf(q)); }
             foreach (var x in exts)
                 if (x.Side != "up" && (k == ax) == (x.Side is "z0" or "z1"))
                 {
@@ -1275,7 +1286,16 @@ public static partial class DesignScene
         var up = d.Stacked ? 2 : 1;
         var o = new List<(double, double, double, double)>();
         foreach (var q in doors)
-            if (!IsHole(q) && Math.Abs(plane - q[n]) < 0.55 && Math.Abs(q[up] - fl) < DoorLevel)
+            if (IsWindow(q))
+            {
+                // A window's opening (DesignWindows.cs): from its sill to its head, on the wall it was cut for.
+                if ((int)q[6] == n && Math.Abs(plane - q[n]) < q[7])
+                {
+                    var hs = sg * (q[up] - fl);
+                    o.Add((q[w] - DoorHalf(q), q[w] + DoorHalf(q), hs, hs + DoorTop(q)));
+                }
+            }
+            else if (!IsHole(q) && Math.Abs(plane - q[n]) < 0.55 && Math.Abs(q[up] - fl) < DoorLevel)
             {
                 var hc = sg * (q[up] - fl);
                 o.Add((q[w] - DoorHalf(q), q[w] + DoorHalf(q), hc - 0.3, hc + DoorTop(q)));
@@ -1320,15 +1340,27 @@ public static partial class DesignScene
         {
             var head = o.H1 < top - 0.06;
             double jt = head ? o.H1 - 0.003 : top - 0.004, ft = head ? Math.Min(o.H1 + 0.08, top - 0.004) : top - 0.004;
+            // A window's opening stands on a sill (DesignWindows.cs): its jambs start there, and a sill lining and trim run under it.
+            var sill = o.H0 > bot + 0.1;
+            double jb = sill ? o.H0 + 0.003 : bot + 0.004, fb = sill ? Math.Max(o.H0 - 0.08, bot + 0.004) : bot + 0.004;
             if (o.S0 > w0 + 0.1 && o.S0 < w1)
             {
-                box(o.S0 + 0.003, o.S0 + 0.04, bot + 0.004, jt, back, front - 0.012, lining);
-                box(o.S0 - 0.08, o.S0 + 0.043, bot + 0.004, ft, -0.005, front, trim);
+                box(o.S0 + 0.003, o.S0 + 0.04, jb, jt, back, front - 0.012, lining);
+                box(o.S0 - 0.08, o.S0 + 0.043, fb, ft, -0.005, front, trim);
             }
             if (o.S1 < w1 - 0.1 && o.S1 > w0)
             {
-                box(o.S1 - 0.04, o.S1 - 0.003, bot + 0.004, jt, back, front - 0.012, lining);
-                box(o.S1 - 0.043, o.S1 + 0.08, bot + 0.004, ft, -0.005, front, trim);
+                box(o.S1 - 0.04, o.S1 - 0.003, jb, jt, back, front - 0.012, lining);
+                box(o.S1 - 0.043, o.S1 + 0.08, fb, ft, -0.005, front, trim);
+            }
+            if (sill)
+            {
+                double a = Math.Max(o.S0, w0 + 0.004), b = Math.Min(o.S1, w1 - 0.004);
+                if (b - a > 0.1)
+                {
+                    box(a + 0.041, b - 0.041, o.H0 + 0.003, o.H0 + 0.04, back, front - 0.012, lining);
+                    box(Math.Max(o.S0 - 0.083, w0 + 0.004), Math.Min(o.S1 + 0.083, w1 - 0.004), fb, o.H0 + 0.043, -0.005, front + 0.004, trim);
+                }
             }
             if (head)
             {
@@ -1668,7 +1700,13 @@ public static partial class DesignScene
                 if (e > s0 + 0.002 && e < s1 - 0.002)
                     vs.Add(e);
             var fu = d.Stacked ? dk.Floor - q[up_] : q[up_] - dk.Floor;
-            if (Math.Abs(fu) < 0.05 && !IsHole(q))
+            if (IsWindow(q))
+            {
+                foreach (var e in new[] { fu, fu + DoorTop(q) })
+                    if (e > 0.002 && e < hgt - 0.002)
+                        us.Add(e);
+            }
+            else if (Math.Abs(fu) < 0.05 && !IsHole(q))
                 foreach (var e in new[] { fu + DoorTop(q) })
                     if (e > 0.002 && e < hgt - 0.002)
                         us.Add(e);

@@ -159,7 +159,7 @@ public static class PieceKinds
                 m.Box(-0.25, y, 0.39, 0.25, y + 0.04, 0.42, Gun);
         }),
         // Ways aboard from the ground or a pier (Karl, 2026-11-24). Each opens into any room.
-        new(DesignRamp.Kind, "Sockets", "skin", "ramp", "any room", "A 4 m wide hatch with a ramp stowed in the room's floor: F lowers it out of the hatch and runs its extension out to the ground (set its length).", m =>
+        new(DesignRamp.Kind, "Sockets", "skin", "ramp", "any room", "A 5 m long hatch with a ramp stowed in the room's floor: F lowers it out of the hatch and runs its extension out to the ground (set its length).", m =>
         {
             RampFrame(m, 1.0); // (drawn with its ramp by DesignScene.PieceMesh: DesignRamp)
         }),
@@ -198,10 +198,10 @@ public static class PieceKinds
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>
-    internal static void RampFrame(DesignMesh m, double depth)
+    internal static void RampFrame(DesignMesh m, double depth, double hx = DesignRamp.Hx, double hz = DesignRamp.Hz)
     {
-        // (Karl, 2026-11-27: 60% wider, the hatch 4 m across)
-        const double hx = DesignRamp.Hx, hz = DesignRamp.Hz, f = 0.2;
+        // (Karl, 2026-11-27: each piece's own width and length, hx and hz in its own units: DesignRamp.OpeningOf)
+        const double f = 0.2;
         m.Box(-hx - f, 0, -hz - f, hx + f, 0.12, -hz, Armour); m.Box(-hx - f, 0, hz, hx + f, 0.12, hz + f, Armour);
         m.Box(-hx - f, 0, -hz, -hx, 0.12, hz, Armour); m.Box(hx, 0, -hz, hx + f, 0.12, hz, Armour);
         Well(m, hx, hz, depth);
@@ -235,9 +235,12 @@ public static class PieceKinds
         depth = Math.Max(depth, 0.05);
         Well(m, hx, hz, depth + 0.06);
         double gx = hx - 0.004, gz = hz - 0.004;
-        if (dbl)
-            m.Box(-gx, -0.03, -gz, gx, -0.012, gz, Glow);
-        m.Box(-gx, -depth - 0.018, -gz, gx, -depth, gz, Glow);
+        m.Pane(() =>
+        {
+            if (dbl)
+                m.Box(-gx, -0.03, -gz, gx, -0.012, gz, Glow);
+            m.Box(-gx, -depth - 0.018, -gz, gx, -depth, gz, Glow);
+        });
     }
 
     public static PieceKind? Find(string name) => Array.Find(All, k => k.Name == name);

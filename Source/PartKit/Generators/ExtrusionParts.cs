@@ -119,6 +119,14 @@ public sealed class ExtrusionParts : IPartGenerator
     private const double Face = 0.75; // the die face (z), flush on the Core and every block
     private const double BlockBack = -3.25; // a Die Block is 4 m deep: container slice, heater and ram behind its die tile
     private const int BlockPush = 6000, BlockPower = 900, CoreBin = 32000;
+
+    /// <summary>
+    /// What a chute moves into an Extruder Core a second (a load, ConstructRoutes.ChuteSeconds), as an Ore Bunker's: at the default 10 a
+    /// Materials Bin's chute fed it 10 units a second, while a 1.95 x 2 m hollow box at 0.2 m/s eats more (Zero Day Works II's line
+    /// Extruders stood "needs material" beside full stock, Sean 2026-11-27). A chute takes the larger load of its two ends, and one on
+    /// orders still brings only what the head order needs (ConstructExtruder.ChuteRoom).
+    /// </summary>
+    private const int CoreFeed = 160;
     private const double TableLength = 8, TableDepth = 0.3; // a Run-out Table: 2 m wide, 8 m long, its top level with the machine's foot
 
     private static PyDict BlockKey(string role) => role == "core"
@@ -143,7 +151,7 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Sock("outBed", [0, 0, Face], "+z", kind: "runOut"); // (a Run-out Table: under the die)
         p.Stats(1500, 1500, 6, 8);
         p.Set(("power", BlockPower), ("storage", Kw(
-                ("bulk", Kw(("material", "any"), ("capacity", CoreBin), ("min", Py.L(-0.935, 1.705, -0.685)), ("max", Py.L(0.935, 1.995, -0.055)))),
+                ("bulk", Kw(("material", "any"), ("capacity", CoreBin), ("chuteLoad", CoreFeed), ("min", Py.L(-0.935, 1.705, -0.685)), ("max", Py.L(0.935, 1.995, -0.055)))),
                 ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, CoreDieY, Face)), ("maxSection", Py.L(32, 32)), ("maxLength", 16), ("pushForce", BlockPush),
                     ("growLength", 192), ("blockPush", BlockPush), ("blockPower", BlockPower),
                     ("press", Py.L(5, 3, 1.5, 3, 2)))))), // (on Die Blocks a billet press: fill, load, upset, saw and ram back seconds, the Extruder Lab's)
