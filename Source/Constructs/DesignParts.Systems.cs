@@ -171,7 +171,7 @@ public static partial class DesignParts
         k.Fn("reader", _ => ReaderStart());
         k.Fn("toggle", _ => Bare("Toggle"));
         k.Fn("relay", _ => Bare("OR Gate"));
-        k.Fn("bay", e => Bare(DesignHangar.Bay(e.Name)!.Part), BayFinish);
+        k.Fn("bay", e => Bare(BayPart(e)), BayFinish);
     }
 
     /// <summary>A game part's copy as an element's start: its role, logic, settings and numbers, nothing it draws or draws power for.</summary>
@@ -421,7 +421,7 @@ public static partial class DesignParts
         var (p, e, els) = (a.P, a.E, a.Els);
         FrameBoxes(e, m);
         var leaf = m.Leaves?.Find(l => l.Leaf == 0) ?? default;
-        if (DesignHangar.Bay(p.Kind) is { } b)
+        if (DesignHangar.Of(p) is { } b)
         {
             Bay(a, b);
             if (leaf.To <= leaf.From)
@@ -542,6 +542,17 @@ public static partial class DesignParts
         }
         e.ThrustAt = (lo + hi) * 0.5f;
         e.Exhaust = hi - lo;
+    }
+
+    /// <summary>The game's bay a design's bay is: the smallest Hangar Bay whose dock side holds its volume (Bay keeps it in Exhaust), so a
+    /// bay made bigger in the designer catches and holds bigger craft; past the Large's side, the Large (BayFinish holds it to that).</summary>
+    private static string BayPart(Element e)
+    {
+        var side = MathF.Max(MathF.Abs(e.Exhaust.X), MathF.Max(MathF.Abs(e.Exhaust.Y), MathF.Abs(e.Exhaust.Z)));
+        foreach (var b in DesignHangar.Bays)
+            if (ConstructParts.Find(b.Part) is { } d && ConstructCargo.SideLimit(d) >= side - 0.05f)
+                return b.Part;
+        return DesignHangar.Bays[^1].Part;
     }
 
     private static void BayFinish(Element e, ConstructPartDef d)
