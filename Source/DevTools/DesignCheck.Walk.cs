@@ -185,7 +185,127 @@ public static partial class DesignCheck
         if (problems.Count > 0)
             r.Fail($"the walk: {problems.Count} place(s) a person can't stand in or reach");
         if (!roomsOnly)
+        {
+            Risers(r, w, c);
             DeckGravity(r, d, w, c, shift);
+        }
+    }
+
+    /// <summary>
+    /// The risers (package F): every ladder of the body climbed up from its foot and down from its top as F starts it (LadderCheck.Try, the
+    /// movement step's climb), and every lift ridden: a person stood on its car at the bottom, F on the car each stop up to the top and then
+    /// back to the bottom, the world stepped (the pistons' motors, the rider carried by the car's segment) until the car rests, the rider
+    /// checked standing on it at each stop.
+    /// </summary>
+    private static void Risers(Run r, ConstructWorld w, Construct c)
+    {
+        var problems = new List<string>();
+        int ladders = 0, lifts = 0, climbs = 0, rides = 0;
+        ConstructRide.Bodies = w;
+        string Id(int i) => c.DefOf(i).Name is var n && n.IndexOf(") ", StringComparison.Ordinal) is var k and > 0 ? n[(k + 2)..] : n;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var d = c.DefOf(i);
+            if (d.LadderTop <= 0)
+                continue;
+            ladders++;
+            ConstructRide.SettleWay(c, i); // (its hatches open, as F on it leaves them)
+            foreach (var down in new[] { false, true })
+            {
+                var why = LadderCheck.Try(w, c, i, down);
+                if (why == null)
+                    climbs++;
+                else
+                    problems.Add($"{Id(i)} ({d.LadderTop - d.LadderFoot:0.0} m): can't climb {(down ? "down" : "up")} it: {why}");
+            }
+        }
+        // The lifts: their cars.
+        Span<int> slots = stackalloc int[Construct.MaxJoints];
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            if (!Id(i).EndsWith(".car", StringComparison.Ordinal) || !DesignParts.IsLift(c.DefOf(i)))
+                continue;
+            lifts++;
+            var n = DesignParts.LiftJoints(c, i, slots);
+            if (n == 0)
+            {
+                problems.Add($"{Id(i)}: its rams aren't on the body");
+                continue;
+            }
+            var chain = slots[..n].ToArray();
+            DesignParts.LiftTo(c, chain, 0);
+            for (var t = 0; t < 30 * World.TickRate && chain.Any(j => c.Joints[j].Angle > 0.01f); t++)
+                w.Step(World.Query, World.TickDt);
+            // On its plate, in the middle.
+            c.SolidBox(i, 0, out var centre, out var half);
+            c.SegPose(c.Parts[i].Seg, out var sq, out var st);
+            var plateTop = st + Vector3.Transform(centre + new Vector3(0, half.Y, 0), sq);
+            var s = new MoveState { Position = c.ToWorld(plateTop + new Vector3(0, 0.05f, 0)) };
+            void Tick(ref MoveState m)
+            {
+                World.Simulate(ref m, new InputCmd { Buttons = Buttons.None, SpeedPct = 100, RideBody = m.RideBody });
+                w.BlockPlayer(ref m, World.HeightOf(m.Stance), server: true, who: 1);
+            }
+            for (var t = 0; t < 30; t++)
+                Tick(ref s);
+            var order = Enumerable.Range(1, n).Concat([0]).ToArray();
+            foreach (var stop in order)
+            {
+                var eye = s.Position + new Vector3(0, 1.6f, 0);
+                var said = DesignParts.LiftUse(c, i, eye);
+                if (said is { Length: > 0 })
+                {
+                    problems.Add($"{Id(i)}: F on its car for stop {stop} said \"{said}\"");
+                    break;
+                }
+                if (DesignParts.LiftStop(c, chain) != stop)
+                {
+                    problems.Add($"{Id(i)}: F on its car sent it to stop {DesignParts.LiftStop(c, chain)}, not {stop}");
+                    break;
+                }
+                var ticks = 0;
+                var worst = 0f;
+                for (; ticks < 40 * World.TickRate; ticks++)
+                {
+                    w.Step(World.Query, World.TickDt);
+                    Tick(ref s);
+                    c.SegPose(c.Parts[i].Seg, out sq, out st);
+                    var top = (st + Vector3.Transform(centre + new Vector3(0, half.Y, 0), sq)).Y;
+                    worst = MathF.Max(worst, MathF.Abs(c.ToLocal(s.Position).Y - top));
+                    var resting = true;
+                    for (var k = 0; k < n; k++)
+                        resting &= MathF.Abs(c.Joints[chain[k]].Angle - (k < stop ? c.Joints[chain[k]].Max : 0)) < 0.01f;
+                    if (resting && ticks > 10)
+                        break;
+                }
+                c.SegPose(c.Parts[i].Seg, out sq, out st);
+                var plate = (st + Vector3.Transform(centre + new Vector3(0, half.Y, 0), sq)).Y;
+                var feet = c.ToLocal(s.Position).Y;
+                Console.WriteLine($"[design]   {Id(i)} to stop {stop}: {ticks / (float)World.TickRate:0.0} s, its plate at {plate:0.00} m, the rider's feet {feet - plate:+0.00;-0.00} m off it (at worst {worst:0.00} m), riding segment {s.RideOn}");
+                if (ticks >= 40 * World.TickRate)
+                    problems.Add($"{Id(i)}: the car never came to rest at stop {stop}");
+                else if (MathF.Abs(feet - plate) > 0.1f || worst > 0.3f)
+                    problems.Add($"{Id(i)}: the rider wasn't carried to stop {stop} (feet {feet - plate:+0.00;-0.00} m off its plate, {worst:0.00} m at worst)");
+                else
+                    rides++;
+            }
+        }
+        // The designer draws the same risers: its scene's risers each with their mesh (a lift's car too), and the shafts' ladders.
+        using (var scene = System.Text.Json.JsonDocument.Parse(DesignScene.Json(ShipDesign.FromJson(r.Text))))
+        {
+            var rs = scene.RootElement.GetProperty("risers");
+            int meshed = 0, cars = 0;
+            foreach (var k in rs.EnumerateArray())
+                (meshed, cars) = (meshed + (k.TryGetProperty("mesh", out _) ? 1 : 0), cars + (k.TryGetProperty("car", out _) ? 1 : 0));
+            Console.WriteLine($"[design] the designer's scene: {rs.GetArrayLength()} riser(s), {meshed} drawn as the game's parts ({cars} with a car), {scene.RootElement.GetProperty("shaftLadders").GetArrayLength()} shaft ladder(s)");
+            if (meshed != rs.GetArrayLength())
+                problems.Add($"the designer draws {rs.GetArrayLength() - meshed} riser(s) without the game's mesh");
+        }
+        Console.WriteLine($"[design] risers: {ladders} ladder(s) ({climbs} of {2 * ladders} climbs), {lifts} lift(s) ({rides} stops ridden)");
+        foreach (var p in problems)
+            Console.WriteLine($"[design]   {p}");
+        if (problems.Count > 0)
+            r.Fail($"the risers: {problems.Count} climb(s) or ride(s) that didn't work");
     }
 
     /// <summary>

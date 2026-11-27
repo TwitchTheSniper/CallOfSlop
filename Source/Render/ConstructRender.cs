@@ -293,7 +293,7 @@ public static partial class ConstructRender
                 PostFx.OfferContact(c, body, Vector3.DistanceSquared(pos, cam)); // (its shadow on the ground under it, after the opaque world: PostFx.Contact.cs)
             if (c.HasDesign)
             {
-                n += DrawDesignBody(gfx, c, body); // (a ship design's elements: one merged mesh, near or far: ConstructRenderDesign.cs)
+                n += DrawDesignBody(gfx, c, body, blendTicks ? alpha : 1f); // (a ship design's elements: one merged mesh, near or far: ConstructRenderDesign.cs)
                 if (level == 2)
                 {
                     gfx.Relative = false;

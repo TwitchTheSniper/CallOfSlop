@@ -104,7 +104,7 @@ public static class LadderCheck
     /// One climb from the ladder's foot (or its top), played through to its end in the movement step's climb as a player's F
     /// starts it: null when it ends standing clear (a line names an end moved off its usual spot), else why not.
     /// </summary>
-    private static string? Try(ConstructWorld w, Construct c, int part, bool fromTop)
+    internal static string? Try(ConstructWorld w, Construct c, int part, bool fromTop)
     {
         var p = c.Parts[part];
         var d = p.D;

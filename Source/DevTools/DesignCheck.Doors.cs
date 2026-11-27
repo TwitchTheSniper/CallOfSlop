@@ -10,7 +10,7 @@ namespace CallOfSlop;
 /// and the world step's cost while it settles; a docking hatch is the server's (StepDocks), commanded instead. Then a person from outside
 /// through the airlock: stood in its throat, F on the outer hatch, into the chamber, F on the inner door, on to the room's doorway. Then a joined
 /// client's copy of the body (its Full, then the host's door events through the wire) agreeing on every door. And what one door move costs the
-/// renderer (none: a design's doors are drawn apart from its merged mesh, ConstructRenderDesignDoors.cs; the merge it would have cost is timed).
+/// renderer (none: a design's doors are drawn apart from its merged mesh, ConstructRenderDesign.cs, DesignMover; the merge it would have cost is timed).
 /// </summary>
 public static partial class DesignCheck
 {

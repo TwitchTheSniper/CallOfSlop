@@ -293,7 +293,8 @@ public static unsafe partial class Program
                 _sbLookText = d.Role switch
                 {
                     _ when h.Tool == ConstructTool.Hands && (hit.Body.Loose || ConstructEdits.WreckedAlone(hit.Body)) => HandsLook(hit.Body, d, near, h.Held != ConstructParts.None, carriedIn),
-                    PartRole.Frame or PartRole.Thruster or PartRole.Logic when bare && near && DesignParts.BoardSeat(hit.Body, hit.Part) is var boardSeat and >= 0 => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, hit.Body.DefOf(boardSeat).Helm ? "board: sit at the helm" : "board: sit down")), // (a ship design's solid hull: ConstructEdits.Use)
+                    PartRole.Frame or PartRole.Thruster or PartRole.Logic when bare && near && !DesignParts.KeepsUse(d) && DesignParts.BoardSeat(hit.Body, hit.Part) is var boardSeat and >= 0 => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, hit.Body.DefOf(boardSeat).Helm ? "board: sit at the helm" : "board: sit down")), // (a ship design's solid hull: ConstructEdits.Use)
+                    PartRole.Frame when near && DesignParts.IsLift(d) => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, d.Name.EndsWith(".car", StringComparison.Ordinal) ? "lift: on to the next deck" : "lift: call it to this deck")), // (a ship design's lift: DesignParts.Risers.cs)
                     PartRole.Suspension when ConstructRoutes.HalfShaftLook(hit.Body, hit.Part) is { } halfLook => SandboxKeys.Line(d.Name, halfLook),
                     PartRole.Rotor when ConstructRotor.Of(hit.Body, hit.Part) >= 0 => SandboxKeys.Line(d.Name, ConstructRotor.Note(hit.Body, hit.Part), null, null),
                     PartRole.Frame when d.Surface != null && hit.Body.SurfaceCount > 0 => SandboxKeys.Line(d.Name, ConstructAero.Note(hit.Body, hit.Part), null, null),

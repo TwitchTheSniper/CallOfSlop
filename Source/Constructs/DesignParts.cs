@@ -836,7 +836,7 @@ public static partial class DesignParts
     /// Whether F on a design part works the part itself rather than sitting the player at the ship's helm (<see cref="BoardSeat"/>,
     /// ConstructEdits.Use): a door, a ladder, a hitch, a dock or a lamp is used where it is.
     /// </summary>
-    public static bool KeepsUse(ConstructPartDef d) => d.Door != null || d.LadderTop > 0 || d.Role == PartRole.Hitch || d.DockSide > 0 || d.Lamps.Length > 0 || d.LightRange > 0;
+    public static bool KeepsUse(ConstructPartDef d) => d.Door != null || d.LadderTop > 0 || d.Role == PartRole.Hitch || d.DockSide > 0 || d.Lamps.Length > 0 || d.LightRange > 0 || IsLift(d);
 
     /// <summary>
     /// A design's body built in <paramref name="c"/> (ConstructBuild.BuildSteps, for a blueprint of <see cref="BlueprintOf"/>): its elements'
