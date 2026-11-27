@@ -1441,7 +1441,9 @@ function rampControls(p) {
     slider("Hatch width", Math.round((p.rampW ?? 2.5) * 100), 150, 500, 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, rampW: v / 100 }), dflt("ramp", "rampW", 100)),
     slider("Hatch length", Math.round((p.rampL ?? 5.1) * 100), 200, 800, 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, rampL: v / 100 }), dflt("ramp", "rampL", 100)),
     slider("Extension", Math.round(p.extend * 100), 0, Math.round((p.extendMax ?? 2.5) * 100), 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, extend: v / 100 }), dflt("ramp", "extend", 100)),
-    el("p", { class: "hint" }, "F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.")];
+    slider("Segments", p.rampSegs ?? 1, 1, 5, 1, "", () => {}, v => cmd({ op: "setPiece", id: p.id, rampSegs: v }), dflt("ramp", "rampSegs")),
+    slider("Ramp angle", Math.round(p.rampAngleNow ?? 37), 15, 60, 1, " deg", () => {}, v => cmd({ op: "setPiece", id: p.id, rampAngle: v }), dflt("ramp", "rampAngle")),
+    el("p", { class: "hint" }, (p.rampAngle > 0 ? "" : "Angle: automatic (Default). ") + "F lowers the ramp out of the hatch, then runs its sections out in turn, sharing the extension (shown lowered here); F again brings them in and the ramp up into the floor." + ((p.rampAngleNow ?? 0) > 42 ? " Steeper than 42 deg: too steep to walk up." : ""))];
 }
 // A light bar's length, colour and brightness, and a room bar's mount and height (Karl, 2026-11-27; Source/ShipDesigner/DesignLightBars.cs).
 function barControls(p) {

@@ -129,6 +129,7 @@ public struct CJoint
     public float Angle, Vel; // radians (a piston: metres), per second
     public float Min, Max;
     public bool Open; // the latch: where Interact last sent it (closed 0, open at the far limit)
+    public bool Stalled; // a boarding ramp's joint held short of its end by what its toe met (ConstructPhysics.ToeStop; the server's alone, not on the wire)
     public float PrevAngle; // last tick (drawing blends)
     public JointType Type;
     public float Speed, Strength; // the motor (from the part)

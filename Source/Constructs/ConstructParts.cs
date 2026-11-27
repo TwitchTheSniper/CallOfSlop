@@ -138,6 +138,7 @@ public enum JointChain : byte
     None,
     Leads,
     Follows,
+    Relays, // (a middle stage of a longer chain, a ramp's extension with more after it: it follows its leader and leads its own follower)
 }
 
 /// <summary>What moves a linear rail's carriage (ConstructLinear.cs; "rail" in a joint block).</summary>

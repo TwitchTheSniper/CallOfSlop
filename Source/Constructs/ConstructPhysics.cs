@@ -2263,6 +2263,8 @@ public static partial class ConstructPhysics
         if (jt.Rail && (jt.Ref >= jt.Max && refVel > 0 || jt.Ref <= jt.Min && refVel < 0))
             refVel = 0; // (run by speed and at its stop: it doesn't push the stop at its full force)
         jt.Ref += refVel * dt;
+        if (!jt.Wired && jt.Hinge < c.PartCount)
+            ToeStop(c, ref jt, refVel);
         if (wraps)
             jt.Ref = World.WrapAngle(jt.Ref);
         else
@@ -2292,19 +2294,19 @@ public static partial class ConstructPhysics
             return jt.Open;
         switch (c.DefOf(jt.Hinge).JointChain)
         {
-            case JointChain.Follows when jt.Open:
+            case JointChain.Follows or JointChain.Relays when jt.Open:
             {
                 var lead = jt.ParentSeg - 1; // (segment k moves on joint k - 1)
                 if (lead < 0 || lead >= c.JointCount)
                     return true;
                 ref readonly var l = ref c.Joints[lead];
-                return l.Open && l.Angle >= l.Max - ChainNear;
+                return l.Open && (l.Angle >= l.Max - ChainNear || l.Stalled);
             }
-            case JointChain.Leads when !jt.Open:
+            case JointChain.Leads or JointChain.Relays when !jt.Open:
                 for (var k = 0; k < c.JointCount; k++)
                 {
                     ref readonly var f = ref c.Joints[k];
-                    if (f.ParentSeg >= 1 && c.Joints[f.ParentSeg - 1].Hinge == jt.Hinge && f.Hinge < c.PartCount && c.DefOf(f.Hinge).JointChain == JointChain.Follows && f.Angle > f.Min + ChainNear)
+                    if (f.ParentSeg >= 1 && c.Joints[f.ParentSeg - 1].Hinge == jt.Hinge && f.Hinge < c.PartCount && c.DefOf(f.Hinge).JointChain is JointChain.Follows or JointChain.Relays && f.Angle > f.Min + ChainNear)
                         return true;
                 }
                 return false;
@@ -2312,6 +2314,30 @@ public static partial class ConstructPhysics
                 return jt.Open;
         }
     }
+
+    /// <summary>
+    /// A boarding ramp's joints (any <see cref="JointChain"/> but None, Karl 2026-11-27) stop where their toe meets the ground, the terrain or
+    /// another body: opening, once the segment lags its reference by <see cref="StallLag"/> and barely moves, the reference is held there
+    /// (no full force pushing the ramp through or the ship up) and the joint counts as out for its follower (<see cref="Latched"/>), so the
+    /// next section runs out only as far as is clear. Read only while the joint is driven; a branch and a field, no query.
+    /// </summary>
+    private static void ToeStop(Construct c, ref CJoint jt, float refVel)
+    {
+        if (!jt.Open)
+        {
+            jt.Stalled = false;
+            return;
+        }
+        if (refVel <= 0 || c.DefOf(jt.Hinge).JointChain == JointChain.None)
+            return;
+        if (jt.Ref - jt.Angle > StallLag && jt.Vel < jt.Speed * 0.25f)
+        {
+            jt.Ref = jt.Angle + StallLag;
+            jt.Stalled = true;
+        }
+    }
+
+    private const float StallLag = 0.08f; // how far a ramp's joint lags its reference, held, before it counts as stopped by its toe (radians, or metres)
 
     private const float ChainNear = 0.02f; // how near its end a two-stage pair's joint counts as there (radians, or metres)
 

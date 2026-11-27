@@ -1395,7 +1395,15 @@ public sealed partial class Ui
                     v => Cmd(C("setPiece", ("id", pid), ("rampL", v / 100))), "pcrl", Dflt("ramp", "rampL", 100));
                 Slider("Extension", Math.Round(D(p, "extend") * 100), 0, Math.Round(D(p, "extendMax", ShipDesigner.DesignRamp.MaxExtend) * 100), 5, " cm",
                     v => Cmd(C("setPiece", ("id", pid), ("extend", v / 100))), "pcext", Dflt("ramp", "extend", 100));
-                Hint("F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.");
+                // More sections and its angle (Karl, 2026-11-27): a longer reach from a hatch nearer the ship's end.
+                Slider("Segments", D(p, "rampSegs", 1), ShipDesigner.DesignRamp.MinSegments, ShipDesigner.DesignRamp.MaxSegments, 1, "",
+                    v => Cmd(C("setPiece", ("id", pid), ("rampSegs", v))), "pcrs", Dflt("ramp", "rampSegs"));
+                var deg = D(p, "rampAngleNow", 37);
+                Slider("Ramp angle", Math.Round(deg), ShipDesigner.DesignRamp.MinAngle, ShipDesigner.DesignRamp.MaxAngle, 1, " deg",
+                    v => Cmd(C("setPiece", ("id", pid), ("rampAngle", v))), "pcra", Dflt("ramp", "rampAngle"));
+                Hint((D(p, "rampAngle") > 0 ? "" : "Angle: automatic (Default). ") +
+                    "F lowers the ramp out of the hatch, then runs its sections out in turn, sharing the extension (shown lowered here); F again brings them in and the ramp up into the floor." +
+                    (deg > ShipDesigner.DesignRamp.WalkDeg ? $" Steeper than {ShipDesigner.DesignRamp.WalkDeg:0} deg: too steep to walk up." : ""));
             }
             if (B(p, "bar"))
             {
