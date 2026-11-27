@@ -516,9 +516,10 @@ public static partial class ConstructLifters
         var kind = Array.IndexOf(j.KindDef, (ushort)d.Id, 0, j.KindN);
         if (kind < 0 || !TooBigForHold(sc, t, tray, d) || NeverHolds(b, pad, ps, d) || !ServesPad(world, sc, t, b.Id, pad))
             return 0; // (a pad the piece can never lie on is no taker: the Routers sent line B's 14.1 m wall plate to line A's store pad, 2026-11-24)
-        if (ConstructStation.Early(world, sc, t, d))
-            return 0; // (a rover station's piece no step can fit yet: it waits in storage, not on its pads)
-        return j.KindNeed[kind] - j.KindFit[kind] - PickPadHolds(world, sc, t, (ushort)d.Id) - RidingTo(b, ps.Handle, 0) - HandsTo(world, b.Id, pad, (ushort)d.Id);
+        var coming = RidingTo(b, ps.Handle, 0) + HandsTo(world, b.Id, pad, (ushort)d.Id);
+        if (ConstructStation.Early(world, sc, t, d) && !(b == sc && coming == 0 && ConstructStation.EarlyRoom(world, b, pad, d)))
+            return 0; // (a rover station's piece no step can fit yet: it queues on its pads while they have room, one on its way at a time, else waits in storage)
+        return j.KindNeed[kind] - j.KindFit[kind] - PickPadHolds(world, sc, t, (ushort)d.Id) - coming;
     }
 
     /// <summary>

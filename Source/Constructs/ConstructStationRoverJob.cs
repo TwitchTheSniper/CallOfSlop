@@ -29,7 +29,7 @@ public static partial class ConstructStation
     /// <summary>
     /// Each step's rank (the lab's rule, Sean 2026-11-24): every Keel piece 0; what lies wholly under the lowest deck's top 1; then 2 + its
     /// deck's level x 2, + 1 for a fitting (not frame or panel), a piece's deck being the highest deck top at or under its foot. A step
-    /// goes no earlier than its parent's rank. Also the build's footprint in the bay (the rovers' keep-out ring).
+    /// goes no earlier than its parent's rank, unless it may go on before its parent (an early fit: ConstructStationEarlyFit.cs). Also the build's footprint in the bay (the rovers' keep-out ring).
     /// </summary>
     private static void BuildOrder(Construct c, int t, StationJob j)
     {
@@ -38,6 +38,7 @@ public static partial class ConstructStation
         j.StepRank = new int[n];
         j.RankOrder = new int[n];
         (j.GateRank, j.GateStall, j.BuiltTop) = (0, 0, 0f);
+        j.HeldStale = true;
         if (j.Plan is not { } plan || plan.Centre.Length != n)
         {
             for (var k = 0; k < n; k++)
@@ -91,6 +92,14 @@ public static partial class ConstructStation
                 r = 2 + lvl * 2 + (d.Role is PartRole.Frame or PartRole.Panel ? 0 : 1);
             }
             var on = bp.Steps[k].On;
+            if (plan.Free.Length == n && plan.Free[k])
+            {
+                // (it may go on before its parent, standing on what is under it: its height alone ranks it, Sean 2026-11-27, "build
+                // lowest up": the Zero Day's Keel 3 and 4 hang on the Lower Deck Aft in its blueprint and so waited for that deck)
+                j.StepRank[k] = r;
+                j.RankOrder[k] = k;
+                continue;
+            }
             if (k > 0 && on >= 0 && on < k)
                 r = Math.Max(r, j.StepRank[on]); // (never before its parent: it is welded to it)
             if (k < bp.StepAlso.Count && bp.StepAlso[k] is { } also)
@@ -109,6 +118,7 @@ public static partial class ConstructStation
     private static void Fitted(Construct c, int t, StationJob j, int k, ConstructPartDef? d)
     {
         j.GateStall = 0;
+        HeldOn(j, k); // (what it holds up may go on early)
         if (d != null && j.Plan is { } plan && k < plan.Centre.Length)
             j.BuiltTop = MathF.Max(j.BuiltTop, ArmTarget(c, t, j, k, d).Y);
     }
@@ -443,20 +453,29 @@ public static partial class ConstructStation
     /// <summary>One new trip: the first ready step (build order) whose best rover is idle. True when one began.</summary>
     private static bool Assign(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, ReadOnlySpan<StationDock> docks, int n)
     {
+        var order = j.RankOrder.Length == j.PartOf.Length ? j.RankOrder : null;
+        // First the build order's open ranks; then, when none of those can go now, any later step whose piece is at hand and that has
+        // something under it (Sean, 2026-11-27: the station sat waiting for a deck piece while it could have fitted others): lowest first.
+        return AssignPass(world, c, t, j, tray, docks, n, order, false) || order != null && AssignPass(world, c, t, j, tray, docks, n, order, true);
+    }
+
+    private static bool AssignPass(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, ReadOnlySpan<StationDock> docks, int n, int[]? order, bool ahead)
+    {
         var g = GroundOf(c, t, j);
         var looks = 0;
-        var order = j.RankOrder.Length == j.PartOf.Length ? j.RankOrder : null;
         for (var i = 0; i < j.PartOf.Length && looks < AssignLooks; i++)
         {
             var k = order != null ? order[i] : i;
             if (j.PartOf[k] != -1 || j.StepKind[k] is not (var kind and >= 0) || Array.IndexOf(j.ArmStep, k) >= 0 || !Ready(j, k))
                 continue;
-            if (!Gated(j, k))
+            if (Gated(j, k) == ahead)
             {
-                if (order != null)
-                    break; // (in rank order: every later step waits too)
+                if (order != null && !ahead)
+                    break; // (in rank order: every later step waits for the second pass)
                 continue;
             }
+            if (ahead && j.KindLaid[kind])
+                continue; // (laid fittings keep the order)
             if (ConstructParts.Get(j.KindDef[kind]) is not { } d)
                 continue;
             looks++;
