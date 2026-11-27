@@ -250,16 +250,17 @@ public static partial class ConstructStation
     /// The drawn trip kept on the ticked one: a rover is drawn by this peer's clock from its trip's start (<c>ArmStart</c>), and its piece
     /// goes on after the trip's ticks. When the world ticks slower than the clock (a big works' tick over its budget), the drawn rover got
     /// ahead: it stood over its place with nothing happening, and the piece went on seconds later while it was drawn elsewhere (Sean
-    /// 2026-11-27). The start is eased towards the ticked time each tick, and set straight when it is far out.
+    /// 2026-11-27). The start is eased towards the ticked time each tick, by less than a tick's time a tick when the drawn rover is ahead
+    /// (it slows, almost to a stop, never going back along its way: after a pause, an unpowered spell or a big fit it waits for the ticks)
+    /// and by at most a tick when it is behind. A joined client hears the server only at station events: its start is set again from a
+    /// message more than 0.25 s out (ReadArms), so between messages it can still run ahead on a slow server.
     /// </summary>
     private static void DrawnPace(StationJob j, int a, int el)
     {
         var ticked = el / (double)World.TickRate;
         var ahead = ConstructConveyor.Clock - j.ArmStart[a] - ticked;
-        if (Math.Abs(ahead) > 1.0)
-            j.ArmStart[a] += ahead;
-        else if (Math.Abs(ahead) > 0.02)
-            j.ArmStart[a] += ahead * 0.2;
+        if (Math.Abs(ahead) > 0.02)
+            j.ArmStart[a] += Math.Clamp(ahead * 0.2, -1.0 / World.TickRate, 0.9 / World.TickRate);
     }
 
     /// <summary>A fitted part's top middle against where its rover put it (bay frame): logged when they are apart, since the two must agree.</summary>
@@ -296,6 +297,7 @@ public static partial class ConstructStation
         j.RovIdle[a] = 0;
         j.ArmSeq[a]++;
         (j.ArmSeen[a], j.ArmStart[a]) = (j.ArmSeq[a], ConstructConveyor.Clock); // (the host draws from the same job)
+        j.ArmSetOut[a] = j.ArmStart[a];
         world.StationChanged(c);
     }
 
@@ -700,8 +702,10 @@ public static partial class ConstructStation
             var start = ConstructConveyor.Clock - age / (double)World.TickRate;
             if (j.ArmSeen[a] != seq || j.ArmStart[a] == 0 || Math.Abs(j.ArmStart[a] - start) > 0.25)
             {
+                if (j.ArmSeen[a] != seq || j.ArmStart[a] == 0)
+                    j.ArmSetOut[a] = start; // (the order off a pad: set once a trip)
                 j.ArmSeen[a] = seq;
-                j.ArmStart[a] = start; // (and again when the server's tick has fallen behind this clock: DrawnPace)
+                j.ArmStart[a] = start; // (and again, from any message, when the server's tick has fallen behind this clock: DrawnPace)
             }
             j.ArmSeq[a] = seq;
         }
