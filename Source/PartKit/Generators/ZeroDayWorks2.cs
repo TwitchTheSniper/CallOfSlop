@@ -120,11 +120,11 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
 
         /// <summary>
         /// Big square stations whose two lines (cutter, former, Extruder and what stands behind them) move out from the bay, in the
-        /// layout's x, z: the station's middle and how far, m. 2026-11-26, Sean chose "Move cutter lines 8 m out": the west station's
+        /// layout's x, z: the station's middle and how far, m. 2026-11-26, Sean chose "Move cutter lines 8 m out": each big station's
         /// Lower Deck Aft sheet (9.5 x 10.2 m, riding lengthwise) waited on its cutter's bed, as the lay-by pads were 4 m deep; the lines
         /// either side of that bay move 8 m away from it, and the freed cells become more lay-by pad, 12 m deep (<see cref="DeepPads"/>).
         /// </summary>
-        private static readonly (float X, float Z, float Out)[] LinesOut = [(-82, 0, 8)];
+        private static readonly (float X, float Z, float Out)[] LinesOut = [(-82, 0, 8), (82, 0, 8)];
 
         /// <summary>An item past a <see cref="LinesOut"/> station's lay-by, within its bay's width: moved away from the bay.</summary>
         private static JsonElement MovedOut(JsonElement e)
