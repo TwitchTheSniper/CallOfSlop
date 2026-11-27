@@ -1976,6 +1976,8 @@ public sealed partial class Game : IDisposable
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
             AddTracer(TracerStart(shooter, def, barrels[i], now), ends[i], def, now, flags, shooter, _shotPenetrated ? origin : null); // from the muzzle that fired (GameMuzzle.cs)
+        if (buildHit)
+            ShotCracks(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(ends), origin, def, now); // a design's window where a round ended (DesignGlassCracks.cs)
         CrowdShotFx(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(ends), origin, flags); // blood in the far crowd (ZombiesCrowdFx.cs)
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count).U8(kinds); // protocol 234: what kind of thing was hit
@@ -2564,6 +2566,8 @@ public sealed partial class Game : IDisposable
                 {
                     OnOwnShotConfirmed(flags, now, kinds);
                     CrowdOwnShotConfirmed(flags); // a kill in the far crowd sinks the zombie we saw hit (ZombiesCrowdFx.cs)
+                    if ((flags & 1) != 0 && Local is { } self)
+                        ShotCracks(ReadShotEnds(ref r, n, flags, out _), self.RenderEye, def, now); // (the cracks are where the host's rounds ended)
                     break; // we already drew and heard our own shot
                 }
                 if (!Players.TryGetValue(shooter, out var sp))
@@ -2574,6 +2578,8 @@ public sealed partial class Game : IDisposable
                 var shotBarrels = ReadShotBarrels(ref r, shotEnds.Length, _shotBarrelsIn ??= new byte[256]); // which barrel fired each (GameMuzzle.cs)
                 for (var i = 0; i < shotEnds.Length; i++)
                     AddTracer(TracerStart(sp, def, shotBarrels[i], now), shotEnds[i], def, now, flags, sp, through);
+                if ((flags & 1) != 0)
+                    ShotCracks(shotEnds, sp.RenderEye, def, now);
                 CrowdShotFx(shotEnds, sp.RenderEye, flags); // blood in the far crowd (ZombiesCrowdFx.cs)
                 break;
             }

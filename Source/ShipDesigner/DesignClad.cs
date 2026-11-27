@@ -1214,6 +1214,7 @@ public static partial class DesignScene
                 double[] At(double s, double hh, double dd) { var v = new double[3]; v[n] = f + inw * dd; v[w] = s; v[up] = Up(hh); return v; }
                 // The doors through this wall, as openings in its (s, h) (Karl, 2026-11-25: cladding runs right up to them).
                 var holes = DoorHoles(d, doors, n, f - inw * t / 2, w, fl, sg);
+                var framed = DoorHoles(d, doors, n, f - inw * t / 2, w, fl, sg, framedOnly: true);
                 // A box of relief, cut round the doors' openings: the pieces left beside, under and over each.
                 bool Rel(double s0, double s1, double h0, double h1, double dd, string col)
                 {
@@ -1431,7 +1432,7 @@ public static partial class DesignScene
                     }
                 }
                 // A frame lining each opening's sides and head through the wall, its architrave over the cladding's cut ends.
-                DoorFrames(holes, w0, w1, bot, cBot, -t + 0.004, 0.052, (s0, s1, h0, h1, d0, d1, c) =>
+                DoorFrames(framed, w0, w1, bot, cBot, -t + 0.004, 0.052, (s0, s1, h0, h1, d0, d1, c) =>
                 {
                     if (budget < 12) return;
                     var c0 = At(s0, h0, d0);
@@ -1494,12 +1495,14 @@ public static partial class DesignScene
 
     /// <summary>The doors through a wall whose middle plane is at plane on axis n, as openings in its (s along axis w, h up from the floor
     /// at fl, sg the way up): the shell's door clearance, 0.55 m either side and 0.3 m under to 2.1 m over the door's point.</summary>
-    internal static List<(double S0, double S1, double H0, double H1)> DoorHoles(ShipDesign d, List<double[]> doors, int n, double plane, int w, double fl, double sg)
+    internal static List<(double S0, double S1, double H0, double H1)> DoorHoles(ShipDesign d, List<double[]> doors, int n, double plane, int w, double fl, double sg, bool framedOnly = false)
     {
         var up = d.Stacked ? 2 : 1;
         var o = new List<(double, double, double, double)>();
         foreach (var q in doors)
-            if (IsWindow(q))
+            if (framedOnly && !IsFramed(q))
+                continue; // (a window without its inside frame: cut, but framed by nothing)
+            else if (IsWindow(q))
             {
                 // A window's opening (DesignWindows.cs): from its sill to its head, on the wall it was cut for.
                 if ((int)q[6] == n && Math.Abs(plane - q[n]) < q[7])

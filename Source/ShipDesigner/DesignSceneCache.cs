@@ -123,7 +123,7 @@ public static partial class DesignScene
     }
 
     private static string WindowKey(HullWindow w) =>
-        $"{w.Id}:{w.Room}:{w.Side}:{w.T:R}:{w.W:R}:{w.H:R}:{w.Sill:R}:{w.Shape}:{w.Hole:R}:{w.Gap:R}:{w.Depth:R}:{w.Double}";
+        $"{w.Id}:{w.Room}:{w.Side}:{w.T:R}:{w.W:R}:{w.H:R}:{w.Sill:R}:{w.Shape}:{w.Hole:R}:{w.Gap:R}:{w.Depth:R}:{w.Double}:{w.FrameOut}:{w.FrameIn}";
 
     // Each window's Lay answers (glass and boarding) under the key of all they come from: the window, every body's shape and every room's
     // plan. A body's cut and the window's own JSON both ask; a room's interior or a body's cladding changing leaves them be.
@@ -167,10 +167,11 @@ public static partial class DesignScene
         }
         if (lo > hi)
             return (null, "");
-        var key = new StringBuilder(hw.Shape).Append(',').Append(hw.Gap.ToString("R")).Append(',').Append(hw.Hole.ToString("R"));
-        var ex = (hw.Hole - 1) * Math.Min(q.Hx, q.Hz);
+        var key = new StringBuilder(hw.Shape).Append(',').Append(hw.Gap.ToString("R")).Append(',').Append(hw.Hole.ToString("R")).Append(',').Append(hw.FrameOut);
+        // Without its outside frame (no boarding to cover the cut's edge) the skin is cut to the glass and the cladding runs up to it.
+        var ex = hw.FrameOut ? (hw.Hole - 1) * Math.Min(q.Hx, q.Hz) : 0;
         foreach (var v in q.O.Concat(q.U).Concat(q.N).Concat(q.V).Append(q.Hx).Append(q.Hz).Append(lo).Append(hi))
             key.Append(',').Append(v.ToString("R"));
-        return (new Cutout(q.O, q.U, q.N, q.V, hw.Shape == "Rect" ? Rect(q.Hx + ex - 0.01, q.Hz + ex - 0.01) : HullWindow.Rim(hw.Shape, q.Hx + ex - 0.01, q.Hz + ex - 0.01), 0, (lo - 0.12, hi + 0.08)) { GapSet = hw.Gap, Band = 0.1 }, key.ToString());
+        return (new Cutout(q.O, q.U, q.N, q.V, hw.Shape == "Rect" ? Rect(q.Hx + ex - 0.01, q.Hz + ex - 0.01) : HullWindow.Rim(hw.Shape, q.Hx + ex - 0.01, q.Hz + ex - 0.01), 0, (lo - 0.12, hi + 0.08)) { GapSet = hw.FrameOut || hw.Gap >= 0 ? hw.Gap : 0, Band = hw.FrameOut ? 0.1 : 0 }, key.ToString());
     }
 }

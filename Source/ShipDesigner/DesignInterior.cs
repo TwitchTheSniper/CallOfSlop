@@ -418,6 +418,8 @@ public static partial class DesignScene
             // (a side out to the hull is clad on the skin's line, but its doors are cut where its box's wall is: plane)
             var holes = DoorHoles(d, own, across ? ax : al, plane ?? at - inward * wt / 2, across ? al : ax, floor, sg);
             holes.AddRange(extra);
+            var framed = DoorHoles(d, own, across ? ax : al, plane ?? at - inward * wt / 2, across ? al : ax, floor, sg, framedOnly: true);
+            framed.AddRange(extra);
             bool WBox1(DesignMesh into, double sa, double sb, double o0, double o1, double u0, double u1, string col)
             {
                 var probe = Pt((sa + sb) / 2, -0.3, (u0 + u1) / 2);
@@ -441,7 +443,7 @@ public static partial class DesignScene
                 return (Math.Max(sa, c0), Math.Min(sb, c1));
             }
             // Its doors' frames: a lining through the shell and an architrave over the panels' cut ends.
-            DoorFrames(holes, s0, s1, FL - 0.009, H, -wt + 0.004, P + 0.04, (a, b2, c, e, o0, o1, col) => WBox1(m, a, b2, o0, o1, c, e, col), pFrame, tHex);
+            DoorFrames(framed, s0, s1, FL - 0.009, H, -wt + 0.004, P + 0.04, (a, b2, c, e, o0, o1, col) => WBox1(m, a, b2, o0, o1, c, e, col), pFrame, tHex);
             // Columns: between the ribs on a side wall, about a metre on an end wall.
             var cuts = new List<double> { s0 };
             if (across)

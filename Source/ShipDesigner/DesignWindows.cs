@@ -18,6 +18,12 @@ public static partial class DesignScene
 
     public static bool IsWindow(double[] q) => q.Length > 7 && q[5] > 1.5;
 
+    /// <summary>A window's opening mark when its inside frame is off (<see cref="HullWindow.FrameIn"/>): still a window (<see cref="IsWindow"/>), framed by nothing.</summary>
+    public const double FramelessMark = 3;
+
+    /// <summary>Is opening <paramref name="q"/> framed (a door, or a window with its inside frame)?</summary>
+    public static bool IsFramed(double[] q) => !(IsWindow(q) && q[5] > 2.5);
+
     /// <summary>How far round a window's glass its wall's opening reaches.</summary>
     private const double WindowMargin = 0.05;
 
@@ -42,7 +48,10 @@ public static partial class DesignScene
             var reach = 0.0;
             for (var k = 0; k + 2 < lay.Pts.Length; k += 3)
                 reach = Math.Max(reach, Math.Abs((lay.Pts[k] - f.O[0]) * f.N[0] + (lay.Pts[k + 1] - f.O[1]) * f.N[1] + (lay.Pts[k + 2] - f.O[2]) * f.N[2]));
-            o.Add(WindowAt(foot, hx, 2 * hz, n, reach + 0.3));
+            var way = WindowAt(foot, hx, 2 * hz, n, reach + 0.3);
+            if (!w.FrameIn)
+                way[5] = FramelessMark; // (no lining or architrave round its opening: the cladding runs up to it)
+            o.Add(way);
         }
         foreach (var p in d.Pieces)
         {
@@ -262,7 +271,8 @@ public static partial class DesignScene
             if (sleeve && ToWall(a) is var wa && ToWall(b) is var wb && (wa > depth + 0.03 || wb > depth + 0.03))
                 m.Quad(T(P(a, depth + 0.02)), T(P(b, depth + 0.02)), T(P(b, Math.Max(wb, depth + 0.02))), T(P(a, Math.Max(wa, depth + 0.02))), reveal, false);
         }
-        Boarding(d, w, m, pts, nu, nv, shaped);
+        if (w.FrameOut)
+            Boarding(d, w, m, pts, nu, nv, shaped);
         return m;
 
         double ToWall(int k) => (pts[3 * k] - f.O[0]) * f.N[0] + (pts[3 * k + 1] - f.O[1]) * f.N[1] + (pts[3 * k + 2] - f.O[2]) * f.N[2];
