@@ -426,6 +426,8 @@ public static partial class DesignParts
         if (DesignHangar.Of(p) is { } b)
         {
             Bay(a, b);
+            if (DesignHangar.LiftsOut(p))
+                LiftOutFloor(a, b, m);
             if (p.BayDoorType == "Iris")
             {
                 IrisBlades(a, m);
@@ -603,6 +605,58 @@ public static partial class DesignParts
             Weld(els, els.Count - 2, els.Count - 1);
             (prev, prevAt) = (ext, els.Count - 1);
         }
+    }
+
+    /// <summary>
+    /// A bay's lift-out floor (DesignHangar.FloorBox, leaf FloorLeaf): the platform the craft stands on, on a piston that pushes it out of
+    /// the mouth by the bay's depth, worked by F as a lift's car. The bay's dock rides it (a hidden element on the platform's segment
+    /// takes the bay's work from the piece), so a craft the bay holds goes out and in with the floor, and let go, leaves from where it is.
+    /// </summary>
+    private static void LiftOutFloor(in PieceAt a, DesignHangar.BaySize b, DesignMesh m)
+    {
+        var (p, e, els) = (a.P, a.E, a.Els);
+        var leaf = m.Leaves?.Find(l => l.Leaf == DesignHangar.FloorLeaf) ?? default;
+        if (leaf.To <= leaf.From || DesignHangar.FloorBox(p, b, a.W) is not { } fb)
+        {
+            Console.WriteLine($"[design] the {p.Kind} {e.Id}'s lift-out floor isn't made: its door is too small for a platform (the floor stays fixed)");
+            return;
+        }
+        var joints = 0;
+        foreach (var x in els)
+            if (x.Joint != null)
+                joints++;
+        if (joints + 1 > Construct.MaxJoints)
+        {
+            Console.WriteLine($"[design] the {p.Kind} {e.Id}'s floor doesn't lift out: the body's {Construct.MaxJoints} joints are all used (fixed)");
+            return;
+        }
+        var id = "lift" + e.Id.Replace('.', '_') + "f";
+        var car = Leaf($"{id}.car", p.Kind + " floor", m, leaf.From, leaf.To, a.X, a.Y, a.Z);
+        (car.Fn, car.Door, car.Kind, car.Seg) = ("", null, "lift", (byte)(joints + 1));
+        var area = (float)((fb.Hi[0] - fb.Lo[0]) * (fb.Hi[1] - fb.Lo[1]) * (fb.Hi[2] - fb.Lo[2]) / 0.35);
+        car.Kg = MathF.Max(car.Kg, area * DeckKgPerM2);
+        var travel = (float)fb.Travel;
+        var at = a.O + Vector3.Normalize(a.Y) * (float)((fb.Lo[1] + fb.Hi[1]) / 2);
+        var j = new JointSpec { Type = JointType.Piston, Axis = NearestDir(a.Y), Min = 0, Max = travel, Speed = MathF.Max(LiftSpeed, travel / 12f), Strength = LiftStrength * MathF.Max(1f, area / 25f), Pivot = at };
+        var ram = new Element
+        {
+            Id = $"{id}.j0", Kind = "lift", Name = "Hangar floor ram", Kg = 20f, Joint = j, NoCollider = true,
+            BoxMin = at - new Vector3(0.05f), BoxMax = at + new Vector3(0.05f),
+        };
+        els.Add(ram);
+        Weld(els, a.At, els.Count - 1);
+        els.Add(car);
+        Weld(els, els.Count - 2, els.Count - 1);
+        var mid = (car.BoxMin + car.BoxMax) * 0.5f;
+        // The bay's dock, moved off the piece onto the platform: a hidden element there, with the piece's catch box and facing.
+        var dock = new Element
+        {
+            Id = $"{e.Id}.bay", Kind = "lift", Name = e.Name, Fn = "bay", Rot = e.Rot, Seg = car.Seg, Kg = 5f, NoCollider = true,
+            ThrustAt = e.ThrustAt, Exhaust = e.Exhaust, BoxMin = mid - new Vector3(0.05f), BoxMax = mid + new Vector3(0.05f),
+        }; // (its token box inside the platform's slab: at the catch box's middle it stood in a held craft, which then struck it leaving)
+        e.Fn = "";
+        els.Add(dock);
+        Weld(els, els.Count - 2, els.Count - 1);
     }
 
     /// <summary>
