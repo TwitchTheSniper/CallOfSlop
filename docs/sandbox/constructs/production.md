@@ -2225,7 +2225,7 @@ Piece Racks and Lay-down Pads aren't swapped for tiles, and the old rack parts s
 Roller Tile is a 2 m bed of powered rollers with its tops at the bed machines' work height (1 m, as an Out Table's), going its +z way.
 Tiles welded together are one **run** (`machineBlock` family `roller`, seeded as Pad Tiles are; all turned one way): the largest full
 rectangle holding the lowest-index tile. A run is one ordinary conveyor link along its middle, as wide as its tiles across (6 tiles,
-12 m, at most), from its -z end to its +z end, which the server lays and lays again after any rebuild that changes it
+12 m, at most) and 30 cm more, since a piece may overhang its rollers a little (`RollerRuns.OverhangCm`: a one-tile run carries 2.3 m), from its -z end to its +z end, which the server lays and lays again after any rebuild that changes it
 (`RollerRuns.Sync` on the conveyor step; `IsRun`: a link of two nodes, both on Roller Tiles), so riders, saves and the wire are a
 conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is butted on its in end (an Out Table gives its machine's
 out table, which the former or cutter hands its piece to; a Run-out Table gives its Extruder's Piece out, "Extrusion" above; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at

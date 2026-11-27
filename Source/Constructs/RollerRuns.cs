@@ -21,6 +21,14 @@ public sealed partial class Construct
 public static class RollerRuns
 {
     public const int MaxAcross = 6; // tiles across a run's conveyor: 12 m (a conveyor's width goes in 5 cm steps in a byte further on)
+    /// <summary>
+    /// How far past its tiles a run carries a piece, cm, both sides together: a roller bed holds a piece that overhangs its rollers a little,
+    /// so a run's conveyor is set this much wider than its tiles across. Sean, 2026-11-27: the Zero Day works' Housing press line, all
+    /// one-tile runs (2 m), stalled on a Fuel Pump M (2.2 m across) and its blank; 30 cm lets a one-tile run take up to 2.3 m (a Coolant
+    /// Exchanger L's blank) without moving a tile. Stays a multiple of <see cref="ConstructConveyor.StepCm"/>; 6 tiles and this fit the byte
+    /// <see cref="ConstructLogistics"/> keeps a width in.
+    /// </summary>
+    public const int OverhangCm = 30;
     public const float Cell = 2f, RunY = 0.94f, EndIn = 0.05f; // a tile's size, its run's line over its foot (PieceRackParts.RunY), the line's first node in from its end
     public const string StartPort = "Run start", StartPortHalf = "Run start +x", EndPort = "Run end", EndPortHalf = "Run end +x";
 
@@ -394,7 +402,7 @@ public static class RollerRuns
             for (var k = 0; k < c.RouteCount; k++)
                 if (Meets(c, k, t, true))
                     width = Math.Max(width, c.Routes[k].ConvW);
-            x.Width = (ushort)Math.Max(width, (int)(Cell * 100));
+            x.Width = (ushort)Math.Max(width, (int)(Cell * 100) + OverhangCm);
             hosts += MaxCrossNodes;
             n++;
         }
@@ -550,7 +558,7 @@ public static class RollerRuns
         w.N1 = Body(ze - EndIn);
         w.H0 = (ushort)h0;
         w.H1 = (ushort)h1;
-        w.Width = (ushort)(across * Cell * 100);
+        w.Width = (ushort)(across * Cell * 100 + OverhangCm); // (pieces may overhang its rollers a little: OverhangCm)
         // Its in end: what is butted on the first row's -z faces, else its own first tile.
         if (Butted(c, a, first, x0, across, 5, start, out var from, out var fromPort, wantOut: true))
             (w.From, w.FromPort) = ((ushort)from, fromPort);
