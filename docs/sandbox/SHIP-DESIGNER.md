@@ -56,8 +56,10 @@ is in `DesignParts.cs` (the bill of materials):
   game it is a seat part on its own element, the Helm the drive seat, the others the cockpit stations' kinds where one
   matches. The design checks warn when a ship with drives has no Helm. F on the hull sits you at the free helm.
 - **Light bars** (`DesignLightBars.cs`, Karl 2026-11-27): a glowing strip in a dark channel, with its length, colour and
-  brightness. A Light bar goes on the skin (along the hull it follows the skin's curve, turned it runs straight across; the
-  cladding keeps clear of it). A Light bar (room) is dropped by a room or linked to one, as a seat is, and goes on that room's
+  brightness. A Light bar goes on the skin (along the hull it follows the skin's curve, turned it runs straight across). Its
+  Cladding setting says how it meets the plates: Cut (the default: the plates are cut along its whole line, run by run, and it
+  lies on the skin in the channel), Flush (cut tight, the bar on a housing with its face level with the plates' tops) or Over
+  (no cut; it sits on a housing over the plates). A Light bar (room) is dropped by a room or linked to one, as a seat is, and goes on that room's
   wall nearest the drop point at its height over the floor, or on its ceiling or floor (turned 90 degrees: upright on a wall,
   across on a ceiling). Its strip is a lit run of its mesh (`DesignMesh.Glowing`): the designer and the page draw it unlit,
   and the game's design shader draws a vertex whose colour has alpha 0 unlit with bloom (a lit room's ceiling strips too). In
