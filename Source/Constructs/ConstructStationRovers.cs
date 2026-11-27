@@ -248,7 +248,10 @@ public static class StationRovers
         if (horiz < r)
         {
             var dy = MathF.Sqrt(r * r - horiz * horiz);
-            y = Math.Clamp(y, MathF.Max(lo, hookY + 1f - dy), MathF.Max(lo, MathF.Min(lo + rc.Mast, hookY + 1f + dy)));
+            // (A hook higher than the mast reaches puts the low bound over the high one: the mast stands at its top then,
+            // never a Clamp with min over max, which threw mid-build and took the game down.)
+            var hi = MathF.Max(lo, MathF.Min(lo + rc.Mast, hookY + 1f + dy));
+            y = Math.Clamp(y, MathF.Min(hi, MathF.Max(lo, hookY + 1f - dy)), hi);
         }
         return y;
     }
