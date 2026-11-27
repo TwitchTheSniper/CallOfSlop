@@ -531,6 +531,13 @@ public sealed partial class Ui
             }
             ImGui.EndCombo();
         }
+        if (ck != "Off")
+        {
+            // The end caps' plating, each its own tickbox (Karl, 2026-11-27); the body's own even when it matches another's.
+            Checkbox("Clad front##sdhcf", B(h, "cladFore", true), v => Hs(("cladFore", v)));
+            Row();
+            Checkbox("Clad back##sdhca", B(h, "cladAft", true), v => Hs(("cladAft", v)));
+        }
         if (Found(src))
             Hint($"Follows {Str(src, "name")}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.");
         else
@@ -1731,7 +1738,7 @@ public sealed partial class Ui
             Hint("A shell inside the room's box, so each room has its own walls, back to back with its neighbour's. It stops at the skin and leaves doors between rooms open (0: none).");
             ImGui.Text("Cladding"u8);
             Row();
-            MatCombo("rws" + rid, Str(r, "wallStyle", "Plain"), ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor"], v => SetW(("wallStyle", v)), 120);
+            MatCombo("rws" + rid, Str(r, "wallStyle", "Plain"), ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor", "Zero Day"], v => SetW(("wallStyle", v)), 120);
             Row();
             ImGui.Text("Colour"u8);
             Row();

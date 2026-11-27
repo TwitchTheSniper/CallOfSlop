@@ -54,6 +54,8 @@ public sealed class HullBody
     public string Clad = "Off";
     public int CladSeed = 1;
     public double CladSize = 1.5, CladDepth = 1;
+    /// <summary>Whether the front and back end caps are clad (Karl, 2026-11-27: a tickbox each); the body's own, even when it matches another's cladding.</summary>
+    public bool CladFore = true, CladAft = true;
     /// <summary>Another body whose cladding this one draws with (its id; 0 its own), live: kind, seed, size, depth, material and damage. Its own values are kept.</summary>
     public int CladFrom;
     public const double CladSizeMin = 0.4, CladSizeMax = 6, CladDepthMin = 0.25, CladDepthMax = 2.5;
@@ -253,6 +255,8 @@ public sealed class HullBody
             o["clad"] = new JsonObject { ["kind"] = Clad, ["seed"] = CladSeed, ["size"] = ShipDesign.R(CladSize), ["depth"] = ShipDesign.R(CladDepth) };
         if (Clad != "Off" && CladMaterial != "Hull")
             o["clad"]!["material"] = CladMaterial;
+        if (!CladFore) o["cladFore"] = false;
+        if (!CladAft) o["cladAft"] = false;
         if (Material != "Painted") o["material"] = Material;
         if (Damage > 0) o["damage"] = new JsonObject { ["amount"] = ShipDesign.R(Damage), ["seed"] = DamageSeed };
         if (RoundFore > 0) o["roundFore"] = ShipDesign.R(RoundFore);
@@ -309,6 +313,8 @@ public sealed class HullBody
             h.CladDepth = Math.Clamp(ShipDesign.F(c["depth"], 1), CladDepthMin, CladDepthMax);
             h.CladMaterial = MaterialOr((string?)c["material"], "Hull", true);
         }
+        h.CladFore = (bool?)o["cladFore"] ?? true;
+        h.CladAft = (bool?)o["cladAft"] ?? true;
         h.Material = MaterialOr((string?)o["material"], "Painted");
         if (o["damage"] is JsonObject dm)
         {
@@ -335,7 +341,7 @@ public sealed class HullBody
     public HullBody Clone(int id) => new()
     {
         Id = id, Name = Name, X = X, Y = Y, Z = Z, Mirror = Mirror, Cut = Cut, Skin = Skin, Stations = [.. Stations.Select(s => s.Clone())],
-        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth, CladMaterial = CladMaterial, CladFrom = CladFrom, Material = Material, Damage = Damage, DamageSeed = DamageSeed, RoundFore = RoundFore, RoundAft = RoundAft,
+        Clad = Clad, CladSeed = CladSeed, CladSize = CladSize, CladDepth = CladDepth, CladMaterial = CladMaterial, CladFrom = CladFrom, CladFore = CladFore, CladAft = CladAft, Material = Material, Damage = Damage, DamageSeed = DamageSeed, RoundFore = RoundFore, RoundAft = RoundAft,
         Accent = Accent, Pattern = Pattern, AccentAmount = AccentAmount, Stripe = Stripe, Wear = Wear, PaintSeed = PaintSeed,
     };
 

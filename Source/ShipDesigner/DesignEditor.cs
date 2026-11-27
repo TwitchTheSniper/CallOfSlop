@@ -288,6 +288,8 @@ public sealed class DesignEditor
                 if (o["wear"] is not null) h.Wear = Math.Clamp(D(o, "wear"), 0, 1);
                 if (o["paintSeed"] is not null) h.PaintSeed = Math.Clamp(I(o, "paintSeed"), 0, 99999);
                 if (o["cladDepth"] is not null) h.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
+                if (o["cladFore"] is not null) h.CladFore = (bool?)o["cladFore"] ?? true;
+                if (o["cladAft"] is not null) h.CladAft = (bool?)o["cladAft"] ?? true;
                 if (o["material"] is not null)
                 {
                     if (!HullBody.Materials.Contains(Str(o, "material")))
