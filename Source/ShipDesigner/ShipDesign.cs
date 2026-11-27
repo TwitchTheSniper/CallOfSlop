@@ -23,6 +23,13 @@ public sealed class ShipDesign
     /// </summary>
     public bool Stacked;
 
+    /// <summary>
+    /// How the doors between rooms are placed (Karl, 2026-11-27). Automatic (false): every two rooms on a deck that share a wall get a
+    /// doorway, where a placed door sits or else in the wall's middle. Manual (true): only the doors the player places are cut; a shared
+    /// wall with none stays a wall, so the rooms behind it are not joined.
+    /// </summary>
+    public bool ManualDoors;
+
     /// <summary>A point on a deck to world: (u, v) on the floor (a room's X and Z), up above it.</summary>
     public double[] World(Deck dk, double u, double v, double up) => Stacked ? [u, v, dk.Floor - up] : [u, dk.Floor + up, v];
 
@@ -111,6 +118,7 @@ public sealed class ShipDesign
             ["version"] = Version,
             ["name"] = Name,
             ["decks orientation"] = Stacked ? "stacked" : "along",
+            ["door placement"] = ManualDoors ? "manual" : "automatic",
             ["hulls"] = new JsonArray([.. Hulls.Select(h => { var j = h.ToJson(); j["id"] = h.Id; if (h.CladFrom != 0 && HullIndex(h.CladFrom) is var ci && ci >= 0) j["cladFrom"] = ci; return (JsonNode)j; })]),
             ["decks"] = new JsonArray([.. Decks.Select(d => { var j = new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) }; if (d.Hull != 0 && HullIndex(d.Hull) is var di && di >= 0) j["hull"] = di; return (JsonNode)j; })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
@@ -132,7 +140,7 @@ public sealed class ShipDesign
         catch (Exception e) { throw new FormatException("not JSON: " + e.Message); }
         if (root is not JsonObject o)
             throw new FormatException("not a ship design (no object)");
-        var d = new ShipDesign { Name = (string?)o["name"] ?? "Ship", Stacked = (string?)o["decks orientation"] == "stacked" };
+        var d = new ShipDesign { Name = (string?)o["name"] ?? "Ship", Stacked = (string?)o["decks orientation"] == "stacked", ManualDoors = (string?)o["door placement"] == "manual" };
         foreach (var h in o["hulls"]?.AsArray() ?? [])
             if (h is JsonObject ho && d.Hulls.Count < MaxHulls)
                 d.Hulls.Add(HullBody.FromJson(ho, d.Take(ho)));

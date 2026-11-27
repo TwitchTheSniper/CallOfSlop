@@ -964,7 +964,7 @@ public static partial class DesignScene
                     var t = placed?.T ?? 0.5;
                     double[]? s0 = null, s1 = null;
                     var dw = placed?.W ?? 0.9;
-                    if ((alongZ || alongX) && w1 - w0 >= dw - 0.01)
+                    if ((alongZ || alongX) && w1 - w0 >= dw - 0.01 && (placed is not null || !d.ManualDoors)) // (manual placement: only placed doors)
                     {
                         double lo = w0 + dw / 2, hi = w1 - dw / 2;
                         door = At(lo + (hi - lo) * t, 0);
@@ -1184,7 +1184,7 @@ public static partial class DesignScene
         else
             foreach (var r in d.Rooms)
                 if (!c.Reached.Contains(r.Id))
-                    c.Issues.Add(new("warn", $"{Name(r)} on deck {r.Deck + 1} has no door to the rest (rooms need 0.9 m of shared wall; a Shaft joins decks)", $"room:{r.Id}"));
+                    c.Issues.Add(new("warn", $"{Name(r)} on deck {r.Deck + 1} has no door to the rest ({(d.ManualDoors ? "place a door on a wall it shares with another room" : "rooms need 0.9 m of shared wall")}; a Shaft joins decks)", $"room:{r.Id}"));
         if (!d.Rooms.Any(r => r.Kind == "Bridge"))
             c.Issues.Add(new("warn", "No bridge", ""));
         return c;
@@ -1613,7 +1613,7 @@ public static partial class DesignScene
         var bare = shown is not null || Light; // no hull meshes
         var empty = "{\"p\":[],\"c\":[]}";
         var sb = new StringBuilder(1 << 16);
-        sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"roomView\":").Append(shown is null ? "null" : "[" + string.Join(',', shown) + "]").Append(",\"stacked\":").Append(d.Stacked ? "true" : "false").Append(",\"hulls\":[");
+        sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"roomView\":").Append(shown is null ? "null" : "[" + string.Join(',', shown) + "]").Append(",\"stacked\":").Append(d.Stacked ? "true" : "false").Append(",\"manualDoors\":").Append(d.ManualDoors ? "true" : "false").Append(",\"hulls\":[");
         for (var i = 0; i < d.Hulls.Count; i++)
         {
             var h = d.Hulls[i];

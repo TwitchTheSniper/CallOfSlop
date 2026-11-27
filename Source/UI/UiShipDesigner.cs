@@ -369,6 +369,7 @@ public sealed partial class Ui
     private static string Fmt(double v) => (Math.Round(v * 100) / 100).ToString(CultureInfo.InvariantCulture);
 
     private bool Stacked => B(S, "stacked");
+    private bool ManualDoors => B(S, "manualDoors");
 
     private bool Inside => _sdMode is "interior" or "connectors";
 

@@ -25,7 +25,7 @@ centreline), y up, z along the ship with the bow at the smallest z, metres.
   towards the bow). A piece sits at a station position and a place round the profile, or on an end face.
 - `RoomKinds`: what a room is for. A Hold is a cargo hold; a Shaft joins the decks it overlaps.
 - `DesignScene`: the checks and the page's scene. Rooms must sit 6 cm inside the skin (MustFit's margin) and apart; rooms
-  that share 0.9 m of wall get a door; each socket must be within its reach of a room of the kind it needs (a cargo hatch a
+  that share 0.9 m of wall get a door (with the Interior panel's door placement on Manual, only the doors the player places); each socket must be within its reach of a room of the kind it needs (a cargo hatch a
   Hold, a boarding hatch a room on the lowest deck over it); every room must be reachable from a way aboard.
 - `DesignEditor`: every edit as a JSON command with undo (a drag's commands after its first merge into one step).
 - `DesignTemplates`: the Zero Day start (its ten stations, two decks and a room plan in its rooms' widths), section shapes and

@@ -748,6 +748,15 @@ public sealed class DesignEditor
             // ---- every room still unset takes the defaults (Karl, 2026-11-27): interior cladding Off becomes Clean, and each pair of
             // rooms on one deck that share a door's width of wall (not segments of one room) without a placed door gets the default one.
             // Rooms and doors already set are kept.
+            case "doorPlacement":
+            {
+                // Automatic or manual doors between rooms (Karl, 2026-11-27); the doors already placed stay either way.
+                var manual = (bool?)o["manual"] ?? !d.ManualDoors;
+                if (manual == d.ManualDoors)
+                    return "";
+                d.ManualDoors = manual;
+                return "";
+            }
             case "fillUnset":
             {
                 int clad = 0, doors = 0;
@@ -757,7 +766,7 @@ public sealed class DesignEditor
                         r.Interior = "Clean";
                         clad++;
                     }
-                foreach (var a in d.Rooms)
+                foreach (var a in d.ManualDoors ? Enumerable.Empty<Room>() : d.Rooms) // (manual placement: the player places every door)
                     foreach (var b in d.Rooms)
                     {
                         if (a.Id >= b.Id || a.Deck != b.Deck || a.Group != 0 && a.Group == b.Group || d.Doors.Any(q => q.Kind == "Door" && q.Joins(a, b)))
@@ -771,7 +780,7 @@ public sealed class DesignEditor
                         d.Doors.Add(new RoomDoor { Id = d.NewId(), A = a.Id, B = b.Id, Kind = "Door", W = 0.9, H = 2.1 });
                         doors++;
                     }
-                return clad + doors == 0 ? "every room already has its cladding and doors" : "";
+                return clad + doors == 0 ? (d.ManualDoors ? "every room already has its cladding" : "every room already has its cladding and doors") : "";
             }
             // ---- doors placed between rooms (Karl, 2026-11-24)
             case "addDoor":
