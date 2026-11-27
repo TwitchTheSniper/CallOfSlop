@@ -45,7 +45,7 @@ public sealed class DesignEditor
         catch (Exception e) { return "bad command: " + e.Message; }
         var before = Design.ToJson();
         string why;
-        try { why = Run(o); }
+        try { why = Run(o); if (why.Length == 0) DesignHangar.Fit(Design); }
         catch (Exception e) { why = e.Message; }
         if (why.Length > 0)
         {

@@ -1201,8 +1201,8 @@ public static partial class DesignScene
     /// </summary>
     public static double[]? SocketDoor(ShipDesign d, Piece p, PieceKind kind, Room r, double[] at)
     {
-        if (kind.Socket is null or "window" or "seat" or "hangar" or "lift" or "rampdeck")
-            return null;
+        if (kind.Socket is null or "window" or "seat" or "lift" or "rampdeck" || kind.Socket == "hangar" && p.Room == 0)
+            return null; // (a hangar bay opens into a room only when linked to one: DesignHangar.Check)
         var bx = d.Box(r);
         int ax = 0, al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
         double[] lo = [bx[0], bx[2], bx[4]], hi = [bx[1], bx[3], bx[5]];
