@@ -375,6 +375,11 @@ public static partial class DesignParts
         var pts = new List<Vector3>();
         foreach (var e in els)
         {
+            if (e.PassKeeps is { } pk)
+            {
+                ClipPassed(e, keeps, pk, pts);
+                continue;
+            }
             if (e.Kind is not ("join" or "piece") || e.Hulls.Length != 1 || e.Mesh == null || keeps.Count == 0)
                 continue;
             var p = e.Mesh.Pos;
@@ -459,6 +464,67 @@ public static partial class DesignParts
     }
 
     /// <summary>
+    /// A join a passage runs through: its hull kept out of the passage's tube (and the rooms and openings), split by the side of each it is on, so
+    /// the arm's skin round the tube still collides and the tube's own walls take over inside. With nothing left outside them, no collider.
+    /// </summary>
+    private static void ClipPassed(Element e, List<KeepOut> keeps, List<KeepOut> pass, List<Vector3> pts)
+    {
+        e.PassKeeps = null;
+        var all = new List<KeepOut>(pass.Count + keeps.Count);
+        all.AddRange(pass);
+        all.AddRange(keeps);
+        pts.Clear();
+        if (e.Mesh != null)
+        {
+            var p = e.Mesh.Pos;
+            for (var i = 0; i + 2 < p.Count; i += 3)
+                pts.Add(new Vector3(p[i], p[i + 1], p[i + 2]));
+        }
+        pts.RemoveAll(v =>
+        {
+            foreach (var k in all)
+                if (k.Holds(v))
+                    return true;
+            return false;
+        });
+        var kept = new List<ConvexHull>();
+        if (pts.Count >= 4)
+            Split(pts, all, 0, kept, 4 + 2 * pass.Count); // (deeper than a room's: a passage's spans each split it)
+        e.Hulls = [.. kept];
+        e.NoCollider = kept.Count == 0;
+        if (kept.Count == 0)
+            return;
+        _hc.Clipped++;
+        _hc.ClipHulls += kept.Count;
+    }
+
+    /// <summary>A passage's tube as keep-outs: each span of its line a box round its floor, walls and roof (in its own frame).</summary>
+    internal static List<KeepOut> PassageKeeps(List<DesignScene.PassageFrame> fr, double hw)
+    {
+        var l = new List<KeepOut>();
+        var (half, t) = ((float)(hw + DesignScene.PassageT) + 0.02f, (float)DesignScene.PassageT);
+        var top = (float)DesignScene.PassageHead + t + 0.02f;
+        for (var i = 0; i + 1 < fr.Count; i++)
+        {
+            var (a, b) = (V(fr[i].Floor), V(fr[i + 1].Floor));
+            var len = Vector3.Distance(a, b);
+            if (len < 1e-3f)
+                continue;
+            var z = (b - a) / len;
+            var up = V(fr[i].Up) + V(fr[i + 1].Up);
+            var y = up - z * Vector3.Dot(up, z);
+            if (y.LengthSquared() < 1e-6f)
+                continue;
+            y = Vector3.Normalize(y);
+            var x = Vector3.Cross(y, z);
+            var lo = -t - 0.02f;
+            // (a span's box a little past its ends, so a bend leaves no hull bridging the corner)
+            l.Add(new KeepOut((a + b) * 0.5f + y * ((lo + top) / 2), x, y, z, new Vector3(half, (top - lo) / 2, len / 2 + 0.1f)));
+        }
+        return l;
+    }
+
+    /// <summary>
     /// What an element collides with, as <see cref="MaxHulls"/> counts it: its hulls, its hulls still to be made from points (a room's bent boxes
     /// and hull-shell strips: <see cref="IntoFrames"/> makes them after the cap), its solid boxes; or its one mass box (none for a band with no
     /// plates, or an element marked <see cref="Element.NoCollider"/>).
@@ -470,7 +536,7 @@ public static partial class DesignParts
     }
 
     /// <summary>A box colliders are kept out of (a room, or a socket's opening through the skin and in and out from it), in its own frame.</summary>
-    private readonly record struct KeepOut(Vector3 C, Vector3 X, Vector3 Y, Vector3 Z, Vector3 Half)
+    internal readonly record struct KeepOut(Vector3 C, Vector3 X, Vector3 Y, Vector3 Z, Vector3 Half)
     {
         public Vector3 Local(Vector3 v) => new(Vector3.Dot(v - C, X), Vector3.Dot(v - C, Y), Vector3.Dot(v - C, Z));
 
@@ -539,9 +605,9 @@ public static partial class DesignParts
     }
 
     /// <summary>Points outside every keep-out into hulls: while they reach into one, split by the side of it each point is on.</summary>
-    private static void Split(List<Vector3> pts, List<KeepOut> keeps, int depth, List<ConvexHull> into)
+    private static void Split(List<Vector3> pts, List<KeepOut> keeps, int depth, List<ConvexHull> into, int maxDepth = 4)
     {
-        var r = depth < 4 ? Reaching(pts, keeps) : -1;
+        var r = depth < maxDepth ? Reaching(pts, keeps) : -1;
         if (r < 0)
         {
             if (Extreme(pts) is { } one)
@@ -563,7 +629,7 @@ public static partial class DesignParts
         }
         foreach (var s in sides)
             if (s is { Count: >= 4 })
-                Split(s, keeps, depth + 1, into);
+                Split(s, keeps, depth + 1, into, maxDepth);
     }
 
     /// <summary>The 26 directions a hull of a mesh is taken along (the cube's faces, edges and corners): its extreme point along each.</summary>

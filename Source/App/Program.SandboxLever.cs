@@ -36,6 +36,13 @@ public static partial class Program
     private static string _lvLook = "";
 
     /// <summary>The value as the look line shows it.</summary>
+    /// <summary>The look line's key for a ship design's part: the eye in the ship's own frame, in 0.5 m cells (BoardFrom reads it there).</summary>
+    private static long DesignEyeKey(Construct c, Vector3 eye)
+    {
+        var l = c.ToLocal(eye);
+        return HashCode.Combine((int)MathF.Floor(l.X * 2f), (int)MathF.Floor(l.Y * 2f), (int)MathF.Floor(l.Z * 2f));
+    }
+
     private static string LeverValueText(in CPart p, ConstructPartDef d) => AnalogLever.Text(p, d, AnalogLever.Value(p, d), AnalogLever.ValueY(p, d));
 
     /// <summary>A hand on a lever: the frame's mouse moves it and the view stands still.</summary>

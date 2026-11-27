@@ -246,6 +246,8 @@ public static partial class DesignParts
         internal LookBuilder? Mesh; // (while it is made, in the ship's frame)
         internal List<Vector3>? Points; // (ditto: its hulls' points, in runs, before they are moved)
         internal List<int>? Runs;
+        /// <summary>A join a passage runs through: the passage's tube (each span a box), which ClipHulls keeps its hull out of as it does a room's (the passage's walls collide there, the arm's skin round them). Null: none.</summary>
+        internal List<KeepOut>? PassKeeps;
         /// <summary>It has no collider (its colliders were all left out past <see cref="MaxHulls"/>): PartOf gives it a 1 cm mass box, never its bounds.</summary>
         public bool NoCollider;
     }

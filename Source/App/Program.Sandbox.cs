@@ -276,7 +276,7 @@ public static unsafe partial class Program
                       ^ (d.Labelled && part.Text != null ? (long)part.Text.GetHashCode() * 6151L : 0) // (a switch's label)
                       ^ (d.ModPart == ModPart.Socket ? (ModControlAt(hit, out _) + 1L) * 104729L ^ (long)hit.Body.RebuildStamp * 7907L ^ (ConstructConfig.Get(part, d, CfgKey.ModLock, 0) >= 0.5f ? 1L << 52 : 0) : 0) // (a socket: its frame's control under the crosshair, its module, its lock)
                       ^ (g.CrewInfo.TryGetValue(hit.Body.Id, out var crewKey) ? (long)(crewKey.Faction * 256 + crewKey.Alive) * 104729L : 0) // (a crewed body's faction and crew)
-                      ^ (DesignParts.IsDesign(d) ? HashCode.Combine((int)MathF.Floor(eye.X * 2f), (int)MathF.Floor(eye.Y * 2f), (int)MathF.Floor(eye.Z * 2f)) * 7368787L : 0); // (a ship design's hull: board from outside only, DesignParts.BoardFrom)
+                      ^ (DesignParts.IsDesign(d) ? DesignEyeKey(hit.Body, eye) * 7368787L : 0); // (a ship design's hull: board from outside only, DesignParts.BoardFrom; the eye in the ship's frame, so a ship in flight keeps its key)
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;

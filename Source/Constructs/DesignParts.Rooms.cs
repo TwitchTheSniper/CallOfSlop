@@ -239,14 +239,14 @@ public static partial class DesignParts
             foreach (var room in new[] { k.A, k.B })
                 if (RoomAt(room) is var re and >= 0)
                     Weld(els, re, first);
-            // Its arm's solid collider (one convex hull round the arm, which fills it) is left out: the passage's walls are the arm's collider there.
+            // Its arm's solid collider (one convex hull round the arm, which fills it) is kept out of the passage's tube (ClipHulls, by PassKeeps):
+            // the passage's walls collide inside, the arm's skin round them still does.
             var ji = d.Joins.IndexOf(l.Join);
             var midX = l.Pts[l.Pts.Count / 2][0];
             var je = els.FindIndex(e => e.Id == $"j{ji}") is var j0 and >= 0 ? j0 : els.FindIndex(e => e.Id == $"j{ji}.{(midX < 0 ? 1 : 0)}");
             if (je >= 0)
             {
-                els[je].Hulls = [];
-                els[je].NoCollider = true;
+                (els[je].PassKeeps ??= []).AddRange(PassageKeeps(fr, hw));
                 Weld(els, je, first);
             }
             if (k.Kind == "Lift")
