@@ -1233,7 +1233,7 @@ public static class ConstructConveyor
             for (var k = 0; k < q.Count; k++)
             {
                 ref readonly var o = ref q.Items[k];
-                if (o.Asked > 0 && o.Where == maker && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref q.Items[k]) == piece.Id)
+                if (o.Asked > 0 && ConstructCrafting.AskedAt(c, o, maker) && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref q.Items[k]) == piece.Id)
                 {
                     id = o.Id;
                     return t;

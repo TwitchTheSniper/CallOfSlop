@@ -158,6 +158,10 @@ public sealed class BuildStationParts : IPartGenerator
             config.Insert(5, Kw(("key", "dressStyle"), ("label", "Dress style"), ("group", "Dress"), ("type", "choice"),
                 ("options", Py.L([.. DressStyles.Current.Values.Take(16).Select(x => (object?)x.Label)])), ("default", 0),
                 ("tooltip", "The Dress job (pick \"Dress skins\" as the blueprint): the faction look it lays on each plain hull skin in the bay, as subparts a Bake Oven bakes in.")));
+        // How its orders are shared over its lines (Sean, 2026-11-27: a station with an extrusion line on each side of its pick pads sent
+        // every extrusion job to one side). Last in the list, so a saved station's other settings keep their slots.
+        config.Add(Kw(("key", "lineSplit"), ("label", "Line split"), ("group", "Lines"), ("type", "choice"), ("options", Py.L("Share", "Whole orders", "First line")), ("default", 0),
+            ("tooltip", "How orders are shared over alike machines on its lines. Share: split so each line finishes together. Whole orders: each to the least busy line. First line: all to the first that takes it.")));
         p.Set(("config", config));
         // No hold (the rover docks: the old Core box and its hold went): its store is only the terminal's count of what is on its way; every
         // piece is ordered onto a pick pad or a Part Pad beside the bay ("noHold"), where a rover takes it. "lift": the largest rover's.

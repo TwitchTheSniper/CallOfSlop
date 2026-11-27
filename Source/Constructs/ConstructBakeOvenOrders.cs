@@ -129,7 +129,7 @@ public static partial class ConstructBakeOven
     }
 
     /// <summary>The machines (not ovens) station <paramref name="t"/>'s own Line Consoles run, into <paramref name="mine"/>; their count. Allocates nothing.</summary>
-    private static int LineMachines(Construct c, int t, Span<int> mine)
+    internal static int LineMachines(Construct c, int t, Span<int> mine)
     {
         Span<int> line = stackalloc int[32];
         var mn = 0;

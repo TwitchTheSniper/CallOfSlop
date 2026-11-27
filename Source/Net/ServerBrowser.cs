@@ -810,7 +810,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 479: design turrets on turntable and hinge joints, hangar bays as Hangar Bay parts with door, lift and ramp joints, landing legs as gear
     //      with a drop ladder at the boarding hatch, walled passages, lift passages and connector shafts, and hidden room lamp elements
     //      (DesignParts*.cs), so a design key builds different elements on an older peer; no message changed.
-    public const ushort ProtocolVersion = 479;
+    // 480: CfgKey LineSplit in the retired RackSize's slot (the enum is full), a Building Station's "Line split" setting (a new config slot): how its extrusion orders are shared
+    //      over its lines (ConstructCrafting.SplitAsk).
+    public const ushort ProtocolVersion = 480;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
