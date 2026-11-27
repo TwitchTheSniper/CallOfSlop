@@ -123,7 +123,7 @@ public static partial class DesignScene
     }
 
     private static string WindowKey(HullWindow w) =>
-        $"{w.Id}:{w.Room}:{w.Side}:{w.T:R}:{w.W:R}:{w.H:R}:{w.Sill:R}:{w.Shape}:{w.Hole:R}:{w.Gap:R}:{w.Depth:R}:{w.Double}:{w.FrameOut}:{w.FrameIn}";
+        $"{w.Id}:{w.Room}:{w.Side}:{w.T:R}:{w.W:R}:{w.H:R}:{w.Sill:R}:{w.Shape}:{w.Hole:R}:{w.Gap:R}:{w.Depth:R}:{w.Double}:{w.FrameOut}:{w.FrameIn}:{w.Mirror}";
 
     // Each window's Lay answers (glass and boarding) under the key of all they come from: the window, every body's shape and every room's
     // plan. A body's cut and the window's own JSON both ask; a room's interior or a body's cladding changing leaves them be.

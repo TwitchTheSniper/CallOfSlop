@@ -1226,6 +1226,10 @@ public sealed partial class Ui
             Sl("Width", "w", Math.Min(D(w, "w"), D(w, "len")), 30, Math.Max(30, Math.Round(D(w, "len") * 100)), 5, " cm", 100);
             Sl("Height", "h", D(w, "h"), 30, 400, 5, " cm", 100);
             Sl("Sill", "sill", D(w, "sill"), 0, 300, 5, " cm", 100);
+            // Mirrored across the ship's middle (Karl, 2026-11-27): the copy goes on the room that mirrors this one.
+            Checkbox("Mirror to the other side##sdhwm", B(w, "mirror", false), v => Cmd(C("setHullWindow", ("id", wid), ("mirror", v))));
+            if (B(w, "mirror", false) && !Arr(S, "hullWindows").Any(q => I(q, "id") == wid && B(q, "copy", false)))
+                Hint("No room mirrors this one across the middle: the copy needs a room the same size on the other side.");
             CutControls(w, kv => Cmd(C("setHullWindow", [("id", wid), .. kv])), "hullWindow", true);
             ImGui.Text("Shape"u8);
             var shape = Str(w, "shape", "Rect");
