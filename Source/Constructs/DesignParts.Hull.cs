@@ -50,6 +50,14 @@ public static partial class DesignParts
                 Slice(sc, cladTint);
                 Slice(fc, cladTint);
                 Slice(ac, cladTint);
+                if (DesignScene.VoidFill(d, h, copy) is { } vf) // (the void between skin and rooms: a preview, DesignVoid.cs)
+                    for (var tr = 0; tr < vf.Tris; tr++)
+                    {
+                        var z = (vf.P[tr * 9 + 2] + vf.P[tr * 9 + 5] + vf.P[tr * 9 + 8]) / 3;
+                        var b = Array.BinarySearch(zs, z);
+                        b = b >= 0 ? b : ~b - 1;
+                        els[first + Math.Clamp(b, 0, rings.Count - 2)].Mesh!.AddTri(vf, tr, Vector3.One, new Vector3(float.NaN));
+                    }
                 foreach (var _ in Plates(h, copy, els, first, zs, skin, fore, aft)) // (the colliders: thin plates where the skin is, its openings left open)
                     yield return els.Count;
                 for (var k = first; k < els.Count; k++)
