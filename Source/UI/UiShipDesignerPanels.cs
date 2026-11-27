@@ -1077,11 +1077,15 @@ public sealed partial class Ui
             var size = Nums(Get(p, "bay"));
             H3("Hangar bay");
             var match = B(p, "bayMatch");
-            Checkbox($"Match door (width and height)##sdhgm{pid}", match, v => Cmd(C("setPiece", ("id", pid), ("bayMatch", v))));
+            // (a roof or belly bay: its door's height runs along its length, fore and aft, and its height is down into the ship)
+            var flat = B(p, "bayFlat");
+            Checkbox(flat ? $"Match door (width and length)##sdhgm{pid}" : $"Match door (width and height)##sdhgm{pid}", match, v => Cmd(C("setPiece", ("id", pid), ("bayMatch", v))));
             var onFloor = B(p, "bayOnFloor") && I(p, "room") != 0;
             if (!match)
                 M("Width", "bayW", ShipDesigner.DesignHangar.BayMinW, ShipDesigner.DesignHangar.BayMaxW, 0.5);
-            if (!match && !onFloor)
+            if (flat && !match)
+                M("Length", "bayD", ShipDesigner.DesignHangar.BayMinD, ShipDesigner.DesignHangar.BayMaxD, 0.5);
+            if ((flat || !match) && !onFloor)
                 M("Height", "bayH", ShipDesigner.DesignHangar.BayMinH, ShipDesigner.DesignHangar.BayMaxH, 0.5);
             if (I(p, "room") != 0)
             {
@@ -1090,12 +1094,13 @@ public sealed partial class Ui
                 if (B(p, "bayOnFloor"))
                     Hint($"Its height follows its room: {Fmt(size.Length > 1 ? size[1] : 0)} m, from its door down to the room's floor (a side bay: centred on its door).");
             }
-            M("Depth", "bayD", ShipDesigner.DesignHangar.BayMinD, ShipDesigner.DesignHangar.BayMaxD, 0.5);
+            if (!flat)
+                M("Depth", "bayD", ShipDesigner.DesignHangar.BayMinD, ShipDesigner.DesignHangar.BayMaxD, 0.5);
             if (ResetAll("hgbay" + pid, "Width, height and depth back to the bay's own"))
                 Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayW", "bayH", "bayD")]));
             H3("Hangar door");
             M("Door width", "bayDoorW", ShipDesigner.DesignHangar.DoorMinW, Math.Min(ShipDesigner.DesignHangar.DoorMaxW, size.Length > 0 && !match ? size[0] : 48), 0.5);
-            M("Door height", "bayDoorH", ShipDesigner.DesignHangar.DoorMinH, Math.Min(ShipDesigner.DesignHangar.DoorMaxH, size.Length > 1 && !match ? size[1] : 32), 0.5);
+            M(flat ? "Door length" : "Door height", "bayDoorH", ShipDesigner.DesignHangar.DoorMinH, Math.Min(ShipDesigner.DesignHangar.DoorMaxH, size.Length > 2 && !match ? size[flat ? 2 : 1] : 32), 0.5);
             ImGui.Text("Type");
             Row();
             MatCombo("hgdoor" + pid, Str(p, "bayDoor", ShipDesigner.DesignHangar.DefDoor), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
@@ -1125,7 +1130,7 @@ public sealed partial class Ui
                 Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayDoorW", "bayDoorH", "bayDoor")]));
             var n = I(p, "fittings");
             if (size.Length == 3)
-                Hint($"The bay is {Fmt(size[0])} m across, {Fmt(size[1])} m tall and {Fmt(size[2])} m deep. {Str(p, "bayDoor") switch
+                Hint($"The bay is {Fmt(size[0])} m across, {(flat ? $"{Fmt(size[2])} m long and {Fmt(size[1])} m tall" : $"{Fmt(size[1])} m tall and {Fmt(size[2])} m deep")}. {Str(p, "bayDoor") switch
                 {
                     "Rolling" => "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.",
                     "Shutter" => "A sectional garage door: its slats run on tracks to the side you pick and on along the bay's ceiling there, or split in the middle to both sides.",
