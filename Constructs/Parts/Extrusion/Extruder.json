@@ -17,6 +17,7 @@
     "bulk": {
       "material": "any",
       "capacity": 32000,
+      "chuteLoad": 160,
       "min": [
         -0.935,
         1.705,
