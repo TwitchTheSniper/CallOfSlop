@@ -1947,6 +1947,9 @@ function inspector() {
       el("p", { class: "hint" }, `On ${r ? r.label || r.kind : "a room"}'s ${{ x0: "port", x1: "starboard", z0: S.stacked ? "lower" : "fore", z1: S.stacked ? "upper" : "aft" }[w.side]} wall. It follows the hull's contour; sizes apply when you let go.`),
       sl("Along the wall", "t", w.t, 0, 100, 1, "%", 100), sl("Width", "w", Math.min(w.w, w.len), 30, Math.max(30, Math.round(w.len * 100)), 5, " cm", 100),
       sl("Height", "h", w.h, 30, 400, 5, " cm", 100), sl("Sill", "sill", w.sill, 0, 300, 5, " cm", 100),
+      // Mirrored across the ship's middle (Karl, 2026-11-27): the copy goes on the room that mirrors this one.
+      el("div", { class: "row" }, el("label", {}, el("input", { type: "checkbox", ...(w.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setHullWindow", id: w.id, mirror: e.target.checked }) }), "Mirror to the other side")),
+      ...(w.mirror && !(S.hullWindows || []).some(q => q.id === w.id && q.copy) ? [el("p", { class: "hint" }, "No room mirrors this one across the middle: the copy needs a room the same size on the other side.")] : []),
       ...cutControls(w, o => cmd({ op: "setHullWindow", id: w.id, ...o }), "hullWindow", true),
       el("div", { class: "row" }, el("span", {}, "Shape"), ...[["Rect", "Square"], ["Round", "Round"], ["Oval", "Oval"], ["Arch", "Arched"], ["Hex", "Hexagon"]].map(([k, t]) =>
         el("button", { class: (w.shape || "Rect") === k ? "on" : "", onclick: () => cmd({ op: "setHullWindow", id: w.id, shape: k }) }, t))),

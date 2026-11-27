@@ -14,7 +14,7 @@ public static partial class DesignParts
     private static IEnumerable<int> AddWindows(Steps st)
     {
         var (d, els) = (st.D, st.Els);
-        foreach (var w in d.Windows)
+        foreach (var w in DesignScene.Glazed(d)) // (with each mirrored copy)
         {
             var m = DesignScene.HullWindowMesh(d, w);
             if (m.Tris == 0)

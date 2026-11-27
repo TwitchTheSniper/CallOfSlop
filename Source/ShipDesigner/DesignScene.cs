@@ -187,7 +187,7 @@ public static partial class DesignScene
             mouthCuts.Add(new Cutout(m.C, m.S, m.T, m.U, m.Square ? Rect(m.W / 2, m.H / 2) : Ellipse(m.W / 2, m.H / 2)) { GapSet = 0.12 });
         cutouts.AddRange(mouthCuts);
         // Hull windows cut the skin where they lie on it (Karl, 2026-11-24): the opening in the window's own plane, its size as laid.
-        foreach (var hw in d.Windows)
+        foreach (var hw in Glazed(d))
             if (WindowCut(d, hw).Cut is { } wc)
                 cutouts.Add(wc);
         void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
@@ -1007,7 +1007,7 @@ public static partial class DesignScene
                 if (ra.Concat(rb).Any(p => !d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) >= 0.06)))
                     c.Issues.Add(new("warn", $"{Name(r)}'s {e.Shape.ToLowerInvariant()} extension ({(e.Side == "up" ? "up" : "out")} {e.Depth:0.0} m) pokes through the skin: make it smaller", $"room:{r.Id}"));
             }
-        foreach (var w in d.Windows)
+        foreach (var w in Glazed(d))
         {
             var (_, _, _, gap, ok, _) = LayOnce(d, w);
             var r = d.RoomById(w.Room);
@@ -1514,7 +1514,7 @@ public static partial class DesignScene
         foreach (var j in d.Joins)
             if (j.A.Hull == h.Id || j.B.Hull == h.Id)
                 k.Append('&').Append(j.GeomKey(d));
-        foreach (var hw in d.Windows)
+        foreach (var hw in Glazed(d))
             k.Append('~').Append(WindowCut(d, hw).Key);
         return k.ToString();
     }
@@ -1830,14 +1830,15 @@ public static partial class DesignScene
               .Append("],\"s1\":[").Append(string.Join(',', s1.Select(ShipDesign.S))).Append("]}");
         }
         sb.Append("],\"hullWindows\":[");
-        for (var i = 0; i < (shown is null ? d.Windows.Count : 0); i++)
+        var glazed = shown is null ? Glazed(d).ToList() : [];
+        for (var i = 0; i < glazed.Count; i++)
         {
-            var w = d.Windows[i];
+            var w = glazed[i]; // (a mirrored copy has the negated id: sent with its window's, so picking it picks that window)
             var wpart = Part("w" + w.Id, WindowKey(w) + FrameKey(d), () =>
             {
                 var t = new StringBuilder();
                 var (pts, nu, nv, gap, ok, len) = LayOnce(d, w);
-                t.Append("{\"id\":").Append(w.Id).Append(",\"room\":").Append(w.Room).Append(",\"side\":").Append(Q(w.Side))
+                t.Append("{\"id\":").Append(Math.Abs(w.Id)).Append(",\"copy\":").Append(w.Id < 0 ? "true" : "false").Append(",\"mirror\":").Append(w.Mirror ? "true" : "false").Append(",\"room\":").Append(w.Room).Append(",\"side\":").Append(Q(w.Side))
                   .Append(",\"t\":").Append(ShipDesign.S(w.T)).Append(",\"w\":").Append(ShipDesign.S(w.W)).Append(",\"h\":").Append(ShipDesign.S(w.H)).Append(",\"sill\":").Append(ShipDesign.S(w.Sill)).Append(",\"shape\":").Append(Q(w.Shape))
                   .Append(",\"ok\":").Append(ok ? "true" : "false").Append(",\"gap\":").Append(ShipDesign.S(gap)).Append(",\"len\":").Append(ShipDesign.S(len))
                   .Append(",\"nu\":").Append(nu).Append(",\"nv\":").Append(nv).Append(",\"pts\":[").Append(string.Join(',', pts.Select(ShipDesign.S))).Append("]");

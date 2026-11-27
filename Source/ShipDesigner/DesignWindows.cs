@@ -18,6 +18,42 @@ public static partial class DesignScene
 
     public static bool IsWindow(double[] q) => q.Length > 7 && q[5] > 1.5;
 
+    /// <summary>
+    /// The hull windows glazed: each of the design's, and after one set to <see cref="HullWindow.Mirror"/> its copy across the ship's middle
+    /// (x = 0; Karl, 2026-11-27): on the matching side of the room that mirrors its room (the same deck, its box mirrored within 5 cm), or on
+    /// the other side of its own room when that room is the middle one (its box about x = 0). A copy has the negated id (its glass, cut and
+    /// opening are cached apart) and is selected as its window. None where no room mirrors it.
+    /// </summary>
+    public static IEnumerable<HullWindow> Glazed(ShipDesign d)
+    {
+        foreach (var w in d.Windows)
+        {
+            yield return w;
+            if (w.Mirror && MirrorOf(d, w) is { } m)
+                yield return m;
+        }
+    }
+
+    /// <summary>A hull window's mirrored copy (<see cref="Glazed"/>), or null where no room mirrors its room.</summary>
+    public static HullWindow? MirrorOf(ShipDesign d, HullWindow w)
+    {
+        if (d.RoomById(w.Room) is not { } r)
+            return null;
+        const double tol = 0.05;
+        var twin = d.Rooms.Find(q => q.Id != r.Id && q.Deck == r.Deck && Math.Abs(q.X0 + r.X1) < tol && Math.Abs(q.X1 + r.X0) < tol
+            && Math.Abs(q.Z0 - r.Z0) < tol && Math.Abs(q.Z1 - r.Z1) < tol)
+            ?? (Math.Abs(r.X0 + r.X1) < tol ? r : null);
+        if (twin is null || twin == r && w.Side is "z0" or "z1")
+            return null; // (a middle room's fore or aft wall mirrors onto itself)
+        var side = w.Side switch { "x0" => "x1", "x1" => "x0", var s => s };
+        var t = w.Side is "z0" or "z1" ? 1 - w.T : w.T; // (along a fore or aft wall, x runs the other way)
+        return new HullWindow
+        {
+            Id = -w.Id, Room = twin.Id, Side = side, T = t, W = w.W, H = w.H, Sill = w.Sill, Shape = w.Shape, Gap = w.Gap, Hole = w.Hole,
+            Depth = w.Depth, Double = w.Double, FrameOut = w.FrameOut, FrameIn = w.FrameIn,
+        };
+    }
+
     /// <summary>A window's opening mark when its inside frame is off (<see cref="HullWindow.FrameIn"/>): still a window (<see cref="IsWindow"/>), framed by nothing.</summary>
     public const double FramelessMark = 3;
 
@@ -32,7 +68,7 @@ public static partial class DesignScene
     {
         var o = new List<double[]>();
         int up = d.Stacked ? 2 : 1;
-        foreach (var w in d.Windows)
+        foreach (var w in Glazed(d))
         {
             var lay = LayOnce(d, w);
             if (WindowFrame(d, w) is not { } f || !lay.Ok)

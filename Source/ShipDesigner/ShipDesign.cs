@@ -124,7 +124,7 @@ public sealed class ShipDesign
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
             ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T), ["kind"] = k.Kind, ["shape"] = k.Shape, ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape })]),
-            ["windows"] = new JsonArray([.. Windows.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["room"] = Rooms.FindIndex(r => r.Id == k.Room), ["side"] = k.Side, ["t"] = R(k.T), ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape, ["gap"] = R(k.Gap), ["hole"] = R(k.Hole), ["depth"] = R(k.Depth), ["double"] = k.Double, ["frameOut"] = k.FrameOut, ["frameIn"] = k.FrameIn })]),
+            ["windows"] = new JsonArray([.. Windows.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["room"] = Rooms.FindIndex(r => r.Id == k.Room), ["side"] = k.Side, ["t"] = R(k.T), ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape, ["gap"] = R(k.Gap), ["hole"] = R(k.Hole), ["depth"] = R(k.Depth), ["double"] = k.Double, ["frameOut"] = k.FrameOut, ["frameIn"] = k.FrameIn, ["mirror"] = k.Mirror })]),
             ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
             ["passages"] = new JsonArray([.. Passages.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["join"] = Joins.FindIndex(j => j.Id == k.Join), ["kind"] = k.Kind })]),
@@ -180,7 +180,7 @@ public sealed class ShipDesign
                 d.Windows.Add(new HullWindow { Id = d.Take(wo), Room = d.Rooms[ri].Id, Side = HullWindow.Sides.Contains((string?)wo["side"]) ? (string)wo["side"]! : "x0",
                     T = Math.Clamp(F(wo["t"], 0.5), 0, 1), W = Math.Clamp(F(wo["w"], 1.5), 0.3, 40), H = Math.Clamp(F(wo["h"], 1), 0.3, 6), Sill = Math.Clamp(F(wo["sill"], 0.9), 0, 6), Shape = HullWindow.Shapes.Contains((string?)wo["shape"]) ? (string)wo["shape"]! : "Rect",
                     Gap = Math.Clamp(F(wo["gap"], -1), -1, 2), Hole = Math.Clamp(F(wo["hole"], 1), 0.5, 2.5), Depth = Math.Clamp(F(wo["depth"], 0.2), 0.05, 1), Double = (bool?)wo["double"] ?? true,
-                    FrameOut = (bool?)wo["frameOut"] ?? true, FrameIn = (bool?)wo["frameIn"] ?? true });
+                    FrameOut = (bool?)wo["frameOut"] ?? true, FrameIn = (bool?)wo["frameIn"] ?? true, Mirror = (bool?)wo["mirror"] ?? false });
         // Doors name their rooms by place in the list (room ids are made fresh on reading).
         foreach (var j in o["doors"]?.AsArray() ?? [])
             if (j is JsonObject dob && d.Doors.Count < MaxRooms * 2)
@@ -492,6 +492,7 @@ public sealed class HullWindow
     // Its frames (Karl, 2026-11-27): the boarding round the glass on the skin (outside), and the lining and architrave round its wall's
     // opening (inside). Without one, the cladding on that side runs up to the glass's edge.
     public bool FrameOut = true, FrameIn = true;
+    public bool Mirror; // a copy across the ship's middle (Karl, 2026-11-27: DesignScene.Glazed): the mirrored room's, or this room's other side
     public static readonly string[] Shapes = ["Rect", "Round", "Oval", "Arch", "Hex"];
 
     /// <summary>A shaped window's outline round its middle, counter-clockwise, as (across, up) offsets, in RimPoints points evenly
