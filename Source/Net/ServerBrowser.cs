@@ -818,7 +818,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      holding one builds different elements on an older peer; no message changed.
     // 483: a design's lift platform collides as its deck alone and may stow flush with its room's floor (a longer piston, plated deck), so
     //      a design holding one builds different elements on an older peer; no message changed.
-    public const ushort ProtocolVersion = 483;
+    // 484: a room out to the hull splits its floor and ceiling strips at a hole's edges (the floor beside a lift platform's well), so a design
+    //      holding one builds different colliders on an older peer; no message changed.
+    public const ushort ProtocolVersion = 484;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
