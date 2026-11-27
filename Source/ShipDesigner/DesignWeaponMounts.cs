@@ -140,6 +140,65 @@ public static class PieceWeapons
         w.Draw(m);
     }
 
+    /// <summary>
+    /// The game part a fitted weapon fires as (DesignParts.Systems.cs: the weapon element starts from it and keeps its gun's numbers), or
+    /// null when the game has no gun for it (the torpedo sponson: its element stays inert, logged). These matches are by look and class.
+    /// </summary>
+    public static string? GamePart(string weapon) => weapon switch
+    {
+        "PDC turret" => "Zero Day PDC", "Flak cannon" => "Flak Cannon", "Rocket battery" => "Rocket Battery", "Naval gun 20 cm" => "Naval Gun 20 cm",
+        "Railgun" => "Zero Day Railgun", "Naval gun 40 cm" => "Naval Gun 40 cm",
+        _ => null,
+    };
+
+    /// <summary>
+    /// A mount piece drawn as its two parts in the ship's frame, at <paramref name="w"/> (one copy's place, a mirrored one's too): the mount
+    /// alone and the weapon fitted on it (null: none), each exactly as <see cref="DesignScene.PieceMesh"/> draws them together, so the game
+    /// splits the designer's own drawing (DesignParts.Systems.cs) and makes nothing of its own. A mirrored place draws with its winding turned
+    /// back, as a mirrored mesh has it.
+    /// </summary>
+    public static (DesignMesh Mount, DesignMesh? Weapon) Split(Piece p, DesignScene.Place w)
+    {
+        var k = MountOf(p.Kind)!;
+        var across = PieceKinds.Find(p.Kind)?.Footprint is not null ? p.Hole : 1;
+        double[] ro = [w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess];
+        var mount = new DesignMesh();
+        mount.Frame(ro[0], ro[1], ro[2], w.X, w.Y, w.Z, p.Size, across);
+        DrawMount(mount, k);
+        DesignMesh? weapon = null;
+        if (WeaponOf(p.Fit) is { } wp)
+        {
+            weapon = new DesignMesh();
+            double[] L(double[] v) => [w.X[0] * v[0] + w.Y[0] * v[1] + w.Z[0] * v[2], w.X[1] * v[0] + w.Y[1] * v[1] + w.Z[1] * v[2], w.X[2] * v[0] + w.Y[2] * v[1] + w.Z[2] * v[2]];
+            var (lo, ax, ay, az) = k.Sponson ? (new double[] { 0.9, 1.0, 0 }, new double[] { 0, -1, 0 }, new double[] { 1, 0, 0 }, new double[] { 0, 0, 1 })
+                : (new double[] { 0, k.Top, 0 }, new double[] { 1, 0, 0 }, new double[] { 0, 1, 0 }, new double[] { 0, 0, 1 });
+            var oo = L(lo);
+            weapon.Frame(ro[0] + oo[0] * p.Size, ro[1] + oo[1] * p.Size, ro[2] + oo[2] * p.Size, L(ax), L(ay), L(az), p.Size);
+            wp.Draw(weapon);
+        }
+        var det = w.X[0] * (w.Y[1] * w.Z[2] - w.Y[2] * w.Z[1]) - w.X[1] * (w.Y[0] * w.Z[2] - w.Y[2] * w.Z[0]) + w.X[2] * (w.Y[0] * w.Z[1] - w.Y[1] * w.Z[0]);
+        if (det < 0)
+        {
+            Unwind(mount);
+            if (weapon != null)
+                Unwind(weapon);
+        }
+        return (mount, weapon);
+    }
+
+    /// <summary>Turns every triangle's winding round (its first and last corners swapped, colours with them).</summary>
+    private static void Unwind(DesignMesh m)
+    {
+        for (var t = 0; t < m.Tris; t++)
+        {
+            for (var c = 0; c < 3; c++)
+                (m.P[t * 9 + c], m.P[t * 9 + 6 + c]) = (m.P[t * 9 + 6 + c], m.P[t * 9 + c]);
+            if (t * 9 + 8 < m.C.Count)
+                for (var c = 0; c < 3; c++)
+                    (m.C[t * 9 + c], m.C[t * 9 + 6 + c]) = (m.C[t * 9 + 6 + c], m.C[t * 9 + c]);
+        }
+    }
+
     private static void Old(DesignMesh m, string kind) => Array.Find(PieceKinds.All, q => q.Name == kind)?.Draw(m);
 
     private static void Flak(DesignMesh m)

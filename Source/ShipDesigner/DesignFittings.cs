@@ -107,6 +107,24 @@ public static class DesignFittings
     private static double[] Norm(double[] v) { var l = Math.Sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); return l < 1e-9 ? [0, 1, 0] : [v[0] / l, v[1] / l, v[2] / l]; }
     private static double[] Cross(double[] a, double[] b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 
+    /// <summary>
+    /// A floodlight's beam at one copy's place <paramref name="w"/> (a mirrored copy's too): its lens, the way it shines and how far it is
+    /// drawn (m), as the page draws it (<see cref="SceneJson"/>). The game's lamp shines from there (DesignParts.Systems.cs).
+    /// </summary>
+    public static (double[] At, double[] Dir, double Range)? Beam(Piece p, DesignScene.Place w)
+    {
+        if (FloodOf(p.Kind) is not { } f)
+            return null;
+        var s = f.Head * p.Size;
+        var dir = Norm(ToWorld(w, AimLocal(p)));
+        var pivot = 0.55 * s - p.Recess;
+        double[] at = [w.O[0] + w.Y[0] * pivot + dir[0] * 0.35 * s, w.O[1] + w.Y[1] * pivot + dir[1] * 0.35 * s, w.O[2] + w.Y[2] * pivot + dir[2] * 0.35 * s];
+        return (at, dir, f.Range * Math.Sqrt(p.Size));
+    }
+
+    /// <summary>How far out of the skin a tow point's coupling is, in the piece's units (the eye's loop, the ball's middle: <see cref="TowEye"/>, <see cref="TowHitch"/>).</summary>
+    public static double TowHeight(string kind) => kind == "Tow hitch" ? 0.43 : 0.18;
+
     /// <summary>The page's light fields: aim and colour, and each beam (its lens, its direction, its reach), mirrored as the mesh is.</summary>
     public static string SceneJson(ShipDesign d, Piece p, DesignScene.Place w)
     {

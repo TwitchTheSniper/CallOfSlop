@@ -473,6 +473,7 @@ public sealed partial class ConstructClip
             ref var l = ref c.Links[e >> 1];
             var (st, sd) = (e & 1) != 0 ? ((int)l.SA, (int)l.SB) : (l.SB, l.SA);
             taken.Add((o, st));
+            taken.Add((k, sd)); // (its own socket too: a later step can't go on a socket this one went on by, as a design part's one weld socket)
             var td = c.DefOf(o);
             if (o == on && st == socket && sd == own || st >= c.SocketCount(o) || sd >= d.Sockets.Length)
                 continue; // (the step's own; a link to a merged receiver's centre socket is named "merged ...": ConstructMerge.SocketName)
