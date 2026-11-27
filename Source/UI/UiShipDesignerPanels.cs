@@ -386,8 +386,9 @@ public sealed partial class Ui
         var gap = D(o, "gap", -1);
         Slider(gap < 0 ? "Cladding clearance (auto)" : "Cladding clearance", gap < 0 ? auto : Math.Round(gap * 100), 0, 100, 1, " cm", v => send([("gap", v / 100)]), kind + "gap",
             auto, _ => send([("gap", D(dk, "gap", -1))]));
-        Slider("Hole size", Math.Round(D(o, "hole", 1) * 100), 50, 250, 5, "%", v => send([("hole", v / 100)]), kind + "hole", Math.Round(D(dk, "hole", 1) * 100),
-            _ => send([("hole", D(dk, "hole", 1))]));
+        if (!(kind == "piece" && Str(o, "socket") == "ramp")) // (a ramp's hole is its own width and length: its Ramp section)
+            Slider("Hole size", Math.Round(D(o, "hole", 1) * 100), 50, 250, 5, "%", v => send([("hole", v / 100)]), kind + "hole", Math.Round(D(dk, "hole", 1) * 100),
+                _ => send([("hole", D(dk, "hole", 1))]));
         if (!glass)
             return;
         Slider("Depth", Math.Round(D(o, "depth", 0.2) * 100), 5, 100, 1, " cm", v => send([("depth", v / 100)]), kind + "gdepth", Math.Round(D(dk, "depth", 0.2) * 100),
@@ -1320,6 +1321,11 @@ public sealed partial class Ui
             {
                 // A boarding ramp's extension (DesignRamp, Karl 2026-11-27): how far its second section runs out once it is down.
                 H3("Ramp");
+                // The hatch's own size (Karl, 2026-11-27): across and along, each apart; the ramp, its extension and the holes follow.
+                Slider("Hatch width", Math.Round(D(p, "rampW", ShipDesigner.DesignRamp.DefWidth) * 100), Math.Round(ShipDesigner.DesignRamp.MinWidth * 100), Math.Round(ShipDesigner.DesignRamp.MaxWidth * 100), 5, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("rampW", v / 100))), "pcrw", Dflt("ramp", "rampW", 100));
+                Slider("Hatch length", Math.Round(D(p, "rampL", ShipDesigner.DesignRamp.DefLength) * 100), Math.Round(ShipDesigner.DesignRamp.MinLength * 100), Math.Round(ShipDesigner.DesignRamp.MaxLength * 100), 5, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("rampL", v / 100))), "pcrl", Dflt("ramp", "rampL", 100));
                 Slider("Extension", Math.Round(D(p, "extend") * 100), 0, Math.Round(D(p, "extendMax", ShipDesigner.DesignRamp.MaxExtend) * 100), 5, " cm",
                     v => Cmd(C("setPiece", ("id", pid), ("extend", v / 100))), "pcext", Dflt("ramp", "extend", 100));
                 Hint("F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.");

@@ -1339,7 +1339,8 @@ function cutControls(o, send, kind, glass) {
   const auto = Math.round((o.gapAuto ?? 0.15) * 100);
   const out = [
     slider(o.gap < 0 ? "Cladding clearance (auto)" : "Cladding clearance", o.gap < 0 ? auto : Math.round(o.gap * 100), 0, 100, 1, " cm", () => {}, v => send({ gap: v / 100 }), auto, () => send({ gap: D.gap })),
-    slider("Hole size", Math.round((o.hole ?? 1) * 100), 50, 250, 5, "%", () => {}, v => send({ hole: v / 100 }), Math.round(D.hole * 100), () => send({ hole: D.hole }))];
+    ...(o.socket === "ramp" ? [] : [ // (a ramp's hole is its own width and length: rampControls)
+      slider("Hole size", Math.round((o.hole ?? 1) * 100), 50, 250, 5, "%", () => {}, v => send({ hole: v / 100 }), Math.round(D.hole * 100), () => send({ hole: D.hole }))])];
   if (glass) out.push(
     slider("Depth", Math.round((o.depth ?? 0.2) * 100), 5, 100, 1, " cm", () => {}, v => send({ depth: v / 100 }), Math.round(D.depth * 100), () => send({ depth: D.depth })),
     el("div", { class: "row" }, el("label", {}, el("input", { type: "checkbox", ...(o.double !== false ? { checked: "" } : {}), onchange: e => send({ double: e.target.checked }) }), "Double glazed"),
@@ -1426,6 +1427,8 @@ function seatControls(p) {
 function rampControls(p) {
   if (p.extend === undefined) return [];
   return [el("h3", {}, "Ramp"),
+    slider("Hatch width", Math.round((p.rampW ?? 2.5) * 100), 150, 500, 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, rampW: v / 100 }), dflt("ramp", "rampW", 100)),
+    slider("Hatch length", Math.round((p.rampL ?? 5.1) * 100), 200, 800, 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, rampL: v / 100 }), dflt("ramp", "rampL", 100)),
     slider("Extension", Math.round(p.extend * 100), 0, Math.round((p.extendMax ?? 2.5) * 100), 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, extend: v / 100 }), dflt("ramp", "extend", 100)),
     el("p", { class: "hint" }, "F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.")];
 }
