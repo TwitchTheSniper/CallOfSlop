@@ -1331,7 +1331,7 @@ public static partial class DesignScene
     public static double EasedHalf(HullBody h, double z, double y)
     {
         // Refined (Karl, 2026-11-27: a room maxed out in the nose still rippled): the eased width is taken on a coarse grid, 1.5 m along and
-        // 0.75 m up, and drawn straight between its points, so the wall is a few flat facets, not a wave.
+        // 0.75 m up, and drawn straight between its points, so the wall is a few flat facets, not a wave. Never past the eased width here (Karl, 2026-11-27: a straight run past it went outside the skin, the clip pulled some corners back and the cladding at the top and bottom came out jagged).
         if (EaseHalfAt(h, z, y) < 0.1)
             return EaseHalfAt(h, z, y);
         const double GZ = 1.5, GY = 0.75;
@@ -1339,7 +1339,7 @@ public static partial class DesignScene
         double a = EaseHalfAt(h, fz, fy), b = EaseHalfAt(h, fz + GZ, fy), c = EaseHalfAt(h, fz, fy + GY), e = EaseHalfAt(h, fz + GZ, fy + GY);
         if (a < 0.1 || b < 0.1 || c < 0.1 || e < 0.1)
             return EaseHalfAt(h, z, y); // a grid point past the skin's end or top: no straight run there
-        return Math.Min(EaseHalfAt(h, z, y) + 0.25, (a * (1 - tz) + b * tz) * (1 - ty) + (c * (1 - tz) + e * tz) * ty);
+        return Math.Min(EaseHalfAt(h, z, y), (a * (1 - tz) + b * tz) * (1 - ty) + (c * (1 - tz) + e * tz) * ty);
     }
 
     private static double EaseHalfAt(HullBody h, double z, double y)
