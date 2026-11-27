@@ -55,7 +55,7 @@ public static class DesignHangar
     /// builds a bay reads this, never the kind's starting size.
     /// With Match door on (Karl, 2026-11-27) its width and height are its door opening's, so the bay is a straight tunnel the door's size.</summary>
     public static BaySize? Of(Piece p) => Bay(p.Kind) is not { } b ? null : p.BayMatch
-        ? b with { W = Math.Max(BayMinW, p.BayDoorW * p.Hole), H = Math.Max(BayMinH, p.BayDoorH * p.Hole), D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH }
+        ? b with { W = Math.Max(BayMinW, p.BayDoorW * p.Hole), H = p.BayOnFloor && p.Room != 0 ? p.BayH : Math.Max(BayMinH, p.BayDoorH * p.Hole), D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH }
         : b with { W = p.BayW, H = p.BayH, D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH };
     public static bool IsBay(string kind) => Bay(kind) is not null;
     public static bool IsFitting(string kind) => kind is "Docking arm" or "Docking cradle";
@@ -104,7 +104,7 @@ public static class DesignHangar
         {
             var p = new Piece { Kind = k.Name };
             Init(new ShipDesign(), p);
-            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["bayFloor"] = p.BayFloor, ["bayMatch"] = p.BayMatch, ["shutterRollers"] = p.ShutterRollers, ["shutterSide"] = p.ShutterSide, ["shutterSlats"] = p.ShutterSlats, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
+            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["bayFloor"] = p.BayFloor, ["bayMatch"] = p.BayMatch, ["bayOnFloor"] = p.BayOnFloor, ["shutterRollers"] = p.ShutterRollers, ["shutterSide"] = p.ShutterSide, ["shutterSlats"] = p.ShutterSlats, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
         }
         return o;
     }
@@ -116,7 +116,7 @@ public static class DesignHangar
         if (IsBay(p.Kind))
         {
             o["bayW"] = ShipDesign.R(p.BayW); o["bayH"] = ShipDesign.R(p.BayH); o["bayD"] = ShipDesign.R(p.BayD);
-            o["bayDoorW"] = ShipDesign.R(p.BayDoorW); o["bayDoorH"] = ShipDesign.R(p.BayDoorH); o["bayDoor"] = p.BayDoorType; o["bayFloor"] = p.BayFloor; o["bayMatch"] = p.BayMatch;
+            o["bayDoorW"] = ShipDesign.R(p.BayDoorW); o["bayDoorH"] = ShipDesign.R(p.BayDoorH); o["bayDoor"] = p.BayDoorType; o["bayFloor"] = p.BayFloor; o["bayMatch"] = p.BayMatch; o["bayOnFloor"] = p.BayOnFloor;
             o["shutterRollers"] = p.ShutterRollers; o["shutterSide"] = p.ShutterSide; o["shutterSlats"] = p.ShutterSlats;
         }
         else if (IsDeck(p.Kind))
@@ -141,6 +141,7 @@ public static class DesignHangar
         p.BayDoorType = DoorType((string?)o["bayDoor"]);
         p.BayFloor = (string?)o["bayFloor"] == "Lift-out" ? "Lift-out" : "Fixed";
         p.BayMatch = (bool?)o["bayMatch"] ?? false;
+        p.BayOnFloor = (bool?)o["bayOnFloor"] ?? false;
         p.ShutterRollers = Math.Clamp((int?)o["shutterRollers"] ?? 1, 1, 2);
         p.ShutterSide = Array.IndexOf(ShutterSides, (string?)o["shutterSide"]) >= 0 ? (string)o["shutterSide"]! : "Fore";
         p.ShutterSlats = Math.Clamp((int?)o["shutterSlats"] ?? 4, 1, ShutterMaxSlats);
@@ -176,6 +177,7 @@ public static class DesignHangar
                 (p.BayW, p.BayH) = (Math.Clamp(was.W, BayMinW, BayMaxW), Math.Clamp(was.H, BayMinH, BayMaxH)); // (unticked, it keeps the door's size)
             p.BayMatch = match;
         }
+        if (o["bayOnFloor"] is not null) p.BayOnFloor = (bool)o["bayOnFloor"]!;
         if (o["shutterRollers"] is not null) p.ShutterRollers = Math.Clamp((int)o["shutterRollers"]!, 1, 2);
         if ((string?)o["shutterSide"] is { } side && Array.IndexOf(ShutterSides, side) >= 0) p.ShutterSide = side;
         if (o["shutterSlats"] is not null) p.ShutterSlats = Math.Clamp((int)o["shutterSlats"]!, 1, ShutterMaxSlats);
@@ -200,7 +202,7 @@ public static class DesignHangar
     {
         var sb = new StringBuilder();
         if (Of(p) is { } b)
-            sb.Append(",\"bayDoorW\":").Append(ShipDesign.S(p.BayDoorW)).Append(",\"bayDoorH\":").Append(ShipDesign.S(p.BayDoorH)).Append(",\"bayDoor\":").Append(DesignScene.Q(p.BayDoorType)).Append(",\"bayFloor\":").Append(DesignScene.Q(p.BayFloor)).Append(",\"bayMatch\":").Append(p.BayMatch ? "true" : "false")
+            sb.Append(",\"bayDoorW\":").Append(ShipDesign.S(p.BayDoorW)).Append(",\"bayDoorH\":").Append(ShipDesign.S(p.BayDoorH)).Append(",\"bayDoor\":").Append(DesignScene.Q(p.BayDoorType)).Append(",\"bayFloor\":").Append(DesignScene.Q(p.BayFloor)).Append(",\"bayMatch\":").Append(p.BayMatch ? "true" : "false").Append(",\"bayOnFloor\":").Append(p.BayOnFloor ? "true" : "false")
               .Append(",\"shutterRollers\":").Append(p.ShutterRollers).Append(",\"shutterSide\":").Append(DesignScene.Q(p.ShutterSide)).Append(",\"shutterSlats\":").Append(p.ShutterSlats)
               .Append(",\"bay\":[").Append(ShipDesign.S(b.W)).Append(',').Append(ShipDesign.S(b.H)).Append(',').Append(ShipDesign.S(b.D)).Append(']')
               .Append(",\"fittings\":").Append(d.Pieces.Count(q => IsFitting(q.Kind) && q.Link == p.Id));
@@ -280,6 +282,30 @@ public static class DesignHangar
         return new DesignScene.Place(o, x, up, into);
     }
 
+    // ---- a bay on its room's floor
+
+    /// <summary>
+    /// Sets the height of every bay linked to a room with its floor on that room's (Karl, 2026-11-27): a roof bay runs down from its door
+    /// to the room's floor; a side bay, centred on its door, grows until its floor is level with the room's. A belly bay's floor is its door,
+    /// so it is left as it is. Run after every edit, so it follows the room and the bay as they move.
+    /// </summary>
+    public static void Fit(ShipDesign d)
+    {
+        if (d.Stacked)
+            return;
+        foreach (var p in d.Pieces)
+        {
+            if (!p.BayOnFloor || p.Room == 0 || !IsBay(p.Kind) || d.RoomById(p.Room) is not { } r || d.Hull(p.Hull) is not { } h)
+                continue;
+            var w = DesignScene.Where(h, p);
+            var floor = d.DeckOf(r).Floor + DesignScene.FloorTop(r);
+            var mouth = w.O[1] - w.Y[1] * p.Recess;
+            double? hgt = Vertical(w) == 1 ? (w.Y[1] > 0 ? mouth - floor : null) : 2 * (mouth - floor);
+            if (hgt is { } v && v > 0)
+                p.BayH = Math.Clamp(Math.Round(v * 20) / 20, BayMinH, BayMaxH);
+        }
+    }
+
     // ---- checks
 
     /// <summary>Checks a hangar piece; true when it was the whole check (a bay or a fitting), false when the usual socket check follows
@@ -291,11 +317,11 @@ public static class DesignHangar
         if (Of(p) is { } b)
         {
             var ok = true;
-            if (p.BayDoorW > b.W + 1e-6)
-                c.Issues.Add(new("warn", $"{p.Kind}'s door is {p.BayDoorW:0.#} m wide, wider than its bay ({b.W:0} m): make the door narrower or the bay bigger", $"piece:{p.Id}"));
-            if (p.BayDoorH > b.H + 1e-6)
-                c.Issues.Add(new("warn", $"{p.Kind}'s door is {p.BayDoorH:0.#} m tall, taller than its bay ({b.H:0} m): make the door lower or the bay bigger", $"piece:{p.Id}"));
             var (ex, ey, ez) = Extent(b, w);
+            // The door against the bay's side it is in (a roof or belly bay's door height runs along its depth, a side bay's up its height).
+            var (dx, dz) = DoorExtent(p, w);
+            if (Math.Max(dx * p.Hole - ex, dz * p.Hole - ez) > 1e-6)
+                c.Issues.Add(new("warn", $"{p.Kind}'s door ({p.BayDoorW:0.#} x {p.BayDoorH:0.#} m) is bigger than the bay's side it is in ({(Vertical(w) == 0 ? ez : ex):0.#} x {(Vertical(w) == 0 ? ex : ez):0.#} m): make the door smaller or the bay bigger", $"piece:{p.Id}"));
             var back = Add(w.O, w.Y, -ey - p.Recess);
             var mid = Add(w.O, w.Y, -ey / 2 - p.Recess);
             if (h.Depth(back[0], back[1], back[2]) < 0 || h.Depth(mid[0], mid[1], mid[2]) < 0)
@@ -304,11 +330,35 @@ public static class DesignHangar
             var box = Box(w.O, w.X, w.Y, w.Z, ex, ey + p.Recess, ez);
             foreach (var r in d.Rooms)
             {
+                if (r.Id == p.Room)
+                    continue; // (the room it opens into: it is meant to meet it)
                 var o = DesignScene.Outer(d, r);
                 if (o[0] < box[1] && o[1] > box[0] && o[2] < box[3] && o[3] > box[2] && o[4] < box[5] && o[5] > box[4])
                 {
                     c.Issues.Add(new("warn", $"{p.Kind} runs into {DesignScene.Name(r)} on deck {r.Deck + 1}", $"piece:{p.Id}"));
                     break;
+                }
+            }
+            // Linked to a room as a socket (Karl, 2026-11-27): a way aboard into it, through a wide doorway (or a hole in its ceiling or
+            // floor when the bay is over or under it), with its link line drawn from the bay's middle.
+            if (p.Room != 0)
+            {
+                if (d.RoomById(p.Room) is not { } lr)
+                {
+                    ok = false;
+                    c.Issues.Add(new("error", $"{p.Kind}'s room is gone: pick another", $"piece:{p.Id}"));
+                }
+                else
+                {
+                    entries.Add(lr.Id);
+                    var kind = PieceKinds.Find(p.Kind)!;
+                    if (DesignScene.SocketDoor(d, p, kind, lr, mid) is { } way)
+                        c.Doors.Add(way);
+                    var lb = DesignScene.Outer(d, lr);
+                    double[] q = [Math.Clamp(mid[0], lb[0], lb[1]), Math.Clamp(mid[1], lb[2], lb[3]), Math.Clamp(mid[2], lb[4], lb[5])];
+                    c.Links.Add((mid, q, true, 0, false, w.Y, "hangar"));
+                    if (p.BayOnFloor && !d.Stacked && Vertical(w) == 1 && w.Y[1] < 0)
+                        c.Issues.Add(new("warn", $"{p.Kind} is in the belly: its floor is its door, so it can't sit on its room's floor", $"piece:{p.Id}"));
                 }
             }
             if (d.Pieces.Count(q => IsFitting(q.Kind) && q.Link == p.Id) == 0)

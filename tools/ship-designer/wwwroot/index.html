@@ -1420,7 +1420,10 @@ function hangarControls(p) {
     fl.addEventListener("change", () => send({ bayFloor: fl.value }));
     return [el("h3", {}, "Hangar bay"),
       (() => { const cb = el("input", { type: "checkbox", "aria-label": "Match door" }); cb.checked = !!p.bayMatch; cb.addEventListener("change", () => send({ bayMatch: cb.checked })); return el("label", { class: "row" }, cb, " Match door (width and height)"); })(),
-      ...(p.bayMatch ? [] : [m("Width", "bayW", 5, 96, 0.5), m("Height", "bayH", 3, 48, 0.5)]), m("Depth", "bayD", 5, 96, 0.5),
+      ...(p.bayMatch ? [] : [m("Width", "bayW", 5, 96, 0.5)]), ...(p.bayMatch || (p.bayOnFloor && p.room) ? [] : [m("Height", "bayH", 3, 48, 0.5)]),
+      ...(p.room ? [(() => { const cb = el("input", { type: "checkbox", "aria-label": "Floor on its room's floor" }); cb.checked = !!p.bayOnFloor; cb.addEventListener("change", () => send({ bayOnFloor: cb.checked })); return el("label", { class: "row" }, cb, " Floor on its room's floor"); })(),
+        ...(p.bayOnFloor ? [el("p", { class: "hint" }, `Its height follows its room: ${fmt(p.bay[1])} m, from its door down to the room's floor (a side bay: centred on its door).`)] : [])] : []),
+      m("Depth", "bayD", 5, 96, 0.5),
       el("div", { class: "row" }, el("button", { class: "reset", title: "Width, height and depth back to the bay's own", onclick: () => send({ bayW: D.bayW, bayH: D.bayH, bayD: D.bayD }) }, "Reset all")),
       el("h3", {}, "Hangar door"),
       m("Door width", "bayDoorW", 5, p.bayMatch ? 48 : Math.min(48, p.bay[0]), 0.5), m("Door height", "bayDoorH", 3, p.bayMatch ? 32 : Math.min(32, p.bay[1]), 0.5),
@@ -2130,11 +2133,11 @@ function inspector() {
       k.service ? el("div", { class: "row" },
         el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room its service socket goes in."; } }, "Pick its room"),
         p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "") : "",
-      k.socket ? el("p", { class: "hint" }, p.room ? `Opens into ${(() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })()}.` : "Opens into the nearest room it can reach.") : "",
+      k.socket ? el("p", { class: "hint" }, p.room ? `Opens into ${(() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })()}.` : p.bay ? "Opens into no room: pick the room it opens into (a wide doorway into it)." : "Opens into the nearest room it can reach.") : "",
       k.socket ? el("div", { class: "row" },
         el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room it opens into (the rooms show through the hull)."; } }, "Pick its room"),
         p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "",
-        el("button", { onclick: () => cmd({ op: "autoRoom", id: p.id }) }, "Add a room behind it")) : "",
+        p.bay ? "" : el("button", { onclick: () => cmd({ op: "autoRoom", id: p.id }) }, "Add a room behind it")) : "",
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delPiece", id: p.id }); select(null, 0); } }, "Take off")));
   } else if (sel.kind === "room") {
     const r = S.rooms.find(r => r.id === sel.id); if (!r) return;

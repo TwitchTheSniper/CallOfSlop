@@ -211,6 +211,7 @@ public sealed class ShipDesign
             }
         if (d.Hulls.Count == 0)
             throw new FormatException("a ship design needs at least one hull");
+        DesignHangar.Fit(d); // (a bay on its room's floor: its height as the room has it)
         return d;
     }
 
@@ -392,6 +393,7 @@ public sealed class Piece
     public string BayDoorType = DesignHangar.DefDoor;
     public int ShutterRollers = 1, ShutterSlats = 4; // a shutter bay door's rollers (1 or 2) and slats on each (DesignHangar.Slats)
     public string ShutterSide = "Fore"; // the side its one roller is at, or the axis two split across
+    public bool BayOnFloor; // a bay linked to a room (Room) is as tall as takes its floor to that room's floor (DesignHangar.Fit), Karl 2026-11-27
     public bool BayMatch; // a bay as wide and tall as its door opening (DesignHangar.Of), Karl 2026-11-27
     public string BayFloor = "Fixed"; // a bay's floor: Fixed or Lift-out (DesignHangar.FloorBox)
     public int Link;

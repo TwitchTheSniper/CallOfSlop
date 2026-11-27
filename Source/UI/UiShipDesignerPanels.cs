@@ -1078,10 +1078,17 @@ public sealed partial class Ui
             H3("Hangar bay");
             var match = B(p, "bayMatch");
             Checkbox($"Match door (width and height)##sdhgm{pid}", match, v => Cmd(C("setPiece", ("id", pid), ("bayMatch", v))));
+            var onFloor = B(p, "bayOnFloor") && I(p, "room") != 0;
             if (!match)
-            {
                 M("Width", "bayW", ShipDesigner.DesignHangar.BayMinW, ShipDesigner.DesignHangar.BayMaxW, 0.5);
+            if (!match && !onFloor)
                 M("Height", "bayH", ShipDesigner.DesignHangar.BayMinH, ShipDesigner.DesignHangar.BayMaxH, 0.5);
+            if (I(p, "room") != 0)
+            {
+                // Its floor on the floor of the room it opens into (Karl, 2026-11-27): its height follows (DesignHangar.Fit).
+                Checkbox($"Floor on its room's floor##sdhgf{pid}", B(p, "bayOnFloor"), v => Cmd(C("setPiece", ("id", pid), ("bayOnFloor", v))));
+                if (B(p, "bayOnFloor"))
+                    Hint($"Its height follows its room: {Fmt(size.Length > 1 ? size[1] : 0)} m, from its door down to the room's floor (a side bay: centred on its door).");
             }
             M("Depth", "bayD", ShipDesigner.DesignHangar.BayMinD, ShipDesigner.DesignHangar.BayMaxD, 0.5);
             if (ResetAll("hgbay" + pid, "Width, height and depth back to the bay's own"))
@@ -1641,7 +1648,7 @@ public sealed partial class Ui
             if (drive)
                 Hint($"Its service socket (feed and access panel) is inside, opposite it, in {(roomId != 0 ? RoomText() : "the nearest room it can reach")}.");
             if (sock)
-                Hint(roomId != 0 ? $"Opens into {RoomText()}." : "Opens into the nearest room it can reach.");
+                Hint(roomId != 0 ? $"Opens into {RoomText()}." : bay ? "Opens into no room: pick the room it opens into (a wide doorway into it)." : "Opens into the nearest room it can reach.");
             if (drive || sock)
             {
                 if (OnButton("Pick its room##sdpcpr", _pickRoomFor == pid))
@@ -1656,7 +1663,7 @@ public sealed partial class Ui
                     if (ImGui.Button("Nearest room##sdpcnr"u8))
                         Cmd(C("setPiece", ("id", pid), ("room", 0)));
                 }
-                if (sock)
+                if (sock && !bay)
                 {
                     Row();
                     if (ImGui.Button("Add a room behind it##sdpcar"u8))
