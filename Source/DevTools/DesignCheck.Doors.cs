@@ -40,9 +40,7 @@ public static partial class DesignCheck
             var worst = 0.0;
             for (var t = 0; t < ticks; t++)
             {
-                var s = Stopwatch.GetTimestamp();
-                w.Step(World.Query, World.TickDt);
-                worst = Math.Max(worst, Ms(s));
+                worst = Math.Max(worst, TimedStep(w));
             }
             return worst;
         }
