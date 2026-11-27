@@ -51,7 +51,8 @@ public static class RouteRender
     /// longer strings a cable across the room in mid air (the colony's canteen, 2026-11-14). A cable routed through nodes,
     /// and every cable on a vehicle, is drawn as always.
     /// </summary>
-    public static bool Concealed(Construct c, in CRoute r) => r.Type == RouteType.Data && r.Count == 0 && r.Parent == 255 && c.Anchored;
+    public static bool Concealed(Construct c, in CRoute r) => r.Type == RouteType.Data && r.Count == 0 && r.Parent == 255 && (c.Anchored || r.From < c.PartCount && DesignParts.IsDesign(c.DefOf(r.From)));
+    // (a ship design's wires, its guns' and lamps' from the helm through hidden relays, run in its walls: a straight line through the hull otherwise)
 
     /// <summary>Every link of every construct (lit, instanced).</summary>
     public static void Draw(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
