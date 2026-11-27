@@ -392,7 +392,10 @@ public sealed class Piece
     public double RampAngle; // a boarding ramp's set angle, degrees; 0: the automatic one (DesignRamp.Angle)
     // A stand-off armour plate's (DesignArmour, Karl 2026-11-27): width along, height round, thickness and stand-off (m); its outer face's cladding and panel size.
     public double ArmW = DesignArmour.DefW, ArmH = DesignArmour.DefH, ArmT = DesignArmour.DefT, ArmOff = DesignArmour.DefOff, ArmCladSize = DesignArmour.DefCladSize;
-    public string ArmClad = DesignArmour.DefClad;
+    public string ArmClad = DesignArmour.DefClad, ArmStruts = DesignArmour.DefStruts;
+    public double[] ArmTop = new double[DesignArmour.EdgePoints], ArmBot = new double[DesignArmour.EdgePoints]; // its outline's top and bottom edges (DesignArmour.EdgeAt)
+    public double ArmFollow = 1; // 1: it follows the hull's shape; 0: flat
+    public int ArmButton; // the utilities console button that works it (1-8; 0: none, F on the plate only)
 
     public JsonObject ToJson() => DesignArmour.Write(this, DesignRecess.Write(this, DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {

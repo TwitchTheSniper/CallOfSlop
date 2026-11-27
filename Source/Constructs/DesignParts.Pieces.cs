@@ -39,6 +39,7 @@ public static partial class DesignParts
                     flips.Add((-flips[k].S, -flips[k].O));
                 }
             var armour = DesignArmour.Is(p) ? DesignArmour.Solids(d, p) : null;
+            var plateCells = armour is not null ? DesignArmour.PlateCells(d, p) : null;
             for (var k = 0; k < sets.Count; k++)
             {
                 var m = sets[k].M;
@@ -50,7 +51,7 @@ public static partial class DesignParts
                 e.Kg = e.Area * PieceKgPerM2;
                 HullOf(e, Unleaved(m));
                 if (armour is not null)
-                    ArmourHulls(e, armour, flips[k]); // (a curved plate's one hull would fill the space to the skin: a hull a cell and a strut)
+                    ArmourHulls(e, armour, flips[k]); // (its sockets' hulls: one over them all would fill the space under the plate)
                 var at = els.Count;
                 els.Add(e);
                 if (st.BandAt(p.Hull, sets[k].Copy, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f) is var b and >= 0)
@@ -62,6 +63,10 @@ public static partial class DesignParts
                     Leg(new PieceAt(p, e, at, sets[k].W, els), m); // (its leg is landing gear, not a door F works)
                 else if (p.Kind == DesignRamp.Kind)
                     RampLeaves(new PieceAt(p, e, at, sets[k].W, els), m, rampFloor); // (its ramp and extension on their joints, F lowers them)
+                else if (p.Kind == DesignArmour.Console)
+                    ConsoleButtons(new PieceAt(p, e, at, sets[k].W, els), m); // (its buttons, each its own: DesignParts.Armour.cs)
+                else if (armour is not null)
+                    ArmourLeaf(new PieceAt(p, e, at, sets[k].W, els), m, plateCells!, flips[k]); // (its plate on its rams: DesignParts.Armour.cs)
                 else
                     PieceDoors(new PieceAt(p, e, at, sets[k].W, els), m); // (its door leaves, each a door of its own)
                 if (p.Kind == "Boarding hatch" && k == 0)
@@ -72,8 +77,10 @@ public static partial class DesignParts
         Flight(els);
     }
 
-    /// <summary>A stand-off armour plate's solid (DesignArmour.Solids): one convex hull a cell of its plate and one a strut, in this copy's place.</summary>
-    private static void ArmourHulls(Element e, List<List<double[]>> solids, (float S, float O) flip)
+    /// <summary>A stand-off armour plate's rams' sockets (DesignArmour.Solids): one convex hull each, in this copy's place (the plate is its own element: ArmourLeaf).</summary>
+    private static void ArmourHulls(Element e, List<List<double[]>> solids, (float S, float O) flip) => e.Hulls = [.. FlipHulls(e, solids, flip)];
+
+    private static List<ConvexHull> FlipHulls(Element e, List<List<double[]>> solids, (float S, float O) flip)
     {
         var hulls = new List<ConvexHull>();
         var pts = new List<Vector3>();
@@ -87,8 +94,7 @@ public static partial class DesignParts
             else
                 Console.WriteLine($"[design] armour plate {e.Id}: a cell of {pts.Count} points came out flat and is left out of its collider");
         }
-        if (hulls.Count > 0)
-            e.Hulls = [.. hulls];
+        return hulls;
     }
 
     /// <summary>This file's kinds: the drives, the RCS quads and the seat (by piece kind), and the thrust, seat and flight functions.</summary>

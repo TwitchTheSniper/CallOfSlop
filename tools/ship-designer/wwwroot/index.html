@@ -1516,10 +1516,50 @@ function armourControls(p) {
     slider("Height (round)", p.armH, 1, 40, 0.05, " m", () => {}, v => send({ armH: v }), D.armH),
     slider("Thickness", Math.round(p.armT * 100), 5, 200, 1, " cm", () => {}, v => send({ armT: v / 100 }), Math.round(D.armT * 100)),
     slider("Stand-off", Math.round(p.armOff * 100), 30, 800, 5, " cm", () => {}, v => send({ armOff: v / 100 }), Math.round(D.armOff * 100)),
+    slider("Console button", p.armButton ?? 0, 0, 8, 1, "", () => {}, v => send({ armButton: v }), 0),
+    el("p", { class: "hint" }, (p.armButton ?? 0) > 0 ? `Worked by button ${p.armButton} on any Utilities console aboard (Inside > Command), and by F on the plate.` : "No console button: F on the plate works it. Set a button to work it from a Utilities console."),
+    el("div", { class: "row" }, el("span", {}, "Held by"), ...["Arm", "Row of 3", "Row of 4"].map(k => el("button", { class: p.armStruts === k ? "on" : "", onclick: () => send({ armStruts: k }) }, k))),
     el("div", { class: "row" }, el("span", {}, "Outer cladding"), ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: p.armClad === k ? "on" : "", onclick: () => send({ armClad: k }) }, k)))];
   if (p.armClad !== "Off") out.push(slider("Panel size", p.armCladSize, 0.4, 6, 0.05, " m", () => {}, v => send({ armCladSize: v }), D.armCladSize));
-  out.push(el("p", { class: "hint" }, "It follows the hull's shape at its stand-off, held off the skin on struts. Its outer face takes a hull cladding style; its inner face is plain panels. Solid in the game."));
+  // The plate screen (Karl, 2026-11-27): how it shapes round the hull, and its outline seen flat, sculpted by its edges (the game's Ui.ArmourOutline).
+  out.push(el("h3", {}, "Plate shape"),
+    slider("Follow the hull", Math.round((p.armFollow ?? 1) * 100), 0, 100, 5, "%", () => {}, v => send({ armFollow: v / 100 }), 100),
+    armourOutline(p),
+    el("div", { class: "row" }, el("button", { onclick: () => send({ armReset: true }) }, "Reset shape")),
+    el("p", { class: "hint" }, "Follow 100%: it bends with the hull at its stand-off; 0%: flat. Drag the outline's points up or down to grow or cut its edges; Reset squares it again. F in the game: its rams push it out slowly, F again lets it go."));
   return out;
+}
+// A plate seen flat: its length across, its height up, the top and bottom edges' points dragged up or down (DesignArmour.EdgeAt).
+function armourOutline(p) {
+  const NS = "http://www.w3.org/2000/svg", W = 260, Hh = 160, pad = 16, top = p.armTop || [], bot = p.armBot || [], n = top.length, w = p.armW, h = p.armH;
+  const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`); svg.setAttribute("class", "prof");
+  if (n < 2) return svg;
+  const yHi = h / 2 + Math.max(0, ...top), yLo = -h / 2 - Math.max(0, ...bot);
+  const sc = Math.min((W - pad * 2) / Math.max(w, 0.5), (Hh - pad * 2) / Math.max(yHi - yLo, 0.5)), oy = Hh / 2 + (yHi + yLo) / 2 * sc, x0 = W / 2 - w / 2 * sc;
+  const X = v => x0 + v * w * sc, Y = y => oy - y * sc, mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); svg.append(e); return e; };
+  mk("rect", { x: X(0), y: Y(h / 2), width: w * sc, height: h * sc, fill: "none", stroke: "#33414b", "stroke-dasharray": "3 3" });
+  const at = (k, isTop) => [X(k / (n - 1)), isTop ? Y(h / 2 + top[k]) : Y(-h / 2 - bot[k])];
+  const ring = [...top.map((_, k) => at(k, true)), ...bot.map((_, k) => at(n - 1 - k, false))];
+  const poly = mk("polygon", { points: ring.map(q => q.map(v => v.toFixed(1)).join(",")).join(" "), fill: "rgba(255,176,46,0.08)", stroke: "#ffb02e", "stroke-width": 2 });
+  const edge = (e, v) => { const q = Math.min(1, Math.max(0, v)) * (e.length - 1), k = Math.min(e.length - 2, Math.floor(q)); return e[k] + (e[k + 1] - e[k]) * (q - k); };
+  const rams = p.armStruts === "Arm" ? 1 : p.armStruts === "Row of 4" ? 4 : 3;
+  for (let b = 0; b < rams; b++) { const v = (b + 0.5) / rams; mk("circle", { cx: X(v), cy: Y((edge(top, v) - edge(bot, v)) / 2), r: rams === 1 ? 9 : 6, fill: "#6a7480" }); }
+  for (const isTop of [true, false]) for (let k = 0; k < n; k++) {
+    const [cx, cy] = at(k, isTop), c = mk("circle", { cx, cy, r: 7, fill: "#ffb02e", stroke: "#1b2329", "stroke-width": 2, class: "pt" });
+    c.addEventListener("pointerdown", ev => {
+      ev.preventDefault(); c.setPointerCapture(ev.pointerId); dragFirst = true;
+      const move = e2 => {
+        const r = svg.getBoundingClientRect(), py = Math.min(Hh, Math.max(0, (e2.clientY - r.top) * W / r.width)), y = (oy - py) / sc;
+        const v = Math.min(20, Math.max(-h / 2 + 0.25, Math.round((isTop ? y - h / 2 : -h / 2 - y) / 0.05) * 0.05));
+        (isTop ? top : bot)[k] = v; c.setAttribute("cy", isTop ? Y(h / 2 + v) : Y(-h / 2 - v));
+        dragCmd({ op: "setPiece", id: p.id, armEdge: isTop ? "top" : "bot", k, at: v });
+      };
+      const up = () => { c.removeEventListener("pointermove", move); c.removeEventListener("pointerup", up); c.removeEventListener("pointercancel", up); flush(); inspector(); };
+      c.addEventListener("pointermove", move); c.addEventListener("pointerup", up); c.addEventListener("pointercancel", up);
+    });
+  }
+  const lab = mk("text", { x: 8, y: Hh - 8, fill: "#93a3ad", "font-size": "10", "font-family": "IBM Plex Mono, monospace" }); lab.textContent = `${fmt(w)} m along · drag the edges`;
+  return svg;
 }
 // A floodlight's aim and beam colour (Karl, 2026-11-26), with resets from CAT.defaults.fitting; a tow point's note.
 function fittingControls(p) {
