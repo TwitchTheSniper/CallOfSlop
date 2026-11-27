@@ -1723,7 +1723,8 @@ function stationPanel(h) {
     el("div", { class: "row" }, el("span", {}, "Match body"), matchSel),
     ...(clad.kind === "Off" ? [] : [el("div", { class: "row" },
       el("label", {}, el("input", { type: "checkbox", ...(h.cladFore !== false ? { checked: "" } : {}), onchange: e => hs({ cladFore: e.target.checked }) }), "Clad front"),
-      el("label", {}, el("input", { type: "checkbox", ...(h.cladAft !== false ? { checked: "" } : {}), onchange: e => hs({ cladAft: e.target.checked }) }), "Clad back"))]),
+      el("label", {}, el("input", { type: "checkbox", ...(h.cladAft !== false ? { checked: "" } : {}), onchange: e => hs({ cladAft: e.target.checked }) }), "Clad back"),
+      el("label", { title: "Tapering ends, short bands and end caps in big flush plates at one height" }, el("input", { type: "checkbox", ...(h.cladSmooth ? { checked: "" } : {}), onchange: e => hs({ cladSmooth: e.target.checked }) }), "Smooth busy areas"))]),
     ...(src ? [el("p", { class: "hint" }, `Follows ${src.name}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.`)] : [
     el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
     ...(clad.kind === "Off" ? [] : [el("div", { class: "row" }, el("span", {}, "Material"), matSel(clad.material || "Hull", ["Hull", ...MAT_NAMES], "Cladding material", v => hs({ cladMaterial: v })),
@@ -1736,16 +1737,6 @@ function stationPanel(h) {
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
         el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
     el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare."));
-  // Beading (Karl, 2026-11-27): raised strips along the profile's points, bow to stern.
-  const bead = h.bead || { kind: "Off", size: 0.06, colour: "" };
-  box.append(el("h3", {}, "Beading"),
-    el("div", { class: "row" }, ...["Off", "Creases", "All"].map(k => el("button", { class: bead.kind === k ? "on" : "", onclick: () => hs({ bead: k }) }, k))),
-    ...(bead.kind === "Off" ? [] : [
-      slider("Bead size", Math.round(bead.size * 100), 2, 30, 1, " cm", () => {}, v => hs({ beadSize: v / 100 }), dflt("hull", "beadSize", 100)),
-      el("div", { class: "row" }, el("span", {}, "Colour"),
-        (() => { const c = el("input", { type: "color", value: bead.colour || h.skin, "aria-label": "Beading colour" }); c.addEventListener("change", () => hs({ beadColour: c.value })); return c; })(),
-        resetAll("Beading colour back to the skin's, darkened", () => hs({ beadColour: "" })))]),
-    el("p", { class: "hint" }, "Creases: a strip along every sharp corner of the profile; All: along every point. They stand clear of the cladding and stop at openings."));
   // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
   box.append(el("h3", {}, "Damage"),
     slider("Damage", Math.round((h.damage ?? 0) * 100), 0, 100, 1, "%", () => {}, v => hs({ damage: v / 100 }), dflt("hull", "damage", 100)),
@@ -1815,7 +1806,7 @@ function stationPanel(h) {
   box.append(el("div", { class: "row" }, el("span", { class: "hint" }, one ? "This station:" : "Every station:"), pts));
   box.append(el("div", { class: "row" },
     el("button", { onclick: () => cmd({ op: "copyHull", hull: h.id }) }, "Copy body"),
-    el("button", { title: "Remember this body's profile, cladding, beading and paint", onclick: () => { styleFrom = h.id; toast("Settings copied.", true); panels(); } }, "Copy settings"),
+    el("button", { title: "Remember this body's profile, cladding and paint", onclick: () => { styleFrom = h.id; toast("Settings copied.", true); panels(); } }, "Copy settings"),
     el("button", { title: "Take the copied body's settings; this body keeps its place", ...(styleFrom && styleFrom !== h.id && S.hulls.some(b => b.id === styleFrom) ? {} : { disabled: "" }), onclick: () => { const a = cmd({ op: "pasteHullStyle", hull: h.id, from: styleFrom }); if (a.error) toast(a.error); } }, "Paste settings"),
     el("button", { onclick: () => { cmd({ op: "delHull", hull: h.id }); select(null, 0); } }, "Remove body")));
   return box;
