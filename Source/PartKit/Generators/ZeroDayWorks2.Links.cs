@@ -9,12 +9,12 @@ namespace CallOfSlop.PartKit.Generators;
 /// mirrored) is linked the same way, by chutes laid square through the air (<see cref="Script.Duct"/>, as the old works lays them):
 /// <list type="bullet">
 /// <item>The front refinery: the 18 Ore Silos chained in two snakes of nine (iron ore, stone), each into its refiner (the big Smelter and
-/// the big Foundry, on steel); the Smelter's metal into the first Ore Bunker, which feeds the Foundry; the Foundry's steel into the second,
+/// the big Foundry, on steel); the Smelter's metal into the first stock silo, which feeds the Foundry; the Foundry's steel into the second,
 /// chained on to the third and fourth.</item>
 /// <item>The back row: each refiner's Ore Silo behind it into it (iron ore, copper ore, stone, sand, sand, wood), each refiner into the
 /// Materials Bin in front of it (metal, copper, steel, concrete, rubber, planks), the Foundries' second inputs from the bins and silos
 /// beside them, the two spare bins chained as reserves (metal, steel).</item>
-/// <item>The lines: each Extruder's Materials Bin chuted from a steel Ore Bunker and into the Extruder's back; each Line Console wired to
+/// <item>The lines: each Extruder's Materials Bin chuted from a steel stock silo and into the Extruder's back; each Line Console wired to
 /// its Extruder's Run (and its line's Panel Former, or its presses and Assembler) and one console a Building Station into its Orders;
 /// the Die Racks chuted into their presses; each Assembler chuted from the steel, copper, concrete and rubber bins.</item>
 /// </list>
@@ -249,7 +249,7 @@ public sealed partial class ZeroDayWorks2
             Chute(stores[^1], "Chute out", into, "Chute in", up + 1f);
         }
 
-        /// <summary>The front refinery: ore silos to the big Smelter and Foundry, their metal and steel into the Ore Bunkers.</summary>
+        /// <summary>The front refinery: ore silos to the big Smelter and Foundry, their metal and steel into the stock silos.</summary>
         private void Refinery(float s)
         {
             var smelter = Find("Smelter", P(s, 24, 87), 3);
@@ -268,16 +268,21 @@ public sealed partial class ZeroDayWorks2
                     }
                 Snake(snake, into, up);
             }
-            var b = new[] { 16f, 24f, 32f, 40f }.Select(x => Find("Ore Bunker 4 m", P(s, x, 58))).ToArray();
+            // (the metal and steel stock: Ore Silos since 2026-11-27, ZeroDayWorks2.Restocked; their rims are 11.5 m up, so every chute out of
+            // or along them runs over 12.5 m, a port's rise above the rim)
+            var b = StockSilos(s);
             Fill(b[0], "metal");
             for (var k = 1; k < 4; k++)
                 Fill(b[k], "steel");
             Chute(smelter, "Chute out", b[0], "Chute in", 17f); // (over the silos)
-            Chute(b[0], "Chute out", foundry, "Chute in", 6.5f);
+            Chute(b[0], "Chute out", foundry, "Chute in", 13f);
             Chute(foundry, "Chute out", b[1], "Chute in", 17.5f);
-            Chute(b[1], "Chute out", b[2], "Chute in", 4f);
-            Chute(b[2], "Chute out", b[3], "Chute in", 4f);
+            Chute(b[1], "Chute out", b[2], "Chute in", 13.5f);
+            Chute(b[2], "Chute out", b[3], "Chute in", 13.5f);
         }
+
+        /// <summary>The front refinery's metal silo and its three steel silos (<see cref="Restocked"/>), west to east from the middle.</summary>
+        private VPart?[] StockSilos(float s) => new[] { 16f, 24f, 32f, 40f }.Select(x => Find("Ore Silo 4 m", P(s, x, StockRowZ))).ToArray();
 
         /// <summary>The back row: six refiners, an Ore Silo behind each, the Materials Bins in front.</summary>
         private void BackRow(float s)
@@ -316,7 +321,7 @@ public sealed partial class ZeroDayWorks2
         /// <summary>The lines: each Extruder's bin, its feed and its console; the presses' racks; the Assembler's stock.</summary>
         private void Lines(float s)
         {
-            var bunker = new[] { 24f, 32f, 40f }.Select(x => Find("Ore Bunker 4 m", P(s, x, 58))).ToArray();
+            var bunker = StockSilos(s)[1..];
             var high = 16f;
             // Each Extruder's own console: the one behind it (up its flow, within 6 m of its line), as the consoles moved back with their
             // Extruders (BinBack): by distance alone one console was nearest two Extruders, and two lines shared it.
