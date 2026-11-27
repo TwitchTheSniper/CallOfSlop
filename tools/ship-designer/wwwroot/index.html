@@ -454,6 +454,7 @@ function rebuild() {
   if (inside() || view.xray) drawPassages();
   drawReserves();
   if (view.hull || inside()) drawHullWindows();
+  if (!hideHull) drawWrapWindows(ghost);
   if (view.links && mode !== "hull") drawLinks();
   if (inside()) drawDeckPlane();
   if (view.person) drawPerson();
@@ -752,6 +753,18 @@ function otherDeck(i, dir = 1) {
 
 // Windows in the hull (Karl, 2026-11-24): glass laid on the skin from a grid of points, so it follows the contour, with a frame
 // round its edge. Pickable from the Interior and Pieces views.
+// Wraparound windows (Karl, 2026-11-27: cockpit glass round a body, its frame fitted to the skin): the frame, sill and header solid,
+// the glass see-through (DesignWrapWindows.cs makes both).
+function drawWrapWindows(ghost) {
+  for (const w of S.wrapWindows || []) {
+    const picked = sel.kind === "wrapwin" && sel.id === w.id;
+    const f = meshFrom(w.mesh, { metalness: 0.35, roughness: 0.55, emissive: picked ? 0x1d4f86 : (w.ok === false ? 0x5a1408 : 0x000000), ...(ghost ? { transparent: true, opacity: inside() ? 0.12 : 0.28, depthWrite: false } : {}) });
+    f.userData = { type: "wrapwin", id: w.id }; world.add(f); pickables.push(f);
+    if (!w.glass?.p.length) continue;
+    const g = meshFrom(w.glass, { metalness: 0.3, roughness: 0.1, transparent: true, opacity: 0.5, depthWrite: false, emissive: picked ? 0x1d4f86 : 0x0b2236 });
+    g.userData = { type: "wrapwin", id: w.id }; g.renderOrder = 5; world.add(g); pickables.push(g);
+  }
+}
 function drawHullWindows() {
   for (const w of S.hullWindows || []) {
     const { nu, nv, pts } = w; if (nu < 2 || nv < 2) continue;
@@ -947,6 +960,8 @@ renderer.domElement.addEventListener("pointerdown", ev => {
     }
     const jn = hits.find(h => h.object.userData.type === "join");
     if (jn && (!h || jn.distance <= h.distance)) { select("join", jn.object.userData.id); return; }
+    const ww = hits.find(h => h.object.userData.type === "wrapwin");
+    if (ww && (!h || ww.distance <= h.distance + 0.05)) { select("wrapwin", ww.object.userData.id); return; }
     if (h) { select("hull", h.object.userData.hull); return; }
     return;
   }
@@ -1684,6 +1699,8 @@ function leftPanel() {
       el("p", { class: "hint" }, "Bodies that meet are cut open where they touch (Cut, on each body), so a pod or a dorsal block opens into the main hull.")),
       connectSection());
     const h = S.hulls.find(h => sel.kind === "hull" && h.id === sel.id);
+    const wb = h ? h.id : sel.kind === "wrapwin" ? (S.wrapWindows || []).find(w => w.id === sel.id)?.hull : 0;
+    if (wb) L.append(wrapList(wb));
     if (h) L.append(stationPanel(h));
   } else if (mode === "pieces") {
     const groups = [...new Set(CAT.pieces.map(p => p.group))].sort((a, b) => (b === "Sockets") - (a === "Sockets"));
@@ -1935,6 +1952,30 @@ function profileEditor(h, i) {
   return svg;
 }
 
+// The wraparound windows on a body and the button that adds one there.
+function wrapList(hull) {
+  const ws = (S.wrapWindows || []).filter(w => w.hull === hull);
+  return el("div", { class: "sec" }, el("h3", {}, "Wraparound windows"),
+    el("div", { class: "row" }, ...ws.map((w, i) => el("button", { class: sel.kind === "wrapwin" && sel.id === w.id ? "on" : "", onclick: () => select("wrapwin", w.id) }, `Window ${i + 1}${w.ok === false ? " (off the skin)" : ""}`)),
+      el("button", { title: "Cockpit glass that wraps round this body near the bow", onclick: () => { const a = cmd({ op: "addWrapWindow", hull }); if (a.error) toast(a.error); else { select("wrapwin", a.id); toast("Glass round the body, its frame fitted to the skin. Set it on the right.", true); } } }, "+ Wraparound window")));
+}
+function wrapInspector(I) {
+  const w = (S.wrapWindows || []).find(w => w.id === sel.id); if (!w) return;
+  const set = o => cmd({ op: "setWrapWindow", id: w.id, ...o });
+  const sl = (label, key, v, min, max, step, unit, scale = 1, off = 0) => slider(label, Math.round(v * scale / step) * step, min, max, step, unit, () => {}, x => set({ [key]: x / scale + off }));
+  I.append(el("h2", {}, "Wraparound window", el("span", { class: "n" }, w.ok === false ? "off the skin" : `${w.panels} pane${w.panels === 1 ? "" : "s"}`)),
+    ...(w.ok === false ? [el("p", { class: "hint" }, w.why)] : []),
+    el("p", { class: "hint" }, "Glass round the body from a ring on its skin. The sill and header fit themselves back to the skin, and the skin behind the glass opens into the rooms there. Sizes apply when you let go."),
+    sl("Along the body", "z", w.z - w.front, 0, Math.max(0.1, w.back - w.front), 0.05, " m", 1, w.front),
+    el("h3", {}, "Placing"), sl("Turn", "turn", w.turn, -180, 180, 1, " deg"), sl("Wrap", "span", w.span, 20, 330, 1, " deg"),
+    sl("Tilt back", "rake", w.rake, 0, 85, 1, " deg"), el("p", { class: "hint" }, "Tilt 0 stands the glass upright, looking straight ahead."),
+    sl("Height", "height", w.height, 20, 300, 5, " cm", 100),
+    el("h3", {}, "Panes"), sl("Panes", "panels", w.panels, 1, 12, 1, ""), sl("Beading", "bead", w.bead, 2, 30, 1, " cm", 100), sl("Frame", "frame", w.frame, 2, 30, 1, " cm", 100),
+    el("label", { class: "row" }, el("input", { type: "checkbox", ...(w.flat !== false ? { checked: "" } : {}), onchange: e => set({ flat: e.target.checked }) }), "Flat panes"),
+    el("h3", {}, "Curve"), sl("Bow forward", "bow", w.bow, 0, 200, 5, " cm", 100), sl("Curve starts", "bowStart", w.bowStart, 2, 100, 1, "%", 100),
+    el("p", { class: "hint" }, "Bow stands the middle forward of the ends. Curve starts is how far out from the middle the glass begins to curve; beyond it, it runs straight to the ends."),
+    el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delWrapWindow", id: w.id }); select(null, 0); } }, "Delete")));
+}
 function inspector() {
   const I = $("inspect"); I.replaceChildren();
   if (!S) return;
@@ -1956,6 +1997,7 @@ function inspector() {
       el("div", { class: "row" }, el("button", { onclick: () => { cmd({ op: "delHullWindow", id: w.id }); select(null, 0); } }, "Delete")));
     return;
   }
+  if (sel.kind === "wrapwin") { wrapInspector(I); return; }
   if (sel.kind === "door") {
     const p = (S.placedDoors || []).find(p => p.id === sel.id); if (!p) return;
     const nm = id => { const r = S.rooms.find(r => r.id === id); return r ? r.label || r.kind : "?"; };
@@ -2241,6 +2283,7 @@ window.addEventListener("keydown", e => {
     else if (sel.kind === "passage") { cmd({ op: "delPassage", id: sel.id }); select(null, 0); }
     else if (sel.kind === "door") { cmd({ op: "delDoor", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hullwin") { cmd({ op: "delHullWindow", id: sel.id }); select(null, 0); }
+    else if (sel.kind === "wrapwin") { cmd({ op: "delWrapWindow", id: sel.id }); select(null, 0); }
     else if (sel.kind === "hull") { const a = cmd({ op: "delHull", hull: sel.id }); if (!a.error) select(null, 0); }
   } else if (e.key === "Escape") { if (linking) { linking = null; leftPanel(); rebuild(); } else if (mounting) stopMount(); else if (roomView) exitRoomView(); else select(null, 0); }
 });

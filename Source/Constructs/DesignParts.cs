@@ -392,6 +392,8 @@ public static partial class DesignParts
             yield return n;
         foreach (var n in AddWindows(st)) // DesignParts.Windows.cs (the hull windows' glass)
             yield return n;
+        foreach (var n in AddWrapWindows(st)) // DesignParts.WrapWindows.cs (the wraparound windows)
+            yield return n;
         foreach (var n in AddRooms(st)) // DesignParts.Rooms.cs
             yield return n;
         foreach (var n in AddDoors(st)) // DesignParts.Doors.cs

@@ -814,7 +814,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      over its lines (ConstructCrafting.SplitAsk).
     // 481: design interior pieces (DesignFurnishings.cs: reactors, tanks, bunks, consoles and the rest) stand on room floors as piece
     //      elements, so a design holding one builds different elements on an older peer; no message changed.
-    public const ushort ProtocolVersion = 481;
+    // 482: wraparound windows on design bodies (DesignWrapWindows.cs, DesignParts.WrapWindows.cs) are elements of their own, so a design
+    //      holding one builds different elements on an older peer; no message changed.
+    public const ushort ProtocolVersion = 482;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

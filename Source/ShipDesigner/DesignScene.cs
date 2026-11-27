@@ -190,6 +190,7 @@ public static partial class DesignScene
         foreach (var hw in Glazed(d))
             if (WindowCut(d, hw).Cut is { } wc)
                 cutouts.Add(wc);
+        cutouts.AddRange(WrapCuts(d, h)); // (and the wraparound windows on it: DesignWrapWindows.cs)
         void Emit(DesignMesh m, (double, double, double) a, (double, double, double) b, (double, double, double) c, (double, double, double) e, (byte, byte, byte) col)
         {
             List<List<(double, double, double)>> polys = [[a, b, c, e]];
@@ -1015,6 +1016,8 @@ public static partial class DesignScene
                 c.Issues.Add(new("warn", $"The hull window in {Name(r)} is more than {HullWindow.MaxGap:0} m from the skin: move the room out to the hull or the window along", $"room:{r.Id}"));
         }
 
+        WrapChecks(d, c); // (DesignWrapWindows.cs)
+
         // Ladders and lifts: each joins the rooms it stands in on every deck it stops at (Karl, 2026-11-24).
         foreach (var k in d.Risers)
         {
@@ -1516,6 +1519,7 @@ public static partial class DesignScene
                 k.Append('&').Append(j.GeomKey(d));
         foreach (var hw in Glazed(d))
             k.Append('~').Append(WindowCut(d, hw).Key);
+        k.Append(WrapCutKey(d, h));
         return k.ToString();
     }
 
@@ -1853,6 +1857,12 @@ public static partial class DesignScene
             // The auto clearance follows the thickest cladding on any body (a window's cut reaches every body it lies on).
             var wAuto = d.Hulls.Count == 0 ? 0.13 : d.Hulls.Max(q => AutoGap(d, q, 0.1));
             sb.Append(i > 0 ? "," : "").Append(wpart, 0, wpart.Length - 1).Append(",\"gapAuto\":").Append(ShipDesign.S(wAuto)).Append('}');
+        }
+        sb.Append("],\"wrapWindows\":[");
+        for (var i = 0; i < (shown is null ? d.WrapWindows.Count : 0); i++)
+        {
+            var ww = d.WrapWindows[i];
+            sb.Append(i > 0 ? "," : "").Append(Part("ww" + ww.Id, ww.Key + "|" + (d.Hull(ww.Hull) is { } wh ? MeshJson(wh) + wh.Skin : "") + "|" + plans, () => WrapJson(d, ww)));
         }
         sb.Append("],\"risers\":[");
         for (var i = 0; i < d.Risers.Count; i++)
