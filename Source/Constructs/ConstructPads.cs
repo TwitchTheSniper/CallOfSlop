@@ -127,12 +127,12 @@ public static class ConstructPads
         var mid = new Vector2(asm.X0 + (asm.W - 1) * 0.5f, asm.Z0 + (asm.L - 1) * 0.5f);
         var half = new Vector2(asm.W * 0.5f, asm.L * 0.5f);
         var o = core.Pos;
-        // Conveyors and roller runs ending on a tile of it: where each comes from, its last bend (or its start).
+        // Conveyors ending on a tile of it: where each comes from, its last bend (or its start).
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref readonly var r = ref c.Routes[k];
-            if (r.Type != RouteType.Conveyor || r.To >= c.PartCount || r.To >= c.BlockAsmOf.Length || c.BlockAsmOf[r.To] != a)
-                continue;
+            if (r.Type != RouteType.Conveyor || r.To >= c.PartCount || r.To >= c.BlockAsmOf.Length || c.BlockAsmOf[r.To] != a || RollerRuns.IsRun(c, k))
+                continue; // (a Roller Tile run's own conveyor is counted by its tiles below, laid or not)
             if (r.Count > 0)
                 Feed(c.RouteNodes[r.Start + r.Count - 1].Pos, o, inv, cell, mid, half, ref sx, ref sz, ref ox, ref oz);
             else if (r.Parent == 255 && r.From < c.PartCount && r.From != r.To)
