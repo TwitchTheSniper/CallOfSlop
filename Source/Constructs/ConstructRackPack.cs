@@ -9,6 +9,10 @@ public struct RackSlab
     public ushort Z0Mm; // its near end, mm from the hold's -z end
     public ushort LenMm; // its length along the rack (the piece's), mm
     public byte Lanes, Layers; // stacks across, and pieces a stack holds
+    // A Pad Tile pad's column (ConstructRackPack.TilePad): its -x edge, mm from the hold's -x side, and its width across, mm. Columns there
+    // lie side by side as well as one after another, so a 9.5 m deck on a 20 m pad leaves room beside it (Sean, 2026-11-27). Other racks
+    // centre their columns across the hold and leave both 0.
+    public ushort X0Mm, WidMm;
 }
 
 /// <summary>
@@ -130,9 +134,13 @@ public static class ConstructRackPack
     /// Where a piece would go (<paramref name="put"/>: and puts it): 0, 3 too big for this rack, 4 full. Kinds and the count
     /// are the caller's (<see cref="ConstructConveyor.RackCheck"/>).
     /// </summary>
-    public static int Place(ConstructPartDef rd, CStore st, ConstructPartDef d, bool dryRun, out int slab, out int lane)
+    public static int Place(ConstructPartDef rd, CStore st, ConstructPartDef d, bool dryRun, out int slab, out int lane) =>
+        Place(rd, st, d, dryRun, out slab, out lane, out _);
+
+    private static int Place(ConstructPartDef rd, CStore st, ConstructPartDef d, bool dryRun, out int slab, out int lane, out RackSlab made)
     {
         slab = lane = -1;
+        made = default;
         if (!Fit(rd, d, out var lanes, out var layers, out var lenMm))
             return 3;
         if (!dryRun)
@@ -167,6 +175,8 @@ public static class ConstructRackPack
         // A new column in the first gap long enough (the columns are kept in order along the rack).
         if (st.SlabN >= MaxSlabs)
             return 4;
+        if (TilePad(rd))
+            return PadPlace(rd, st, d, dryRun, lanes, layers, lenMm, out slab, out lane, out made);
         var hold = HoldMm(rd);
         var gap = (int)(GapZ * 1000);
         var at = 0;
@@ -216,6 +226,198 @@ public static class ConstructRackPack
         return 0;
     }
 
+    /// <summary>A column's place as one number (its near end and its place across): what tells two columns of a kind apart.</summary>
+    public static uint PlaceKey(in RackSlab sl) => sl.Z0Mm | (uint)sl.X0Mm << 16;
+
+    /// <summary>Is <paramref name="rd"/> a Pad Tile pad's hold (flat and open)? Its columns lie side by side as well as along it.</summary>
+    public static bool TilePad(ConstructPartDef rd) => rd.BlockSeed && rd.BlockCell > 0;
+
+    /// <summary>A column's footprint on a pad, mm from the hold's -x side and -z end.</summary>
+    private struct Foot
+    {
+        public int X0, Z0, W, L;
+    }
+
+    private const int MaxRelay = 24; // columns on a pad past which a full pad isn't laid out afresh (PadPlace)
+
+    [ThreadStatic] private static Foot[]? _feet;
+    [ThreadStatic] private static int[]? _order;
+
+    /// <summary>
+    /// A new column on a Pad Tile pad (Sean, 2026-11-27: a baked deck on Zero Day Works II's main station pad took a 20 m row of the pad's
+    /// length for its 9.5 m width, centred, so a hull piece the station wanted next could never come on beside it and the line stood behind
+    /// it for good). The column goes in the first free spot by its near end, then across (the hold's -z, -x corner first; the drawing
+    /// mirrors it from the feed, ConstructPads.FeedFlip), as wide as its stacks need and no wider. With no spot free, every column on the
+    /// pad is laid out again, largest first, with the new one among them; nothing moves unless they all fit. A kind's later pieces fill its
+    /// columns' stacks first (Place), then open columns of their own here.
+    /// </summary>
+    private static int PadPlace(ConstructPartDef rd, CStore st, ConstructPartDef d, bool dryRun, int lanesFit, int layers, int lenMm, out int slab, out int lane, out RackSlab made)
+    {
+        slab = lane = -1;
+        made = default;
+        Hold(rd, out var lo, out var hi);
+        int holdW = (int)((hi.X - lo.X) * 1000 + 0.5f), holdL = (int)((hi.Z - lo.Z) * 1000 + 0.5f);
+        var pw = (int)MathF.Ceiling((Hi(rd, d).X - Lo(rd, d).X) * 1000 - 0.01f);
+        // (a new column's stacks across cover at most half the pad, one stack of a piece wider than that: the rest of the width is left
+        // for any kind, so a second deck of the same kind that may never come doesn't keep a whole row of the pad from a hull piece)
+        lanesFit = Math.Clamp((holdW / 2 + (int)(GapX * 1000)) / Math.Max(1, pw + (int)(GapX * 1000)), 1, lanesFit);
+        var n = st.SlabN;
+        var feet = _feet ??= new Foot[MaxSlabs + 1];
+        for (var s = 0; s < n; s++)
+        {
+            ref var sl = ref st.Slabs![s];
+            feet[s] = new Foot { X0 = sl.X0Mm, Z0 = sl.Z0Mm, W = Math.Max(1, (int)sl.WidMm), L = sl.LenMm };
+        }
+        var moved = false;
+        if (!Spot(feet.AsSpan(0, n), holdW, holdL, pw, lanesFit, lenMm, out var x0, out var z0, out var lanes, out var wid))
+        {
+            // No spot as they lie: all again, largest footprint first (the new one with them), each in its first free spot. Only for a
+            // pad of a few columns (big pieces): the layout costs columns to the fourth, and a pad of small pieces has room by its gaps.
+            if (n > MaxRelay)
+                return 4;
+            var order = _order ??= new int[MaxSlabs + 1];
+            for (var s = 0; s <= n; s++)
+                order[s] = s;
+            var newArea = (long)Math.Min(pw, holdW) * lenMm;
+            for (var a = 1; a <= n; a++) // (insertion sort, stable: a handful of columns on a pad)
+                for (var b = a; b > 0 && Area(order[b], feet, n, newArea) > Area(order[b - 1], feet, n, newArea); b--)
+                    (order[b], order[b - 1]) = (order[b - 1], order[b]);
+            Span<Foot> laid = stackalloc Foot[n + 1];
+            for (var k = 0; k <= n; k++)
+            {
+                var s = order[k];
+                bool ok;
+                if (s == n)
+                {
+                    ok = Spot(laid[..k], holdW, holdL, pw, lanesFit, lenMm, out x0, out z0, out lanes, out wid);
+                    laid[k] = new Foot { X0 = x0, Z0 = z0, W = wid, L = lenMm };
+                }
+                else
+                {
+                    var f = feet[s];
+                    ok = Spot(laid[..k], holdW, holdL, f.W, 1, f.L, out var fx, out var fz, out _, out _); // (as wide as it is: one stack of its width)
+                    laid[k] = new Foot { X0 = fx, Z0 = fz, W = f.W, L = f.L };
+                }
+                if (!ok)
+                    return 4;
+            }
+            if (!dryRun)
+                for (var k = 0; k <= n; k++)
+                    if (order[k] < n)
+                    {
+                        st.Slabs![order[k]].X0Mm = (ushort)laid[k].X0;
+                        st.Slabs[order[k]].Z0Mm = (ushort)laid[k].Z0;
+                    }
+            moved = true;
+        }
+        made = new RackSlab { Def = d.Id, X0Mm = (ushort)x0, Z0Mm = (ushort)z0, WidMm = (ushort)wid, LenMm = (ushort)lenMm, Lanes = (byte)lanes, Layers = (byte)layers };
+        if (dryRun)
+        {
+            slab = st.SlabN;
+            return 0;
+        }
+        if (moved)
+            SortColumns(st);
+        // (kept in order by near end, then across: LastOf, NthLast and the drawing read them so)
+        var i = 0;
+        while (i < st.SlabN && (st.Slabs![i].Z0Mm < z0 || st.Slabs[i].Z0Mm == z0 && st.Slabs[i].X0Mm < x0))
+            i++;
+        st.Slabs ??= new RackSlab[MaxSlabs];
+        st.SlabLanes ??= new byte[MaxSlabs * MaxLanes];
+        Array.Copy(st.Slabs, i, st.Slabs, i + 1, st.SlabN - i);
+        Array.Copy(st.SlabLanes, i * MaxLanes, st.SlabLanes, (i + 1) * MaxLanes, (st.SlabN - i) * MaxLanes);
+        st.Slabs[i] = made;
+        Array.Clear(st.SlabLanes, i * MaxLanes, MaxLanes);
+        st.SlabLanes[i * MaxLanes] = 1;
+        st.SlabN++;
+        st.SlabSum++;
+        slab = i;
+        lane = 0;
+        return 0;
+
+        static long Area(int s, Foot[] feet, int n, long newArea) => s == n ? newArea : (long)feet[s].W * feet[s].L;
+    }
+
+    /// <summary>
+    /// The first free spot (least near end, then least across) for a column <paramref name="len"/> mm long of stacks
+    /// <paramref name="pw"/> mm wide (up to <paramref name="lanesFit"/>, as many as the room beside lets) among <paramref name="feet"/>,
+    /// <see cref="GapX"/>/<see cref="GapZ"/> apart. A piece wider than the hold (a lone one to the tiles' edges, <see cref="Fit"/>) takes
+    /// the whole width. Allocates nothing.
+    /// </summary>
+    private static bool Spot(ReadOnlySpan<Foot> feet, int holdW, int holdL, int pw, int lanesFit, int len, out int x0, out int z0, out int lanes, out int wid)
+    {
+        x0 = z0 = lanes = wid = 0;
+        int gx = (int)(GapX * 1000), gz = (int)(GapZ * 1000);
+        var wide = pw > holdW;
+        var found = false;
+        for (var zi = -1; zi < feet.Length; zi++)
+        {
+            var z = zi < 0 ? 0 : feet[zi].Z0 + feet[zi].L + gz;
+            if (z + len > holdL || found && z > z0)
+                continue;
+            for (var xi = -1; xi < feet.Length; xi++)
+            {
+                var x = xi < 0 ? 0 : feet[xi].X0 + feet[xi].W + gx;
+                if (found && z == z0 && x >= x0 || x >= holdW || wide && x > 0)
+                    continue;
+                var lim = holdW;
+                var free = true;
+                foreach (ref readonly var f in feet)
+                {
+                    if (z >= f.Z0 + f.L + gz || f.Z0 >= z + len + gz)
+                        continue; // (not beside it along the pad)
+                    if (f.X0 <= x)
+                    {
+                        if (f.X0 + f.W + gx > x)
+                        {
+                            free = false;
+                            break;
+                        }
+                    }
+                    else
+                        lim = Math.Min(lim, f.X0 - gx);
+                }
+                if (!free)
+                    continue;
+                int n, w;
+                if (wide)
+                {
+                    if (lim < holdW)
+                        continue;
+                    (n, w) = (1, holdW);
+                }
+                else
+                {
+                    n = Math.Min(lanesFit, (lim - x + gx) / (pw + gx));
+                    if (n < 1)
+                        continue;
+                    w = n * pw + (n - 1) * gx;
+                }
+                (x0, z0, lanes, wid, found) = (x, z, n, w, true);
+            }
+        }
+        return found;
+    }
+
+    /// <summary>A pad's columns in order again (near end, then across) after they were laid out afresh, their stacks with them.</summary>
+    private static void SortColumns(CStore st)
+    {
+        Span<byte> row = stackalloc byte[MaxLanes];
+        for (var a = 1; a < st.SlabN; a++)
+            for (var b = a; b > 0; b--)
+            {
+                ref var p = ref st.Slabs![b - 1];
+                ref var q = ref st.Slabs[b];
+                if (p.Z0Mm < q.Z0Mm || p.Z0Mm == q.Z0Mm && p.X0Mm <= q.X0Mm)
+                    break;
+                (p, q) = (q, p);
+                var lanes = st.SlabLanes.AsSpan();
+                lanes.Slice((b - 1) * MaxLanes, MaxLanes).CopyTo(row);
+                lanes.Slice(b * MaxLanes, MaxLanes).CopyTo(lanes.Slice((b - 1) * MaxLanes, MaxLanes));
+                row.CopyTo(lanes.Slice(b * MaxLanes, MaxLanes));
+            }
+    }
+
     /// <summary>The top piece off a stack; an emptied column goes, and the columns after it stay where they are.</summary>
     public static ushort Take(CStore st, int slab, int lane)
     {
@@ -243,11 +445,16 @@ public static class ConstructRackPack
     public static bool NextOrigin(ConstructPartDef rd, CStore st, ConstructPartDef d, out Vector3 origin)
     {
         origin = default;
-        if (Place(rd, st, d, true, out var slab, out var lane) != 0 || !Fit(rd, d, out var lanes, out var layers, out var lenMm))
+        if (Place(rd, st, d, true, out var slab, out var lane, out var made) != 0 || !Fit(rd, d, out var lanes, out var layers, out var lenMm))
             return false;
         if (slab < st.SlabN && st.Slabs![slab].Def == d.Id && st.SlabLanes![slab * MaxLanes + lane] < st.Slabs[slab].Layers)
         {
             origin = Origin(rd, st.Slabs[slab], d, lane, st.SlabLanes[slab * MaxLanes + lane]);
+            return true;
+        }
+        if (TilePad(rd))
+        {
+            origin = Origin(rd, made, d, 0, 0); // (its spot on the pad, as PadPlace found it)
             return true;
         }
         var gap = (int)(GapZ * 1000);
@@ -326,7 +533,8 @@ public static class ConstructRackPack
         Hold(rd, out var lo, out var hi);
         Vector3 b0 = Lo(rd, d), s = Hi(rd, d) - b0; // (a piece lying turned: its turned box, Turned)
         var used = sl.Lanes * s.X + (sl.Lanes - 1) * GapX;
-        var x = lo.X + (hi.X - lo.X - used) * 0.5f + lane * (s.X + GapX);
+        // (a Pad Tile pad's column lies at its own place across, TilePad; a rack's, or a lone piece wider than the pad, is centred)
+        var x = (TilePad(rd) && used <= hi.X - lo.X + 1e-3f ? lo.X + sl.X0Mm * 0.001f : lo.X + (hi.X - lo.X - used) * 0.5f) + lane * (s.X + GapX);
         var z = lo.Z + sl.Z0Mm * 0.001f;
         // (a Pad Tile pad fed from its -z end or -x side is drawn mirrored, so it fills from the far side and a piece coming in passes
         // none parked: ConstructPads.FeedFlip; the packing, the store and the wire are the same either way)
@@ -461,7 +669,7 @@ public static class ConstructRackPack
         {
             ref var sl = ref st.Slabs![s];
             var key = ConstructParts.Get(sl.Def) is { IsExtrusion: true } ex ? ex.ExKey.Stable() : sl.Def; // (an extrusion's id is this machine's own)
-            h = (h ^ key ^ (ulong)sl.Z0Mm << 20 ^ (ulong)sl.Lanes << 40) * 1099511628211UL;
+            h = (h ^ key ^ (ulong)sl.Z0Mm << 20 ^ (ulong)sl.Lanes << 40 ^ (ulong)sl.X0Mm << 48) * 1099511628211UL;
             for (var l = 0; l < sl.Lanes; l++)
                 h = (h ^ st.SlabLanes![s * MaxLanes + l]) * 1099511628211UL;
         }
@@ -476,7 +684,7 @@ public static class ConstructRackPack
         for (var s = 0; s < st.SlabN; s++)
         {
             ref var sl = ref st.Slabs![s];
-            w.U8((byte)Math.Max(0, st.KindIndex(sl.Def))).U16(sl.Z0Mm).U8(sl.Lanes);
+            w.U8((byte)Math.Max(0, st.KindIndex(sl.Def))).U16(sl.Z0Mm).U16(sl.X0Mm).U16(sl.WidMm).U8(sl.Lanes);
             for (var l = 0; l < sl.Lanes; l++)
                 w.U8(st.SlabLanes![s * MaxLanes + l]);
         }
@@ -495,13 +703,15 @@ public static class ConstructRackPack
         {
             int kind = r.U8();
             var z0 = r.U16();
+            var x0 = r.U16();
+            var wid = r.U16();
             int lanes = r.U8();
             if (kind >= st.KindN || lanes > MaxLanes)
                 throw new MalformedPacketException($"rack column {s}: kind {kind} of {st.KindN}, {lanes} stacks");
             var def = st.KindDef![kind];
             var lenMm = ConstructParts.Get(def) is { } d ? (int)MathF.Ceiling((d.BoundsMax.Z - d.BoundsMin.Z) * 1000 - 0.01f) : 0;
             const int layers = 255;
-            st.Slabs[s] = new RackSlab { Def = def, Z0Mm = z0, LenMm = (ushort)lenMm, Lanes = (byte)lanes, Layers = (byte)layers };
+            st.Slabs[s] = new RackSlab { Def = def, Z0Mm = z0, X0Mm = x0, WidMm = wid, LenMm = (ushort)lenMm, Lanes = (byte)lanes, Layers = (byte)layers };
             Array.Clear(st.SlabLanes, s * MaxLanes, MaxLanes);
             for (var l = 0; l < lanes; l++)
                 sum += st.SlabLanes[s * MaxLanes + l] = r.U8();
