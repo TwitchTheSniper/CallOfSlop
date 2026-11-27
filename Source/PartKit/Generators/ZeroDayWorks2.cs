@@ -95,7 +95,8 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 Group = "Factories",
             };
             using var doc = JsonDocument.Parse(layoutText);
-            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(MovedOut).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
+            items.AddRange(DeepPads(items));
             s.Lay(items);
             s.LayLinks();
             s.StationConsoles();
@@ -116,6 +117,50 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             ("press", 39, 30, [("w", 4), ("z", 29)]),
             ("Die Rack", 39, 24, [("z", 22)]),
         ];
+
+        /// <summary>
+        /// Big square stations whose two lines (cutter, former, Extruder and what stands behind them) move out from the bay, in the
+        /// layout's x, z: the station's middle and how far, m. 2026-11-26, Sean chose "Move cutter lines 8 m out": each big station's
+        /// Lower Deck Aft sheet (9.5 x 10.2 m, riding lengthwise) waited on its cutter's bed, as the lay-by pads were 4 m deep; the lines
+        /// either side of that bay move 8 m away from it, and the freed cells become more lay-by pad, 12 m deep (<see cref="DeepPads"/>).
+        /// </summary>
+        private static readonly (float X, float Z, float Out)[] LinesOut = [(-82, 0, 8), (82, 0, 8)];
+
+        /// <summary>An item past a <see cref="LinesOut"/> station's lay-by, within its bay's width: moved away from the bay.</summary>
+        private static JsonElement MovedOut(JsonElement e)
+        {
+            foreach (var (sx, sz, by) in LinesOut)
+            {
+                float dz = Num(e, "z") - sz;
+                if (MathF.Abs(Num(e, "x") - sx) < StationHalf && MathF.Abs(dz) > StationHalf + LayBy)
+                {
+                    var node = System.Text.Json.Nodes.JsonNode.Parse(e.GetRawText())!.AsObject();
+                    node["z"] = Num(e, "z") + MathF.Sign(dz) * by;
+                    return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
+                }
+            }
+            return e;
+        }
+
+        /// <summary>The cells a <see cref="LinesOut"/> move freed: more rows of the lay-by's Roller Tiles (laid as Pad Tiles), each column as the layout's lay-by row nearest them.</summary>
+        private static IEnumerable<JsonElement> DeepPads(List<JsonElement> items)
+        {
+            foreach (var (sx, sz, by) in LinesOut)
+                foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")).ToList())
+                {
+                    float dz = Num(it, "z") - sz;
+                    if (MathF.Abs(Num(it, "x") - sx) >= StationHalf || MathF.Abs(MathF.Abs(dz) - (StationHalf + LayBy - 1)) > 0.1f)
+                        continue; // (the outer lay-by row only)
+                    for (var k = 2f; k <= by; k += 2)
+                        yield return JsonDocument.Parse($$"""{"t": "part", "name": "Roller Tile", "x": {{Num(it, "x")}}, "z": {{Num(it, "z") + MathF.Sign(dz) * k}}, "rot": {{Int(it, "rot")}}}""").RootElement.Clone();
+                }
+        }
+
+        private const float BigOvenClear = 6; // (m: a big line's Bake Oven's Tunnel height)
+
+        private const float StationHalf = 14; // (a big square station's half side, m: its lab item's w, 14 cells of 2 m)
+
+        private static float LayByOf(float sx, float sz) => LayBy + LinesOut.Where(l => MathF.Abs(l.X - sx) < 0.1f && MathF.Abs(l.Z - sz) < 0.1f).Sum(l => l.Out);
 
         /// <summary>
         /// Pieces added to the lab's export, in its own x, z, beside Sean's (none of his move). 2026-11-26, Sean chose "Add one per line":
@@ -389,7 +434,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")))
                 {
                     float dx = MathF.Abs(Num(it, "x") - sx), dz = MathF.Abs(Num(it, "z") - sz);
-                    if (dx < half && dz > half && dz < half + LayBy)
+                    if (dx < half && dz > half && dz < half + LayByOf(sx, sz))
                         _layBy.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
                 }
             }
@@ -651,7 +696,13 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 case "bake-oven":
                 {
                     if (CoreOn("Bake Oven", "+z", by, core, paint) is { } c)
+                    {
+                        // (a big line's oven, 10 x 10 cells, clears a deck's kit: the Lower Deck Aft's stood 3.2 m tall and was let go at the
+                        // default 3 m tunnel's mouth, 2026-11-26; the old works' line ovens clear 6 to 12 m)
+                        if (w * l >= 100)
+                            Config(c, ("height", BigOvenClear));
                         _labs.Add((id, new Vector2(x, -z), c, flow));
+                    }
                     break;
                 }
                 case "building-station":

@@ -2523,6 +2523,11 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   loose beside its press (no way on to the main station), the Actuator die's Motor Hinge needs Servo Motors no Assembler there makes,
   and the two unfed presses and the Housing die's big blanks (too big for a 6 m bed) wait for a layout change.
   `--station-check` tools: `--press-order PART --oven-at X,Z [--via-station]`, `--why "PART;..."`, `--near X0,Z0,X1,Z1`, `--nets`.
+- **Works II deep deck pads (2026-11-26).** A Lower Deck's sheet (9.5 x 10.2 m, riding lengthwise) never fitted the big stations'
+  4 m lay-by pads and sat on its cutter's bed. Sean chose "Move cutter lines 8 m out": the generator's `LinesOut` moves everything past
+  each big station's lay-by, within its bay's width (cutter, former, Extruder, bin, console, their runs), 8 m away from the bay, and
+  `DeepPads` fills the freed cells as more lay-by, so its pads are 12 m deep. The big line ovens (10 x 10 cells) clear 6 m
+  (`BigOvenClear`): a deck's kit stands 3.2 m tall, past the default 3 m tunnel.
 - **Works II press lines carry on to the main station (2026-11-26).** Sean: "Motors should be made in the presses if possible, 2
   items pressed together", and fix the rest. What now happens:
   - *Rolling through beds.* A low press bed and a block Assembler's bed pass a piece on when it isn't theirs
