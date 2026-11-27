@@ -95,6 +95,38 @@ public static partial class DesignCheck
         c.GearOut = down;
     }
 
+    /// <summary>
+    /// Stood upright on its legs on the ground at <paramref name="x"/>, <paramref name="z"/> (its centre of mass over it), still and let go,
+    /// whatever the checks before left it (the doors' and the walk's hold it frozen; the cones may have tipped it): set down from just over its
+    /// standing height and stepped 3 s. So each flight check starts from the same ship.
+    /// </summary>
+    private static void Stand(ConstructWorld world, Construct c, float x, float z)
+    {
+        c.Frozen = false;
+        (c.Driver, c.DriverSeat) = (255, -1);
+        for (var k = 0; k < c.StabCount; k++)
+        {
+            c.Parts[c.Stabs[k].Part].State &= unchecked((byte)~1); // (its stabilizer let go, as landed: armed, it would fly back to the height it held)
+            c.Stabs[k].AltHeld = false;
+        }
+        SettleGear(c, true);
+        c.Rot = c.PrevRot = Quaternion.Identity;
+        c.Rebuild();
+        var low = float.MaxValue;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.SolidCount(i) > 0)
+            {
+                c.PartBounds(i, out var mn, out _);
+                low = MathF.Min(low, mn.Y);
+            }
+        var g = ConstructWorld.Ground(World.Query, x, z).Y;
+        c.Pos = c.PrevPos = c.Pos + new Vector3(x - c.WorldCom.X, g + 0.3f - (c.Pos.Y + low), z - c.WorldCom.Z);
+        (c.Vel, c.AngVel) = (Vector3.Zero, Vector3.Zero);
+        c.Wake();
+        for (var t = 0; t < 3 * World.TickRate; t++)
+            world.Step(World.Query, World.TickDt);
+    }
+
     private static float TiltOf(Construct c) => MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, c.Rot).Y, -1, 1)) * 180 / MathF.PI;
 
     /// <summary>
@@ -103,7 +135,10 @@ public static partial class DesignCheck
     /// logged with its height, climb, the stabilizer's Landed time and armed bit, the thrusters' most, broken parts and the world contacts
     /// (their count, how many stand above the ground, so on a cone, and the mean normal of those). Fails if Shift for 6 s lifts it under 5 m.
     /// Found 2026-11-27: the cones ARE solid here (each its 0.3 x 0.7 x 0.3 box; the old count of "1 shape between them" read a list that
-    /// Gather clears each call), and it lifts off both ways; with the hull's thin plates (wave 1) and its feet a pad box, nothing holds it.
+    /// Gather clears each call). On its belly (its pods) it lifts off. A pad that comes down on a cone tips it over: the Zero Day's legs stand
+    /// 2 m either side of a centre of mass 8 m up, so it tips past 14 degrees (--legs prints the stance), a 0.7 m cone under one pad leans it
+    /// about that far, it rolls on over (51 degrees by the time Shift is pressed) and lying on its side Shift can't lift it. With the legs
+    /// set wider (its "t" 0.16 for 0.08: 3.4 m, 23 degrees) the same landing stands and lifts off. The legs' place is the design's.
     /// </summary>
     private static string? Cones(ConstructWorld world, Construct c, bool belly)
     {
@@ -111,6 +146,7 @@ public static partial class DesignCheck
         // cone's middle (an edge of the pad on it); on its belly, its centre of mass over the cone (its keel under that).
         var cone = new Vector3(-65, 0, -124.6f);
         var under = ConstructWorld.Ground(World.Query, cone.X, cone.Z).Y;
+        Stand(world, c, cone.X + 30, cone.Z);
         SettleGear(c, !belly);
         var com0 = c.WorldCom;
         c.Rot = c.PrevRot = Quaternion.Identity; // (upright, whatever the leg before left it)
@@ -174,10 +210,14 @@ public static partial class DesignCheck
         Hold(world, c, Buttons.Crouch, 8, t => Log("down", t));
         var sat = c.WorldCom.Y - under;
         var tilted = TiltOf(c);
-        var onCone = 0;
-        for (var k = 0; contacts != null && k < ConstructPhysics.LastContacts; k++)
-            if ((contacts[k].A == -1 || contacts[k].B == -1) && Vector2.Distance(new Vector2(contacts[k].Point.X, contacts[k].Point.Z), new Vector2(cone.X, cone.Z)) < 0.4f && contacts[k].Point.Y > under + 0.05f)
-                onCone++;
+        var near = float.MaxValue; // (the nearest pad's middle from the cone, along the ground: under 0.85 m, the pad is over it)
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).Door is { Gear: 2 })
+            {
+                c.PartBounds(i, out var mn, out var mx);
+                var pw = c.SegToWorld(c.Parts[i].Seg, (mn + mx) * 0.5f);
+                near = MathF.Min(near, Vector2.Distance(new Vector2(pw.X, pw.Z), new Vector2(cone.X, cone.Z)));
+            }
         low = sat;
         Hold(world, c, Buttons.Sprint, 6, t => Log("lift", t));
         lifted = c.WorldCom.Y - under - low;
@@ -186,7 +226,7 @@ public static partial class DesignCheck
         c.Parts[seat].SitterPlus1 = 0;
         c.Driver = 255;
         c.DriverSeat = -1;
-        Console.WriteLine($"[design] cones {how}: the cone is {(solid > 0 ? "solid" : "NOT solid")} ({solid} shapes); it came to rest {sat:0.00} m up (centre of mass), tilted {tilted:0} deg, {onCone} contacts on the cone, then Shift for 6 s lifted it {lifted:0.0} m");
+        Console.WriteLine($"[design] cones {how}: the cone is {(solid > 0 ? "solid" : "NOT solid")} ({solid} shapes); it came to rest {sat:0.00} m up (centre of mass), tilted {tilted:0} deg, its nearest pad's middle {near:0.00} m from the cone, then Shift for 6 s lifted it {lifted:0.0} m");
         return lifted < 5 ? $"on its {how}, Shift for 6 s lifted it {lifted:0.0} m off the cone (at least 5)" : null;
     }
 
@@ -197,6 +237,7 @@ public static partial class DesignCheck
     /// </summary>
     private static string? Legs(ConstructWorld world, Construct c)
     {
+        Stand(world, c, 0, 0);
         var at = c.WorldCom with { Y = 0 };
         float Height() => c.WorldCom.Y - ConstructWorld.Ground(World.Query, c.WorldCom.X, c.WorldCom.Z).Y;
         var (legs, down, _) = Gear(c);
@@ -284,7 +325,7 @@ public static partial class DesignCheck
     private static string? Board(Run r)
     {
         var (world, c) = (r.World, r.Body);
-        world.Step(World.Query, World.TickDt);
+        Stand(world, c, 0, 0);
         ConstructRide.Bodies = world;
         var height = World.HeightOf(Stance.Stand);
         string? fails = null;
