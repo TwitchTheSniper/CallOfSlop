@@ -1649,6 +1649,9 @@ public static partial class DesignScene
         }
     }
 
+    /// <summary>How far a slice boundary inside a merged run of a hull shell's strips may lie off the straight line between the run's ends (m).</summary>
+    public const double LaneTol = 0.02;
+
     private static void HullShell(ShipDesign d, Room r, double t, (byte, byte, byte) col, Func<double[], bool, bool> keep, DesignMesh m, List<double[]> doors, List<double[]>? strips)
     {
         const double g = ShellGap;
@@ -1682,7 +1685,58 @@ public static partial class DesignScene
         double Up(int k) => us[k];
         var side = DesignMesh.Tone(col, 0.9);
         // Both faces of a strip of shell: inner (off by g) and outer (off by g + t), dir the plan offset per unit of push.
-        void Two(Func<double, ((double, double, double), (double, double, double), (double, double, double), (double, double, double))> at, (byte, byte, byte) c, bool flat = false)
+        // A strip's collider joins the one before it in its lane (a wall's row, the floor, the ceiling) while the run stays a straight piece
+        // (Karl, 2026-11-27: a room out to the hull made one thin hull per 50 cm slice and row, ~10 a metre; a few such rooms went past the
+        // design's MaxHulls and the last rooms' floors were left out, so a person fell through them). Each lane's run: its first slice's
+        // four corners, its last's, and every slice boundary between, which must lie within LaneTol of the straight line between its ends.
+        var lanes = new Dictionary<int, (int Last, List<(double V, (double, double, double)[] C)> Bounds)>();
+        void Flush(int lane)
+        {
+            if (strips is null || !lanes.Remove(lane, out var run))
+                return;
+            var (f, l) = (run.Bounds[0].C, run.Bounds[^1].C);
+            var s8 = new double[24];
+            var k = 0;
+            foreach (var v in new[] { f[0], f[1], l[1], l[0], f[2], f[3], l[3], l[2] })
+            {
+                (s8[k], s8[k + 1], s8[k + 2]) = v;
+                k += 3;
+            }
+            strips.Add(s8);
+        }
+        bool Straight(List<(double V, (double, double, double)[] C)> b)
+        {
+            var (v0, v1) = (b[0].V, b[^1].V);
+            for (var j = 1; j < b.Count - 1; j++)
+            {
+                var f = (b[j].V - v0) / (v1 - v0);
+                for (var c = 0; c < 4; c++)
+                {
+                    var (p, q, w) = (b[0].C[c], b[^1].C[c], b[j].C[c]);
+                    var (dx, dy, dz) = (p.Item1 + (q.Item1 - p.Item1) * f - w.Item1, p.Item2 + (q.Item2 - p.Item2) * f - w.Item2, p.Item3 + (q.Item3 - p.Item3) * f - w.Item3);
+                    if (dx * dx + dy * dy + dz * dz > LaneTol * LaneTol)
+                        return false;
+                }
+            }
+            return true;
+        }
+        // One strip into its lane: lo/hi its two boundaries' corners (inner a, inner b, outer a, outer b), slice i.
+        void Lane(int lane, int i, double va, double vb, (double, double, double)[] lo, (double, double, double)[] hi)
+        {
+            if (lanes.TryGetValue(lane, out var run) && run.Last == i - 1)
+            {
+                run.Bounds.Add((vb, hi));
+                if (Straight(run.Bounds))
+                {
+                    lanes[lane] = (i, run.Bounds);
+                    return;
+                }
+                run.Bounds.RemoveAt(run.Bounds.Count - 1);
+            }
+            Flush(lane);
+            lanes[lane] = (i, [(va, lo), (vb, hi)]);
+        }
+        void Two(Func<double, ((double, double, double), (double, double, double), (double, double, double), (double, double, double))> at, (byte, byte, byte) c, bool flat = false, int lane = -1, int slice = 0, double va = 0, double vb = 0)
         {
             var (pa, _, pc, _) = at(0.03); // just outside its outer face: the probe for a door or a group-mate's room
             if (!keep([(pa.Item1 + pc.Item1) / 2, (pa.Item2 + pc.Item2) / 2, (pa.Item3 + pc.Item3) / 2], flat))
@@ -1691,7 +1745,10 @@ public static partial class DesignScene
             m.Quad(a, b, cc, dd, c, false);
             var (a2, b2, c2, d2) = at(-(g + t));
             m.Quad(a2, b2, c2, d2, c, false);
-            if (strips is not null)
+            if (strips is not null && lane >= 0)
+                // (a wall's corners at va are a and dd, at vb b and cc; the floor's and ceiling's at va a and b, at vb cc and dd)
+                Lane(lane, slice, va, vb, flat ? [a, b, a2, b2] : [a, dd, a2, d2], flat ? [dd, cc, d2, c2] : [b, cc, b2, c2]);
+            else if (strips is not null)
             {
                 var s8 = new double[24];
                 var k = 0;
@@ -1717,25 +1774,42 @@ public static partial class DesignScene
                 var (a2, b2) = Edges(d, r, va, ub);
                 var (a3, b3) = Edges(d, r, vb, ub);
                 // Its first and last rows reach on to the floor's and ceiling's outer faces, so the corners close.
-                Two(o => (P(a0 - o, va, k == 0 ? ua - o : ua), P(a1 - o, vb, k == 0 ? ua - o : ua), P(a3 - o, vb, k == nu - 1 ? ub + o : ub), P(a2 - o, va, k == nu - 1 ? ub + o : ub)), col);
-                Two(o => (P(b0 + o, va, k == 0 ? ua - o : ua), P(b1 + o, vb, k == 0 ? ua - o : ua), P(b3 + o, vb, k == nu - 1 ? ub + o : ub), P(b2 + o, va, k == nu - 1 ? ub + o : ub)), col);
+                Two(o => (P(a0 - o, va, k == 0 ? ua - o : ua), P(a1 - o, vb, k == 0 ? ua - o : ua), P(a3 - o, vb, k == nu - 1 ? ub + o : ub), P(a2 - o, va, k == nu - 1 ? ub + o : ub)), col, false, 2 + 2 * k, i, va, vb);
+                Two(o => (P(b0 + o, va, k == 0 ? ua - o : ua), P(b1 + o, vb, k == 0 ? ua - o : ua), P(b3 + o, vb, k == nu - 1 ? ub + o : ub), P(b2 + o, va, k == nu - 1 ? ub + o : ub)), col, false, 3 + 2 * k, i, va, vb);
             }
             var (f0, h0) = Edges(d, r, va, 0);
             var (f1, h1) = Edges(d, r, vb, 0);
-            Two(o => (P(f0 - o, va, -o), P(h0 + o, va, -o), P(h1 + o, vb, -o), P(f1 - o, vb, -o)), col, true);
+            Two(o => (P(f0 - o, va, -o), P(h0 + o, va, -o), P(h1 + o, vb, -o), P(f1 - o, vb, -o)), col, true, 0, i, va, vb);
             var (c0, e0) = Edges(d, r, va, hgt);
             var (c1, e1) = Edges(d, r, vb, hgt);
-            Two(o => (P(c0 - o, va, hgt + o), P(e0 + o, va, hgt + o), P(e1 + o, vb, hgt + o), P(c1 - o, vb, hgt + o)), col, true);
+            Two(o => (P(c0 - o, va, hgt + o), P(e0 + o, va, hgt + o), P(e1 + o, vb, hgt + o), P(c1 - o, vb, hgt + o)), col, true, 1, i, va, vb);
         }
+        foreach (var lane in lanes.Keys.ToList())
+            Flush(lane);
         // Its ends where the hologram's are: at its Span, a run-on end closed across the skin where it stops.
         foreach (var (v, sg) in new[] { (s0, -1.0), (s1, 1.0) })
         {
+            // Split across at the edges of each door in this end wall (Karl, 2026-11-27: a strip ran the whole width, so a door through
+            // it was either all wall or all hole, and two rooms out to the hull end to end were walled off from each other).
+            var xs = new List<double> { double.MinValue };
+            foreach (var q in doors)
+                if (!IsHole(q) && Math.Abs(q[va_] - v) < 0.3)
+                    xs.AddRange([q[0] - DoorHalf(q), q[0] + DoorHalf(q)]);
+            xs.Add(double.MaxValue);
+            xs.Sort();
             for (var k = 0; k < nu; k++)
             {
                 double ua = Up(k), ub = Up(k + 1);
                 var (a0, b0) = Edges(d, r, v, ua);
                 var (a1, b1) = Edges(d, r, v, ub);
-                Two(o => (P(a0 + g, v + sg * o, k == 0 ? ua - g : ua), P(b0 - g, v + sg * o, k == 0 ? ua - g : ua), P(b1 - g, v + sg * o, k == nu - 1 ? ub + g : ub), P(a1 + g, v + sg * o, k == nu - 1 ? ub + g : ub)), col);
+                for (var x = 0; x + 1 < xs.Count; x++)
+                {
+                    double la = Math.Max(a0 + g, xs[x]), ra = Math.Min(b0 - g, xs[x + 1]), lb = Math.Max(a1 + g, xs[x]), rb = Math.Min(b1 - g, xs[x + 1]);
+                    if (ra <= la + 0.002 && rb <= lb + 0.002)
+                        continue;
+                    (ra, rb) = (Math.Max(ra, la), Math.Max(rb, lb));
+                    Two(o => (P(la, v + sg * o, k == 0 ? ua - g : ua), P(ra, v + sg * o, k == 0 ? ua - g : ua), P(rb, v + sg * o, k == nu - 1 ? ub + g : ub), P(lb, v + sg * o, k == nu - 1 ? ub + g : ub)), col);
+                }
             }
         }
     }
