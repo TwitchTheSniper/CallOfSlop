@@ -146,7 +146,8 @@ public sealed unsafe partial class Renderer
         Native.glActiveTexture(GL_TEXTURE0 + SheetUnit);
         if (_sheetTex == 0 || kinds.Count > _sheetCapacity)
         {
-            // (made again with room for four more kinds, all baked anew: kinds come rarely, a new paint on a floor)
+            // (made again with room for as many kinds again, all baked anew: kinds come rarely, a new paint on a floor, so the
+            // doubling keeps the re-bakes to a handful in a game)
             if (_sheetTex != 0)
             {
                 var old = _sheetTex;
@@ -156,7 +157,9 @@ public sealed unsafe partial class Renderer
             Native.glGenTextures(1, &tex);
             _sheetTex = tex.Id;
             Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _sheetTex);
-            _sheetCapacity = (kinds.Count + 4) & ~3;
+            _sheetCapacity = Math.Min(ConstructRender.SheetMaxKinds, Math.Max(4, _sheetCapacity * 2));
+            while (_sheetCapacity < kinds.Count)
+                _sheetCapacity *= 2;
             Native.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, (int)GL_RGBA8, n, n, _sheetCapacity * per, 0, GL_RGBA, GL_UNSIGNED_BYTE, null);
             Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, (int)GL_LINEAR_MIPMAP_LINEAR);
             Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, (int)GL_LINEAR);

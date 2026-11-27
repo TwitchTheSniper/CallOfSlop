@@ -51,7 +51,8 @@ public static partial class ConstructRender
         public byte[] SlotMask = []; // slot k's faces covered by another box of the chunk (bit 2 * axis + side, side 1 the + face: HideCovered)
         public int SheetFrom; // its slots from here on are floor sheets (ConstructRenderSheets.cs), each standing for a rectangle of tiles
         public float[] SheetCode = []; // each sheet's look code (its kind and welded edges)
-        public bool SheetTypes; // a member is of a sheet type: a look change rebuilds it (a damaged or painted tile leaves its sheet)
+        public bool SheetTypes; // a member is of a sheet type: a look change that changes which tiles can be in sheets rebuilds it (SheetKey)
+        public long SheetKey;
         public bool Dirty = true, LookDue = true;
         public bool Lamps; // a member is a lamp: its looks are checked every check
         public Vector3 Centre; // a sphere round its boxes, in the segment's frame
@@ -859,6 +860,7 @@ public static partial class ConstructRender
             xf[o + 8] = m.M31; xf[o + 9] = m.M32; xf[o + 10] = m.M33; xf[o + 11] = m.M43;
         }
         ch.SheetFrom = s;
+        ch.SheetKey = ch.SheetTypes ? SheetKey(c, ch) : 0;
         if (rects > 0)
         {
             // The sheets: one group of their own (Renderer.SheetShape), drawn by the sheet shader in the main view and as plain
@@ -1034,7 +1036,7 @@ public static partial class ConstructRender
             if (ch.LookDue || ch.Lamps && (check || previewed) || check && ((k + set.Draws / MergeCheckFrames) & 1) == 0) // (half the chunks each check: each every 8 draws; a chunk with lamps every check, so a row of lamps across chunks switches together)
             {
                 var look = ChunkLook(c, ch);
-                if (look != ch.Look && ch.SheetTypes && !ch.LookDue)
+                if ((look != ch.Look || ch.LookDue) && ch.SheetTypes && SheetKey(c, ch) != ch.SheetKey)
                     ch.Dirty = true; // (a tile damaged, painted or frosted leaves its sheet, or one mended joins one: built again next frame, its looks with it)
                 else if (look != ch.Look || ch.LookDue)
                 {
@@ -1564,6 +1566,7 @@ public static partial class ConstructRender
     {
         if (_mergeQueued == 0)
             return;
+        var sheets = SheetBoxes > 0 && gfx.SheetsDrawable; // (before BeginMerged: the sheet program is made on first use and leaves the box program bound)
         gfx.BeginMerged();
         var rel = gfx.Relative;
         gfx.Relative = true; // (the frames are relative to the render origin already)
@@ -1573,7 +1576,6 @@ public static partial class ConstructRender
         for (var k = 0; k < _mergeQueued; k++)
             (_mergeOrderKey[k], _mergeOrder[k]) = (_mergeQueue[k].Away, k);
         Array.Sort(_mergeOrderKey, _mergeOrder, 0, _mergeQueued);
-        var sheets = SheetBoxes > 0 && gfx.SheetsDrawable;
         gfx.SheetsApart = sheets; // (the floor sheets go after, textured: DrawSheets)
         for (var o = 0; o < _mergeQueued; o++)
         {

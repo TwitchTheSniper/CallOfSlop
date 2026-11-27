@@ -67,7 +67,11 @@ public static partial class ConstructRender
         if (_sheetKindOf.TryGetValue((d, high, paint), out var k))
             return k;
         if (_sheetKinds.Count >= SheetMaxKinds)
+        {
+            if (_sheetRefused.Add(d))
+                Console.WriteLine($"[render] REFUSED floor sheet for {d.Name} (paint {paint:X}): {SheetMaxKinds} tile kinds baked already (drawn box by box)");
             return -1;
+        }
         var kind = new SheetKind { Def = d, High = high, Paint = paint, Index = _sheetKinds.Count, Cell = d.BlockCell };
         var lo = float.MaxValue;
         for (var b = 0; b < d.Boxes.Length; b++)
@@ -448,6 +452,19 @@ public static partial class ConstructRender
             };
         }
         return rects;
+    }
+
+    /// <summary>What decides which of a chunk's tiles can be in sheets and in which kind: each sheet-type member's readiness and paint.</summary>
+    private static long SheetKey(Construct c, MergeChunk ch)
+    {
+        var h = 41L;
+        for (var k = 0; k < ch.MemberCount; k++)
+        {
+            var i = ch.Members[k];
+            if (i < c.PartCount && c.Parts[i].D.Sheet)
+                h = Mix(Mix(h, SheetReady(c, i) ? k + 1 : -k - 1), c.Parts[i].Paint);
+        }
+        return h;
     }
 
     /// <summary>A tile of the group at a cell, or -1.</summary>
