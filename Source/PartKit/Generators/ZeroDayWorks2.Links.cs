@@ -543,15 +543,15 @@ public sealed partial class ZeroDayWorks2
                 Pair(i + 1, cost + Unpaired, used);
             }
             Pair(0, 0, 0);
-            var cutterOf = new Dictionary<VPart, VPart>();
+            var cutterOf = new Dictionary<VPart, (VPart Core, Vector2 At)>();
             for (var i = 0; i < lineConsoles.Count; i++)
                 if (bestPick[i] >= 0)
-                    cutterOf[lineConsoles[i].Console] = cutters[bestPick[i]].Core;
+                    cutterOf[lineConsoles[i].Console] = (cutters[bestPick[i]].Core, cutters[bestPick[i]].At);
             foreach (var c in _consoles)
             {
                 if (!cutterOf.TryGetValue(c.Console, out var cutter))
                     continue;
-                var at = _at.TryGetValue(cutter, out var a) ? a : c.At;
+                var at = cutter.At; // (the cutter's middle, not its Core: a narrow cutter's Core stands at its far end, 2026-11-27)
                 var station = _stations.OrderBy(s => Vector2.Distance(s.At, at)).FirstOrDefault().Core;
                 if (station == null)
                     continue;

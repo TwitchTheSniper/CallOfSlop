@@ -95,8 +95,9 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 Group = "Factories",
             };
             using var doc = JsonDocument.Parse(layoutText);
-            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(MovedOut).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(MovedOut).Select(NarrowOut).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
             items.AddRange(DeepPads(items));
+            items.AddRange(NarrowStrip(items));
             s.Lay(items);
             s.LayLinks();
             s.StationConsoles();
@@ -154,6 +155,32 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     for (var k = 2f; k <= by; k += 2)
                         yield return JsonDocument.Parse($$"""{"t": "part", "name": "Roller Tile", "x": {{Num(it, "x")}}, "z": {{Num(it, "z") + MathF.Sign(dz) * k}}, "rot": {{Int(it, "rot")}}}""").RootElement.Clone();
                 }
+        }
+
+        /// <summary>
+        /// The narrow lines (Laser Cutter, Panel Former, transfer table, Extruder, its feed, Materials Bin and Line Console, layout |x| 43 to 68,
+        /// z -53 to -19) moved this far away from their station, m. 2026-11-27, Sean chose "Shift narrow lines 2 m out": most frigate walls' plates
+        /// are 3 m wide and the line's end strip, one 2 m row of tiles between the cutter and the station's bay, couldn't hold them; the freed row
+        /// becomes a second row of the strip, so the end pad is 4 m deep (<see cref="NarrowStrip"/>). The rover docks by the bay stay.
+        /// </summary>
+        private const float NarrowShift = 2;
+
+        private static bool InNarrowLine(JsonElement e) => Str(e, "t") != "rover" && MathF.Abs(Num(e, "x")) is >= 43 and <= 68 && Num(e, "z") is > -53 and < -19;
+
+        private static JsonElement NarrowOut(JsonElement e)
+        {
+            if (!InNarrowLine(e))
+                return e;
+            var node = System.Text.Json.Nodes.JsonNode.Parse(e.GetRawText())!.AsObject();
+            node["x"] = Num(e, "x") + MathF.Sign(Num(e, "x")) * NarrowShift;
+            return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
+        }
+
+        /// <summary>The row <see cref="NarrowShift"/> freed between each narrow cutter's strip and its station: Roller Tiles as the strip's, laid as its pad.</summary>
+        private static IEnumerable<JsonElement> NarrowStrip(List<JsonElement> items)
+        {
+            foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && MathF.Abs(MathF.Abs(Num(i, "x")) - (43 + NarrowShift)) < 0.1f && Num(i, "z") is > -40 and < -20).ToList())
+                yield return JsonDocument.Parse($$"""{"t": "part", "name": "Roller Tile", "x": {{Num(it, "x") - MathF.Sign(Num(it, "x")) * NarrowShift}}, "z": {{Num(it, "z")}}, "rot": {{Int(it, "rot")}}}""").RootElement.Clone();
         }
 
         private const float BigOvenClear = 6; // (m: a big line's Bake Oven's Tunnel height)
@@ -451,8 +478,15 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 var strip = Enumerable.Range(0, w).Select(i => Round(At(i, last) + flow * 2)).ToList();
                 var tiles = items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")).Select(i => Round(new Vector2(Num(i, "x"), -Num(i, "z")))).ToHashSet();
                 if (strip.All(tiles.Contains))
+                {
                     foreach (var cell in strip)
                         _layBy.Add(cell);
+                    // (and the row past it, when it is all Roller Tiles too: the narrow lines' 4 m end pad, NarrowShift)
+                    var next = Enumerable.Range(0, w).Select(i => Round(At(i, last) + flow * 4)).ToList();
+                    if (next.All(tiles.Contains))
+                        foreach (var cell in next)
+                            _layBy.Add(cell);
+                }
                 else
                     Note($"the narrow Laser Cutter at ({lx}, {-lz}) has no full strip of Roller Tiles past its Out Tables: it stays as laid");
             }

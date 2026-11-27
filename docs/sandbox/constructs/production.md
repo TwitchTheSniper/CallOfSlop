@@ -2228,7 +2228,11 @@ first tile. A crossing whose exit tile hands on only to a short run (under 4 cel
 the exit tile's middle, so a piece leaves the field sideways straight onto the Panel Former beside it. **Side beds:** a run with nothing
 butted on its out end and a bed lying along its long side (two rows or more, its Bed in on that side, not the machine it comes from)
 ends in that bed (`RollerRuns.SideBed`), at the bed's point along the run: the narrow lines' 2 m strip between a former's Out Tables and
-its Laser Cutter hands each piece sideways onto the cutter. Not yet: a run doesn't carry a person along.
+its Laser Cutter hands each piece sideways onto the cutter. **Transfer tables (2026-11-27, Sean: "weird transfer table routing"):** a
+crossing into a bed goes on from the tile it comes in on the way its in-run comes, to the field tile level with the bed's middle, then
+straight across onto the bed (`RollerRuns.StraightIntoBed`), never turning through the field's tiles; on a run or a crossing a piece
+keeps facing the way of its first segment and slides sideways at the turn (`ConstructConveyor.Pose`), as a transfer table's rollers carry
+it; and a crossing is drawn as its tiles, never as a belt (`RouteRender`, as runs). Not yet: a run doesn't carry a person along.
 
 **Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
 on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
@@ -2562,9 +2566,12 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   fits none of the pads its own lines' bed machines drop onto (followed down their out runs, a turntable field's crossing included), or
   of all its pick pads when no line drops onto one, is refused with "fits none of the pick pads" (`ConstructBakeOven.PadLacks`), so the
   kit goes to another oven: the 2.75 m plates of Lower Aft Wall 4 waited for ever at the east narrow cutter, whose strip is 2 m deep,
-  and now bake on a wide line. Still open: most frigate walls have 3 m plates, so the narrow lines make only the walls whose plates are
-  2 m or less (asked of Sean: a deeper strip); the decks' 7.5 to 9.5 m plates fit no wide line's pad either, so nothing takes the deck
-  kits; the Fuel Pump M's blank is too wide for its run.
+  and now bake on a wide line. **Narrow lines 2 m out (2026-11-27, Sean's card):** most frigate walls have 3 m plates, so the narrow
+  lines (cutter, former, transfer table, Extruder and its bin) stand 2 m further from their station (`ZeroDayWorks2.NarrowOut`) and the
+  freed row is a second row of the end pad, 4 m deep (`NarrowStrip`); the east narrow line then baked Lower Aft Walls 4 and 6. The line
+  consoles pair with their own cutters as a whole (least total distance) and a line's station is the one nearest its cutter's middle:
+  paired nearest first, the big cutters' 8 m move gave a narrow console a big line's cutter and the main station lost its ovens (PR 681).
+  Still open: the Fuel Pump M's blank is too wide for its run.
 - **Works II control row (2026-11-26).** Sean: "all of the line consoles for this entire factory are sitting next to each other in a
   line, so I can just walk through them all", on the open floor by the west gensets. Every Line Console stands in one row along z at
   x -45 from z -38.5 south, a desk every 1.5 m, screens east to the walk by the gensets (`ZeroDayWorks2.ControlRow.cs`); which machines

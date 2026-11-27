@@ -665,6 +665,10 @@ public static class ConstructConveyor
                 shaft = true;
                 z = ShaftFacing(c, route, i);
             }
+            else if (i > 0 && (RollerRuns.IsRun(c, route) || RollerRuns.IsCrossing(c, route))
+                     && LevelWay(ConstructRoutes.Point(c, route, -1, out _), ConstructRoutes.Point(c, route, 0, out _), out var facing))
+                z = facing; // (on a tile way, a transfer table's or a strip's into a bed beside it, a piece keeps the way it came on facing and
+                            // slides sideways at the turn, as the tiles' rollers carry it: Sean 2026-11-27, never turning on the table)
         }
         var up = Vector3.UnitY - z * z.Y;
         up = up.LengthSquared() > 1e-4f ? Vector3.Normalize(up) : Vector3.UnitX;
