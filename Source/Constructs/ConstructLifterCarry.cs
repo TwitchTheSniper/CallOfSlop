@@ -81,9 +81,10 @@ public static partial class ConstructLifters
     {
         at = default;
         part = ConstructPads.Owner(b, part);
-        if (!ConstructRackPack.NextOrigin(ConstructPads.RackDef(b, part), st, d, out var o))
+        var rd = ConstructPads.RackDef(b, part);
+        if (!ConstructRackPack.NextOrigin(rd, st, d, out var o))
             return false;
-        at = PartPoint(b, part, o + (d.BoundsMin + d.BoundsMax) * 0.5f);
+        at = PartPoint(b, part, o + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, ConstructRackPack.Turn(rd, d))); // (a piece lying turned: ConstructRackPack.Turned)
         return true;
     }
 
@@ -517,6 +518,7 @@ public static partial class ConstructLifters
                 if (!slot)
                     from.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
                 Freeform.PartWorld(b, pt.Part, out _, out var rr);
+                rr *= RackTurn(b, pt.Part, d); // (a piece lying turned on a pad: ConstructRackPack.Turned)
                 if (ds >= 0)
                     StartDirect(world, c, l, ld, lp, lr, d, from, rr, dsc!, dt, dj!, ds); // (a stock piece straight to the station step, not by its pick pad)
                 else
@@ -779,6 +781,14 @@ public static partial class ConstructLifters
             b.Wake();
     }
 
+    /// <summary>How a piece of kind <paramref name="d"/> lies on rack or pad <paramref name="part"/>, in the rack part's frame (<see cref="ConstructRackPack.Turn"/>).</summary>
+    private static Quaternion RackTurn(Construct b, int part, ConstructPartDef d)
+    {
+        var owner = ConstructPads.Owner(b, part);
+        var rd = ConstructPads.RackDef(b, owner);
+        return rd.IsPieceRack ? ConstructRackPack.Turn(rd, d) : Quaternion.Identity;
+    }
+
     /// <summary>A carry begins: <paramref name="from"/> and <paramref name="toAt"/> are the piece's middle in the world.</summary>
     private static void StartCarry(ConstructWorld world, Construct c, CLift l, LifterDef ld, Vector3 lp, Quaternion lr, ConstructPartDef d, byte health, uint paint, Vector3 from, Quaternion fromRot, int to, Vector3 toAt)
     {
@@ -787,7 +797,11 @@ public static partial class ConstructLifters
         var pt = l.Points![to];
         Quaternion toRot = fromRot;
         if (world.Get(pt.Body) is { } tb && pt.Part < tb.PartCount)
+        {
             Freeform.PartWorld(tb, pt.Part, out _, out toRot);
+            if (pt.Kind == LiftPointKind.Rack)
+                toRot *= RackTurn(tb, pt.Part, d); // (it lies turned on a pad too narrow for it as it is: ConstructRackPack.Turned)
+        }
         var hand = HandNow(ld, l);
         l.OrderId = 0; // (phase 7: OrderCarry sets it after, for a hand order's carry)
         l.Def = (ushort)d.Id;

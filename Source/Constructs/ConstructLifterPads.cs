@@ -96,8 +96,11 @@ public static partial class ConstructLifters
         if (Vector3.DistanceSquared(lo.Pos, c.Pos) > reach * reach || lo.Vel.LengthSquared() > 0.25f)
             return "far or moving";
         var local = Vector3.Transform(lo.WorldCom - pp, inv);
+        // (a Pad Tile pad with no masts holds one piece of any height alone (ConstructRackPack.Fit): a tall one's middle stands over its
+        // hold's 1 m top, a baked 3.25 m deck rolled onto the Works II main station's pad, Sean 2026-11-27; OnDeck still asks that it rests on it)
+        var top = d.RackHoldMax.Y + (d.BlockSeed && d.BlockCell > 0 ? lo.Radius : 0f);
         if (local.X < d.RackHoldMin.X || local.X > d.RackHoldMax.X || local.Z < d.RackHoldMin.Z || local.Z > d.RackHoldMax.Z
-            || local.Y < d.RackHoldMin.Y - 0.25f || local.Y > d.RackHoldMax.Y)
+            || local.Y < d.RackHoldMin.Y - 0.25f || local.Y > top)
             return "not over the hold";
         if (group)
             return GroupTakeInWhy(world, c, part, st, inv, d.RackHoldMin.Y, pp, lo);

@@ -42,8 +42,43 @@ public static class ConstructRackPack
     /// <summary>How a piece stands in a rack: stacks across and pieces a stack, and its length in mm; false when it is too big.</summary>
     public static bool Fit(ConstructPartDef rd, ConstructPartDef d, out int lanes, out int layers, out int lenMm)
     {
-        Hold(rd, out var lo, out var hi);
+        if (FitAs(rd, d.BoundsMax - d.BoundsMin, out lanes, out layers, out lenMm))
+            return true;
+        if (!Turned(rd, d))
+            return false;
         var s = d.BoundsMax - d.BoundsMin;
+        return FitAs(rd, new Vector3(s.Z, s.Y, s.X), out lanes, out layers, out lenMm);
+    }
+
+    /// <summary>
+    /// Does a piece lie on Pad Tile pad <paramref name="rd"/> turned a quarter (its own x along the pad's z)? Only when it doesn't fit the
+    /// pad as it is and does so turned: a 9.5 m wall (its length along its x) rolled out of a small line's oven onto Zero Day Works II's
+    /// 6 x 20 m pad beside the main station, which a pad that takes pieces only along its z could never hold, while the 17 m walls (their
+    /// length along z) need it as it is (Sean, 2026-11-27). Both peers decide it from the two defs alone: nothing is saved or sent.
+    /// Everything that places or draws a rack's piece turns it by <see cref="Turn"/> and reads its box from <see cref="Lo"/> and <see cref="Hi"/>.
+    /// </summary>
+    public static bool Turned(ConstructPartDef rd, ConstructPartDef d)
+    {
+        if (!rd.BlockSeed || rd.BlockCell <= 0)
+            return false;
+        var s = d.BoundsMax - d.BoundsMin;
+        return MathF.Abs(s.X - s.Z) > 1e-3f && !FitAs(rd, s, out _, out _, out _) && FitAs(rd, new Vector3(s.Z, s.Y, s.X), out _, out _, out _);
+    }
+
+    /// <summary>A quarter turn about the rack's up (its x to the rack's -z, its z to the rack's x) for a <see cref="Turned"/> piece, else none.</summary>
+    public static Quaternion Turn(ConstructPartDef rd, ConstructPartDef d) => Turned(rd, d) ? QuarterTurn : Quaternion.Identity;
+
+    private static readonly Quaternion QuarterTurn = Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI * 0.5f);
+
+    /// <summary>The piece's box as it lies in the rack (rack frame, about its own origin): its bounds, turned when it lies <see cref="Turned"/>.</summary>
+    public static Vector3 Lo(ConstructPartDef rd, ConstructPartDef d) => Turned(rd, d) ? new Vector3(d.BoundsMin.Z, d.BoundsMin.Y, -d.BoundsMax.X) : d.BoundsMin;
+
+    /// <inheritdoc cref="Lo"/>
+    public static Vector3 Hi(ConstructPartDef rd, ConstructPartDef d) => Turned(rd, d) ? new Vector3(d.BoundsMax.Z, d.BoundsMax.Y, -d.BoundsMin.X) : d.BoundsMax;
+
+    private static bool FitAs(ConstructPartDef rd, Vector3 s, out int lanes, out int layers, out int lenMm)
+    {
+        Hold(rd, out var lo, out var hi);
         var w = hi - lo;
         lanes = Math.Min(MaxLanes, (int)((w.X + GapX + 1e-4f) / (s.X + GapX)));
         layers = Math.Min(255, (int)((w.Y + GapY + 1e-4f) / (s.Y + GapY)));
@@ -202,7 +237,7 @@ public static class ConstructRackPack
     }
 
     /// <summary>
-    /// Where the next piece of a kind would go (its own origin, the rack part's frame, unturned), as <see cref="Place"/> would put it now:
+    /// Where the next piece of a kind would go (its own origin, the rack part's frame, turned by Turn), as <see cref="Place"/> would put it now:
     /// on its kind's lowest stack with room, else at the start of a new column. False: it wouldn't go in.
     /// </summary>
     public static bool NextOrigin(ConstructPartDef rd, CStore st, ConstructPartDef d, out Vector3 origin)
@@ -285,22 +320,22 @@ public static class ConstructRackPack
         return false;
     }
 
-    /// <summary>Where piece <paramref name="layer"/> of a stack has its own origin, in the rack part's frame (unturned).</summary>
+    /// <summary>Where piece <paramref name="layer"/> of a stack has its own origin, in the rack part's frame (its rotation there: <see cref="Turn"/>).</summary>
     public static Vector3 Origin(ConstructPartDef rd, in RackSlab sl, ConstructPartDef d, int lane, int layer)
     {
         Hold(rd, out var lo, out var hi);
-        var s = d.BoundsMax - d.BoundsMin;
+        Vector3 b0 = Lo(rd, d), s = Hi(rd, d) - b0; // (a piece lying turned: its turned box, Turned)
         var used = sl.Lanes * s.X + (sl.Lanes - 1) * GapX;
         var x = lo.X + (hi.X - lo.X - used) * 0.5f + lane * (s.X + GapX);
-        return new Vector3(x, lo.Y + layer * (s.Y + GapY), lo.Z + sl.Z0Mm * 0.001f) - d.BoundsMin;
+        return new Vector3(x, lo.Y + layer * (s.Y + GapY), lo.Z + sl.Z0Mm * 0.001f) - b0;
     }
 
     /// <summary>A stack as one box (rack frame): its pieces from the bed to the top one.</summary>
     public static void StackBox(ConstructPartDef rd, in RackSlab sl, ConstructPartDef d, int lane, int count, out Vector3 min, out Vector3 max)
     {
         var o = Origin(rd, sl, d, lane, 0);
-        min = o + d.BoundsMin;
-        max = Origin(rd, sl, d, lane, count - 1) + d.BoundsMax;
+        min = o + Lo(rd, d);
+        max = Origin(rd, sl, d, lane, count - 1) + Hi(rd, d);
     }
 
     /// <summary>A column as one box (rack frame), as high as its highest stack: the far proxy, and the ray's first test.</summary>
@@ -319,8 +354,8 @@ public static class ConstructRackPack
                 first = l;
             last = l;
         }
-        min = Origin(rd, sl, d, Math.Max(first, 0), 0) + d.BoundsMin;
-        max = Origin(rd, sl, d, Math.Max(last, 0), Math.Max(top - 1, 0)) + d.BoundsMax;
+        min = Origin(rd, sl, d, Math.Max(first, 0), 0) + Lo(rd, d);
+        max = Origin(rd, sl, d, Math.Max(last, 0), Math.Max(top - 1, 0)) + Hi(rd, d);
     }
 
     /// <summary>

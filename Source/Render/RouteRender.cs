@@ -724,8 +724,9 @@ public static class RouteRender
                     for (var y = 0; y < n; y++)
                     {
                         var o = ConstructRackPack.Origin(rd, st.Slabs[s], d, l, y);
-                        var m = sliding && PadLanding.Moving(c, part, st.Slabs[s], l, y, p.Pos + Vector3.Transform(o, rackRot), rackRot, ConstructConveyor.Clock, out var slide)
-                            ? slide * segFrame : Matrix4x4.CreateTranslation(o) * frame;
+                        var turn = ConstructRackPack.Turn(rd, d); // (a piece lying a quarter turned on a pad too narrow for it as it is, 2026-11-27)
+                        var m = sliding && PadLanding.Moving(c, part, st.Slabs[s], l, y, p.Pos + Vector3.Transform(o, rackRot), rackRot * turn, ConstructConveyor.Clock, out var slide)
+                            ? slide * segFrame : Matrix4x4.CreateFromQuaternion(turn) * Matrix4x4.CreateTranslation(o) * frame;
                         for (var bx = 0; bx < d.Boxes.Length; bx++)
                         {
                             ref readonly var box = ref d.Boxes[bx];

@@ -120,11 +120,12 @@ public sealed partial class ConstructWorld
         var rd = ConstructPads.RackDef(c, part);
         var d = ConstructParts.Def(st.Slabs![slab].Def);
         int n = st.SlabLanes![slab * ConstructRackPack.MaxLanes + lane];
-        var o = ConstructRackPack.Origin(rd, st.Slabs[slab], d, lane, Math.Max(0, n - 1)) + (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var lie = ConstructRackPack.Turn(rd, d); // (a piece lying a quarter turned on a pad too narrow for it as it is: ConstructRackPack.Turned)
+        var o = ConstructRackPack.Origin(rd, st.Slabs[slab], d, lane, Math.Max(0, n - 1)) + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, lie);
         c.WorldFrame(p.Seg, out var q, out var t);
         var r = Rot24.Quat(p.Rot);
         at = t + Vector3.Transform(p.Pos + Vector3.Transform(o, r), q);
-        turn = q * r;
+        turn = q * r * lie;
     }
 
     /// <summary>Server: every piece of a kind off a rack, loose bodies stacked over it, at most <paramref name="most"/> (a world of bodies costs). How many.</summary>

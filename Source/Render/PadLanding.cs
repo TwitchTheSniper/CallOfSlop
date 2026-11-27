@@ -178,7 +178,7 @@ public static class PadLanding
             var rot = Rot24.Quat(part.Rot);
             var to = part.Pos + Vector3.Transform(ConstructRackPack.Origin(rd, st.Slabs![s], d, l, layer), rot);
             var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
-            var dist = Vector3.Distance(to + Vector3.Transform(mid, rot), n.Pos + Vector3.Transform(mid, n.Rot));
+            var dist = Vector3.Distance(to + Vector3.Transform(mid, rot * ConstructRackPack.Turn(rd, d)), n.Pos + Vector3.Transform(mid, n.Rot));
             if (p.MoveN < MaxMoves && dist > 0.05f)
                 p.Moves[p.MoveN++] = new Move
                 {
