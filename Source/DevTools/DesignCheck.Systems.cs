@@ -60,10 +60,18 @@ public static partial class DesignCheck
             else
                 r.Fail("--systems: " + what);
         }
+        int held = -1, keySeat = -1; // (the helm's keys, held each tick as a sitter's are: the logic tick clears them)
         void Tick(int n)
         {
             for (var k = 0; k < n; k++)
+            {
+                if (keySeat >= 0 && held >= 0 && c.Parts[keySeat].Keys != (ushort)held)
+                {
+                    c.Parts[keySeat].Keys = (ushort)held;
+                    c.Wake(); // (as a sitter's keys reaching the seat: ConstructEdits)
+                }
                 world.Step(World.Query, World.TickDt);
+            }
         }
         int Find(Func<ConstructPartDef, bool> f)
         {
@@ -85,11 +93,11 @@ public static partial class DesignCheck
             var ld = c.DefOf(lamp);
             var beam = Vector3.Transform(Rot24.Apply(c.Parts[lamp].Rot, ld.LightDir), q);
             Say(ConstructLamps.Lit(c, lamp), $"the {ld.Name.Split(' ').Last()}'s floodlight is lit from the helm's switch: {ld.LightRange:0} m, a {ld.LightCone:0} degree cone, beam {V(beam)} (up {Vector3.Dot(beam, Vector3.UnitY):0.00}), colour #{(int)ConstructConfig.Get(c.Parts[lamp], ld, CfgKey.Colour, 0):x6}");
-            c.Parts[sw].State ^= 1; // (as F on it: ConstructEdits.Use)
-            Tick(3);
+            c.Parts[sw].State ^= 1; c.Wake(); // (as F on it: ConstructEdits.Use)
+            Tick(20);
             Say(!ConstructLamps.Lit(c, lamp), "the switch thrown puts it out");
-            c.Parts[sw].State ^= 1;
-            Tick(3);
+            c.Parts[sw].State ^= 1; c.Wake();
+            Tick(20);
         }
         else
             r.Fail($"--systems: no floodlight (lamp {lamp}) or no lights switch ({sw})");
@@ -144,21 +152,21 @@ public static partial class DesignCheck
         }
         c.Parts[helm].SitterPlus1 = 1;
         (c.Driver, c.DriverSeat) = (0, helm);
-        c.Parts[helm].Keys = CPart.Occupied;
+        (keySeat, held) = (helm, CPart.Occupied);
         c.Wake();
         Tick(5);
         if (grapple >= 0)
         {
             var before = c.Parts[grapple].Out;
-            c.Parts[helm].Keys = CPart.Occupied | ConstructParts.KeyHook;
+            held = CPart.Occupied | ConstructParts.KeyHook;
             Tick(3);
-            c.Parts[helm].Keys = CPart.Occupied;
-            Tick(3);
+            held = CPart.Occupied;
+            Tick(20);
             Say(before < 0.5f && c.Parts[grapple].Out >= 0.5f && ConstructLogic.WiredIn(world, c, grapple), $"the helm's hook key works the grapple ({before:0} -> {c.Parts[grapple].Out:0})");
-            c.Parts[helm].Keys = CPart.Occupied | ConstructParts.KeyHook; // (and again: it lets go)
+            held = CPart.Occupied | ConstructParts.KeyHook; // (and again: it lets go)
             Tick(3);
-            c.Parts[helm].Keys = CPart.Occupied;
-            Tick(3);
+            held = CPart.Occupied;
+            Tick(20);
             Say(c.Parts[grapple].Out < 0.5f, "a second press lets it go");
         }
         else
@@ -169,7 +177,7 @@ public static partial class DesignCheck
         void Count()
         {
             for (var k = 0; k < world.FireCount; k++)
-                if (world.Fires[k].Kind == CFireKind.Shot && world.Fires[k].Body == c.Id)
+                if (world.Fires[k].Kind is CFireKind.Shot or CFireKind.ShellOut && world.Fires[k].Body == c.Id)
                     fired.Add(world.Fires[k].Part);
         }
         for (var k = 0; k < 60; k++)
@@ -184,14 +192,17 @@ public static partial class DesignCheck
             ConstructWeapons.MuzzleWorld(c, k, out var muzzle, out var fwd);
             Console.WriteLine($"[design]   gun {c.DefOf(g.Part).Name.Split(' ').Last()}: muzzle {V(muzzle)}, bore {V(fwd)}, director {g.Director}, boxes {g.BoxCount}, {ConstructWeapons.BoxRounds(c, k, world)} rounds, {(string.IsNullOrEmpty(g.Problem) ? "no problem" : g.Problem)}");
         }
-        c.Parts[helm].Keys = CPart.Occupied | ConstructParts.KeyFire;
-        var shots = 0;
+        held = CPart.Occupied | ConstructParts.KeyFire;
+        var (shots, worstFire, sumFire) = (0, 0.0, 0.0);
         var client = new ConstructWorld();
         var cfires = new CFireEvent[256];
         var clientShots = 0;
         for (var k = 0; k < 9 * World.TickRate; k++)
         {
+            var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
             Tick(1);
+            worstFire = Math.Max(worstFire, Ms(t1));
+            sumFire += Ms(t1);
             Count();
             shots += world.FireCount;
             if (world.FireCount > 0)
@@ -202,9 +213,14 @@ public static partial class DesignCheck
                 clientShots += ConstructNet.ReadFires(ref fr, cfires);
             }
         }
-        c.Parts[helm].Keys = CPart.Occupied;
+        held = CPart.Occupied;
+        for (var k = 0; k < c.GunCount; k++)
+        {
+            ref var gp = ref c.Parts[c.Guns[k].Part];
+            Console.WriteLine($"[design]   gun {c.DefOf(c.Guns[k].Part).Name.Split(' ').Last()} after: {(fired.Contains(c.Guns[k].Part) ? "fired" : "never fired")}, {gp.Rounds} rounds in, reload {gp.Reload}, cool {gp.Cool}, its input {gp.In:0.0} ({gp.InCount} wires), broken {gp.Broken}");
+        }
         var guns = Enumerable.Range(0, c.GunCount).Select(k => (int)c.Guns[k].Part).ToHashSet();
-        Say(c.GunCount > 0 && fired.SetEquals(guns), $"the fire key fires {fired.Count} of {c.GunCount} guns ({shots} shot events in 9 s)");
+        Say(c.GunCount > 0 && fired.SetEquals(guns), $"the fire key fires {fired.Count} of {c.GunCount} guns ({shots} shot events in 9 s, a tick firing {sumFire / (9 * World.TickRate):0.00} ms on average, the worst {worstFire:0.00} ms)");
 
         // 6. A joined client: the body, its poses, the couplings and the shots, through the wire.
         var pw = new PacketWriter(1 << 20);
