@@ -805,7 +805,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      and fire directors, lamps, hitches, clamps and relays on long wires, so a design key names elements an older peer can't make; no message changed.
     // 477: design wire relays have no collider, design ladders don't collide with people and an open boarding-hatch well gets a floor
     //      cover (DesignParts*.cs), so a design key builds different elements on an older peer; no message changed.
-    public const ushort ProtocolVersion = 477;
+    // 478: design turrets on turntable and hinge joints, hangar bays as Hangar Bay parts with door, lift and ramp joints, landing legs as gear
+    //      with a drop ladder at the boarding hatch, walled passages, lift passages and connector shafts, and hidden room lamp elements
+    //      (DesignParts*.cs), so a design key builds different elements on an older peer; no message changed.
+    public const ushort ProtocolVersion = 478;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
