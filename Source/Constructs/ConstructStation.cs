@@ -1860,6 +1860,28 @@ public static partial class ConstructStation
         return false;
     }
 
+    /// <summary>
+    /// Server: may an early piece (<see cref="PadEarly"/>) that other pieces queue behind on its run lie on pick pad <paramref name="pad"/>
+    /// all the same? True while the early pieces on the pad, this one with them, fill at most half its hold, so the pad keeps room for the
+    /// pieces a step can take now. A shared run (a Works II press row: two presses and an Assembler onto one pad) must never stand still
+    /// behind one piece the station will want later: the Drive Core Ms made in the first batch held the row, the Assembler's out and both
+    /// presses behind it for good (Sean, 2026-11-27). Allocates nothing.
+    /// </summary>
+    public static bool EarlyRoom(ConstructWorld world, Construct c, int pad, ConstructPartDef d)
+    {
+        pad = ConstructPads.Owner(c, pad);
+        if (pad >= c.PartCount || world.StoreOf(c, pad) is not { } st)
+            return false;
+        var hold = ConstructPads.RackDef(c, pad);
+        var room = Volume(hold.RackHoldMax - hold.RackHoldMin) * 0.5f;
+        var early = Volume(d.BoundsMax - d.BoundsMin);
+        for (var k = 0; k < st.KindN && early <= room; k++)
+            if (ConstructParts.Def(st.KindDef![k]) is { } kd && PadEarly(world, c, pad, kd))
+                early += st.KindCount![k] * Volume(kd.BoundsMax - kd.BoundsMin);
+        return early <= room;
+        static float Volume(System.Numerics.Vector3 v) => MathF.Max(0, v.X) * MathF.Max(0, v.Y) * MathF.Max(0, v.Z);
+    }
+
     /// <summary>Is a piece of kind <paramref name="d"/> early for rover station <paramref name="t"/>'s pick pads (<see cref="PadEarly"/>)?</summary>
     public static bool Early(ConstructWorld world, Construct c, int t, ConstructPartDef d)
     {

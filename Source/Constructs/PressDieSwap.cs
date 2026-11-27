@@ -151,6 +151,42 @@ public static partial class ConstructPress
     }
 
     /// <summary>
+    /// Server: a blank at a press's door (the lead piece of a conveyor into it) that a bay turned away as "not its order", while no bay holds
+    /// a blank: a later order of the queue that takes that blank goes to the head, so the press works what has reached it. Without this, a
+    /// small press pair on Zero Day Works II jammed for good (Sean, 2026-11-27): the Housing press swapped to its Gear Die for a Drive Bell's
+    /// Gear Sets, the Drive Core M blanks already made for it reached its door first, and the Gear Set blanks queued behind them on the same
+    /// run. The order taken must be one the press can run: its die fitted, or on a rack or Die Wall it swaps from. True when one moved.
+    /// </summary>
+    public static bool DoorFirst(ConstructWorld world, Construct c, int part, ConstructPartDef blank)
+    {
+        if (!blank.IsExtrusion || c.Parts[part].Orders is not { Bill: false, Count: > 1 } q || world.StoreOf(c, part) is not { } st)
+            return false;
+        var d = c.DefOf(part);
+        for (var b = 0; b < d.PressBays.Length; b++)
+            if (b != HopperBay && PieceIn(c, part, b) >= 0)
+                return false; // (a blank in: the press works it first; the door's piece waits its turn)
+        if (Pressed.SpecOf(q.Head) is { } head && (blank.ExKey with { Growing = false }) == head.Blank)
+            return false; // (the head's own blank: refused for its size or room, not its order)
+        var key = blank.ExKey with { Growing = false };
+        var held = SizedDieOf(PressTable.Current, c, part);
+        for (var k = 1; k < q.Count; k++)
+        {
+            if (Pressed.SpecOf(q.Items[k]) is not { } spec || spec.Blank != key)
+                continue;
+            if (!ReferenceEquals(spec.Die, held) && !DieRackOf(world, c, part, spec.Die, out _, out _))
+                continue; // (no die for it in reach: promoting it would stand the press still)
+            var o = q.Items[k];
+            Array.Copy(q.Items, 0, q.Items, 1, k);
+            q.Items[0] = o;
+            world.OrdersChanged(c);
+            ClearRefusal(world, st);
+            Console.WriteLine($"[press] the {d.Name} takes its {o.Count} x {o.Name ?? ConstructParts.Def(o.Part).Name} first: its blank is at the door, ahead of the head order's");
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// A chute's move from a store into a press whose head order needs another die: that die, if the store holds one and the old die has a
     /// slot to go back to. True when one is on its way (it docks at the start of the next step).
     /// </summary>
