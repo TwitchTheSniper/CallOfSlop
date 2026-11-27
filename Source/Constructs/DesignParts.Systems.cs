@@ -433,6 +433,11 @@ public static partial class DesignParts
                 ShutterSlats(a, m);
                 return;
             }
+            if (p.BayDoorType == "Side shutter")
+            {
+                SidePanels(a, m, b);
+                return;
+            }
             if (leaf.To <= leaf.From)
                 return;
             var door = Leaf($"{e.Id}.d0", $"{p.Kind} door", m, leaf.From, leaf.To, a.X, a.Y, a.Z);
@@ -681,7 +686,7 @@ public static partial class DesignParts
         var (p, e, els) = (a.P, a.E, a.Els);
         var (dx, dz) = DesignHangar.DoorExtent(p, a.W);
         double hx = dx / 2 * p.Hole, hz = dz / 2 * p.Hole;
-        var th = Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2);
+        var th = DesignHangar.ShutterThick(hx, hz);
         var run = (float)DesignHangar.ShutterRun(p, hx, hz);
         var seconds = MathF.Max(HatchSeconds, run * BayDoorSecondsPerM);
         var first = -1;
@@ -702,6 +707,64 @@ public static partial class DesignParts
         }
         if (first < 0)
             Console.WriteLine($"[design] the {p.Kind} {e.Id}'s shutter draws no slats: its mouth is open");
+    }
+
+    /// <summary>
+    /// A side shutter's panels (DesignHangar.Panels, drawn as leaves 0 up): each an event door that turns a quarter turn about the cross
+    /// axis, from its place across the mouth to its place on end past the bay's side wall, about the pivot that takes the one to the other
+    /// nearest the corner it turns (so it swings in through the bay, never out through the hull); welded to the bay and to the first panel.
+    /// </summary>
+    private static void SidePanels(in PieceAt a, DesignMesh m, DesignHangar.BaySize b)
+    {
+        var (p, e, els) = (a.P, a.E, a.Els);
+        var (o, x, y, z) = (a.O, a.X, a.Y, a.Z);
+        Vector3 Ship(double u, double v, double w) => o + x * (float)u + y * (float)v + z * (float)w;
+        Vector3 Mid(double[] lo, double[] hi) => Ship((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2);
+        var panels = DesignHangar.Panels(p, b, a.W);
+        var first = -1;
+        foreach (var sl in panels)
+        {
+            var leaf = m.Leaves?.Find(l => l.Leaf == sl.Leaf) ?? default;
+            if (leaf.To <= leaf.From)
+                continue;
+            var door = Leaf($"{e.Id}.d{sl.Leaf}", $"{p.Kind} shutter panel", m, leaf.From, leaf.To, a.X, a.Y, a.Z);
+            var dir = NearestDir(sl.Axis == 2 ? x : z);
+            var d = ConstructParts.DirVector(dir);
+            Vector3 c0 = Mid(sl.Lo, sl.Hi), c1 = Mid(sl.OpenLo, sl.OpenHi);
+            var cornerU = sl.Sign > 0 ? sl.OpenLo[sl.Axis] : sl.OpenHi[sl.Axis];
+            var corner = sl.Axis == 2 ? Ship(0, -1, cornerU) : Ship(cornerU, -1, 0);
+            var (angle, pivot, near) = (0f, Vector3.Zero, float.MaxValue);
+            foreach (var t in new[] { MathF.PI / 2, -MathF.PI / 2 })
+            {
+                var q = TurnPivot(c0, c1, d, t);
+                if (Vector3.Distance(q, corner) < near)
+                    (angle, pivot, near) = (t, q, Vector3.Distance(q, corner));
+            }
+            var arc = Vector3.Distance(pivot, c0) * MathF.PI / 2;
+            door.Door = new CDoorDef { Slide = false, Axis = dir, Pivot = pivot, Angle = angle, Seconds = MathF.Max(HatchSeconds, arc * BayDoorSecondsPerM), Hang = 0 };
+            els.Add(door);
+            Weld(els, a.At, els.Count - 1);
+            if (first < 0)
+                first = els.Count - 1;
+            else
+                Weld(els, first, els.Count - 1);
+        }
+        if (first < 0)
+            Console.WriteLine($"[design] the {p.Kind} {e.Id}'s side shutter draws no panels: its mouth is open");
+    }
+
+    /// <summary>The point a turn of <paramref name="angle"/> about direction <paramref name="d"/> must be made about to take
+    /// <paramref name="c0"/> to <paramref name="c1"/> (both the same way along d): (I - R) P = c1 - R c0, in the plane across d.</summary>
+    private static Vector3 TurnPivot(Vector3 c0, Vector3 c1, Vector3 d, float angle)
+    {
+        var r = Matrix4x4.CreateFromAxisAngle(d, angle);
+        var e1 = Vector3.Normalize(Vector3.Cross(d, MathF.Abs(d.X) < 0.9f ? Vector3.UnitX : Vector3.UnitY));
+        var e2 = Vector3.Cross(d, e1);
+        Vector3 r1 = Vector3.TransformNormal(e1, r), r2 = Vector3.TransformNormal(e2, r);
+        float m11 = 1 - Vector3.Dot(r1, e1), m21 = -Vector3.Dot(r1, e2), m12 = -Vector3.Dot(r2, e1), m22 = 1 - Vector3.Dot(r2, e2);
+        var rhs = c1 - Vector3.Transform(c0, r);
+        float b1 = Vector3.Dot(rhs, e1), b2 = Vector3.Dot(rhs, e2), det = m11 * m22 - m12 * m21;
+        return e1 * ((b1 * m22 - m12 * b2) / det) + e2 * ((m11 * b2 - m21 * b1) / det) + d * Vector3.Dot(c0, d);
     }
 
     /// <summary>Which of a place's axes is nearest the ship's up (0 X, 1 Y, 2 Z), as DesignHangar reads a bay's.</summary>

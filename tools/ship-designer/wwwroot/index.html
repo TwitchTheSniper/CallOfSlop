@@ -1398,13 +1398,13 @@ function dockControls(p) {
 }
 // A hangar piece's own controls (Karl, 2026-11-26; the bay's own width, height and depth 2026-11-27): a bay's door (width, height, sliding or hinged); a lift platform's or ramp deck's
 // width, length and travel; a docking arm's or cradle's bay link and its spot in the bay. Resets from CAT.defaults.hangar[kind].
-const DOOR_HINT = { Rolling: "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.", Shutter: "A sectional garage door: its slats run on tracks to the side you pick and on along the bay's ceiling there, or split in the middle to both sides.", Sliding: "The door slides aside inside the well on a piston.", Hinged: "The door swings out on motor hinges." };
+const DOOR_HINT = { Rolling: "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.", Shutter: "A sectional garage door: its slats run on tracks to the side you pick and on along the bay's ceiling there, or split in the middle to both sides.", "Side shutter": "A side-sliding sectional door: a chain of hinged panels that runs to the side you pick and turns the corner down into the ship beside the bay, or two sets, one into each side.", Sliding: "The door slides aside inside the well on a piston.", Hinged: "The door swings out on motor hinges." };
 function hangarControls(p) {
   const D = CAT.defaults.hangar?.[p.kind]; if (!D) return [];
   const send = o => cmd({ op: "setPiece", id: p.id, ...o });
   const m = (label, key, min, max, step, unit = " m") => slider(label, p[key], min, max, step, unit, () => {}, v => send({ [key]: v }), D[key]);
   if (p.bay) {
-    const ty = el("select", { "aria-label": "Door type" }); for (const t of ["Rolling", "Shutter", "Sliding", "Hinged"]) ty.append(el("option", t === p.bayDoor ? { selected: "" } : {}, t));
+    const ty = el("select", { "aria-label": "Door type" }); for (const t of ["Rolling", "Shutter", "Side shutter", "Sliding", "Hinged"]) ty.append(el("option", t === p.bayDoor ? { selected: "" } : {}, t));
     ty.addEventListener("change", () => send({ bayDoor: ty.value }));
     const fl = el("select", { "aria-label": "Floor" }); for (const t of ["Fixed", "Lift-out"]) fl.append(el("option", t === p.bayFloor ? { selected: "" } : {}, t));
     fl.addEventListener("change", () => send({ bayFloor: fl.value }));
@@ -1418,16 +1418,16 @@ function hangarControls(p) {
       el("h3", {}, "Hangar door"),
       m("Door width", "bayDoorW", 5, p.bayMatch ? 48 : Math.min(48, p.bay[0]), 0.5), m("Door height", "bayDoorH", 3, p.bayMatch ? 32 : Math.min(32, p.bay[1]), 0.5),
       el("div", { class: "row" }, el("span", {}, "Type"), ty, el("button", { class: "reset", title: "Door back to its defaults", onclick: () => send({ bayDoorW: D.bayDoorW, bayDoorH: D.bayDoorH, bayDoor: D.bayDoor }) }, "Reset all")),
-      ...(p.bayDoor === "Shutter" ? (() => {
-        const two = p.shutterRollers === 2;
-        const rl = el("select", { "aria-label": "Rollers" }); for (const [v, t] of [[1, "One"], [2, "Two (split in the middle)"]]) rl.append(el("option", v === (p.shutterRollers || 1) ? { value: v, selected: "" } : { value: v }, t));
+      ...(p.bayDoor === "Shutter" || p.bayDoor === "Side shutter" ? (() => {
+        const two = p.shutterRollers === 2, side = p.bayDoor === "Side shutter";
+        const rl = el("select", { "aria-label": side ? "Sets" : "Rollers" }); for (const [v, t] of [[1, "One"], [2, side ? "Two (one into each side)" : "Two (split in the middle)"]]) rl.append(el("option", v === (p.shutterRollers || 1) ? { value: v, selected: "" } : { value: v }, t));
         rl.addEventListener("change", () => send({ shutterRollers: +rl.value }));
         const opts = two ? [["Fore", "Fore and aft"], ["Right", "Left and right"]] : [["Fore", "Fore"], ["Aft", "Aft"], ["Left", "Left"], ["Right", "Right"]];
         const cur = two ? (p.shutterSide === "Fore" || p.shutterSide === "Aft" ? "Fore" : "Right") : p.shutterSide;
         const sd = el("select", { "aria-label": "Roller side" }); for (const [v, t] of opts) sd.append(el("option", v === cur ? { value: v, selected: "" } : { value: v }, t));
         sd.addEventListener("change", () => send({ shutterSide: sd.value }));
-        return [el("div", { class: "row" }, el("span", {}, "Rollers"), rl), el("div", { class: "row" }, el("span", {}, two ? "Split" : "Roller at"), sd),
-          slider("Slats", p.shutterSlats || 4, 1, 8, 1, two ? " each" : "", () => {}, v => send({ shutterSlats: v }), 4)];
+        return [el("div", { class: "row" }, el("span", {}, side ? "Sets" : "Rollers"), rl), el("div", { class: "row" }, el("span", {}, two ? "Split" : side ? "Runs to" : "Roller at"), sd),
+          slider(side ? "Panels" : "Slats", p.shutterSlats || 4, 1, 8, 1, two ? " each" : "", () => {}, v => send({ shutterSlats: v }), 4)];
       })() : []),
       el("h3", {}, "Hangar floor"), el("div", { class: "row" }, el("span", {}, "Floor"), fl),
       ...(p.bayFloor === "Lift-out" ? [el("p", { class: "hint" }, "The floor is a platform the craft stands on: F pushes it out through the mouth by the bay's depth (up from a roof bay, down from a belly bay, sideways from a side bay).")] : []),
@@ -2124,7 +2124,7 @@ function inspector() {
       k.service ? el("div", { class: "row" },
         el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room its service socket goes in."; } }, "Pick its room"),
         p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "") : "",
-      k.socket ? el("p", { class: "hint" }, p.room ? `Opens into ${(() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })()}.` : p.bay ? "Opens into no room: pick the room it opens into (a wide doorway into it)." : "Opens into the nearest room it can reach.") : "",
+      k.socket ? el("p", { class: "hint" }, p.room ? `Opens into ${(() => { const r = S.rooms.find(r => r.id === p.room); return r ? (r.label || r.kind) + ` on deck ${r.deck + 1}` : "a room that is gone"; })()}.` : p.bay ? "Opens into no room: there is none within 3 m of it. Pick the room it opens into (a wide doorway into it), or put one beside it." : "Opens into the nearest room it can reach.") : "",
       k.socket ? el("div", { class: "row" },
         el("button", { class: pickRoomFor === p.id ? "on" : "", onclick: () => { pickRoomFor = p.id; rebuild(); inspector(); $("tip").textContent = "Click the room it opens into (the rooms show through the hull)."; } }, "Pick its room"),
         p.room ? el("button", { onclick: () => cmd({ op: "setPiece", id: p.id, room: 0 }) }, "Nearest room") : "",
