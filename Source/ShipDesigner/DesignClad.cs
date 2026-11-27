@@ -1981,12 +1981,37 @@ public static partial class DesignScene
                 Two(o => (P(a0 - o, va, k == 0 ? ua - o : ua), P(a1 - o, vb, k == 0 ? ua - o : ua), P(a3 - o, vb, k == nu - 1 ? ub + o : ub), P(a2 - o, va, k == nu - 1 ? ub + o : ub)), col, false, 2 + 2 * k, i, va, vb);
                 Two(o => (P(b0 + o, va, k == 0 ? ua - o : ua), P(b1 + o, vb, k == 0 ? ua - o : ua), P(b3 + o, vb, k == nu - 1 ? ub + o : ub), P(b2 + o, va, k == nu - 1 ? ub + o : ub)), col, false, 3 + 2 * k, i, va, vb);
             }
-            var (f0, h0) = Edges(d, r, va, 0);
+            // The floor and the ceiling split across at the edges of each hole in this slice (Karl, 2026-11-27: a strip ran the room's whole
+            // width, so a lift platform's well through the floor took the floor beside it too, and a person fell through), each piece
+            // kept or left out by its own middle; a slice with no hole is one strip in its lane, as before.
+            var cuts = new List<double>();
+            foreach (var q in doors)
+                if (IsHole(q) && q[va_] - DoorHalf(q) < vb - 0.002 && q[va_] + DoorHalf(q) > va + 0.002)
+                    cuts.AddRange([q[0] - DoorHalf(q), q[0] + DoorHalf(q)]);
+            cuts.Sort();
+            void Flat(double fa, double ha, double fb, double hb, double h, double sg, int lane)
+            {
+                if (cuts.Count == 0)
+                {
+                    Two(o => (P(fa - o, va, h + sg * o), P(ha + o, va, h + sg * o), P(hb + o, vb, h + sg * o), P(fb - o, vb, h + sg * o)), col, true, lane, i, va, vb);
+                    return;
+                }
+                for (var c = -1; c < cuts.Count; c++)
+                {
+                    double lo = c < 0 ? double.MinValue : cuts[c], hi = c + 1 < cuts.Count ? cuts[c + 1] : double.MaxValue;
+                    bool l0 = lo <= Math.Min(fa, fb), h0 = hi >= Math.Max(ha, hb); // (a piece at the shell's edge reaches on out to it, as a whole strip does)
+                    double la = Math.Max(fa, lo), lb = Math.Max(fb, lo), ra = Math.Min(ha, hi), rb = Math.Min(hb, hi);
+                    if (ra - la < 0.01 && rb - lb < 0.01)
+                        continue;
+                    Two(o => (P(l0 ? la - o : la, va, h + sg * o), P(h0 ? ra + o : ra, va, h + sg * o), P(h0 ? rb + o : rb, vb, h + sg * o), P(l0 ? lb - o : lb, vb, h + sg * o)), col, true);
+                }
+            }
+            var (f0, h0_) = Edges(d, r, va, 0);
             var (f1, h1) = Edges(d, r, vb, 0);
-            Two(o => (P(f0 - o, va, -o), P(h0 + o, va, -o), P(h1 + o, vb, -o), P(f1 - o, vb, -o)), col, true, 0, i, va, vb);
+            Flat(f0, h0_, f1, h1, 0, -1, 0);
             var (c0, e0) = Edges(d, r, va, hgt);
             var (c1, e1) = Edges(d, r, vb, hgt);
-            Two(o => (P(c0 - o, va, hgt + o), P(e0 + o, va, hgt + o), P(e1 + o, vb, hgt + o), P(c1 - o, vb, hgt + o)), col, true, 1, i, va, vb);
+            Flat(c0, e0, c1, e1, hgt, 1, 1);
         }
         foreach (var lane in lanes.Keys.ToList())
             Flush(lane);
