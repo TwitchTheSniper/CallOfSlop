@@ -58,6 +58,7 @@ public static class RouteRender
     {
         var n = 0;
         LastBellows = 0;
+        PadLanding.Hook(); // (once: loose pieces a pad takes in slide into their place)
         gfx.BeginBatch();
         foreach (var c in world.Bodies)
         {
@@ -189,7 +190,7 @@ public static class RouteRender
                 }
             }
             if (c.ConveyedCount > 0)
-                DrawRiders(gfx, c);
+                DrawRiders(gfx, world, c);
         }
         (ConstructRender.FrameAlpha, ConstructRender.FrameBlend) = (alpha, blendTicks); // (the arms below are posed on their part as it is drawn: ConstructRender.PartDrawn)
         if (world.LiftBodies.Count > 0 || world.Bodies.Count > 0)
@@ -452,7 +453,7 @@ public static class RouteRender
     /// The pieces riding a body's conveyors, at true size, each moved on from its last known front at the conveyor's speed
     /// (no further than its link's end or the piece ahead), on the segment its middle is over. Allocates nothing.
     /// </summary>
-    private static void DrawRiders(Renderer gfx, Construct c)
+    private static void DrawRiders(Renderer gfx, ConstructWorld world, Construct c)
     {
         var elapsed = (float)Math.Clamp(ConstructConveyor.Clock - c.ConveyedStamp, 0, 0.25);
         Span<float> tail = stackalloc float[Construct.MaxRoutes];
@@ -466,7 +467,8 @@ public static class RouteRender
             var k = r.Route;
             if (k >= c.RouteCount || c.Routes[k].Type != RouteType.Conveyor || ConstructParts.Get(r.Def) is not { } d)
                 continue;
-            if (k != prevRoute)
+            var lead = k != prevRoute;
+            if (lead)
                 routeLen = ConstructConveyor.Length(c, k);
             ConstructConveyor.Size(d, out _, out _, out var along);
             var limit = k != prevRoute ? routeLen - (tail[k] > 0 ? tail[k] + ConstructConveyor.Gap : 0) : prevBack - ConstructConveyor.Gap;
@@ -476,6 +478,8 @@ public static class RouteRender
             ConstructConveyor.Pose(c, k, front - along * 0.5f, d, out var origin, out var rot, out var seg, out var shaft, r.ViaPlus1 - 1, drawn: true);
             var frame = SegFrames[seg >= 0 && seg <= c.JointCount && seg <= Construct.MaxJoints ? seg : 0];
             var m = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(origin) * frame;
+            if (lead && PadLanding.PadOf(c, k) is >= 0 and var landPad)
+                PadLanding.NoteRider(world, c, landPad, r.Def, origin, rot, seg, ConstructConveyor.Clock); // (it slides into its place on the pad once in)
             if (shaft)
             {
                 // Up (or down) a lift shaft on a carriage: under the piece's underside, on the line (Pose's own sum backwards).
@@ -671,15 +675,29 @@ public static class RouteRender
             var rd = ConstructPads.RackDef(c, part); // (a pad's owner tile draws the whole pad's pieces)
             ConstructRackPack.Ensure(rd, st);
             ref var p = ref c.Parts[part];
-            var frame = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * SegFrames[p.Seg <= c.JointCount && p.Seg <= Construct.MaxJoints ? p.Seg : 0];
+            var segFrame = SegFrames[p.Seg <= c.JointCount && p.Seg <= Construct.MaxJoints ? p.Seg : 0];
+            var rackRot = Rot24.Quat(p.Rot);
+            var frame = Matrix4x4.CreateFromQuaternion(rackRot) * Matrix4x4.CreateTranslation(p.Pos) * segFrame;
+            var sliding = rd.IsLayDownPad && PadLanding.Arrivals(c, part, st, ConstructConveyor.Clock); // (a piece just rolled off its run slides into its place: PadLanding.cs)
             var centre = Vector3.Transform((rd.BoundsMin + rd.BoundsMax) * 0.5f, frame);
             var reach = ConstructConveyor.RackDrawNear + (rd.BoundsMax - rd.BoundsMin).Length() * 0.5f;
             var near = Vector3.DistanceSquared(eye, centre) < reach * reach;
             var hide = rd.GantryTable && world.GantryJobCount > 0 ? ConstructGantry.CarriedOff(world, c.Id, part, ConstructConveyor.Clock) : -1; // (a module a gantry's arm carries: its copy here isn't drawn)
+            Span<byte> held = stackalloc byte[ConstructRackPack.MaxLanes];
             for (var s = 0; s < st.SlabN; s++)
             {
                 if (ConstructParts.Get(st.Slabs![s].Def) is not { } d || d.Boxes.Length == 0)
                     continue;
+                // (pieces a station's rover holds off this pick pad on their way to the build: the pad's copies of them aren't drawn,
+                // the top ones of the stacks its takes come off, ConstructStationPads.HeldOff)
+                var anyHeld = false;
+                if (rd.IsLayDownPad && ConstructStation.HeldOff(c, part, st.Slabs[s].Def, ConstructConveyor.Clock) is var off and > 0)
+                {
+                    held.Clear();
+                    for (var i = 0; i < off; i++)
+                        if (ConstructRackPack.NthLast(st, st.Slabs[s].Def, i, out var hs, out var hl, out _) && hs == s)
+                            (held[hl], anyHeld) = ((byte)(held[hl] + 1), true);
+                }
                 var skipLane = -1;
                 if (hide >= 0 && st.Slabs[s].Def == hide)
                 {
@@ -688,7 +706,7 @@ public static class RouteRender
                             skipLane = l; // (the top piece of the last lane: the one the fit takes, ConstructRackPack.LastOf)
                     hide = -1;
                 }
-                if (!near)
+                if (!near && !anyHeld && !sliding)
                 {
                     ConstructRackPack.SlabBox(rd, st, s, d, out var mn, out var mx);
                     gfx.Draw(Matrix4x4.CreateScale(mx - mn) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * frame, d.Boxes[0].Color);
@@ -699,9 +717,13 @@ public static class RouteRender
                     int n = st.SlabLanes![s * ConstructRackPack.MaxLanes + l];
                     if (l == skipLane)
                         n--;
+                    if (anyHeld)
+                        n -= held[l];
                     for (var y = 0; y < n; y++)
                     {
-                        var m = Matrix4x4.CreateTranslation(ConstructRackPack.Origin(rd, st.Slabs[s], d, l, y)) * frame;
+                        var o = ConstructRackPack.Origin(rd, st.Slabs[s], d, l, y);
+                        var m = sliding && PadLanding.Moving(c, part, st.Slabs[s], l, y, p.Pos + Vector3.Transform(o, rackRot), rackRot, ConstructConveyor.Clock, out var slide)
+                            ? slide * segFrame : Matrix4x4.CreateTranslation(o) * frame;
                         for (var bx = 0; bx < d.Boxes.Length; bx++)
                         {
                             ref readonly var box = ref d.Boxes[bx];

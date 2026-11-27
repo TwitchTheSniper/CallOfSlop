@@ -249,6 +249,42 @@ public static class ConstructRackPack
         return false;
     }
 
+    /// <summary>
+    /// The piece of a kind that <see cref="LastOf"/> takes after <paramref name="skip"/> takes before it (each the top of a stack): its
+    /// column, stack and layer. A loader carrying pieces off a pad takes them in this order (ConstructStationPads.cs), and the pad doesn't
+    /// draw the ones on their way (RouteRender.DrawRacks). Nothing allocates.
+    /// </summary>
+    public static bool NthLast(CStore st, ushort def, int skip, out int slab, out int lane, out int layer)
+    {
+        slab = lane = layer = -1;
+        Span<byte> left = stackalloc byte[MaxLanes];
+        for (var s = st.SlabN - 1; s >= 0; s--)
+        {
+            if (st.Slabs![s].Def != def)
+                continue;
+            int lanes = st.Slabs[s].Lanes;
+            for (var l = 0; l < lanes; l++)
+                left[l] = st.SlabLanes![s * MaxLanes + l];
+            while (true)
+            {
+                var pick = -1;
+                for (var l = 0; l < lanes; l++)
+                    if (left[l] > 0 && (pick < 0 || left[l] >= left[pick]))
+                        pick = l;
+                if (pick < 0)
+                    break; // (this column is all taken: the one before it next, as Take drops an emptied column)
+                if (skip == 0)
+                {
+                    (slab, lane, layer) = (s, pick, left[pick] - 1);
+                    return true;
+                }
+                left[pick]--;
+                skip--;
+            }
+        }
+        return false;
+    }
+
     /// <summary>Where piece <paramref name="layer"/> of a stack has its own origin, in the rack part's frame (unturned).</summary>
     public static Vector3 Origin(ConstructPartDef rd, in RackSlab sl, ConstructPartDef d, int lane, int layer)
     {

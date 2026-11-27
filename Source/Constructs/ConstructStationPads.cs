@@ -222,10 +222,23 @@ public static partial class ConstructStation
     }
 
     /// <summary>
-    /// Where the hook takes a part off pad <paramref name="pad"/>, in the bay's frame: the piece's top, lying against the pad's bay-side edge
-    /// (pieces roll in against it, so a rover standing on the bay beside it reaches; never past the deck's middle).
+    /// Where the hook takes a part off pad <paramref name="pad"/>, in the bay's frame: the top middle of the piece it will take as the pad
+    /// draws it (Sean, 2026-11-27: "the loader's arm should extend to where the piece is currently stored visually on the pad"), the one
+    /// <see cref="ConstructRackPack.LastOf"/> takes after those the other rovers already carry off this pad (<see cref="Carrying"/>).
+    /// With no such piece drawn there (a pad not packed yet): the deck's bay-side edge (<see cref="PadEdgeAt"/>).
     /// </summary>
-    private static Vector3 PadPickAt(Construct c, int t, int pad, ConstructPartDef d)
+    private static Vector3 PadPickAt(ConstructWorld world, Construct c, int t, StationJob j, int pad, ConstructPartDef d)
+    {
+        if (world.StoreOf(c, pad) is { } st && PieceOnPad(c, t, pad, st, d, Carrying(j, pad, (ushort)d.Id)) is { } at)
+            return at;
+        return PadEdgeAt(c, t, pad, d);
+    }
+
+    /// <summary>
+    /// The pad's bay-side edge (bay frame) at a piece's height: where a rover takes a piece whose own place on the pad lies past its reach
+    /// (a 20 m pad's far end), so the build never stalls on it.
+    /// </summary>
+    private static Vector3 PadEdgeAt(Construct c, int t, int pad, ConstructPartDef d)
     {
         if (!PadInBay(c, t, pad, out var mid, out var half))
             return Vector3.Zero;
@@ -237,6 +250,59 @@ public static partial class ConstructStation
         else if (MathF.Abs(mid.Z) - half.Z >= bay.Z * 0.5f - 0.05f)
             mid.Z -= MathF.Sign(mid.Z) * MathF.Max(0, half.Z - ph);
         return mid with { Y = mid.Y + MathF.Min(s.Y, 4f) };
+    }
+
+    /// <summary>How many of kind <paramref name="def"/> the rovers carry (or drive to take) off pad <paramref name="pad"/> now.</summary>
+    public static int Carrying(StationJob j, int pad, ushort def)
+    {
+        var n = 0;
+        for (var a = 0; a < MaxArms; a++)
+            if (j.ArmPad[a] == pad && j.ArmDef[a] == def && j.ArmTicks[a] > 0 && !j.Rov[a].Home)
+                n++;
+        return n;
+    }
+
+    /// <summary>
+    /// How many pieces of kind <paramref name="def"/> the rovers hold off pad <paramref name="pad"/> at <paramref name="now"/> (gripped,
+    /// not yet fitted): the pad doesn't draw them, though its store gives them up only at the fit (Sean, 2026-11-27: "it should at least
+    /// be hidden while it's moving"). Either peer: a client's rovers name their pad on the wire (protocol 478).
+    /// </summary>
+    public static int HeldOff(Construct c, int pad, ushort def, double now)
+    {
+        Note(c);
+        var n = 0;
+        for (var k = 0; k < c.StationPadN; k++)
+        {
+            if (c.StationPadPairs[2 * k + 1] != pad || c.StationPadPairs[2 * k] is var t && t >= c.PartCount || c.Parts[t].Station is not { } j)
+                continue;
+            for (var a = 0; a < MaxArms; a++)
+            {
+                if (j.ArmPad[a] != pad || j.ArmDef[a] != def || j.ArmTicks[a] == 0 || j.Rov[a] is not { Home: false } p)
+                    continue;
+                var u = now - j.ArmStart[a];
+                if (u >= p.GripT && u < p.FitT)
+                    n++;
+            }
+        }
+        return n;
+    }
+
+    /// <summary>
+    /// The top middle (bay frame) of the piece of kind <paramref name="d"/> the next take off pad <paramref name="pad"/> takes after
+    /// <paramref name="skip"/> others, where the pad draws it; null when the pad has no such piece.
+    /// </summary>
+    private static Vector3? PieceOnPad(Construct c, int t, int pad, CStore st, ConstructPartDef d, int skip)
+    {
+        var rd = ConstructPads.RackDef(c, pad);
+        ConstructRackPack.Ensure(rd, st);
+        if (!ConstructRackPack.NthLast(st, (ushort)d.Id, skip, out var slab, out var lane, out var layer)
+            && !ConstructRackPack.NthLast(st, (ushort)d.Id, 0, out slab, out lane, out layer))
+            return null;
+        var o = ConstructRackPack.Origin(rd, st.Slabs![slab], d, lane, layer);
+        var top = o + new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f);
+        Bay(c, t, out var floor, out var rot, out _);
+        Freeform.PartWorld(c, pad, out var pos, out var prot);
+        return Vector3.Transform(pos + Vector3.Transform(top, prot) - floor, Quaternion.Conjugate(rot));
     }
 
     /// <summary>Has station <paramref name="t"/> any pick pad (its stuck note says where a long part goes)?</summary>

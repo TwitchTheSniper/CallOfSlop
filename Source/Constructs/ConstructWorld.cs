@@ -531,8 +531,12 @@ public sealed partial class ConstructWorld
     /// </summary>
     /// <param name="quiet">a body no peer ever heard of, gone in the tick it came (a world save's stand-in for a worn shell): no
     /// gone message, no building sound, no story note.</param>
+    /// <summary>A body about to go (either peer, render only: a pad's piece slides in from where it rested, Render/PadLanding.cs).</summary>
+    public static Action<ConstructWorld, Construct>? BodyGone;
+
     public void Remove(Construct c, bool keepRiders = false, bool quiet = false, bool leaving = false)
     {
+        BodyGone?.Invoke(this, c);
         if (PodAuthority && !leaving && (c.PodCount > 0 || c.Dirty)) // (leaving: packed and going on elsewhere, a travel's: its pods keep their shells)
             for (var i = 0; i < c.PartCount; i++)
                 if (c.DefOf(i).ShellPod != null)
