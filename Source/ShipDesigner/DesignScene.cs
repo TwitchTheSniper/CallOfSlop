@@ -385,6 +385,15 @@ public static partial class DesignScene
             if (h.CladAft)
                 CladCap(aftClad, cx, hc, rings[^1], true, Open, cladSize);
         }
+        // Beading along the profile's points, bow to stern (Karl, 2026-11-27), off every opening.
+        if (h.Bead != "Off")
+            Bead(skin, h, cx, (x, y, z) =>
+            {
+                foreach (var k in cutouts)
+                    if (k.Covers((x, y, z), k.Margin))
+                        return true;
+                return InHole(x, y, z) || CutBody(x, y, z) || feet.Any(f => f.Holds(x, y, z));
+            }, hc.Clad, hc.CladDepth);
         return (skin, fore, aft, skinClad, foreClad, aftClad);
     }
 
@@ -1607,6 +1616,7 @@ public static partial class DesignScene
               .Append(",\"cladFrom\":").Append(h.CladFrom != 0 && d.Hull(h.CladFrom) is not null ? h.CladFrom.ToString() : "null")
               .Append(",\"cladOwn\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append(",\"material\":").Append(Q(h.CladMaterial)).Append('}')
               .Append(",\"material\":").Append(Q(h.Material)).Append(",\"damage\":").Append(ShipDesign.S(h.Damage)).Append(",\"damageSeed\":").Append(h.DamageSeed)
+              .Append(",\"bead\":{\"kind\":").Append(Q(h.Bead)).Append(",\"size\":").Append(ShipDesign.S(h.BeadSize)).Append(",\"colour\":").Append(Q(h.BeadColour)).Append('}')
               .Append(",\"cladFore\":").Append(h.CladFore ? "true" : "false").Append(",\"cladAft\":").Append(h.CladAft ? "true" : "false")
               .Append(",\"roundFore\":").Append(ShipDesign.S(h.RoundFore)).Append(",\"roundAft\":").Append(ShipDesign.S(h.RoundAft))
               .Append(",\"roundMaxFore\":").Append(ShipDesign.S(h.RoundLimit(false))).Append(",\"roundMaxAft\":").Append(ShipDesign.S(h.RoundLimit(true)))
