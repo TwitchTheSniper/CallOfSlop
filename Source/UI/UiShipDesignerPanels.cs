@@ -1336,6 +1336,33 @@ public sealed partial class Ui
                     v => Cmd(C("setPiece", ("id", pid), ("extend", v / 100))), "pcext", Dflt("ramp", "extend", 100));
                 Hint("F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.");
             }
+            if (B(p, "bar"))
+            {
+                // A light bar (DesignLightBars, Karl 2026-11-27): its length, colour and brightness; a room's, where in the room and how high.
+                H3("Light bar");
+                Slider("Length", D(p, "barLen"), ShipDesigner.DesignLightBars.MinLen, ShipDesigner.DesignLightBars.MaxLen, 0.05, " m",
+                    v => Cmd(C("setPiece", ("id", pid), ("barLen", v))), "pcbl", Dflt("bar", "barLen"));
+                Slider("Brightness", Math.Round(D(p, "bright") * 100), 5, 100, 5, "%", v => Cmd(C("setPiece", ("id", pid), ("bright", v / 100))), "pcbb", Dflt("bar", "bright", 100));
+                ImGui.Text("Colour"u8);
+                Row();
+                Colour("pcbc" + pid, Str(p, "beam", ShipDesigner.DesignLightBars.DefColour), v => Cmd(C("setPiece", ("id", pid), ("beam", v))));
+                Row();
+                if (ImGui.SmallButton("R##pcbcr"u8))
+                    Cmd(C("setPiece", ("id", pid), ("beam", ShipDesigner.DesignLightBars.DefColour)));
+                if (Has(p, "barOn"))
+                {
+                    ImGui.Text("On the"u8);
+                    Row();
+                    MatCombo("pcbo" + pid, Str(p, "barOn", "Wall"), ShipDesigner.DesignLightBars.Mounts, v => Cmd(C("setPiece", ("id", pid), ("barOn", v))));
+                    if (Str(p, "barOn") == "Wall")
+                        Slider("Height", D(p, "barUp"), 0, Math.Max(0.5, D(p, "barUpMax", 3)), 0.05, " m", v => Cmd(C("setPiece", ("id", pid), ("barUp", v))), "pcbu", Dflt("bar", "barUp"));
+                    Hint(Str(p, "barRoom") is { Length: > 0 } br
+                        ? $"In {br}. {(Str(p, "barOn") == "Wall" ? "It goes on the wall nearest where it was dropped, its middle this high over the floor (turned 90 deg: upright)." : "It runs along the room through where it was dropped (turned 90 deg: across).")} It never runs past the room's corners."
+                        : "It has no room: drop it on the skin by a room, or pick its room below.");
+                }
+                else
+                    Hint("Along the hull it follows the skin's curve; turned it runs straight across. In the game it lights what is round it, always on.");
+            }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))
                 Checkbox("Both bodies of the pair##sdpcp", B(p, "pair"), v => Cmd(C("setPiece", ("id", pid), ("pair", v))));

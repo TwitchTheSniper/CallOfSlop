@@ -126,7 +126,8 @@ public static unsafe class DesignThumbs
             d.Pieces.Add(p);
             DesignHangar.Init(d, p);
             DesignSeats.Init(d, p);
-            var w = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? DesignScene.Where(h, p);
+            DesignLightBars.Init(p);
+            var w = DesignSeats.PlaceOf(d, p) ?? DesignLightBars.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? DesignScene.Where(h, p);
             var m = DesignScene.PieceMesh(d, p, copies: false, shut: true);
             var nv = m.P.Count / 3;
             if (nv == 0)

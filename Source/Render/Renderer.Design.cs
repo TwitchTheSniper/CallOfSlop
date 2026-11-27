@@ -67,8 +67,9 @@ public sealed unsafe partial class Renderer
                     vBody = aPos;
                     vBodyN = aNormal;
                     vUpL = vec3(uBody[0].y, uBody[1].y, uBody[2].y);
-                    vModeI = 0.0;
-                    vColorI = aCol; // (glass has its alpha: DesignParts.GlassAlpha, drawn blended in ConstructRender.DrawGlass; the rest is 1)
+                    bool glow = abs(aCol.a * 255.0 - 254.0) < 0.5; // (a lamp's face, DesignParts.GlowAlpha: unlit and bright, marked for the bloom as the merged boxes' glow is)
+                    vModeI = glow ? 2.0 : 0.0;
+                    vColorI = glow ? vec4(aCol.rgb, uGlowAlpha) : aCol; // (glass has its alpha: DesignParts.GlassAlpha, drawn blended in ConstructRender.DrawGlass; the rest is 1)
                     vLayerI = 0.0;
                     gl_Position = uViewProj * w;
                 }
