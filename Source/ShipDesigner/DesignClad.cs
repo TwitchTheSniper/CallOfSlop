@@ -92,14 +92,47 @@ public static partial class DesignScene
             var ratio = Math.Max(arcA, arcB) / Math.Max(1e-6, Math.Min(arcA, arcB));
             var terminus = i == 0 || i == rings.Count - 2 || ratio > 1.4;
             var yMid = (Math.Min(ay[0], by[0]) + Math.Max(ay[n - 1], by[n - 1])) / 2;
+            // Round the profile by its points, not by length (Karl, 2026-11-27: plates clipped through each other along a chine): point k
+            // sits at the same u at both ends, so a corner of the profile runs straight along the band, and the grid's columns break at
+            // every sharp corner (a crease), so no plate is laid across one and the plates either side meet on its mitre.
+            var knot = new double[n];
+            for (var k = 0; k < n; k++)
+                knot[k] = 0.5 * (arcA > 1e-9 ? ca[k] / arcA : (double)k / (n - 1)) + 0.5 * (arcB > 1e-9 ? cb[k] / arcB : (double)k / (n - 1));
+            knot[n - 1] = 1;
+            var creases = new List<double> { 0 };
+            for (var k = 1; k < n - 1; k++)
+                if (Math.Max(Turn(ah, ay, k), Turn(bh, by, k)) > CreaseAngle && knot[k] - creases[^1] > 1e-4)
+                    creases.Add(knot[k]);
+            creases.Add(1);
+            var spanCells = new int[creases.Count - 1];
+            var cols = 0;
+            for (var j = 0; j < spanCells.Length; j++)
+                cols += spanCells[j] = Math.Max(1, (int)Math.Round(arc * (creases[j + 1] - creases[j]) / size));
+            var brk = new bool[Math.Max(1, cols)];
+            for (int j = 0, c = 0; j < spanCells.Length; c += spanCells[j], j++)
+                if (c + spanCells[j] - 1 < brk.Length)
+                    brk[c + spanCells[j] - 1] = true;
+            // Grid share t (cols equal columns) to the profile's share u: each crease span its own whole number of columns.
+            double Gc(double t)
+            {
+                var q = Math.Clamp(t, 0, 1) * cols;
+                var c = 0;
+                for (var j = 0; j < spanCells.Length; j++)
+                {
+                    if (q <= c + spanCells[j] || j == spanCells.Length - 1)
+                        return creases[j] + (creases[j + 1] - creases[j]) * Math.Clamp((q - c) / spanCells[j], 0, 1);
+                    c += spanCells[j];
+                }
+                return 1;
+            }
             foreach (var s in new[] { 1, -1 })
             {
                 // The same seed a band on both sides, so the plating is symmetric but where an opening breaks it.
                 var rng = new Random(unchecked(h.CladSeed * 1000003 + i * 7919));
                 (double X, double Y, double Z) P(double u, double v)
                 {
-                    var (xa, ya) = AtArc(ah, ay, ca, n, u);
-                    var (xb, yb) = AtArc(bh, by, cb, n, u);
+                    var (xa, ya) = AtKnot(ah, ay, knot, n, u);
+                    var (xb, yb) = AtKnot(bh, by, knot, n, u);
                     return (s * (xa + (xb - xa) * v), ya + (yb - ya) * v, za + (zb - za) * v);
                 }
                 (double X, double Y, double Z) Nrm(double u, double v)
@@ -125,7 +158,11 @@ public static partial class DesignScene
                 }
                 if (!terminus)
                 {
-                    LayGrid(m, nu, nv, arc, len, rng, heavy, h.CladDepth, col, P, Nrm, W, blocked, (u, v, cell) => h.Paint(za + (zb - za) * v, u, arc, i * 4096 + cell + 777, panel), 0, hex, h.Damage, h.DamageSeed, panel);
+                    (double X, double Y, double Z) Pc(double t, double v) => P(Gc(t), v);
+                    (double X, double Y, double Z) Nc(double t, double v) => Nrm(Gc(t), v);
+                    (double, double, double) Wc(double t, double v, double off) => W(Gc(t), v, off);
+                    LayGrid(m, hex ? nu : cols, nv, arc, len, rng, heavy, h.CladDepth, col, hex ? P : Pc, hex ? Nrm : Nc, hex ? W : Wc, blocked,
+                        (u, v, cell) => h.Paint(za + (zb - za) * v, hex ? u : Gc(u), arc, i * 4096 + cell + 777, panel), 0, hex, h.Damage, h.DamageSeed, panel, hex ? null : brk);
                     continue;
                 }
                 for (var r = 0; r < nv; r++)
@@ -250,7 +287,7 @@ public static partial class DesignScene
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
-        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false)
+        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false, bool[]? brk = null)
     {
         var taken = new bool[nu, nv];
         var trim = new bool[nu, nv];
@@ -271,7 +308,7 @@ public static partial class DesignScene
             }
         // The trimmed cells' plate heights are drawn from their own seed, so the rest of the grid lays as before.
         var trng = new Random(rng.Next());
-        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed, panel);
+        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed, panel, brk);
         if (!any)
             return;
         for (var a = 0; a < nu; a++)
@@ -369,7 +406,7 @@ public static partial class DesignScene
     /// </summary>
     internal static void LayPlates(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
-        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false)
+        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false, bool[]? brk = null)
     {
         if (hex)
         {
@@ -397,7 +434,7 @@ public static partial class DesignScene
                 var gr = (rng.NextDouble(), rng.NextDouble(), rng.NextDouble());
                 // Grow across then along while the cells are free.
                 var cu = 1;
-                while (cu < wu && a + cu < nu && !taken[a + cu, b])
+                while (cu < wu && a + cu < nu && !taken[a + cu, b] && (brk == null || a + cu - 1 >= brk.Length || !brk[a + cu - 1])) // (never across a crease)
                     cu++;
                 var cv = 1;
                 while (cv < wv && b + cv < nv && Enumerable.Range(a, cu).All(k => !taken[k, b + cv]))
@@ -828,15 +865,28 @@ public static partial class DesignScene
             c[k] = c[k - 1] + Math.Sqrt(Math.Pow(hs[k] - hs[k - 1], 2) + Math.Pow(ys[k] - ys[k - 1], 2));
     }
 
-    /// <summary>The point a share u of the way round a sampled half profile, by length.</summary>
-    private static (double H, double Y) AtArc(double[] hs, double[] ys, double[] c, int n, double u)
+    /// <summary>The profile's turn at point k (degrees between the edges in and out of it); 0 where an edge has no length.</summary>
+    private static double Turn(double[] hs, double[] ys, int k)
     {
-        var l = Math.Clamp(u, 0, 1) * c[n - 1];
+        double ax = hs[k] - hs[k - 1], ay = ys[k] - ys[k - 1], bx = hs[k + 1] - hs[k], by = ys[k + 1] - ys[k];
+        double la = Math.Sqrt(ax * ax + ay * ay), lb = Math.Sqrt(bx * bx + by * by);
+        if (la < 1e-6 || lb < 1e-6)
+            return 0;
+        return Math.Acos(Math.Clamp((ax * bx + ay * by) / (la * lb), -1, 1)) * 180 / Math.PI;
+    }
+
+    /// <summary>A profile corner past this many degrees is a crease: the cladding's columns break on it.</summary>
+    private const double CreaseAngle = 12;
+
+    /// <summary>The point a share u of the way round a half profile whose point k sits at share knot[k] (the same at both ends of a band).</summary>
+    private static (double H, double Y) AtKnot(double[] hs, double[] ys, double[] knot, int n, double u)
+    {
+        u = Math.Clamp(u, 0, 1);
         for (var k = 0; k < n - 1; k++)
-            if (l <= c[k + 1] || k == n - 2)
+            if (u <= knot[k + 1] || k == n - 2)
             {
-                var seg = c[k + 1] - c[k];
-                var f = seg < 1e-9 ? 0 : Math.Clamp((l - c[k]) / seg, 0, 1);
+                var seg = knot[k + 1] - knot[k];
+                var f = seg < 1e-12 ? 0 : Math.Clamp((u - knot[k]) / seg, 0, 1);
                 return (hs[k] + (hs[k + 1] - hs[k]) * f, ys[k] + (ys[k + 1] - ys[k]) * f);
             }
         return (hs[0], ys[0]);
