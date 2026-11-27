@@ -803,7 +803,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 476: walkable ship designs, doors, risers and systems (DesignParts.Doors/Systems.cs, DesignRisers.cs): a design makes door elements
     //      (airlock hatches, docking and cargo hatches, room doors, a floor cover), ladders and lift piston chains, guns with hidden ammo boxes
     //      and fire directors, lamps, hitches, clamps and relays on long wires, so a design key names elements an older peer can't make; no message changed.
-    public const ushort ProtocolVersion = 476;
+    // 477: design wire relays have no collider, design ladders don't collide with people and an open boarding-hatch well gets a floor
+    //      cover (DesignParts*.cs), so a design key builds different elements on an older peer; no message changed.
+    public const ushort ProtocolVersion = 477;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
