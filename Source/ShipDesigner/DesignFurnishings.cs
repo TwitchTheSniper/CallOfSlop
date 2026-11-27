@@ -54,9 +54,9 @@ public static class DesignFurnishings
         // ---- Command
         new("Chart table", "Command", 0.8, 0.5, 1.0, false, "A lit chart table for plotting (after the Chart Table).", ChartTable),
         new("Engineer's panel", "Command", 0.8, 0.2, 1.9, true, "A wall panel of gauges and switches for the ship's systems (after the Engineer's Panel).", EngineersPanel),
-        new("Sensor console", "Command", 0.6, 0.4, 1.4, true, "A sensor operator's console: a sweep screen and a track board.", m => Console(m, Gl, 1)),
-        new("Gunnery console", "Command", 0.6, 0.4, 1.4, true, "A gunnery console with a sight screen and arming switches (after the Gunnery Console).", m => Console(m, Red, 2)),
-        new("Comms console", "Command", 0.6, 0.4, 1.4, true, "A comms desk: a handset, a set of dials and a screen.", m => Console(m, Green, 3)),
+        new("Sensor console", "Command", 0.6, 0.4, 1.4, true, "A sensor operator's console: a sweep screen and a track board.", m => Desk(m, Gl, 1)),
+        new("Gunnery console", "Command", 0.6, 0.4, 1.4, true, "A gunnery console with a sight screen and arming switches (after the Gunnery Console).", m => Desk(m, Red, 2)),
+        new("Comms console", "Command", 0.6, 0.4, 1.4, true, "A comms desk: a handset, a set of dials and a screen.", m => Desk(m, Green, 3)),
         // ---- Galley
         new("Mess table", "Galley", 1.2, 0.95, 0.9, false, "A mess table with a bench either side (after the Ship Mess Table).", MessTable),
         new("Galley range", "Galley", 0.9, 0.35, 1.9, true, "A galley counter with its hob and a hood (after the Ship Galley Range).", GalleyRange),
@@ -101,7 +101,47 @@ public static class DesignFurnishings
                 c.Issues.Add(new("warn", $"{p.Kind} is {f.H * s:0.0} m tall and {DesignScene.Name(r)} is {up:0.0} m: make it smaller or the room taller", $"piece:{p.Id}"));
             else if (2 * Math.Min(f.Hx, f.Hz) * s > Math.Min(w, l) || 2 * Math.Max(f.Hx, f.Hz) * s > Math.Max(w, l))
                 c.Issues.Add(new("warn", $"{p.Kind} doesn't fit on {DesignScene.Name(r)}'s floor ({w:0.0} x {l:0.0} m): make it smaller or the room bigger", $"piece:{p.Id}"));
+            else if (InDoorway(d, c, p, f, r, up) is { } q)
+                c.Issues.Add(new("warn", $"{p.Kind} stands in {(DesignScene.IsHole(q) ? "the way of a hatch or ladder" : "a doorway")} of {DesignScene.Name(r)}: move or turn it, nobody gets past", $"piece:{p.Id}"));
         }
+    }
+
+    /// <summary>The doorway (a door's foot, or a hatch or shaft through the floor or ceiling) whose clearance an interior piece's footprint
+    /// takes, or null: a person needs the door's width and 0.9 m in from its wall (2026-11-27: furniture blocked doors in a walk).</summary>
+    private static double[]? InDoorway(ShipDesign d, DesignScene.Check c, Piece p, Fur f, Room r, double height)
+    {
+        if (DesignSeats.PlaceOf(d, p) is not { } w)
+            return null;
+        int a = 0, l = d.Stacked ? 1 : 2, u = d.Stacked ? 2 : 1;
+        var s = Math.Max(0.25, p.Size);
+        // Its footprint's box on the plan: the four corners of its frame's X by Z.
+        double a0 = double.MaxValue, a1 = double.MinValue, l0 = double.MaxValue, l1 = double.MinValue;
+        foreach (var (cx, cz) in new[] { (-1, -1), (1, -1), (-1, 1), (1, 1) })
+        {
+            double x = cx * f.Hx * s, z = cz * f.Hz * s;
+            double pa = w.O[a] + w.X[a] * x + w.Z[a] * z, pl = w.O[l] + w.X[l] * x + w.Z[l] * z;
+            (a0, a1, l0, l1) = (Math.Min(a0, pa), Math.Max(a1, pa), Math.Min(l0, pl), Math.Max(l1, pl));
+        }
+        var floor = w.O[u];
+        foreach (var q in c.Doors)
+        {
+            if (q.Length > 5 && q[5] > 1.5)
+                continue; // (a window's opening)
+            var dy = d.Stacked ? floor - q[u] : q[u] - floor;
+            if (DesignScene.IsHole(q) ? dy < -0.5 || dy > height + 0.5 : Math.Abs(dy) > DesignScene.HoleLevel)
+                continue; // (a door in this room's walls is at its floor; a hatch or shaft opens in its floor or ceiling)
+            // Along its wall, the door's own half; into the room, 0.9 m from the wall (a hole: its half every way).
+            double ra = DesignScene.DoorHalf(q), rl = ra;
+            if (!DesignScene.IsHole(q))
+            {
+                var b = d.Box(r);
+                var acrossWall = Math.Min(Math.Abs(q[a] - b[2 * a]), Math.Abs(q[a] - b[2 * a + 1])) < Math.Min(Math.Abs(q[l] - b[2 * l]), Math.Abs(q[l] - b[2 * l + 1]));
+                if (acrossWall) ra = 0.9; else rl = 0.9;
+            }
+            if (q[a] + ra > a0 && q[a] - ra < a1 && q[l] + rl > l0 && q[l] - rl < l1)
+                return q;
+        }
+        return null;
     }
 
     // ================================================================ drawings
@@ -359,7 +399,7 @@ public static class DesignFurnishings
             m.Box(x, 0.45, 0.2, x + 0.05, 0.6, 0.25, Am); // switches
     }
 
-    private static void Console(DesignMesh m, string screen, int style)
+    private static void Desk(DesignMesh m, string screen, int style)
     {
         m.Box(-0.6, 0.004, -0.4, 0.6, 0.78, 0.1, G); // its desk body
         m.Box(-0.6, 0.776, -0.4, 0.6, 0.84, 0.4, A); // the desk top, over the knees
