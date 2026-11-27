@@ -288,6 +288,17 @@ public static partial class DesignCheck
                     rides++;
             }
         }
+        // The designer draws the same risers: its scene's risers each with their mesh (a lift's car too), and the shafts' ladders.
+        using (var scene = System.Text.Json.JsonDocument.Parse(DesignScene.Json(ShipDesign.FromJson(r.Text))))
+        {
+            var rs = scene.RootElement.GetProperty("risers");
+            int meshed = 0, cars = 0;
+            foreach (var k in rs.EnumerateArray())
+                (meshed, cars) = (meshed + (k.TryGetProperty("mesh", out _) ? 1 : 0), cars + (k.TryGetProperty("car", out _) ? 1 : 0));
+            Console.WriteLine($"[design] the designer's scene: {rs.GetArrayLength()} riser(s), {meshed} drawn as the game's parts ({cars} with a car), {scene.RootElement.GetProperty("shaftLadders").GetArrayLength()} shaft ladder(s)");
+            if (meshed != rs.GetArrayLength())
+                problems.Add($"the designer draws {rs.GetArrayLength() - meshed} riser(s) without the game's mesh");
+        }
         Console.WriteLine($"[design] risers: {ladders} ladder(s) ({climbs} of {2 * ladders} climbs), {lifts} lift(s) ({rides} stops ridden)");
         foreach (var p in problems)
             Console.WriteLine($"[design]   {p}");
