@@ -1367,7 +1367,7 @@ function dockControls(p) {
   }
   return [];
 }
-// A hangar piece's own controls (Karl, 2026-11-26): a bay's door (width, height, sliding or hinged); a lift platform's or ramp deck's
+// A hangar piece's own controls (Karl, 2026-11-26; the bay's own width, height and depth 2026-11-27): a bay's door (width, height, sliding or hinged); a lift platform's or ramp deck's
 // width, length and travel; a docking arm's or cradle's bay link and its spot in the bay. Resets from CAT.defaults.hangar[kind].
 function hangarControls(p) {
   const D = CAT.defaults.hangar?.[p.kind]; if (!D) return [];
@@ -1376,8 +1376,11 @@ function hangarControls(p) {
   if (p.bay) {
     const ty = el("select", { "aria-label": "Door type" }); for (const t of ["Sliding", "Hinged"]) ty.append(el("option", t === p.bayDoor ? { selected: "" } : {}, t));
     ty.addEventListener("change", () => send({ bayDoor: ty.value }));
-    return [el("h3", {}, "Hangar door"),
-      m("Door width", "bayDoorW", 5, 48, 0.5), m("Door height", "bayDoorH", 3, 32, 0.5),
+    return [el("h3", {}, "Hangar bay"),
+      m("Width", "bayW", 5, 96, 0.5), m("Height", "bayH", 3, 48, 0.5), m("Depth", "bayD", 5, 96, 0.5),
+      el("div", { class: "row" }, el("button", { class: "reset", title: "Width, height and depth back to the bay's own", onclick: () => send({ bayW: D.bayW, bayH: D.bayH, bayD: D.bayD }) }, "Reset all")),
+      el("h3", {}, "Hangar door"),
+      m("Door width", "bayDoorW", 5, Math.min(48, p.bay[0]), 0.5), m("Door height", "bayDoorH", 3, Math.min(32, p.bay[1]), 0.5),
       el("div", { class: "row" }, el("span", {}, "Type"), ty, el("button", { class: "reset", title: "Door back to its defaults", onclick: () => send({ bayDoorW: D.bayDoorW, bayDoorH: D.bayDoorH, bayDoor: D.bayDoor }) }, "Reset all")),
       el("p", { class: "hint" }, `The bay is ${p.bay[0]} m across, ${p.bay[1]} m tall and ${p.bay[2]} m deep. ${p.bayDoor === "Hinged" ? "The door swings out on motor hinges." : "The door slides aside on a piston."} ${p.fittings} docking fitting${p.fittings === 1 ? "" : "s"} linked.`)];
   }
@@ -1418,6 +1421,13 @@ function seatControls(p) {
   return [el("h3", {}, "Crew"), el("div", { class: "row" }, el("span", {}, "Role"), s,
       el("button", { class: "reset", title: `Reset role to ${D.role}`, onclick: () => send({ role: D.role }) }, "\u21ba")),
     el("p", { class: "hint" }, p.role === "Helm" ? "The helm flies the ship: its drives and RCS answer this seat, with nothing to wire." : "It stands on its room's floor, facing the bow (turn it with Turn left and right).")];
+}
+// A boarding ramp's extension (Karl, 2026-11-27; Source/ShipDesigner/DesignRamp.cs): how far its second section runs out once it is down.
+function rampControls(p) {
+  if (p.extend === undefined) return [];
+  return [el("h3", {}, "Ramp"),
+    slider("Extension", Math.round(p.extend * 100), 0, Math.round((p.extendMax ?? 2.5) * 100), 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, extend: v / 100 }), dflt("ramp", "extend", 100)),
+    el("p", { class: "hint" }, "F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.")];
 }
 // A floodlight's aim and beam colour (Karl, 2026-11-26), with resets from CAT.defaults.fitting; a tow point's note.
 function fittingControls(p) {
@@ -1895,7 +1905,7 @@ function inspector() {
     const k = CAT.pieces.find(k => k.name === p.kind);
     let firstSize = true, firstRec = true;
     I.append(el("h2", {}, p.kind, el("span", { class: "n" }, p.ok ? "fits" : "see checks")), el("p", { class: "hint" }, k.desc),
-      slider("Size", Math.round(p.size * 100), 25, 400, 5, "%", v => { cmd({ op: "setPiece", id: p.id, size: v / 100, preview: true, light: true }, !firstSize); firstSize = false; }, v => cmd({ op: "setPiece", id: p.id, size: v / 100 })),
+      ...(p.bay ? [] : [slider("Size", Math.round(p.size * 100), 25, 400, 5, "%", v => { cmd({ op: "setPiece", id: p.id, size: v / 100, preview: true, light: true }, !firstSize); firstSize = false; }, v => cmd({ op: "setPiece", id: p.id, size: v / 100 }))]),
       ...(k.socket ? [(() => { let f = true; return slider("Cladding", Math.round((p.clad ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, clad: v / 100, preview: true, light: true }, !f); f = false; }, v => cmd({ op: "setPiece", id: p.id, clad: v / 100 })); })()] : []),
       slider("Recess", Math.round((p.recess ?? 0) * 100), 0, 200, 5, " cm", v => { cmd({ op: "setPiece", id: p.id, recess: v / 100, preview: true, light: true }, !firstRec); firstRec = false; }, v => cmd({ op: "setPiece", id: p.id, recess: v / 100 })),
       ...cutControls(p, o => cmd({ op: "setPiece", id: p.id, ...o }), "piece", p.socket === "window"),
@@ -1904,6 +1914,7 @@ function inspector() {
       ...mountControls(p),
       ...fittingControls(p),
       ...seatControls(p),
+      ...rampControls(p),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),

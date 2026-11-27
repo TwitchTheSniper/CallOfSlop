@@ -280,6 +280,11 @@ public static partial class DesignParts
     /// <summary>Whether a design part is a lift's (its shaft, a ram or its car): F works it where it is (<see cref="KeepsUse"/>).</summary>
     public static bool IsLift(ConstructPartDef d) => ElementOf(d) is { Kind: "lift" };
 
+    /// <summary>Whether a design part is a boarding ramp's (DesignParts.Systems.cs RampLeaves): F lowers or raises it where it is.</summary>
+    public static bool IsRamp(ConstructPartDef d) => ElementOf(d) is { Kind: "lift" } e && IsRampLift(e.Id);
+
+    private static bool IsRampLift(string id) => id.StartsWith("liftramp", StringComparison.Ordinal);
+
     /// <summary>The lift a design part is of ("lift{id}"), and what of it ("shaft", "car", "j{i}"); false: not a lift's.</summary>
     private static bool LiftName(string id, out ReadOnlySpan<char> lift, out ReadOnlySpan<char> what)
     {
@@ -351,7 +356,9 @@ public static partial class DesignParts
                 return "its wires run it";
         var at = LiftStop(c, slots);
         int to;
-        if (what.SequenceEqual("car"))
+        if (IsRampLift(me.Id))
+            to = at > 0 ? 0 : n; // (a boarding ramp: down and run out, or in and up, as one: its joints are a JointChain)
+        else if (what.SequenceEqual("car"))
             to = at >= n ? 0 : at + 1;
         else
         {

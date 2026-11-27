@@ -21,7 +21,7 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     public (double Hx, double Hz, bool Round)? Opening => Socket switch
     {
         "airlock" => (1.15, 0.75, false), "window" => (0.55, 0.9, false), "dock" => (1.05, 1.05, true), "cargo" => (1.5, 1.5, false), "shaft" => (0.5, 0.5, false),
-        "ramp" => (1.25, 1.6, false), "gangway" => (1.1, 0.6, false), "ladder" => (1.05, 0.55, false),
+        "ramp" => (DesignRamp.Hx, DesignRamp.Hz, false), "gangway" => (1.1, 0.6, false), "ladder" => (1.05, 0.55, false),
         "hangar" => (2.5, 1.5, false), "lift" => (2.5, 2.5, false), "rampdeck" => (2.5, 4.0, false), _ => PieceDocking.Opening(Socket), // hangar pieces sized per piece: DesignHangar.OpeningOf
     };
 
@@ -159,10 +159,9 @@ public static class PieceKinds
                 m.Box(-0.25, y, 0.39, 0.25, y + 0.04, 0.42, Gun);
         }),
         // Ways aboard from the ground or a pier (Karl, 2026-11-24). Each opens into any room.
-        new("Boarding ramp", "Sockets", "skin", "ramp", "any room", "A ramp door hinged at its aft edge, shown lowered: walk aboard from the ground.", m =>
+        new(DesignRamp.Kind, "Sockets", "skin", "ramp", "any room", "A 4 m wide hatch with a ramp stowed in the room's floor: F lowers it out of the hatch and runs its extension out to the ground (set its length).", m =>
         {
-            RampFrame(m, 1.0);
-            RampStair(m, 0);
+            RampFrame(m, 1.0); // (drawn with its ramp by DesignScene.PieceMesh: DesignRamp)
         }),
         // On a side wall a piece's X is up (Where turns these two the right way up on the port side too), Z along the ship.
         new("Gangway", "Sockets", "skin", "gangway", "any room", "A side door with a gangway run out 3 m: board from a pier or a station's platform.", m =>
@@ -201,33 +200,11 @@ public static class PieceKinds
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>
     internal static void RampFrame(DesignMesh m, double depth)
     {
-            m.Box(-1.45, 0, -1.8, 1.45, 0.12, -1.6, Armour); m.Box(-1.45, 0, 1.6, 1.45, 0.12, 1.8, Armour);
-            m.Box(-1.45, 0, -1.6, -1.25, 0.12, 1.6, Armour); m.Box(1.25, 0, -1.6, 1.45, 0.12, 1.6, Armour);
-        Well(m, 1.25, 1.6, depth);
-    }
-
-    /// <summary>The ramp as a stair hanging from its frame's origin (Karl, 2026-11-24): placed with its origin at the room's floor, it
-    /// starts flush with the floor and goes down out of the hatch to the ground.</summary>
-    internal static void RampStair(DesignMesh m, double drop)
-    {
-            // The ramp as a stair hanging under the hull (Karl, 2026-11-24): it starts in the opening and goes down to the ground,
-            // 14 level treads of 0.2 m rise and 0.25 m going (about 39 degrees). Its frame's +Y is out of the hull (down on the belly).
-            // From the floor: as many more treads as the floor is in from the skin, so it still reaches the ground.
-            var n = 14 + (int)Math.Ceiling(drop / 0.2);
-            const double rise = 0.2, going = 0.25, top = 1.45;
-            for (var i = 0; i < n; i++)
-            {
-                double y = (i + 1) * rise, z0 = top - i * going, z1 = z0 - going - 0.03;
-                m.Box(-1.1, y - 0.05, z1, 1.1, y, z0, i % 2 == 0 ? Gun : Armour);            // the tread, its walking face toward the ship
-                m.Box(-1.2, y - 0.05, z1, -1.1, y + 0.3, z0, Armour);                          // stringers under the treads' ends
-                m.Box(1.1, y - 0.05, z1, 1.2, y + 0.3, z0, Armour);
-                if (y > 1.0)
-                {
-                    m.Box(-1.2, y - 0.95, z1, -1.14, y - 0.88, z0, Amber);                     // hand rails 0.9 m over the treads, outside the hull
-                    m.Box(1.14, y - 0.95, z1, 1.2, y - 0.88, z0, Amber);
-                    if (i % 3 == 0) { m.Box(-1.2, y - 0.9, z0 - 0.06, -1.14, y - 0.05, z0, Amber); m.Box(1.14, y - 0.9, z0 - 0.06, 1.2, y - 0.05, z0, Amber); }
-                }
-            }
+        // (Karl, 2026-11-27: 60% wider, the hatch 4 m across)
+        const double hx = DesignRamp.Hx, hz = DesignRamp.Hz, f = 0.2;
+        m.Box(-hx - f, 0, -hz - f, hx + f, 0.12, -hz, Armour); m.Box(-hx - f, 0, hz, hx + f, 0.12, hz + f, Armour);
+        m.Box(-hx - f, 0, -hz, -hx, 0.12, hz, Armour); m.Box(hx, 0, -hz, hx + f, 0.12, hz, Armour);
+        Well(m, hx, hz, depth);
     }
 
     /// <summary>A socket's well: four walls from the skin inward (its frame's -Y), so the cut opening shows a frame, not the void.</summary>

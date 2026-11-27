@@ -1231,7 +1231,7 @@ public static partial class DesignScene
     }
 
     /// <summary>How far in from the skin the floor of the room a ramp opens into is, straight in from it (null: no room there).</summary>
-    private static double? RampDepth(ShipDesign d, Piece p, Place w)
+    public static double? RampDepth(ShipDesign d, Piece p, Place w)
     {
         for (var t = 0.0; t <= PieceKind.RampReach; t += 0.02)
         {
@@ -1495,12 +1495,11 @@ public static partial class DesignScene
         if (kind.Socket == "ramp")
         {
             // A boarding ramp starts flush with the floor of the room it opens into (Karl, 2026-11-24): its well runs in from the
-            // skin to that floor, and the stair hangs from there down out of the hatch.
+            // skin to that floor, and its ramp lies in that floor, lowered out of the hatch and run out (Karl, 2026-11-27: DesignRamp).
             var t = RampDepth(d, p, w);
             PieceKinds.RampFrame(m, t ?? 1.0);
-            var dd = (t ?? 0) + p.Recess;
-            m.Frame(w.O[0] - w.Y[0] * dd, w.O[1] - w.Y[1] * dd, w.O[2] - w.Y[2] * dd, w.X, w.Y, w.Z, p.Size, across);
-            PieceKinds.RampStair(m, t ?? 0);
+            DesignRamp.Draw(m, p, w, t ?? 0, shut);
+            m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across); // (its cladding on the skin)
         }
         else if (kind.Socket == "window")
         {
@@ -1672,7 +1671,7 @@ public static partial class DesignScene
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
-              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w)).Append(DesignSeats.SceneJson(p))
+              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w)).Append(DesignSeats.SceneJson(p)).Append(DesignRamp.SceneJson(p))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
             sb.Append(mesh);

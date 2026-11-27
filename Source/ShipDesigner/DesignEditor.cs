@@ -487,6 +487,8 @@ public sealed class DesignEditor
                     return herr;
                 if (DesignFittings.Set(p, o) is { Length: > 0 } ferr)
                     return ferr;
+                if (p.Kind == DesignRamp.Kind && DesignRamp.Set(p, o) is { Length: > 0 } rerr)
+                    return rerr;
                 if (DesignSeats.IsSeat(p.Kind) && DesignSeats.Set(p, o) is { Length: > 0 } serr)
                     return serr;
                 if (o["room"] is not null)

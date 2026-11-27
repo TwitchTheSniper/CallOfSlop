@@ -76,6 +76,55 @@ public sealed partial class Ui
 
     private static bool _wrapInRow;
 
+    /// <summary>
+    /// A palette card (Karl, 2026-11-27): the piece's picture (DesignThumbs.cs) with its name under it, wrapping in rows like
+    /// <see cref="WrapButton"/>; a socket's card has an amber edge. Until its picture is made it shows the name alone.
+    /// </summary>
+    private void PieceTile(string name, bool on, bool socket)
+    {
+        var size = 76 * _scale;
+        var font = 12 * _scale;
+        var nameH = font * 2 + 4 * _scale;
+        var last = ImGui.GetItemRectMax().X;
+        var right = ImGui.GetWindowPos().X + ImGui.GetWindowWidth() - ImGui.GetStyle().WindowPadding.X;
+        if (last + ImGui.GetStyle().ItemSpacing.X + size < right && _wrapInRow)
+            ImGui.SameLine();
+        _wrapInRow = true;
+        var at = ImGui.GetCursorScreenPos();
+        ImGui.InvisibleButton($"##sdpal{name}", new float2(size, size + nameH));
+        var hot = ImGui.IsItemHovered();
+        var dl = ImGui.GetWindowDrawList();
+        var p1 = new float2(at.X + size, at.Y + size + nameH);
+        var r = 4 * _scale;
+        var bg = on ? SdOn : hot ? new float4(SdOff.X + 0.05f, SdOff.Y + 0.06f, SdOff.Z + 0.07f, 1) : SdOff;
+        dl.AddRectFilled(at, p1, Sd8(bg), r);
+        if (socket)
+            dl.AddRect(at, p1, Sd8(SdAmber), r, default, 1.5f * _scale);
+        var pad = size * 0.06f;
+        if (DesignThumbs.TryGet(name, out var tex, out var uv0, out var uv1))
+            dl.AddImage(new ImTextureRef { _TexID = new ImTextureID((nint)tex) }, new float2(at.X + pad, at.Y + pad), new float2(at.X + size - pad, at.Y + size - pad),
+                new float2(uv0.X, uv0.Y), new float2(uv1.X, uv1.Y), new ImColor8(255, 255, 255, 255));
+        // The name, in up to two lines under the picture (split at the space nearest its middle when one line is too wide).
+        ImGui.PushFont(default, font);
+        var lines = new List<string> { name };
+        if (ImGui.CalcTextSize(name).X > size - 4 * _scale && name.Contains(' '))
+        {
+            var mid = name.Length / 2;
+            var cut = Enumerable.Range(0, name.Length).Where(i => name[i] == ' ').MinBy(i => Math.Abs(i - mid));
+            lines = [name[..cut], name[(cut + 1)..]];
+        }
+        dl.PushClipRect(at, p1, true);
+        var y = at.Y + size - 2 * _scale + (lines.Count == 1 ? font * 0.5f : 0);
+        foreach (var line in lines)
+        {
+            var w = ImGui.CalcTextSize(line).X;
+            dl.AddText(new float2(at.X + Math.Max(2 * _scale, (size - w) / 2), y), Sd8(new float4(0.88f, 0.91f, 0.93f, 1)), line);
+            y += font;
+        }
+        dl.PopClipRect();
+        ImGui.PopFont();
+    }
+
     private static void EndRow() => _wrapInRow = false;
 
     private void LeftPanel()
@@ -120,6 +169,7 @@ public sealed partial class Ui
             Checkbox("On a mirrored pair of bodies, put it on both##sdpp", _pPair, v => _pPair = v);
             Slider("Size to place", Math.Round(_pieceSize * 100), 25, 400, 5, "%", v => _pieceSize = v / 100, "ps");
             Slider("Recess to place", Math.Round(_pieceRecess * 100), 0, 200, 5, " cm", v => _pieceRecess = v / 100, "pr");
+            DesignThumbs.Want(); // (the piece pictures: made over the next frames, then kept)
             var pieces = Arr(CAT, "pieces").ToList();
             var groups = pieces.Select(p => Str(p, "group")).Distinct().OrderBy(g => g == "Sockets" ? 0 : 1).ToList();
             foreach (var g in groups)
@@ -130,11 +180,7 @@ public sealed partial class Ui
                 {
                     var name = Str(k, "name");
                     var sock = Has(k, "socket");
-                    if (sock)
-                        ImGui.PushStyleColor(ImGuiCol.Border, SdAmber);
-                    WrapButton($"{name}##sdpal{name}", _paletteDrag?.Kind == name);
-                    if (sock)
-                        ImGui.PopStyleColor();
+                    PieceTile(name, _paletteDrag?.Kind == name, sock);
                     if (ImGui.IsItemActivated())
                         PaletteStart(name);
                     if (ImGui.IsItemHovered())
@@ -863,6 +909,78 @@ public sealed partial class Ui
     }
 
     /// <summary>The page's material drop-down.</summary>
+    /// <summary>
+    /// A hangar piece's own controls, as the page's hangarControls (Karl, 2026-11-27: "hangar size doesn't change anything"): a bay's
+    /// width, height and depth and its door's width, height and type; a lift platform's or ramp deck's width, length and travel; a docking
+    /// arm's or cradle's bay and its spot in the bay. Resets from the catalogue's defaults.hangar[kind].
+    /// </summary>
+    private void HangarControls(JsonElement p, int pid)
+    {
+        var kind = Str(p, "kind");
+        var dk = Get(Get(Get(CAT, "defaults"), "hangar"), kind);
+        if (!Found(dk))
+            return;
+        void M(string label, string key, double min, double max, double step) =>
+            Slider(label, D(p, key), min, max, step, " m", v => Cmd(C("setPiece", ("id", pid), (key, v))), "hg" + key + pid, D(dk, key));
+        if (Has(p, "bay"))
+        {
+            var size = Nums(Get(p, "bay"));
+            H3("Hangar bay");
+            M("Width", "bayW", ShipDesigner.DesignHangar.BayMinW, ShipDesigner.DesignHangar.BayMaxW, 0.5);
+            M("Height", "bayH", ShipDesigner.DesignHangar.BayMinH, ShipDesigner.DesignHangar.BayMaxH, 0.5);
+            M("Depth", "bayD", ShipDesigner.DesignHangar.BayMinD, ShipDesigner.DesignHangar.BayMaxD, 0.5);
+            if (ResetAll("hgbay" + pid, "Width, height and depth back to the bay's own"))
+                Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayW", "bayH", "bayD")]));
+            H3("Hangar door");
+            M("Door width", "bayDoorW", ShipDesigner.DesignHangar.DoorMinW, Math.Min(ShipDesigner.DesignHangar.DoorMaxW, size.Length > 0 ? size[0] : 48), 0.5);
+            M("Door height", "bayDoorH", ShipDesigner.DesignHangar.DoorMinH, Math.Min(ShipDesigner.DesignHangar.DoorMaxH, size.Length > 1 ? size[1] : 32), 0.5);
+            ImGui.Text("Type");
+            Row();
+            MatCombo("hgdoor" + pid, Str(p, "bayDoor", "Sliding"), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
+            if (ResetAll("hgdoor" + pid, "Door back to its defaults"))
+                Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayDoorW", "bayDoorH", "bayDoor")]));
+            var n = I(p, "fittings");
+            if (size.Length == 3)
+                Hint($"The bay is {Fmt(size[0])} m across, {Fmt(size[1])} m tall and {Fmt(size[2])} m deep. {(Str(p, "bayDoor") == "Hinged" ? "The door swings out on motor hinges." : "The door slides aside on a piston.")} {n} docking fitting{(n == 1 ? "" : "s")} linked.");
+            return;
+        }
+        if (Has(p, "travel"))
+        {
+            H3(kind);
+            M("Width", "w", ShipDesigner.DesignHangar.DeckMin, ShipDesigner.DesignHangar.DeckMax, 0.5);
+            M("Length", "l", ShipDesigner.DesignHangar.DeckMin, ShipDesigner.DesignHangar.DeckMax, 0.5);
+            M("Travel", "travel", ShipDesigner.DesignHangar.TravelMin, ShipDesigner.DesignHangar.TravelMax, 0.1);
+            if (ResetAll("hgdeck" + pid, "Width, length and travel back to their defaults"))
+                Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "w", "l", "travel")]));
+            return;
+        }
+        if (Has(p, "link"))
+        {
+            H3("Hangar link");
+            var bays = Arr(S, "pieces").Where(q => Has(q, "bay")).ToList();
+            var link = I(p, "link");
+            var names = new List<string> { "Not linked" };
+            names.AddRange(bays.Select(b => $"{Str(b, "kind")} #{I(b, "id")}"));
+            var at = bays.FindIndex(b => I(b, "id") == link);
+            ImGui.Text("Bay");
+            Row();
+            MatCombo("hglink" + pid, at >= 0 ? names[at + 1] : names[0], names, v =>
+            {
+                var i = names.IndexOf(v);
+                Cmd(C("setPiece", ("id", pid), ("link", i <= 0 ? 0 : I(bays[i - 1], "id"))));
+            });
+            void Pc(string label, string key) =>
+                Slider(label, Math.Round(D(p, key) * 100), -50, 50, 1, "%", v => Cmd(C("setPiece", ("id", pid), (key, v / 100))), "hg" + key + pid, Math.Round(D(dk, key) * 100));
+            Pc("Along the bay", "along");
+            Pc("Across the bay", "across");
+            Hint(link != 0 ? "Linked to the bay and its door; it sits on the bay's floor." : "Not linked: it sits where it was dropped. Pick the bay it serves.");
+        }
+    }
+
+    /// <summary>The given keys of a defaults object, as a command's fields.</summary>
+    private static (string, JsonNode?)[] DfltOf2(JsonElement k, params string[] keys) =>
+        keys.Select(x => (x, k.TryGetProperty(x, out var e) ? JsonNode.Parse(e.GetRawText()) : null)).ToArray();
+
     private void MatCombo(string id, string value, IEnumerable<string> names, Action<string> set, float width = 170)
     {
         ImGui.SetNextItemWidth(width * _scale);
@@ -1181,7 +1299,10 @@ public sealed partial class Ui
             var sock = Has(k, "socket");
             H2(Str(p, "kind"), B(p, "ok", true) ? "fits" : "see checks");
             Hint(Str(k, "desc"));
-            Slider("Size", Math.Round(D(p, "size") * 100), 25, 400, 5, "%", v => Cmd(C("setPiece", ("id", pid), ("size", v / 100))), "pcs");
+            var bay = Has(p, "bay"); // a hangar bay's size is its own width, height and depth (HangarControls), not the Size slider
+            if (!bay)
+                Slider("Size", Math.Round(D(p, "size") * 100), 25, 400, 5, "%", v => Cmd(C("setPiece", ("id", pid), ("size", v / 100))), "pcs");
+            HangarControls(p, pid);
             if (sock)
                 Slider("Cladding", Math.Round(D(p, "clad") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("clad", v / 100))), "pcc");
             Slider("Recess", Math.Round(D(p, "recess") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("recess", v / 100))), "pcr");
@@ -1194,6 +1315,14 @@ public sealed partial class Ui
                 Row();
                 MatCombo("seatrole" + pid, Str(p, "role", ShipDesigner.DesignSeats.DefRole), ShipDesigner.DesignSeats.Roles, v => Cmd(C("setPiece", ("id", pid), ("role", v))));
                 Hint(Str(p, "role") == "Helm" ? "The helm flies the ship: its drives and RCS answer this seat, with nothing to wire." : "It stands on its room's floor, facing the bow (turn it with Turn left and right).");
+            }
+            if (Str(p, "kind") == ShipDesigner.DesignRamp.Kind)
+            {
+                // A boarding ramp's extension (DesignRamp, Karl 2026-11-27): how far its second section runs out once it is down.
+                H3("Ramp");
+                Slider("Extension", Math.Round(D(p, "extend") * 100), 0, Math.Round(D(p, "extendMax", ShipDesigner.DesignRamp.MaxExtend) * 100), 5, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("extend", v / 100))), "pcext", Dflt("ramp", "extend", 100));
+                Hint("F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.");
             }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))

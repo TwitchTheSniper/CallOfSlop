@@ -2067,7 +2067,7 @@ public static partial class ConstructPhysics
         if (jt.Type == JointType.Turntable)
             return Math.Clamp(jt.Wired ? jt.Input : PtoTurn(c, jt.Hinge), -1, 1) * jt.Speed;
         float target;
-        var input = jt.Wired ? jt.Input : jt.Open ? 1f : 0f;
+        var input = jt.Wired ? jt.Input : Latched(c, jt) ? 1f : 0f;
         if (jt.Type == JointType.Steering && !jt.Wired)
         {
             // Unwired, a steering pivot follows the driver (c.Steer: right is positive; a turn about +y is to the left).
@@ -2282,10 +2282,43 @@ public static partial class ConstructPhysics
         _jMotorMax[slot] = _jRating[slot] * (1 + MathF.Sqrt(MathF.Abs(behind) / give)) * dt;
     }
 
+    /// <summary>
+    /// Where an unwired joint's latch sends it this tick (<see cref="CJoint.Open"/>), but for a two-stage pair (<see cref="JointChain"/>, a
+    /// design's boarding ramp): its follower stays in until its leader is open to its end, and its leader stays open until the follower is in.
+    /// </summary>
+    private static bool Latched(Construct c, in CJoint jt)
+    {
+        if (jt.Hinge >= c.PartCount)
+            return jt.Open;
+        switch (c.DefOf(jt.Hinge).JointChain)
+        {
+            case JointChain.Follows when jt.Open:
+            {
+                var lead = jt.ParentSeg - 1; // (segment k moves on joint k - 1)
+                if (lead < 0 || lead >= c.JointCount)
+                    return true;
+                ref readonly var l = ref c.Joints[lead];
+                return l.Open && l.Angle >= l.Max - ChainNear;
+            }
+            case JointChain.Leads when !jt.Open:
+                for (var k = 0; k < c.JointCount; k++)
+                {
+                    ref readonly var f = ref c.Joints[k];
+                    if (f.ParentSeg >= 1 && c.Joints[f.ParentSeg - 1].Hinge == jt.Hinge && f.Hinge < c.PartCount && c.DefOf(f.Hinge).JointChain == JointChain.Follows && f.Angle > f.Min + ChainNear)
+                        return true;
+                }
+                return false;
+            default:
+                return jt.Open;
+        }
+    }
+
+    private const float ChainNear = 0.02f; // how near its end a two-stage pair's joint counts as there (radians, or metres)
+
     /// <summary>Where a position joint's input sends it (a motorised hinge, a piston): inside its limits.</summary>
     private static float PositionTarget(Construct c, in CJoint jt)
     {
-        var input = jt.Wired ? jt.Input : jt.Open ? 1f : 0f;
+        var input = jt.Wired ? jt.Input : Latched(c, jt) ? 1f : 0f;
         float target;
         if (jt.Rail)
             target = ConstructLinear.Target(jt);

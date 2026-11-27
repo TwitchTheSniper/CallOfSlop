@@ -1586,16 +1586,14 @@ public static partial class DesignScene
         return o;
     }
 
-    /// <summary>
-    /// A room's extension walled (step 4, package J: an extension was a hologram only): its outline's walls, each a thin convex piece
-    /// <paramref name="t"/> thick inside the outline, a post at each end of its base closing the corner with the room's wall (cut open across
-    /// it: RoomShell), and for a wall one its floor and its ceiling, the outline closed along the wall (onto the room's floor's end, as the room's
-    /// own shell is ShellGap in from its box); for an up one (a vault over the ceiling, which is left out) its end caps. Into the room's shell
-    /// mesh, and each piece's corners into <paramref name="sink"/> (the game's walkable room collides as them: DesignParts.Rooms.cs).
-    /// </summary>
-    private static void ExtShell(ShipDesign d, Room r, RoomExt e, double t, (byte, byte, byte) col, DesignMesh m, List<double[]>? sink)
+    /// <summary>Where a room's extension lies, for its shell and its interior cladding alike: P(a across, o out of the wall or up over the
+    /// ceiling, hl its height (a wall one's) or its place along the room (an up one's)) to world, its outline and the outline's middle,
+    /// its base's span (S0, S1) and an up one's run along the room (L0, L1); the room's height. Null when it has no outline.</summary>
+    internal sealed record ExtPlace(Func<double, double, double, double[]> P, List<(double A, double B)> Outline, double CA, double CO,
+        bool Up, double S0, double S1, double L0, double L1, double Hgt);
+
+    internal static ExtPlace? ExtAt(ShipDesign d, Room r, RoomExt e)
     {
-        const double g = ShellGap;
         var b = d.Box(r);
         int ax = 0, al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
         double fl = d.Stacked ? b[5] : b[2], sg = d.Stacked ? -1 : 1, hgt = d.Stacked ? b[5] - b[4] : b[3] - b[2];
@@ -1614,7 +1612,7 @@ public static partial class DesignScene
         mid = (s0 + s1) / 2;
         var ol = e.Outline(s1 - s0);
         if (ol.Count < 2)
-            return;
+            return null;
         // A plan point of its outline (a across, o out of the wall or up over the ceiling) at height h (a wall one's) or along l (an up one's).
         double[] P(double a, double o, double hl)
         {
@@ -1627,6 +1625,22 @@ public static partial class DesignScene
         double ca = 0, co = 0;
         foreach (var (a, o) in ol)
             (ca, co) = (ca + a / ol.Count, co + o / ol.Count);
+        return new ExtPlace(P, ol, ca, co, wallUp, s0, s1, l0, l1, hgt);
+    }
+
+    /// <summary>
+    /// A room's extension walled (step 4, package J: an extension was a hologram only): its outline's walls, each a thin convex piece
+    /// <paramref name="t"/> thick inside the outline, a post at each end of its base closing the corner with the room's wall (cut open across
+    /// it: RoomShell), and for a wall one its floor and its ceiling, the outline closed along the wall (onto the room's floor's end, as the room's
+    /// own shell is ShellGap in from its box); for an up one (a vault over the ceiling, which is left out) its end caps. Into the room's shell
+    /// mesh, and each piece's corners into <paramref name="sink"/> (the game's walkable room collides as them: DesignParts.Rooms.cs).
+    /// </summary>
+    private static void ExtShell(ShipDesign d, Room r, RoomExt e, double t, (byte, byte, byte) col, DesignMesh m, List<double[]>? sink)
+    {
+        const double g = ShellGap;
+        if (ExtAt(d, r, e) is not { } x)
+            return;
+        var (P, ol, ca, co, wallUp, s0, s1, l0, l1, hgt) = (x.P, x.Outline, x.CA, x.CO, x.Up, x.S0, x.S1, x.L0, x.L1, x.Hgt);
         // Its two ends in its run: a wall one's floor to ceiling, an up one's along the room.
         double e0 = wallUp ? l0 + g : g + 0.003, e1 = wallUp ? l1 - g : hgt - g - 0.003;
         void Piece(List<(double A, double O)> q, double h0, double h1)

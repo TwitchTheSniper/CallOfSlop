@@ -106,6 +106,8 @@ public sealed class DesignSession
             ["fitting"] = DesignFittings.Defaults(),
             // A seat's role (DesignSeats).
             ["seat"] = DesignSeats.Defaults(),
+            // A boarding ramp's extension (DesignRamp).
+            ["ramp"] = DesignRamp.Defaults(),
         };
         return c.ToJsonString();
     }

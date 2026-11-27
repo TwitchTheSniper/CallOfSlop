@@ -295,6 +295,7 @@ public static unsafe partial class Program
                 {
                     _ when h.Tool == ConstructTool.Hands && (hit.Body.Loose || ConstructEdits.WreckedAlone(hit.Body)) => HandsLook(hit.Body, d, near, h.Held != ConstructParts.None, carriedIn),
                     PartRole.Frame or PartRole.Thruster or PartRole.Logic when bare && near && DesignParts.BoardFrom(hit.Body, hit.Part, eye) is var boardSeat and >= 0 => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, hit.Body.DefOf(boardSeat).Helm ? "board: sit at the helm" : "board: sit down")), // (a ship design's solid hull: ConstructEdits.Use)
+                    PartRole.Frame when near && DesignParts.IsRamp(d) => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "ramp: lower or raise")), // (a ship design's boarding ramp: DesignParts.Systems.cs)
                     PartRole.Frame when near && DesignParts.IsLift(d) => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, d.Name.EndsWith(".car", StringComparison.Ordinal) ? "lift: on to the next deck" : "lift: call it to this deck")), // (a ship design's lift: DesignParts.Risers.cs)
                     PartRole.Suspension when ConstructRoutes.HalfShaftLook(hit.Body, hit.Part) is { } halfLook => SandboxKeys.Line(d.Name, halfLook),
                     PartRole.Rotor when ConstructRotor.Of(hit.Body, hit.Part) >= 0 => SandboxKeys.Line(d.Name, ConstructRotor.Note(hit.Body, hit.Part), null, null),
