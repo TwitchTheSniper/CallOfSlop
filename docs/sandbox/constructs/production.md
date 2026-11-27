@@ -1288,8 +1288,10 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   out where it lay and holds it. F on a riding piece takes it off its conveyor (the physics gun grabs it): the request names the
   conveyor and where the piece's front was, and the server takes the one nearest that (within 1.5 m); the pieces behind close up.
   A conveyor's look line, and its lead piece's, say why it waits ("jammed: rack full").
-- **The rack shows what it holds.** Every piece at its packed place at true size within 30 m (plus half the rack), one box a
-  column in its first box's colour further off (`RouteRender.DrawRacks`, the links' batch, from the store as heard).
+- **The rack shows what it holds.** Every piece at its packed place at true size within 50 m of the rack's near side, out to 130 m
+  every piece less the boxes under 1/350 of the distance (14 cm at 50 m, 37 cm at 130 m), one box a column in its first box's
+  colour further off (`RouteRender.DrawRacks`, the links' batch, from the store as heard; 30 m and no middle range before
+  2026-11-27, Sean: the pads' pieces went to plain boxes too near).
 - **Collisions.** The conveyor is a drawn link: shots and blasts hit its segments (health 120); players and bodies pass through it
   as through every routed link, and through riding pieces.
 - **Network (protocol 244, riders 245).** A conveyor's size is 4 bytes after its link in a Full. `CBodyKind.Riders` sends a body's
