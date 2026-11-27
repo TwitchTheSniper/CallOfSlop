@@ -1330,6 +1330,20 @@ public static partial class DesignScene
     /// a bump or a facet's edge instead of following it, and stays inside the skin everywhere.</summary>
     public static double EasedHalf(HullBody h, double z, double y)
     {
+        // Refined (Karl, 2026-11-27: a room maxed out in the nose still rippled): the eased width is taken on a coarse grid, 1.5 m along and
+        // 0.75 m up, and drawn straight between its points, so the wall is a few flat facets, not a wave.
+        if (EaseHalfAt(h, z, y) < 0.1)
+            return EaseHalfAt(h, z, y);
+        const double GZ = 1.5, GY = 0.75;
+        double fz = Math.Floor(z / GZ) * GZ, fy = Math.Floor(y / GY) * GY, tz = (z - fz) / GZ, ty = (y - fy) / GY;
+        double a = EaseHalfAt(h, fz, fy), b = EaseHalfAt(h, fz + GZ, fy), c = EaseHalfAt(h, fz, fy + GY), e = EaseHalfAt(h, fz + GZ, fy + GY);
+        if (a < 0.1 || b < 0.1 || c < 0.1 || e < 0.1)
+            return EaseHalfAt(h, z, y); // a grid point past the skin's end or top: no straight run there
+        return Math.Min(EaseHalfAt(h, z, y) + 0.25, (a * (1 - tz) + b * tz) * (1 - ty) + (c * (1 - tz) + e * tz) * ty);
+    }
+
+    private static double EaseHalfAt(HullBody h, double z, double y)
+    {
         var half = h.SkinHalf(z, y);
         if (half < 0.1)
             return half;
