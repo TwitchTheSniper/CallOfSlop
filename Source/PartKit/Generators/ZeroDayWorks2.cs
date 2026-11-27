@@ -184,6 +184,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
         }
 
         private const float BigOvenClear = 6; // (m: a big line's Bake Oven's Tunnel height)
+        private const float SmallOvenClear = 4; // (m: a small line's: its 3 m wall kits stood 3.0 m and were let go at the default 3 m tunnel's mouth, 2026-11-27)
 
         private const float StationHalf = 14; // (a big square station's half side, m: its lab item's w, 14 cells of 2 m)
 
@@ -749,8 +750,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     {
                         // (a big line's oven, 10 x 10 cells, clears a deck's kit: the Lower Deck Aft's stood 3.2 m tall and was let go at the
                         // default 3 m tunnel's mouth, 2026-11-26; the old works' line ovens clear 6 to 12 m)
-                        if (w * l >= 100)
-                            Config(c, ("height", BigOvenClear));
+                        Config(c, ("height", w * l >= 100 ? BigOvenClear : SmallOvenClear));
                         _labs.Add((id, new Vector2(x, -z), c, flow));
                     }
                     break;
