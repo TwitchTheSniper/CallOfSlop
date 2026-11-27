@@ -273,7 +273,7 @@ public static class RollerRuns
             return false; // (it ends on a tile of the field, or on the bed the field's way out leads into)
         for (var n = 0; n < r.Count; n++)
             if (c.RouteNodes[r.Start + n].Host is var h && (h >= c.PartCount || !c.Parts[h].D.IsTurntable
-                || Vector3.DistanceSquared(c.RouteNodes[r.Start + n].Pos, CrossNode(c, h)) > Cell * Cell * 0.25f))
+                || Vector3.DistanceSquared(c.RouteNodes[r.Start + n].Pos, CrossNode(c, h)) > Cell * Cell * 0.5f))
                 return false; // (every node on its tile, at the run's height: a player's link between two turntables is no crossing)
         return true;
     }
@@ -383,6 +383,13 @@ public static class RollerRuns
             _crossAt[hosts] += first * (Cell * 0.5f - EndIn);
             if (!intoBed)
                 _crossAt[hosts + x.NodeN - 1] -= last * (Cell * 0.5f - EndIn); // (into a bed: its last node is the exit tile's middle, then on to the Bed in)
+            else if (StraightIntoBed(c, t, fn, x.To, x.ToPort, hosts) is var sp and >= 0)
+            {
+                // (a transfer table, Sean 2026-11-27 "weird transfer table routing": on along the way the pieces came in to the bed's middle
+                // row, then straight across onto the bed, never a turn and a jog through the field's tiles)
+                x.FromPort = (byte)sp;
+                x.NodeN = 2;
+            }
             var width = 0;
             for (var k = 0; k < c.RouteCount; k++)
                 if (Meets(c, k, t, true))
@@ -434,6 +441,43 @@ public static class RollerRuns
             c.Routes[k].ConvW = c.Routes[k].ConvH = x.Width;
             Console.WriteLine($"[rollers] {c.Id}: a turntable field carries pieces from tile {x.From} to tile {x.To}, {ConstructConveyor.Length(c, k):0.0} m");
         }
+    }
+
+    /// <summary>
+    /// A crossing from field tile <paramref name="t"/> into a bed (<paramref name="bed"/>'s Bed in <paramref name="port"/>), laid as a transfer
+    /// table's: on from <paramref name="t"/> the way its in-run comes, to the field tile level with the bed's middle, then straight across onto
+    /// the bed. Writes the two nodes at <paramref name="hosts"/>; the out port of <paramref name="t"/> it leaves by, or -1 (no such tile: the
+    /// way stays as found). Allocates nothing.
+    /// </summary>
+    private static int StraightIntoBed(Construct c, int t, int fn, int bed, byte port, int hosts)
+    {
+        var axis = Vector3.Zero;
+        for (var k = 0; k < c.RouteCount; k++)
+            if (Meets(c, k, t, true) && ConstructConveyor.LevelWay(ConstructRoutes.Point(c, k, c.Routes[k].Count - 1, out _), ConstructRoutes.Point(c, k, c.Routes[k].Count, out _), out var way))
+            {
+                axis = way;
+                break;
+            }
+        if (axis == Vector3.Zero)
+            return -1;
+        var start = CrossNode(c, t);
+        var bedAt = ConstructRoutes.PortPoint(c, bed, port, RouteType.Conveyor);
+        var along = Vector3.Dot(bedAt - start, axis);
+        if (along < Cell * 0.5f)
+            return -1; // (the bed's middle is behind the tile the pieces come in on)
+        var corner = start + axis * along;
+        int host = -1;
+        var best = Cell * Cell * 0.5f;
+        for (var q = 0; q < fn; q++)
+            if (Vector3.DistanceSquared(CrossNode(c, _field[q]), corner) is var d2 && d2 <= best)
+                (host, best) = (_field[q], d2);
+        if (host < 0 || host == t || FacePort(c, t, axis, "Out ") is not (var fp and >= 0))
+            return -1;
+        _crossHosts[hosts] = (ushort)t;
+        _crossAt[hosts] = start + axis * (Cell * 0.5f - EndIn);
+        _crossHosts[hosts + 1] = (ushort)host;
+        _crossAt[hosts + 1] = corner;
+        return fp;
     }
 
     /// <summary>Turntable Tile <paramref name="tile"/>'s conveyor port ("Out " or "In " and its face) on the side toward <paramref name="toward"/> (body frame), or -1.</summary>
