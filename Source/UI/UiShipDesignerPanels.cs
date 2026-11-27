@@ -587,6 +587,30 @@ public sealed partial class Ui
             Hs(DfltOf("hull", "roundFore", "roundAft"));
         Hint("0: a hard edge. At most half the end's smallest half-size, and short of the next station.");
 
+        // Beading (Karl, 2026-11-27): raised strips along the profile's points, bow to stern.
+        var bead = Get(h, "bead");
+        var bk = Str(bead, "kind", "Off");
+        H3("Beading");
+        foreach (var k in ShipDesigner.HullBody.BeadKinds)
+        {
+            if (OnButton($"{k}##sdhb{k}", bk == k))
+                Hs(("bead", k));
+            Row();
+        }
+        ImGui.NewLine();
+        if (bk != "Off")
+        {
+            Slider("Bead size", Math.Round(D(bead, "size", 0.06) * 100), 2, 30, 1, " cm", v => Hs(("beadSize", v / 100)), "hbs", Dflt("hull", "beadSize", 100));
+            ImGui.Text("Colour"u8);
+            Row();
+            var bcol = Str(bead, "colour", "");
+            Colour("bead" + hid, bcol.Length == 7 ? bcol : Str(h, "skin"), v => Hs(("beadColour", v)));
+            Row();
+            if (ResetAll("hbcol", "Beading colour back to the skin's, darkened"))
+                Hs(("beadColour", ""));
+        }
+        Hint("Creases: a strip along every sharp corner of the profile; All: along every point. They stand clear of the cladding and stop at openings.");
+
         // Paint: mostly dark with bold accent areas, over the facets and the cladding plates.
         var pa = Get(h, "paint");
         H3("Paint");

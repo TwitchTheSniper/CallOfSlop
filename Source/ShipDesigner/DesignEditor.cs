@@ -289,6 +289,14 @@ public sealed class DesignEditor
                 if (o["paintSeed"] is not null) h.PaintSeed = Math.Clamp(I(o, "paintSeed"), 0, 99999);
                 if (o["cladDepth"] is not null) h.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 if (o["cladFore"] is not null) h.CladFore = (bool?)o["cladFore"] ?? true;
+                if (o["bead"] is not null)
+                {
+                    if (!HullBody.BeadKinds.Contains(Str(o, "bead")))
+                        return "the beading is Off, Creases or All";
+                    h.Bead = Str(o, "bead");
+                }
+                if (o["beadSize"] is not null) h.BeadSize = Math.Clamp(Snap(D(o, "beadSize"), 0.005), HullBody.BeadSizeMin, HullBody.BeadSizeMax);
+                if (o["beadColour"] is not null) h.BeadColour = Str(o, "beadColour") is { Length: 7 } bc && bc[0] == '#' ? bc.ToLowerInvariant() : "";
                 if (o["cladAft"] is not null) h.CladAft = (bool?)o["cladAft"] ?? true;
                 if (o["material"] is not null)
                 {
