@@ -12,13 +12,16 @@ namespace CallOfSlop;
 public static partial class DesignParts
 {
     /// <summary>The plate's element and its piston (or the plate welded on, when the body's joints are all used).</summary>
-    private static void ArmourLeaf(in PieceAt a, DesignMesh m)
+    private static void ArmourLeaf(in PieceAt a, DesignMesh m, List<List<double[]>> cells, (float S, float O) flip)
     {
         var (p, e, els) = (a.P, a.E, a.Els);
         if (m.Leaves?.Find(l => l.Leaf == DesignArmour.PlateLeaf) is not { } l || l.To <= l.From)
             return;
         var plate = Leaf($"{e.Id}.plate", p.Kind, m, l.From, l.To, a.X, a.Y, a.Z);
         (plate.Fn, plate.Door, plate.Kind) = ("", null, "armour");
+        // Its solid: a hull a cell of the plate (DesignArmour.PlateCells), not the leaf's boxes, which its rods stretched down to the skin.
+        if (FlipHulls(plate, cells, flip) is { Count: > 0 } hulls)
+            (plate.Boxes, plate.Hulls) = (null, [.. hulls]);
         plate.Kg = MathF.Max(50f, plate.Area * PieceKgPerM2);
         plate.Role = p.ArmButton > 0 ? p.ArmButton.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""; // (the console button that works it)
         var joints = 0;

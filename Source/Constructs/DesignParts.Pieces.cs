@@ -39,6 +39,7 @@ public static partial class DesignParts
                     flips.Add((-flips[k].S, -flips[k].O));
                 }
             var armour = DesignArmour.Is(p) ? DesignArmour.Solids(d, p) : null;
+            var plateCells = armour is not null ? DesignArmour.PlateCells(d, p) : null;
             for (var k = 0; k < sets.Count; k++)
             {
                 var m = sets[k].M;
@@ -65,7 +66,7 @@ public static partial class DesignParts
                 else if (p.Kind == DesignArmour.Console)
                     ConsoleButtons(new PieceAt(p, e, at, sets[k].W, els), m); // (its buttons, each its own: DesignParts.Armour.cs)
                 else if (armour is not null)
-                    ArmourLeaf(new PieceAt(p, e, at, sets[k].W, els), m); // (its plate on its rams: DesignParts.Armour.cs)
+                    ArmourLeaf(new PieceAt(p, e, at, sets[k].W, els), m, plateCells!, flips[k]); // (its plate on its rams: DesignParts.Armour.cs)
                 else
                     PieceDoors(new PieceAt(p, e, at, sets[k].W, els), m); // (its door leaves, each a door of its own)
                 if (p.Kind == "Boarding hatch" && k == 0)
@@ -77,7 +78,9 @@ public static partial class DesignParts
     }
 
     /// <summary>A stand-off armour plate's rams' sockets (DesignArmour.Solids): one convex hull each, in this copy's place (the plate is its own element: ArmourLeaf).</summary>
-    private static void ArmourHulls(Element e, List<List<double[]>> solids, (float S, float O) flip)
+    private static void ArmourHulls(Element e, List<List<double[]>> solids, (float S, float O) flip) => e.Hulls = [.. FlipHulls(e, solids, flip)];
+
+    private static List<ConvexHull> FlipHulls(Element e, List<List<double[]>> solids, (float S, float O) flip)
     {
         var hulls = new List<ConvexHull>();
         var pts = new List<Vector3>();
@@ -91,8 +94,7 @@ public static partial class DesignParts
             else
                 Console.WriteLine($"[design] armour plate {e.Id}: a cell of {pts.Count} points came out flat and is left out of its collider");
         }
-        if (hulls.Count > 0)
-            e.Hulls = [.. hulls];
+        return hulls;
     }
 
     /// <summary>This file's kinds: the drives, the RCS quads and the seat (by piece kind), and the thrust, seat and flight functions.</summary>

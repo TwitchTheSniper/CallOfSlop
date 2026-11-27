@@ -308,7 +308,17 @@ public static class DesignArmour
     }
 
     /// <summary>What a plate's mesh depends on beyond its own fields and the bodies' shapes: its body's skin colour and cladding material.</summary>
-    public static string Key(ShipDesign d, Piece p) => Is(p) && d.Hull(p.Hull) is { } h ? $"|ar{h.Skin}" : "";
+    public static string Key(ShipDesign d, Piece p)
+    {
+        if (!Is(p) || d.Hull(p.Hull) is not { } h)
+            return "";
+        // (the plates further out on its body: their rams pass through it in sleeves, Sleeves)
+        var sb = new StringBuilder("|ar").Append(h.Skin);
+        foreach (var q in d.Pieces)
+            if (q != p && Is(q) && q.Hull == p.Hull && q.ArmOff > p.ArmOff)
+                sb.Append('|').Append(q.ToJson().ToJsonString());
+        return sb.ToString();
+    }
 
     // ---- the drawing
 
@@ -352,6 +362,7 @@ public static class DesignArmour
         if (p.ArmClad != "Off")
             Clad(m, p, g, top, skin);
         Arms(m, g, p, off);
+        Sleeves(d, m, g, p, off, top);
         });
         Sockets(m, g, p, off);
         return true;
@@ -471,6 +482,44 @@ public static class DesignArmour
 
     /// <summary>A ram's frame at shares (u, v): its foot on the skin itself, its axis the plate's normal there, and its height L from the skin
     /// to the plate's back along that axis (the stand-off where the plate follows the hull; more or less where it doesn't).</summary>
+    /// <summary>
+    /// Plates overlapping at different stand-offs (Karl, 2026-11-27: "overlap for different panels... two different stand-off levels and
+    /// struts can meet the hull"): a plate further out on the same body keeps its rams on the skin, so where one passes through this plate
+    /// it runs in a sleeve, a collar through this plate's thickness round the rod, drawn with this plate.
+    /// </summary>
+    private static void Sleeves(ShipDesign d, DesignMesh m, Grid g, Piece p, double off, double top)
+    {
+        var cell = Math.Max(g.Len / g.Nz, g.Arc / g.Nt);
+        foreach (var q in d.Pieces)
+        {
+            if (q == p || !Is(q) || q.Hull != p.Hull || q.ArmOff <= p.ArmOff || q.Copy != p.Copy || q.Side != p.Side || GridOf(d, q) is not { } gq)
+                continue;
+            foreach (var (u, v, hw) in StrutSpots(gq, q))
+            {
+                var (k, n, along, x, _) = StrutFrame(gq, u, v, q.ArmOff);
+                // The nearest of this plate's skin points to the ram's foot: the ram passes through this plate only if that is well inside it.
+                int bi = -1, bj = -1;
+                var best = double.MaxValue;
+                for (var i = 0; i <= g.Nz; i++)
+                    for (var j = 0; j <= g.Nt; j++)
+                    {
+                        var dd = Dist2(g.K[i * (g.Nt + 1) + j], k);
+                        if (dd < best)
+                            (best, bi, bj) = (dd, i, j);
+                    }
+                if (bi < 0 || Math.Sqrt(best) > cell || bi == 0 || bj == 0 || bi == g.Nz || bj == g.Nt)
+                    continue;
+                double t0 = Dot(Sub(g.At(bi, bj, off), k), n), t1 = Dot(Sub(g.At(bi, bj, top), k), n);
+                m.Frame(k[0], k[1], k[2], x, n, along);
+                m.Frustum(t0 - 0.04, hw * 1.3, t1 + 0.04, hw * 1.3, 16, PieceKinds.Armour);
+                m.Frustum(t1 + 0.02, hw * 1.45, t1 + 0.06, hw * 1.45, 16, PieceKinds.Gun); // (its lip on the outer face)
+            }
+        }
+        m.World();
+    }
+
+    private static double Dist2(double[] a, double[] b) => (a[0] - b[0]) * (a[0] - b[0]) + (a[1] - b[1]) * (a[1] - b[1]) + (a[2] - b[2]) * (a[2] - b[2]);
+
     private static (double[] S, double[] N, double[] Along, double[] X, double L) StrutFrame(Grid g, double u, double v, double off)
     {
         var s = g.LerpK(u, v);
@@ -482,6 +531,36 @@ public static class DesignArmour
     }
 
     // ---- solid in the game
+
+    /// <summary>The plate's own solid as point sets in the ship's frame, each one convex hull: a cell of the plate (its back and face points,
+    /// about <see cref="CellSize"/> each way, at most <see cref="MaxCells"/>). Its rods are left out: thin, and they would reach to the skin.</summary>
+    public static List<List<double[]>> PlateCells(ShipDesign d, Piece p)
+    {
+        var o = new List<List<double[]>>();
+        if (GridOf(d, p) is not { } g)
+            return o;
+        double off = p.ArmOff, top = p.ArmOff + p.ArmT;
+        int cu = Math.Clamp((int)Math.Round(g.Arc / CellSize), 1, g.Nt), cv = Math.Clamp((int)Math.Round(g.Len / CellSize), 1, g.Nz);
+        while (cu * cv > MaxCells)
+            if (cu >= cv) cu--; else cv--;
+        for (var a = 0; a < cu; a++)
+            for (var b = 0; b < cv; b++)
+            {
+                int j0 = g.Nt * a / cu, j1 = g.Nt * (a + 1) / cu, i0 = g.Nz * b / cv, i1 = g.Nz * (b + 1) / cv;
+                var pts = new List<double[]>();
+                for (var i = i0; i <= i1; i++)
+                    for (var j = j0; j <= j1; j++)
+                    {
+                        pts.Add(g.At(i, j, off));
+                        pts.Add(g.At(i, j, top));
+                    }
+                o.Add(pts);
+            }
+        return o;
+    }
+
+    private const double CellSize = 2.5;
+    private const int MaxCells = 32;
 
     /// <summary>The rams' sockets' solids as point sets in the ship's frame, each one convex hull (base to barrel top); the plate's own
     /// solid is its leaf's (DesignParts.Pieces.cs, ArmourLeaf).</summary>
