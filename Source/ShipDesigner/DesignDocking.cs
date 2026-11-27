@@ -93,7 +93,7 @@ public static class PieceDocking
 
     /// <summary>A piece's own opening or footprint: an airlock's from its outer hatch's size, the rest from its kind.</summary>
     public static (double Hx, double Hz, bool Round)? FootprintOf(Piece p, PieceKind k) =>
-        k.Socket == "airlock" ? (p.AirH / 2, Math.Min(p.DoorW, p.AirW) / 2, p.Door == "iris") : k.Footprint;
+        k.Socket == "airlock" ? (p.AirH / 2, Math.Min(p.DoorW, p.AirW) / 2, p.Door == "iris") : p.Kind == DesignLightBars.Hull ? DesignLightBars.FootprintOf(p) : k.Footprint;
 
     /// <summary>A docking clamp: a ring on a base, four jaws round it, open.</summary>
     private static void Clamp(DesignMesh m, double r)

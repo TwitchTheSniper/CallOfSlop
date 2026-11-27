@@ -1,0 +1,363 @@
+using System.Text;
+using System.Text.Json.Nodes;
+
+namespace CallOfSlop.ShipDesigner;
+
+/// <summary>
+/// Light bars (Karl, 2026-11-27: "adjustable light bar sockets to both interior and exterior"): a glowing strip in a dark channel, its length,
+/// colour and brightness set per piece. Two kinds:
+/// <list type="bullet">
+/// <item><b>Light bar</b>, on the hull's skin where it is dropped. Turned along the hull (Turn 0 or 180) it follows the skin's curve along its
+/// length; turned any other way it runs straight across the skin. The hull's cladding keeps clear of it (<see cref="FootprintOf"/>).</item>
+/// <item><b>Light bar (room)</b>, inside a room: dropped on the skin by a room (or linked to one, as a seat is), it goes on that room's wall
+/// nearest where it was dropped, at <see cref="Piece.BarUp"/> over the floor, or on its ceiling or floor (<see cref="Piece.BarOn"/>). Turned
+/// 90 degrees it stands upright on a wall, or runs across the room on a ceiling or floor. A room out to the hull has it follow the skin.</item>
+/// </list>
+/// Its strip is a lit run of its mesh (<see cref="DesignMesh.Glowing"/>): the designer and the page draw it unlit, the game's design shader
+/// unlit with bloom, and in the game its part holds lamps along it (DesignParts.Lights.cs) in its colour at its brightness, always on.
+/// All its geometry, JSON and page fields are here, so the rest of the designer only calls in.
+/// </summary>
+public static class DesignLightBars
+{
+    public const string Hull = "Light bar", Room = "Light bar (room)";
+    public const double DefLen = 2, MinLen = 0.25, MaxLen = 24, DefBright = 1, MinBright = 0.05, DefUp = 0.3;
+    public const string DefColour = "#3fd2ff"; // (the cyan strip of Karl's reference)
+    /// <summary>Where a room's bar goes: the wall nearest where it was dropped, the ceiling or the floor.</summary>
+    public static readonly string[] Mounts = ["Wall", "Ceiling", "Floor"];
+    // Its section at Size 1: the channel 8 cm across and 2.5 cm deep, the strip 70% of its width and 6 mm proud of it.
+    private const double HalfW = 0.04, Depth = 0.025, StripRise = 0.006;
+    private const string Channel = "#24272b";
+
+    public static bool IsBar(string kind) => kind is Hull or Room;
+
+    public static readonly PieceKind[] Kinds =
+    [
+        new(Hull, "Lights", "skin", null, "", "A glowing light bar on the hull: set its length, colour and brightness. Along the hull it follows the skin's curve; turn it for a bar across.", _ => { }),
+        new(Room, "Lights", "skin", "seat", "any room", "A glowing light bar inside a room: drop it on the skin by a room (or link it to one) and it goes on that room's nearest wall, or its ceiling or floor. Set its length, height, colour and brightness.", _ => { }),
+    ];
+
+    /// <summary>The nominal footprint that gives a hull bar the cladding sliders (its real one is <see cref="FootprintOf"/>, by its length).</summary>
+    public static (double Hx, double Hz, bool Round)? Footprint(string name) => name == Hull ? (HalfW + 0.03, DefLen / 2 + 0.03, false) : null;
+
+    /// <summary>What keeps hull cladding clear round a hull bar, in its own frame before its size and hole scale (which the caller applies).</summary>
+    public static (double Hx, double Hz, bool Round) FootprintOf(Piece p) => (HalfW + 0.03, (p.BarLen / 2 + 0.03) / Math.Max(0.05, p.Size * p.Hole), false);
+
+    /// <summary>A new bar: its own colour (a floodlight's beam default is a warm white).</summary>
+    public static void Init(Piece p)
+    {
+        if (IsBar(p.Kind))
+            p.Beam = DefColour;
+    }
+
+    public static JsonObject Defaults() => new() { ["barLen"] = DefLen, ["bright"] = DefBright, ["barUp"] = DefUp, ["barOn"] = Mounts[0], ["beam"] = DefColour };
+
+    /// <summary>A bar's JSON fields (only a bar's: every other piece's JSON stays as it was, so its design's hash does).</summary>
+    public static JsonObject Write(Piece p, JsonObject o)
+    {
+        if (!IsBar(p.Kind))
+            return o;
+        o["barLen"] = ShipDesign.R(p.BarLen);
+        o["bright"] = ShipDesign.R(p.Bright);
+        o["beam"] = p.Beam;
+        if (p.Kind == Room)
+        {
+            o["barOn"] = p.BarOn;
+            o["barUp"] = ShipDesign.R(p.BarUp);
+        }
+        return o;
+    }
+
+    public static Piece Read(JsonObject o, Piece p)
+    {
+        if (!IsBar(p.Kind))
+            return p;
+        p.BarLen = Math.Clamp(ShipDesign.F(o["barLen"], DefLen), MinLen, MaxLen);
+        p.Bright = Math.Clamp(ShipDesign.F(o["bright"], DefBright), MinBright, 1);
+        p.BarUp = Math.Clamp(ShipDesign.F(o["barUp"], DefUp), 0, 40);
+        p.BarOn = Array.IndexOf(Mounts, (string?)o["barOn"]) >= 0 ? (string)o["barOn"]! : Mounts[0];
+        if (o["beam"] is null)
+            p.Beam = DefColour;
+        return p;
+    }
+
+    /// <summary>The page's setPiece fields (its colour is the floodlights' "beam": DesignFittings.Set); an error text, or empty.</summary>
+    public static string Set(Piece p, JsonObject o)
+    {
+        if (!IsBar(p.Kind))
+            return "";
+        if (o["barLen"] is not null) p.BarLen = Math.Clamp(Math.Round(ShipDesign.F(o["barLen"], DefLen) / 0.05) * 0.05, MinLen, MaxLen);
+        if (o["bright"] is not null) p.Bright = Math.Clamp(Math.Round(ShipDesign.F(o["bright"], DefBright) / 0.05) * 0.05, MinBright, 1);
+        if (o["barUp"] is not null) p.BarUp = Math.Clamp(Math.Round(ShipDesign.F(o["barUp"], DefUp) / 0.05) * 0.05, 0, 40);
+        if ((string?)o["barOn"] is { } on)
+        {
+            if (Array.IndexOf(Mounts, on) < 0)
+                return $"a light bar goes on one of {string.Join(", ", Mounts)}";
+            p.BarOn = on;
+        }
+        return "";
+    }
+
+    /// <summary>The page's bar fields: its length, brightness, colour, and a room bar's mount, height and the room it is in.</summary>
+    public static string SceneJson(ShipDesign d, Piece p)
+    {
+        if (!IsBar(p.Kind))
+            return "";
+        var sb = new StringBuilder();
+        sb.Append(",\"bar\":true,\"barLen\":").Append(ShipDesign.S(p.BarLen)).Append(",\"bright\":").Append(ShipDesign.S(p.Bright)).Append(",\"beam\":").Append(DesignScene.Q(p.Beam));
+        if (p.Kind == Room)
+        {
+            sb.Append(",\"barOn\":").Append(DesignScene.Q(p.BarOn)).Append(",\"barUp\":").Append(ShipDesign.S(p.BarUp));
+            var r = DesignSeats.RoomOf(d, p);
+            sb.Append(",\"barRoom\":").Append(r is null ? "null" : DesignScene.Q(DesignScene.Name(r) + $" on deck {r.Deck + 1}"));
+            sb.Append(",\"barUpMax\":").Append(ShipDesign.S(r is null ? 3 : d.DeckOf(r).Height));
+        }
+        return sb.ToString();
+    }
+
+    // ---- where it lies
+
+    /// <summary>Its line: points along it, each with the way out of the surface it lies on (the strip faces that way), in the ship's frame.</summary>
+    public readonly record struct Line(List<double[]> P, List<double[]> N);
+
+    /// <summary>A bar's line (null for any other piece, or a room bar with no room).</summary>
+    public static Line? LineOf(ShipDesign d, Piece p)
+    {
+        if (!IsBar(p.Kind) || d.Hull(p.Hull) is not { } h)
+            return null;
+        return p.Kind == Hull ? HullLine(h, p) : RoomLine(d, h, p);
+    }
+
+    /// <summary>A room bar's place for the scene and the game (its middle, X along it, Y out of its surface); null for any other piece.</summary>
+    public static DesignScene.Place? PlaceOf(ShipDesign d, Piece p)
+    {
+        if (p.Kind != Room || LineOf(d, p) is not { } l || l.P.Count < 2)
+            return null;
+        var k = l.P.Count / 2;
+        var mid = l.P.Count % 2 == 1 ? l.P[k] : Lerp(l.P[k - 1], l.P[k], 0.5);
+        var along = Norm(Sub(l.P[^1], l.P[0]));
+        var n = Norm(l.N[k]);
+        return new DesignScene.Place(mid, along, n, Cross(along, n));
+    }
+
+    private static Line HullLine(HullBody h, Piece p)
+    {
+        var w = DesignScene.Where(h, p);
+        var len = p.BarLen;
+        var cx = h.CopyX(Math.Min(p.Copy, h.Copies - 1));
+        var follow = p.Surface == "skin" && Math.Abs(Math.IEEERemainder(p.Turn, 180)) < 1 && Math.Abs(w.Z[2]) > 0.99;
+        var n = follow ? Math.Clamp((int)Math.Ceiling(len / 0.5), 1, 64) : 1;
+        var line = new Line([], []);
+        for (var k = 0; k <= n; k++)
+        {
+            var a = -len / 2 + len * k / n;
+            double[] at, nn;
+            if (follow)
+            {
+                // Along the hull: the skin at each station point (its frame's Z is the world's +z or -z there).
+                var z = Math.Clamp(p.Z + a * w.Z[2], h.Front + 0.02, h.Back - 0.02);
+                var s = h.OnSkin(z, p.T, p.Side);
+                (at, nn) = ([cx + s.X, h.Y + s.Y, h.Z + s.Z], [s.Nx, s.Ny, 0]);
+            }
+            else
+                (at, nn) = (Add(w.O, w.Z, a), w.Y);
+            line.P.Add(Add(at, nn, -p.Recess));
+            line.N.Add(Norm(nn));
+        }
+        return line;
+    }
+
+    private static Line? RoomLine(ShipDesign d, HullBody h, Piece p)
+    {
+        if (DesignSeats.RoomOf(d, p) is not { } r)
+            return null;
+        var dk = d.DeckOf(r);
+        var b = d.Box(r);
+        int ax = 0, al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
+        double[] lo = [b[0], b[2], b[4]], hi = [b[1], b[3], b[5]];
+        var sg = d.Stacked ? -1.0 : 1.0;
+        var floor = d.Stacked ? hi[up] : lo[up];
+        var hgt = dk.Height;
+        var sd = DesignScene.ShellDepth(r);
+        var stand = sd + (r.Interior != "Off" ? 0.045 : 0.004); // (off its wall's shell, and proud of the interior cladding's panels)
+        var (l0, l1) = DesignScene.Span(d, r);
+        var hull = r.ToHull;
+        var at = DesignScene.Where(h, p).O;
+        double fa = at[ax], fl = at[al];
+        var upright = Math.Abs(Math.IEEERemainder(p.Turn, 180)) > 45; // (turned: upright on a wall, across on a ceiling or floor)
+        double[] W(double a, double l, double u) { var v = new double[3]; v[ax] = a; v[al] = l; v[up] = floor + sg * u; return v; }
+        double[] Dir(int axis, double sign) { var v = new double[3]; v[axis] = axis == up ? sign * sg : sign; return v; }
+        // The room's side faces at a place along it and a height (out to the skin for a room out to the hull).
+        (double L, double R) Sides(double l, double u) => hull ? DesignScene.Edges(d, r, l, u) : (lo[ax], hi[ax]);
+        const double margin = 0.1;
+        var line = new Line([], []);
+        double Fit(double want, double a, double c, double len) => c - a <= len ? (a + c) / 2 : Math.Clamp(want, a + len / 2, c - len / 2);
+
+        if (p.BarOn is "Ceiling" or "Floor")
+        {
+            var ceiling = p.BarOn == "Ceiling";
+            var u = ceiling ? hgt - stand : DesignScene.FloorTop(r) + 0.004;
+            double[] nn = Dir(up, ceiling ? -1 : 1);
+            if (!upright)
+            {
+                // Along the room, across at the drop point.
+                var len = Math.Min(p.BarLen, l1 - l0 - 2 * (sd + margin));
+                var lc = Fit(fl, l0 + sd + margin, l1 - sd - margin, len);
+                var (sl, sr) = Sides(lc, u);
+                var ac = Math.Clamp(fa, sl + sd + margin, Math.Max(sl + sd + margin, sr - sd - margin));
+                line.P.Add(W(ac, lc - len / 2, u)); line.P.Add(W(ac, lc + len / 2, u));
+            }
+            else
+            {
+                var lc = Math.Clamp(fl, l0 + sd + margin, Math.Max(l0 + sd + margin, l1 - sd - margin));
+                var (sl, sr) = Sides(lc, u);
+                var len = Math.Min(p.BarLen, sr - sl - 2 * (sd + margin));
+                var ac = Fit(fa, sl + sd + margin, sr - sd - margin, len);
+                line.P.Add(W(ac - len / 2, lc, u)); line.P.Add(W(ac + len / 2, lc, u));
+            }
+            line.N.Add(nn); line.N.Add(nn);
+            return line.P.Count == 2 && Dist(line.P[0], line.P[1]) > 0.05 ? line : null;
+        }
+
+        // On the wall nearest the drop point (by the room's plan).
+        var walls = new[] { Math.Abs(fa - lo[ax]), Math.Abs(hi[ax] - fa), Math.Abs(fl - l0), Math.Abs(l1 - fl) };
+        var wall = Array.IndexOf(walls, walls.Min());
+        var side = wall < 2; // (a side wall: across x; else an end wall)
+        var lowU = DesignScene.FloorTop(r) + 0.02;
+        var highU = hgt - sd - 0.02;
+        if (highU - lowU < 0.1)
+            return null;
+        // A point on the chosen wall at (along it, up), with the way into the room: a side wall out to the hull leans as the skin does.
+        (double[] P, double[] N) OnWall(double t, double u)
+        {
+            if (side)
+            {
+                var left = wall == 0;
+                double E(double uu) { var e = Sides(t, Math.Clamp(uu, 0, hgt)); return left ? e.L : e.R; }
+                var slope = hull ? (E(u + 0.1) - E(u - 0.1)) / 0.2 : 0;
+                var inward = left ? 1.0 : -1.0;
+                // The face's normal in (across, up): perpendicular to its slope, pointing into the room.
+                var nl = Math.Sqrt(1 + slope * slope);
+                var na = inward / nl;
+                var nu = -inward * slope / nl;
+                var a = E(u) + inward * (hull ? 0 : sd) + na * (stand - (hull ? 0 : sd));
+                var n = new double[3];
+                n[ax] = na; n[up] = nu * sg;
+                return (W(a, t, u + nu * (stand - (hull ? 0 : sd))), n);
+            }
+            var front = wall == 2;
+            var lw = front ? l0 + stand : l1 - stand;
+            return (W(t, lw, u), Dir(al, front ? 1 : -1));
+        }
+        if (!upright)
+        {
+            var u = Math.Clamp(p.BarUp, lowU, highU);
+            double t0, t1;
+            if (side)
+            {
+                (t0, t1) = (l0 + sd + margin, l1 - sd - margin);
+            }
+            else
+            {
+                var (sl, sr) = Sides(wall == 2 ? l0 : l1, u);
+                (t0, t1) = (sl + sd + margin, sr - sd - margin);
+            }
+            if (t1 - t0 < 0.1)
+                return null;
+            var len = Math.Min(p.BarLen, t1 - t0);
+            var tc = Fit(side ? fl : fa, t0, t1, len);
+            var n = side && hull ? Math.Clamp((int)Math.Ceiling(len / 0.5), 1, 64) : 1;
+            for (var k = 0; k <= n; k++)
+            {
+                var (pt, nn) = OnWall(tc - len / 2 + len * k / n, u);
+                line.P.Add(pt); line.N.Add(nn);
+            }
+        }
+        else
+        {
+            var len = Math.Min(p.BarLen, highU - lowU);
+            var uc = Fit(p.BarUp, lowU, highU, len);
+            double t;
+            if (side)
+                t = Math.Clamp(fl, l0 + sd + margin, Math.Max(l0 + sd + margin, l1 - sd - margin));
+            else
+            {
+                var (sl, sr) = Sides(wall == 2 ? l0 : l1, uc);
+                t = Math.Clamp(fa, sl + sd + margin, Math.Max(sl + sd + margin, sr - sd - margin));
+            }
+            var n = side && hull ? Math.Clamp((int)Math.Ceiling(len / 0.5), 1, 64) : 1;
+            for (var k = 0; k <= n; k++)
+            {
+                var (pt, nn) = OnWall(t, uc - len / 2 + len * k / n);
+                line.P.Add(pt); line.N.Add(nn);
+            }
+        }
+        return line;
+    }
+
+    // ---- the drawing
+
+    /// <summary>The strip's colour at the bar's brightness.</summary>
+    public static (byte R, byte G, byte B) StripColour(Piece p) => DesignMesh.Tone(DesignMesh.Hex(p.Beam), 0.3 + 0.7 * p.Bright);
+
+    /// <summary>Draws a bar along its line: the channel, then its strip as a lit run; false for any other piece (or a room bar with no room).</summary>
+    public static bool Draw(ShipDesign d, Piece p, DesignMesh m)
+    {
+        if (!IsBar(p.Kind))
+            return false;
+        if (LineOf(d, p) is not { } l)
+            return true; // (no room to stand in: nothing drawn; the checks say why)
+        var s = p.Size;
+        double hw = HalfW * s, dp = Depth * s, rise = StripRise * s, cap = 0.012 * s;
+        var c = StripColour(p);
+        var strip = $"#{c.R:x2}{c.G:x2}{c.B:x2}";
+        var last = l.P.Count - 2;
+        for (var i = 0; i <= last; i++)
+        {
+            var (a, b) = (l.P[i], l.P[i + 1]);
+            var len = Dist(a, b);
+            if (len < 1e-4)
+                continue;
+            var z = Norm(Sub(b, a));
+            var y = Norm(Add(l.N[i], l.N[i + 1], 1));
+            y = Norm(Add(y, z, -Dot(y, z))); // (square to the run)
+            var x = Cross(y, z);
+            double e0 = i == 0 ? cap : 0, e1 = i == last ? cap : 0;
+            m.Frame(a[0], a[1], a[2], x, y, z);
+            m.Box(-hw, 0, -e0, hw, dp, len + e1, Channel);
+            m.Glowing(() => m.Box(-hw * 0.7, dp - 0.004 * s, 0, hw * 0.7, dp + rise, len, strip));
+        }
+        return true;
+    }
+
+    /// <summary>The game's lamps along a bar (the ship's frame) a little off its strip, about one every <paramref name="spacing"/> metres, at most <paramref name="max"/>.</summary>
+    public static List<double[]> Lamps(ShipDesign d, Piece p, double spacing, int max)
+    {
+        var o = new List<double[]>();
+        if (LineOf(d, p) is not { } l || l.P.Count < 2)
+            return o;
+        var cum = new double[l.P.Count];
+        for (var i = 1; i < l.P.Count; i++)
+            cum[i] = cum[i - 1] + Dist(l.P[i - 1], l.P[i]);
+        var total = cum[^1];
+        var n = Math.Clamp((int)Math.Round(total / spacing), 1, max);
+        for (var k = 0; k < n; k++)
+        {
+            var t = total * (k + 0.5) / n;
+            var i = 1;
+            while (i < l.P.Count - 1 && cum[i] < t) i++;
+            var f = cum[i] - cum[i - 1] < 1e-9 ? 0 : (t - cum[i - 1]) / (cum[i] - cum[i - 1]);
+            var at = Lerp(l.P[i - 1], l.P[i], f);
+            var nn = Norm(Lerp(l.N[i - 1], l.N[i], f));
+            o.Add(Add(at, nn, Depth * p.Size + 0.12)); // (in front of the strip, so the bar's own channel never shades it)
+        }
+        return o;
+    }
+
+    private static double[] Add(double[] a, double[] b, double k) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
+    private static double[] Sub(double[] a, double[] b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+    private static double[] Lerp(double[] a, double[] b, double t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+    private static double Dot(double[] a, double[] b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    private static double Dist(double[] a, double[] b) => Math.Sqrt(Dot(Sub(a, b), Sub(a, b)));
+    private static double[] Norm(double[] v) { var l = Math.Sqrt(Dot(v, v)); return l < 1e-9 ? [0, 1, 0] : [v[0] / l, v[1] / l, v[2] / l]; }
+    private static double[] Cross(double[] a, double[] b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}

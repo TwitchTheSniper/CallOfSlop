@@ -519,7 +519,7 @@ public static partial class DesignParts
 
     private static DesignMesh Mirror(DesignMesh m, double cx)
     {
-        var o = new DesignMesh { Leaves = m.Leaves, Panes = m.Panes }; // (its triangles in the same order: its door leaves and glass too)
+        var o = new DesignMesh { Leaves = m.Leaves, Panes = m.Panes, Glows = m.Glows }; // (its triangles in the same order: its door leaves, glass and lit runs too)
         for (var t = 0; t < m.Tris; t++)
             for (var v = 2; v >= 0; v--)
             {
@@ -980,8 +980,11 @@ public static partial class DesignParts
     /// </summary>
     public const uint GlassAlpha = 90;
 
+    /// <summary>A lit vertex's alpha (a light bar's strip, a lit room's ceiling strips: DesignMesh.Glows): the design shader draws it unlit and bright.</summary>
+    public const uint GlowAlpha = 254;
+
     /// <summary>Is a look's vertex colour glass (<see cref="GlassAlpha"/>)?</summary>
-    public static bool IsGlass(uint colour) => colour >> 24 != 0xff;
+    public static bool IsGlass(uint colour) => colour >> 24 is not (0xff or GlowAlpha);
 
     /// <summary>Gathers triangles into one mesh: flat normals, each turned out from a middle (a hull's axis), colours tinted and made linear.</summary>
     internal sealed class LookBuilder
@@ -992,7 +995,8 @@ public static partial class DesignParts
         public List<float> Pos => _p; // (its corners so far, x y z a corner: what a collider is cut from)
 
         /// <param name="middle">What a normal faces away from: a point, or (NaN z) a line along z through x, y; all NaN: the triangle's own side (as drawn).</param>
-        public void AddTri(DesignMesh m, int t, Vector3 tint, Vector3 middle)
+        /// <param name="glow">Drawn unlit and bright (a lamp's face: <see cref="GlowAlpha"/>, which the design shader reads as glow).</param>
+        public void AddTri(DesignMesh m, int t, Vector3 tint, Vector3 middle, bool glow = false)
         {
             var glass = m.InPane(t);
             var i = t * 9;
@@ -1019,7 +1023,7 @@ public static partial class DesignParts
                 _n.Add(n.X); _n.Add(n.Y); _n.Add(n.Z);
                 var ci = (t * 3 + k) * 3;
                 var col = ci + 2 < m.C.Count ? new Vector3(m.C[ci], m.C[ci + 1], m.C[ci + 2]) / 255f * tint : tint;
-                _c.Add(glass ? Pack(col) & 0x00ffffffu | GlassAlpha << 24 : Pack(col));
+                _c.Add(glass ? Pack(col) & 0x00ffffffu | GlassAlpha << 24 : glow ? Pack(col) & 0x00ffffffu | GlowAlpha << 24 : Pack(col));
             }
         }
 

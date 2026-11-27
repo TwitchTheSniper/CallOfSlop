@@ -147,7 +147,7 @@ public sealed partial class Ui
         bool Inside(JsonElement k) => Str(k, "socket") == "seat";
         var groups = pieces.Select(p => Str(p, "group")).Distinct().ToList();
         int Order(string g) => Array.IndexOf(OutsideGroups, g) is var i and >= 0 ? i : Array.IndexOf(ShipDesigner.DesignFurnishings.Groups, g) is var j and >= 0 ? 100 + j : 200;
-        groups = [.. groups.OrderBy(g => pieces.Any(p => Str(p, "group") == g && Inside(p)) ? 1 : 0).ThenBy(Order)];
+        groups = [.. groups.OrderBy(Order)];
         EndRow();
         foreach (var f in new[] { "All", "Outside", "Inside" })
             if (WrapButton($"{f}##sdpalf{f}", _palCat == f))
@@ -162,40 +162,44 @@ public sealed partial class Ui
         ImGui.InputTextWithHint("##sdpalfind"u8, "Search pieces"u8, _palFind, ImGuiInputTextFlags.None);
         var find = ImGuiSafe.Text(_palFind).Trim();
         var shown = 0;
-        string? side = null;
-        foreach (var g in groups)
+        // Outside pieces first, then inside ones; a group with both (Lights) shows under each.
+        foreach (var inside in new[] { false, true })
         {
-            var inG = pieces.Where(p => Str(p, "group") == g).ToList();
-            var inside = inG.Any(Inside);
-            if (_palCat is "Outside" && inside || _palCat is "Inside" && !inside || _palCat is not ("All" or "Outside" or "Inside") && _palCat != g)
+            if (_palCat == "Outside" && inside || _palCat == "Inside" && !inside)
                 continue;
-            if (find.Length > 0)
-                inG = [.. inG.Where(p => Str(p, "name").Contains(find, StringComparison.OrdinalIgnoreCase) || Str(p, "desc").Contains(find, StringComparison.OrdinalIgnoreCase) || g.Contains(find, StringComparison.OrdinalIgnoreCase))];
-            if (inG.Count == 0)
-                continue;
-            var s = inside ? "Inside a room" : "Outside the hull";
-            if (s != side && _palCat is "All")
+            var head = false;
+            foreach (var g in groups)
             {
-                ImGui.Separator();
-                H2(s);
-                Hint(inside ? "Drop it on the hull by a room (or link it to one): it stands on that room's floor, a wall piece against the nearest wall." :
-                    "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside.");
+                if (_palCat is not ("All" or "Outside" or "Inside") && _palCat != g)
+                    continue;
+                var inG = pieces.Where(p => Str(p, "group") == g && Inside(p) == inside).ToList();
+                if (find.Length > 0)
+                    inG = [.. inG.Where(p => Str(p, "name").Contains(find, StringComparison.OrdinalIgnoreCase) || Str(p, "desc").Contains(find, StringComparison.OrdinalIgnoreCase) || g.Contains(find, StringComparison.OrdinalIgnoreCase))];
+                if (inG.Count == 0)
+                    continue;
+                if (!head)
+                {
+                    head = true;
+                    ImGui.Separator();
+                    H2(inside ? "Inside a room" : "Outside the hull");
+                    Hint(inside ? "Drop it on the hull by a room (or link it to one): it stands on that room's floor, a wall piece against the nearest wall." :
+                        "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside.");
+                }
+                H2(GroupTitle(g), $"{inG.Count}");
+                EndRow();
+                foreach (var k in inG)
+                {
+                    var name = Str(k, "name");
+                    var sock = Has(k, "socket") && !inside;
+                    PieceTile(name, _paletteDrag?.Kind == name, sock);
+                    shown++;
+                    if (ImGui.IsItemActivated())
+                        PaletteStart(name);
+                    if (ImGui.IsItemHovered())
+                        ImGuiSafe.WrappedTooltip($"{Str(k, "desc")}\n{(inside ? "in a room" : Has(k, "socket") ? "needs " + Str(k, "needs") : Str(k, "where") == "skin" ? "on the skin" : "on a hull's end")}", 320 * _scale);
+                }
+                EndRow();
             }
-            side = s;
-            H2(GroupTitle(g), $"{inG.Count}");
-            EndRow();
-            foreach (var k in inG)
-            {
-                var name = Str(k, "name");
-                var sock = Has(k, "socket") && !Inside(k);
-                PieceTile(name, _paletteDrag?.Kind == name, sock);
-                shown++;
-                if (ImGui.IsItemActivated())
-                    PaletteStart(name);
-                if (ImGui.IsItemHovered())
-                    ImGuiSafe.WrappedTooltip($"{Str(k, "desc")}\n{(Inside(k) ? "in a room" : Has(k, "socket") ? "needs " + Str(k, "needs") : Str(k, "where") == "skin" ? "on the skin" : "on a hull's end")}", 320 * _scale);
-            }
-            EndRow();
         }
         if (shown == 0)
             Hint("No piece matches.");
@@ -1392,6 +1396,33 @@ public sealed partial class Ui
                 Slider("Extension", Math.Round(D(p, "extend") * 100), 0, Math.Round(D(p, "extendMax", ShipDesigner.DesignRamp.MaxExtend) * 100), 5, " cm",
                     v => Cmd(C("setPiece", ("id", pid), ("extend", v / 100))), "pcext", Dflt("ramp", "extend", 100));
                 Hint("F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.");
+            }
+            if (B(p, "bar"))
+            {
+                // A light bar (DesignLightBars, Karl 2026-11-27): its length, colour and brightness; a room's, where in the room and how high.
+                H3("Light bar");
+                Slider("Length", D(p, "barLen"), ShipDesigner.DesignLightBars.MinLen, ShipDesigner.DesignLightBars.MaxLen, 0.05, " m",
+                    v => Cmd(C("setPiece", ("id", pid), ("barLen", v))), "pcbl", Dflt("bar", "barLen"));
+                Slider("Brightness", Math.Round(D(p, "bright") * 100), 5, 100, 5, "%", v => Cmd(C("setPiece", ("id", pid), ("bright", v / 100))), "pcbb", Dflt("bar", "bright", 100));
+                ImGui.Text("Colour"u8);
+                Row();
+                Colour("pcbc" + pid, Str(p, "beam", ShipDesigner.DesignLightBars.DefColour), v => Cmd(C("setPiece", ("id", pid), ("beam", v))));
+                Row();
+                if (ImGui.SmallButton("R##pcbcr"u8))
+                    Cmd(C("setPiece", ("id", pid), ("beam", ShipDesigner.DesignLightBars.DefColour)));
+                if (Has(p, "barOn"))
+                {
+                    ImGui.Text("On the"u8);
+                    Row();
+                    MatCombo("pcbo" + pid, Str(p, "barOn", "Wall"), ShipDesigner.DesignLightBars.Mounts, v => Cmd(C("setPiece", ("id", pid), ("barOn", v))));
+                    if (Str(p, "barOn") == "Wall")
+                        Slider("Height", D(p, "barUp"), 0, Math.Max(0.5, D(p, "barUpMax", 3)), 0.05, " m", v => Cmd(C("setPiece", ("id", pid), ("barUp", v))), "pcbu", Dflt("bar", "barUp"));
+                    Hint(Str(p, "barRoom") is { Length: > 0 } br
+                        ? $"In {br}. {(Str(p, "barOn") == "Wall" ? "It goes on the wall nearest where it was dropped, its middle this high over the floor (turned 90 deg: upright)." : "It runs along the room through where it was dropped (turned 90 deg: across).")} It never runs past the room's corners."
+                        : "It has no room: drop it on the skin by a room, or pick its room below.");
+                }
+                else
+                    Hint("Along the hull it follows the skin's curve; turned it runs straight across. In the game it lights what is round it, always on.");
             }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))
