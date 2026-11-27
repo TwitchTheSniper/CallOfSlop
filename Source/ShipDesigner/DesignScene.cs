@@ -312,7 +312,7 @@ public static partial class DesignScene
         var hc = CladView(d, h);
         // Each opening's clearance from the plates' height (Karl, 2026-11-25: a default that keeps plates off the frame).
         foreach (var k in cutouts)
-            k.Resolve((hc.Clad == "Heavy" ? 0.20 : 0.08) * hc.CladDepth);
+            k.Resolve(HullBody.CladRise(hc.Clad) * hc.CladDepth);
         if (hc.Clad != "Off")
             cladSize = CladBody(skinClad, hc, cx, (p, q) =>
             {
@@ -379,7 +379,7 @@ public static partial class DesignScene
     private static double AutoGap(ShipDesign d, HullBody h, double band)
     {
         var c = CladView(d, h);
-        return c.Clad == "Off" ? band + 0.03 : band + 0.5 * (c.Clad == "Heavy" ? 0.20 : 0.08) * c.CladDepth + 0.03;
+        return c.Clad == "Off" ? band + 0.03 : band + 0.5 * HullBody.CladRise(c.Clad) * c.CladDepth + 0.03;
     }
 
     /// <summary>The body as its cladding is laid: itself, or (matched) a copy with the other body's cladding and damage, its own paint and shape.</summary>
