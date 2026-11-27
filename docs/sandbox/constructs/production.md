@@ -2424,7 +2424,7 @@ so it can push pieces it's finished constructing out into the conveying system."
 - **An oven's way in.** A run whose line, run on 0.3 m past its last tile, meets a Bake Oven's bed is taken by that oven
   (`ConstructRollOut.OvenOf`). A body rolling along it waits at the run's end until the bed is empty with its doors open and no other kit is
   bound there, then goes on onto the bed's middle as a crane sets a kit (`ConstructBakeOven.Landing`, a quarter turn if that is what
-  fits the clear cells), turning as it goes, and is let go; the oven bakes it. A kit for an oven's order whose station's way out leads to
+  fits the clear cells; a kit too tall standing is laid on its side, as the Zero Day Stern's 9.3 m ring lies 4.5 m in a 6 m tunnel), turning as it goes, and is let go; the oven bakes it. A kit for an oven's order whose station's way out leads to
   that oven rolls (the oven's `Kits` leaves it to the station rather than calling a lifter), and the oven counts it as on its way
   (`OvenKits`) from the start of the roll. A piece riding a run the oven takes, waiting at its end while the bed is empty, comes off as
   a loose body and rolls onto the bed the same way (`RiderOnto`), so a baked part can be sent in to be un-baked.

@@ -441,7 +441,10 @@ public static class ConstructRollOut
             var leg = Vector3.Distance(from, to);
             r.T += ConstructConveyor.Speed * dt;
             var f = leg < 1e-3f ? 1f : MathF.Min(1f, r.T / leg);
-            Pose(c, b, Vector3.Lerp(from, to, f), r.Leg == 3 ? Quaternion.Slerp(r.Rot, r.RotD, f) : r.Rot);
+            // A kit the oven lays on its side tips over in the leg's first quarter, at the tunnel's mouth, not half tipped under its roof
+            // (the Zero Day Stern's 9.3 m ring in a 6 m tunnel, 2026-11-27); a turn about the up runs the whole leg.
+            var ft = r.Leg == 3 && Vector3.Dot(Vector3.Transform(Vector3.UnitY, r.Rot), Vector3.Transform(Vector3.UnitY, r.RotD)) < 0.9f ? MathF.Min(1f, f * 4) : f;
+            Pose(c, b, Vector3.Lerp(from, to, f), r.Leg == 3 ? Quaternion.Slerp(r.Rot, r.RotD, ft) : r.Rot);
             if (f < 1f)
                 continue;
             r.T = 0;
