@@ -805,6 +805,8 @@ public static class ConstructWeapons
                 continue; // (a merged receiver: a wire into any of its members)
             var from = c.Wires[w].From;
             var logic = c.Parts[from].D.Logic;
+            if (logic == CLogic.Or && RelayedDirector(c, from) is var relayed and >= 0)
+                (from, logic) = ((ushort)relayed, CLogic.Director); // (a director's order passed on by OR gates with one wire in each: a ship's long fire-control run, DesignParts.Systems.cs)
             if (logic == CLogic.Director)
                 g.Director = (short)from;
             else if (logic == CLogic.TurretModule && g.Turret < 0 && c.Wires[w].FromPort == 0 && ConstructModules.SeatOf(c, from) is var seat and >= 0)
@@ -837,6 +839,36 @@ public static class ConstructWeapons
             s = jt.ParentSeg;
         }
     }
+
+    /// <summary>
+    /// The Fire Director an OR gate passes on (<paramref name="gate"/>, and each gate before it, with one wire in): a run of relays from a
+    /// director, as a ship design's wire longer than a wire's reach is laid. -1 when the run starts anywhere else. Not per tick (a rebuild's).
+    /// </summary>
+    private static int RelayedDirector(Construct c, int gate)
+    {
+        for (var hop = 0; hop < MaxRelayHops; hop++)
+        {
+            var src = -1;
+            for (var w = 0; w < c.WireCount; w++)
+                if (c.Wires[w].To == gate && c.Wires[w].From < c.PartCount)
+                {
+                    if (src >= 0)
+                        return -1; // (a gate with two inputs is logic, not a relay)
+                    src = c.Wires[w].From;
+                }
+            if (src < 0)
+                return -1;
+            var logic = c.Parts[src].D.Logic;
+            if (logic == CLogic.Director)
+                return src;
+            if (logic != CLogic.Or)
+                return -1;
+            gate = src;
+        }
+        return -1;
+    }
+
+    private const int MaxRelayHops = 32; // (a 7 m relay each: over 200 m of wire)
 
     /// <summary>Rounds left in the boxes gun <paramref name="k"/>'s feed reaches.</summary>
     public static int BoxRounds(Construct c, int k, ConstructWorld? world = null)

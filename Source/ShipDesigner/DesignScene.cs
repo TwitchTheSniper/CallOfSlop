@@ -1521,7 +1521,7 @@ public static partial class DesignScene
                 m.Frame(ro[0] + oo[0] * p.Size, ro[1] + oo[1] * p.Size, ro[2] + oo[2] * p.Size, L(ax), L(ay), L(az), p.Size);
             });
         }
-        else if (!DesignHangar.Draw(d, p, w, m) && !DesignFittings.Draw(p, w, m))
+        else if (!DesignHangar.Draw(d, p, w, m, shut) && !DesignFittings.Draw(p, w, m))
             kind.Draw(m);
         if (p.Clad > 0 && (DesignHangar.OpeningOf(p, w) is { } so ? so : kind.Socket == "airlock" ? PieceDocking.FootprintOf(p, kind) : kind.Opening) is { } op)
         {
