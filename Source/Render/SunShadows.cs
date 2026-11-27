@@ -185,7 +185,9 @@ public static unsafe class SunShadows
         // in orbit from below too and a planetoid's "up" isn't world +Y)
         if (!On || ForcedOff || _broken || world == null || world.Bodies.Count == 0 || Lighting.Current.SunColor.LengthSquared() < 1e-6f || CameraFeeds.InPass)
             return;
+        var pick = Perf.Measure(PerfArea.CSunPick); // (the F9 window's rows under "Sun shadows")
         var n = PickNear(world, cam, Reach, alpha, blendTicks);
+        pick.Dispose();
         if (n == 0 || !Init())
         {
             Clear(n);
@@ -234,12 +236,19 @@ public static unsafe class SunShadows
         _prog.Use();
         Native.glBindVertexArray(_vao);
         int bodies = 0, boxes = 0;
+        pick = Perf.Measure(PerfArea.CSunPick);
         var stillKey = ClassifyPicks(n, alpha, blendTicks, out var moving);
+        pick.Dispose();
+        if (Perf.On)
+            using (Perf.Measure(PerfArea.CSunCasters))
+                for (var k = 0; k < n; k++)
+                    CasterOf(Picks[k].Body); // (made here first while F9 times: a changed body's caster lists are billed apart from the map's draw; the draws below find them made)
         var key = Mix(Mix(Mix(Mix(stillKey, BitConverter.SingleToInt32Bits(centre.X)), BitConverter.SingleToInt32Bits(centre.Y)), BitConverter.SingleToInt32Bits(centre.Z)),
             BitConverter.SingleToInt32Bits(sun.X) ^ (long)BitConverter.SingleToInt32Bits(sun.Y) << 20 ^ (long)BitConverter.SingleToInt32Bits(sun.Z) << 40) | 1; // (never 0: no map yet)
         if (key != Cache.Key)
         {
             // The still bodies into their own map, kept until something it was drawn from changes.
+            using var still = Perf.Measure(PerfArea.CSunStill);
             Cache.TargetStill(_fbo, 0);
             Native.glClear(GL_DEPTH_BUFFER_BIT); // (the game's clear depth: the far end either way)
             _stillBodies = _stillBoxes = 0;
@@ -254,6 +263,7 @@ public static unsafe class SunShadows
             Cache.LiveDiffers = moving > 0;
             if (moving > 0)
             {
+                using var movers = Perf.Measure(PerfArea.CSunMoving);
                 Native.glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
                 DrawPicked(n, lightClip, centre, sun, Reach * 1.415f, alpha, blendTicks, ref bodies, ref boxes, Which.Moving);
             }

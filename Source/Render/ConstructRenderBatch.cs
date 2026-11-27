@@ -974,6 +974,7 @@ public static partial class ConstructRender
         var check = (++set.Draws + c.Id) % MergeCheckFrames == 0; // (counted in its own draws: a camera pass or a frame it is culled in doesn't skip a check)
         if (set.Stamp != c.StructStamp || set.Parts != c.PartCount || set.Doors != c.DoorEpoch) // (parts taken out and not yet rebuilt: the indices moved; the door list was built again)
         {
+            using var planned = Perf.Measure(PerfArea.CBPlan); // (the F9 window's rows under "Bodies: cull, chunks, parts")
             c.EnsureDoors();
             Plan(gfx, set, c);
             set.Stamp = c.StructStamp;
@@ -983,6 +984,7 @@ public static partial class ConstructRender
         }
         else if (check && DynKey(c) is var dyn && dyn != set.Dyn)
         {
+            using var planned = Perf.Measure(PerfArea.CBPlan);
             Plan(gfx, set, c);
             set.Dyn = dyn;
         }
@@ -1002,18 +1004,21 @@ public static partial class ConstructRender
             _waitToken = 1;
         }
         var previewed = PreviewBody == c; // (a lamp's panel is open: its chunk's looks follow the colour being picked every frame)
+        var stage = Perf.Measure(PerfArea.CBChunks);
         for (var k = 0; k < set.ChunkCount; k++)
         {
             var ch = set.Chunks[k];
             if (ch.Dirty && _mergeBudget > 0)
             {
-                BuildChunk(gfx, c, ch);
+                using (Perf.Measure(PerfArea.CBChunkBuild))
+                    BuildChunk(gfx, c, ch);
                 _mergeBudget -= ch.Boxes;
                 LastMergedBuilt++;
             }
             if (ch.Dirty)
             {
                 // Waiting its turn to be rebuilt: drawn part by part, as it was before merged meshes.
+                using var waiting = Perf.Measure(PerfArea.CBChunkWait);
                 LastMergedWaiting++;
                 var undrawn = cull && !ch.Ever && WaitUnbuilt(c, ch, body, alpha, origin);
                 Grow(ref _partWaiting, c.PartCount);
@@ -1093,7 +1098,9 @@ public static partial class ConstructRender
             LastLodDropped += ch.Gl.Slots - drawnSlots;
             n += drawnSlots;
         }
+        stage.Dispose();
         AllocProfile.Mark("cr: walked parts"); // (the benchmark's --trace-frame)
+        stage = Perf.Measure(PerfArea.CBWalked);
         for (var k = 0; k < set.WalkedCount; k++)
         {
             var i = set.Walked[k];
@@ -1137,8 +1144,11 @@ public static partial class ConstructRender
             }
         }
         LastBatchWalked += set.WalkedCount;
+        stage.Dispose();
         if (set.ChunkMapStamp != set.Stamp)
-            DormMap(gfx, c, set);
+            using (Perf.Measure(PerfArea.CBIdle))
+                DormMap(gfx, c, set);
+        stage = Perf.Measure(PerfArea.CBExtra);
         if (!Matrix4x4.Invert(body, out var invBody))
             invBody = Matrix4x4.Identity;
         for (var k = 0; k < set.ExtraCount; k++)
@@ -1214,9 +1224,11 @@ public static partial class ConstructRender
                     set.ExtraSeen[k] = Vector4.Zero; // (nothing drawn: a far glow, a chunk still waiting)
             }
         }
+        stage.Dispose();
         for (var q = 0; q < set.ChunkCount; q++)
             if (set.Chunks[q].DormDirty && (set.Chunks[q].DormWake || _dormBudget-- > 0))
-                DormBuild(gfx, set, q);
+                using (Perf.Measure(PerfArea.CBIdle))
+                    DormBuild(gfx, set, q);
         drawn += n;
         return true;
     }

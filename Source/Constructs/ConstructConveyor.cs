@@ -1040,21 +1040,29 @@ public static class ConstructConveyor
         {
             var c = bodies[ci];
             if (c.RollersStale && !c.Dirty)
-                RollerRuns.Sync(world, c); // (Roller Tile runs after a rebuild: each run's conveyor as its tiles are)
+                using (Perf.Measure(PerfArea.PConvRollers)) // (the F9 window's rows under "Conveyors")
+                    RollerRuns.Sync(world, c); // (Roller Tile runs after a rebuild: each run's conveyor as its tiles are)
             if (c.Logi is { OffAny: > 0 })
-                ConstructLogistics.Piles(world, c); // (a pile set off beside a Router: the pieces taken away leave it, the last ends its Alarm)
+                using (Perf.Measure(PerfArea.PConvLogistics))
+                    ConstructLogistics.Piles(world, c); // (a pile set off beside a Router: the pieces taken away leave it, the last ends its Alarm)
             if (c.ConveyedCount == 0)
             {
                 if (c.Logi is { AnyOut: true } && !c.Dirty)
-                    ConstructLogistics.Refresh(c, server: true); // (the last piece taken off by hand: its Router's Alarm and Moving go to 0)
+                    using (Perf.Measure(PerfArea.PConvLogistics))
+                        ConstructLogistics.Refresh(c, server: true); // (the last piece taken off by hand: its Router's Alarm and Moving go to 0)
                 continue;
             }
             if (c.Dirty)
-                c.Rebuild();
-            if (StepBody(world, query, c, dt, server: true))
+                using (Perf.Measure(PerfArea.PConvRebuild))
+                    c.Rebuild();
+            bool moved;
+            using (Perf.Measure(PerfArea.PConvRiders))
+                moved = StepBody(world, query, c, dt, server: true);
+            if (moved)
             {
                 world.RidersChanged(c);
-                ConstructLogistics.Refresh(c, server: true);
+                using (Perf.Measure(PerfArea.PConvLogistics))
+                    ConstructLogistics.Refresh(c, server: true);
             }
             c.ConveyedStamp = now;
         }

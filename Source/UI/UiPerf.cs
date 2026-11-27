@@ -200,6 +200,7 @@ public sealed partial class Ui
 
             // ---- Frame time ----
             ImGui.Text($"{s.Fps:0} fps   avg {s.AvgMs:0.00} ms   min {s.MinMs:0.00}   max {s.MaxMs:0.00}   1% low {s.Low1Ms:0.00} ms ({s.Low1Fps:0} fps)   {s.Frames} frames");
+            DrawLimitLine(s);
             if (FrameLimiter.ActiveFps > 0)
                 ImGuiSafe.TextColored(PerfCapText, $"Max FPS cap {FrameLimiter.ActiveFps} ({1000f / FrameLimiter.ActiveFps:0.0} ms, the blue line): the limiter waits {s.AreaAvg[(int)PerfArea.Limiter]:0.00} ms a frame on average (not part of Swap)");
             if (s.WorstBack[0] >= 0)
@@ -644,6 +645,27 @@ public sealed partial class Ui
             ImGui.Text($"horde: crowd {game.CrowdSeen.Total}  drawn {Program.CrowdDrawnNear + Program.CrowdDrawnMid + Program.CrowdDrawnFar}");
     }
 
+    /// <summary>The window's "limited by" line: CPU or GPU, at a glance (PerfLimit.cs; over the last second).</summary>
+    private static void DrawLimitLine(PerfStats s)
+    {
+        var col = LimitColour(s.Limit);
+        ImGuiSafe.TextColored(col, $"Limited by: {PerfLimit.Label(s.Limit)}");
+        ImGui.SameLine();
+        if (s.LimitGpuMs >= 0)
+            ImGuiSafe.TextColored(Dim, $"CPU {s.LimitCpuMs:0.00} ms busy, GPU {s.LimitGpuMs:0.00} ms, Swap wait {s.AreaAvg[(int)PerfArea.Swap]:0.00}: {PerfLimit.Hint(s.Limit)}");
+        else
+            ImGuiSafe.TextColored(Dim, $"CPU {s.LimitCpuMs:0.00} ms busy, no GPU timer, Swap wait {s.AreaAvg[(int)PerfArea.Swap]:0.00}: {PerfLimit.Hint(s.Limit)}");
+    }
+
+    private static float4 LimitColour(PerfLimitKind k) => k switch
+    {
+        PerfLimitKind.Cpu => new float4(1f, 0.62f, 0.25f, 1f),
+        PerfLimitKind.Gpu => new float4(0.72f, 0.55f, 1f, 1f),
+        PerfLimitKind.Even => new float4(1f, 0.9f, 0.4f, 1f),
+        PerfLimitKind.VSync or PerfLimitKind.Cap => new float4(0.45f, 0.85f, 0.5f, 1f),
+        _ => Dim,
+    };
+
     private void DrawPerfOverlay()
     {
         var s = _perfStats;
@@ -655,6 +677,7 @@ public sealed partial class Ui
         if (ImGui.Begin("##perfoverlay"u8, flags))
         {
             ImGui.Text($"{s.Fps:0} fps  avg {s.AvgMs:0.0}  max {s.MaxMs:0.0}  1% low {s.Low1Ms:0.0} ms");
+            ImGuiSafe.TextColored(LimitColour(s.Limit), $"limit: {PerfLimit.Label(s.Limit)}  (CPU {s.LimitCpuMs:0.00}  GPU {(s.LimitGpuMs >= 0 ? s.LimitGpuMs : 0f):0.00} ms)");
             DrawCaptureOverlayLine();
             DrawFrameGraph(new float2(240 * _scale, 44 * _scale), s.MaxMs > 36 ? 70f : 40f, false);
             // The three busiest roots (by average).
