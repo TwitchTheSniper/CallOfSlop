@@ -487,6 +487,86 @@ public static partial class DesignParts
         Weld(els, els.Count - 2, els.Count - 1);
     }
 
+    /// <summary>
+    /// A boarding ramp (DesignRamp, Karl 2026-11-27), drawn stowed: its frame, well and sills collide as boxes; its ramp (leaf 0) rides a
+    /// motor hinge on its fore edge at the room's floor ("liftramp{id}.j0", ".car"), and its extension (leaf 1) a piston on the ramp
+    /// (".j1", ".ext") that runs out aft along it. The two are a <see cref="JointChain"/>: F (<see cref="LiftUse"/>) opens both, the ramp
+    /// swings down first, then the extension runs out; shut, the extension comes in first. Each moves as any joint, so the pose, the
+    /// wire and the save carry it, and its colliders ride its segment. <paramref name="floor"/>: its room's floor in from the skin (m).
+    /// </summary>
+    private static void RampLeaves(in PieceAt a, DesignMesh m, double floor)
+    {
+        var (p, e, els) = (a.P, a.E, a.Els);
+        FrameBoxes(e, m);
+        (int From, int To) Range(int leaf) => m.Leaves?.Find(l => l.Leaf == leaf) is { } l ? (l.From, l.To) : (0, 0);
+        var (f0, t0) = Range(0);
+        var (f1, t1) = Range(1);
+        if (t0 <= f0 || t1 <= f1)
+        {
+            Console.WriteLine($"[design] the {p.Kind} {e.Id} draws no ramp or no extension: it has none");
+            return;
+        }
+        var id = "liftramp" + e.Id.Replace('.', '_');
+        var car = Leaf($"{id}.car", p.Kind, m, f0, t0, a.X, a.Y, a.Z);
+        var ext = Leaf($"{id}.ext", $"{p.Kind} extension", m, f1, t1, a.X, a.Y, a.Z);
+        (car.Fn, car.Door, car.Kind) = ("", null, "lift");
+        (ext.Fn, ext.Door, ext.Kind) = ("", null, "lift");
+        var joints = 0;
+        foreach (var x in els)
+            if (x.Joint != null)
+                joints++;
+        var run = (float)DesignRamp.ExtendOf(p);
+        var need = run > 0.01f ? 2 : 1;
+        if (joints + need > Construct.MaxJoints)
+        {
+            // (stowed and solid: the ramp is drawn, but doesn't lower)
+            Console.WriteLine($"[design] the {p.Kind} {e.Id} doesn't lower: the body's {Construct.MaxJoints} joints are all used (stowed, solid)");
+            els.Add(car);
+            Weld(els, a.At, els.Count - 1);
+            els.Add(ext);
+            Weld(els, a.At, els.Count - 1);
+            return;
+        }
+        // The hinge, turned so that a positive angle swings the ramp's far end (aft of it) out of the skin.
+        var w = a.W;
+        var hinge = V(DesignRamp.Hinge(p, w, floor));
+        var axis = NearestDir(a.X);
+        if (Vector3.Dot(Vector3.Cross(ConstructParts.DirVector(axis), -a.Z), a.Y) < 0)
+            axis ^= 1;
+        var angle = (float)DesignRamp.Angle(floor);
+        var secs = (float)DesignRamp.Seconds;
+        var length = (float)(3.2 * p.Size * p.Hole) + run;
+        var ram = new Element
+        {
+            Id = $"{id}.j0", Kind = "lift", Name = "Boarding ramp hinge", Kg = 20f, NoCollider = true, BoxMin = hinge - new Vector3(0.05f), BoxMax = hinge + new Vector3(0.05f),
+            Joint = new JointSpec { Type = JointType.Motor, Axis = axis, Min = 0, Max = angle, Speed = angle / secs, Strength = LiftStrength * length, Pivot = hinge, Chain = need == 2 ? JointChain.Leads : JointChain.None },
+        };
+        els.Add(ram);
+        Weld(els, a.At, els.Count - 1);
+        car.Seg = (byte)(joints + 1);
+        els.Add(car);
+        Weld(els, els.Count - 2, els.Count - 1);
+        var carAt = els.Count - 1;
+        if (need == 1)
+        {
+            ext.Seg = car.Seg; // (no run: it stays nested under the ramp)
+            els.Add(ext);
+            Weld(els, carAt, els.Count - 1);
+            return;
+        }
+        var mid = (ext.BoxMin + ext.BoxMax) * 0.5f;
+        var slide = new Element
+        {
+            Id = $"{id}.j1", Kind = "lift", Name = "Boarding ramp extension ram", Kg = 15f, NoCollider = true, Seg = car.Seg, BoxMin = mid - new Vector3(0.05f), BoxMax = mid + new Vector3(0.05f),
+            Joint = new JointSpec { Type = JointType.Piston, Axis = NearestDir(-a.Z), Min = 0, Max = run, Speed = MathF.Max(run / secs, 0.2f), Strength = LiftStrength, Pivot = mid, Chain = JointChain.Follows },
+        };
+        els.Add(slide);
+        Weld(els, carAt, els.Count - 1);
+        ext.Seg = (byte)(joints + 2);
+        els.Add(ext);
+        Weld(els, els.Count - 2, els.Count - 1);
+    }
+
     /// <summary>Which of a place's axes is nearest the ship's up (0 X, 1 Y, 2 Z), as DesignHangar reads a bay's.</summary>
     private static int Upright(in PieceAt a)
     {

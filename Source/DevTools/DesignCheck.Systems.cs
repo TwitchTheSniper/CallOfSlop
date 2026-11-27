@@ -360,6 +360,7 @@ public static partial class DesignCheck
         Add("Docking cradle", front + len * 0.55, 1);
         Add("Lift platform", front + len * 0.3, 0);
         Add("Ramp deck", front + len * 0.8, 0);
+        Add(DesignRamp.Kind, front + len * 0.15, 0).Extend = 2; // (Karl, 2026-11-27: it hinges down, then runs out)
         if (DesignParts.Canon(d.ToJson()) is not { } text || DesignParts.Register(text) is not { } hash)
         {
             r.Fail($"--systems: the hangar test ship isn't a design: {DesignParts.LastRefusal}");
@@ -492,6 +493,33 @@ public static partial class DesignCheck
             Tick(8 * World.TickRate);
             var jt = n > 0 ? c.Joints[slots[0]] : default;
             Say(n == 1 && why == "" && MathF.Abs(jt.Angle - jt.Max) < 0.02f * MathF.Max(1, jt.Max), $"F lets the {what.ToLowerInvariant()} down: {(n == 1 ? $"its {(jt.Slides ? "piston" : "hinge")} at {jt.Angle:0.00} of {jt.Max:0.00}" : $"{n} joints")} ({(why == "" ? "moved" : why)})");
+        }
+
+        // 3b. The boarding ramp: F swings it down, then runs its extension out; F again brings the extension in, then swings it up.
+        {
+            var car = Find(x => x.Name.Contains(" liftramp", StringComparison.Ordinal) && x.Name.EndsWith(".car", StringComparison.Ordinal));
+            var ext = Find(x => x.Name.Contains(" liftramp", StringComparison.Ordinal) && x.Name.EndsWith(".ext", StringComparison.Ordinal));
+            Span<int> slots = stackalloc int[Construct.MaxJoints];
+            var n = car < 0 ? 0 : DesignParts.LiftJoints(c, car, slots);
+            if (car < 0 || ext < 0 || n != 2)
+                r.Fail($"--systems: the boarding ramp wasn't made as a hinge and a piston (ramp {car}, extension {ext}, {n} joints)");
+            else
+            {
+                int hinge = slots[0], piston = slots[1];
+                string State() => $"hinge {c.Joints[hinge].Angle * 180 / MathF.PI:0.0} of {c.Joints[hinge].Max * 180 / MathF.PI:0.0} deg, extension {c.Joints[piston].Angle:0.00} of {c.Joints[piston].Max:0.00} m";
+                Vector3 ExtAt() { c.SolidBox(ext, 0, out var ce, out _); c.SegPose(c.Parts[ext].Seg, out var eq, out var et); return c.ToWorld(et + Vector3.Transform(ce, eq)); }
+                var stowed = ExtAt();
+                var why = DesignParts.LiftUse(c, car, c.ToWorld(Vector3.Zero));
+                Tick(World.TickRate); // (1 s: the hinge on its way, the extension still in)
+                Say(why == "" && c.Joints[hinge].Angle > 0.1f && c.Joints[piston].Angle < 0.02f, $"F starts the ramp down, its extension waiting: {State()} after 1 s");
+                Tick(5 * World.TickRate);
+                Say(MathF.Abs(c.Joints[hinge].Angle - c.Joints[hinge].Max) < 0.03f && MathF.Abs(c.Joints[piston].Angle - c.Joints[piston].Max) < 0.03f, $"then runs the extension out: {State()} after 6 s; its middle moved {Vector3.Distance(ExtAt(), stowed):0.00} m, {Vector3.Dot(c.ToWorld(Vector3.Zero) - ExtAt(), Vector3.UnitY) - Vector3.Dot(c.ToWorld(Vector3.Zero) - stowed, Vector3.UnitY):0.00} m down");
+                why = DesignParts.LiftUse(c, car, c.ToWorld(Vector3.Zero));
+                Tick(World.TickRate + World.TickRate / 2);
+                Say(why == "" && c.Joints[piston].Angle < c.Joints[piston].Max - 0.3f && c.Joints[hinge].Angle > c.Joints[hinge].Max - 0.03f, $"F again brings the extension in first: {State()} after 1.5 s");
+                Tick(5 * World.TickRate);
+                Say(c.Joints[hinge].Angle < 0.03f && c.Joints[piston].Angle < 0.03f && Vector3.Distance(ExtAt(), stowed) < 0.05f, $"then swings it up, stowed: {State()} after 6.5 s");
+            }
         }
 
         // 4. A joined client: the carrier, its door, its joints, and the craft let go, through the wire.

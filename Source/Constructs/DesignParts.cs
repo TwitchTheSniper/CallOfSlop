@@ -264,6 +264,7 @@ public static partial class DesignParts
         public float Min, Max; // radians (metres for a piston)
         public float Speed, Strength; // radians or metres a second; N m or N
         public bool Limited = true;
+        public JointChain Chain; // a two-stage pair's (a boarding ramp's hinge Leads, its extension Follows: ConstructPhysics.Latched)
     }
 
     /// <summary>What a piece kind's work (<see cref="KindTable.Piece"/>) is handed: the piece, its copy's element and index, its copy's place, the list.</summary>
@@ -815,7 +816,7 @@ public static partial class DesignParts
         {
             def.Role = j.Type == JointType.Passive ? PartRole.Hinge : PartRole.Joint;
             (def.JointType, def.JointPivot, def.JointAxis, def.JointMin, def.JointMax) = (j.Type, j.Pivot, j.Axis, j.Min, j.Max);
-            (def.MotorSpeed, def.MotorStrength, def.JointLimited) = (j.Speed, j.Strength, j.Limited);
+            (def.MotorSpeed, def.MotorStrength, def.JointLimited, def.JointChain) = (j.Speed, j.Strength, j.Limited, j.Chain);
         }
         if (e.Fn.Length > 0 && Kinds.Value.Fns.TryGetValue(e.Fn, out var fn))
             fn.Finish?.Invoke(e, def);

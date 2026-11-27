@@ -1195,6 +1195,14 @@ public sealed partial class Ui
                 MatCombo("seatrole" + pid, Str(p, "role", ShipDesigner.DesignSeats.DefRole), ShipDesigner.DesignSeats.Roles, v => Cmd(C("setPiece", ("id", pid), ("role", v))));
                 Hint(Str(p, "role") == "Helm" ? "The helm flies the ship: its drives and RCS answer this seat, with nothing to wire." : "It stands on its room's floor, facing the bow (turn it with Turn left and right).");
             }
+            if (Str(p, "kind") == ShipDesigner.DesignRamp.Kind)
+            {
+                // A boarding ramp's extension (DesignRamp, Karl 2026-11-27): how far its second section runs out once it is down.
+                H3("Ramp");
+                Slider("Extension", Math.Round(D(p, "extend") * 100), 0, Math.Round(D(p, "extendMax", ShipDesigner.DesignRamp.MaxExtend) * 100), 5, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("extend", v / 100))), "pcext", Dflt("ramp", "extend", 100));
+                Hint("F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.");
+            }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))
                 Checkbox("Both bodies of the pair##sdpcp", B(p, "pair"), v => Cmd(C("setPiece", ("id", pid), ("pair", v))));

@@ -23,6 +23,7 @@ public static partial class DesignParts
             if (one.Tris == 0)
                 continue;
             var w0 = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? DesignScene.Where(h, p);
+            var rampFloor = p.Kind == DesignRamp.Kind ? DesignScene.RampDepth(d, p, w0) ?? 0 : 0; // (one drawing for every copy: its mirrors are of it)
             var sets = new List<(DesignMesh M, int Copy, DesignScene.Place W)> { (one, p.Copy, w0) };
             if (p.Mirror)
             {
@@ -49,6 +50,8 @@ public static partial class DesignParts
                 Works(new PieceAt(p, e, at, sets[k].W, els));
                 if (p.Kind == "Landing leg")
                     Leg(new PieceAt(p, e, at, sets[k].W, els), m); // (its leg is landing gear, not a door F works)
+                else if (p.Kind == DesignRamp.Kind)
+                    RampLeaves(new PieceAt(p, e, at, sets[k].W, els), m, rampFloor); // (its ramp and extension on their joints, F lowers them)
                 else
                     PieceDoors(new PieceAt(p, e, at, sets[k].W, els), m); // (its door leaves, each a door of its own)
                 if (p.Kind == "Boarding hatch" && k == 0)

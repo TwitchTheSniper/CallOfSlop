@@ -70,6 +70,7 @@ public sealed partial class Ui
         public string Kind = "";
         public int Id;
         public bool Off;
+        public bool Carry; // taken from the quick wheel: it follows the pointer until a click (UiShipDesignerWheel.cs)
     }
 
     private PaletteDrag? _paletteDrag;
@@ -177,7 +178,8 @@ public sealed partial class Ui
         var inYard = mouse.X >= min.X && mouse.X < max.X && mouse.Y >= min.Y && mouse.Y < max.Y && !_sdFileOpen;
         var free = inYard && !ImGui.IsAnyItemHovered() && !ImGui.IsAnyItemActive();
         GizmoFrame(mouse, free);
-        if (free && _gizmoAxis < 0)
+        var wheel = SdWheelFrame(io, mouse); // (the quick wheel holds the mouse while open)
+        if (free && _gizmoAxis < 0 && !wheel)
         {
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && _paletteDrag == null)
             {
@@ -191,7 +193,8 @@ public sealed partial class Ui
                 }
             }
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Middle))
-                _sdOrbiting = true;
+                SdMiddleDown(mouse); // held still: the quick wheel; moved: orbit, as before
+
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
                 _sdPanning = true;
             if (io.MouseWheel != 0)
@@ -236,7 +239,7 @@ public sealed partial class Ui
         }
         if (_paletteDrag != null)
         {
-            if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+            if (_paletteDrag.Carry ? !(free && ImGui.IsMouseClicked(ImGuiMouseButton.Left)) : ImGui.IsMouseDown(ImGuiMouseButton.Left))
                 PaletteMove(mouse, inYard);
             else
                 PaletteDrop();
@@ -263,6 +266,7 @@ public sealed partial class Ui
         objs.AddRange(_sdPreview);
         objs.AddRange(GizmoObjs());
         ShipYardFrame = new ShipDesignerFrame(min, max, objs, _sdView, _sdProj, _camPos);
+        SdWheelDraw();
     }
 
     // ---------- the move arrows
@@ -568,6 +572,22 @@ public sealed partial class Ui
         {
             // Doors and ladders win over the rooms round them (a room's walls are in front of its doors from most angles).
             var h = By("door") ?? By("riser") ?? By("room");
+            if (_doorFrom < 0)
+            {
+                // The quick wheel's Door with no room picked: this click picks the room it starts from.
+                if (h is { } h0 && h0.O.Pick!.Type == "room")
+                {
+                    _doorFrom = h0.O.Pick.Id;
+                    Select("room", _doorFrom);
+                    _sdTip = "Click the room the door opens into.";
+                }
+                else
+                {
+                    _doorFrom = 0;
+                    Toast("Stopped placing the door.");
+                }
+                return;
+            }
             if (_doorFrom != 0)
             {
                 var from = _doorFrom;
@@ -995,6 +1015,7 @@ public sealed partial class Ui
 
     private void PaletteStart(string kind)
     {
+        SdCarryCancel(); // (a piece the quick wheel put on the pointer goes first)
         _paletteDrag = new PaletteDrag { Kind = kind };
         _dragFirst = true;
         _sdTip = $"Drag the {kind} onto the hull.";
@@ -1082,6 +1103,15 @@ public sealed partial class Ui
     {
         if (_sdFileOpen)
             _sdFileOpen = false;
+        else if (SdWheelOpen || SdCarrying)
+            SdWheelReset();
+        else if (_doorFrom != 0 || _placingRiser != null)
+        {
+            _doorFrom = 0;
+            _placingRiser = null;
+            _sdTip = SdTips[_sdMode];
+            Rebuild();
+        }
         else if (_linking != null)
         {
             _linking = null;
