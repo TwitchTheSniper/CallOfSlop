@@ -1564,6 +1564,9 @@ public sealed partial class Ui
                     v => Cmd(C("setPiece", ("id", pid), ("armT", v / 100))), "pcat", Dflt("armour", "armT", 100));
                 Slider("Stand-off", Math.Round(D(p, "armOff") * 100), Math.Round(ShipDesigner.DesignArmour.MinOff * 100), Math.Round(ShipDesigner.DesignArmour.MaxOff * 100), 5, " cm",
                     v => Cmd(C("setPiece", ("id", pid), ("armOff", v / 100))), "pcao", Dflt("armour", "armOff", 100));
+                ImGui.Text("Held by"u8);
+                Row();
+                MatCombo("pcab" + pid, Str(p, "armStruts", ShipDesigner.DesignArmour.DefStruts), ShipDesigner.DesignArmour.StrutKinds, v => Cmd(C("setPiece", ("id", pid), ("armStruts", v))));
                 ImGui.Text("Outer cladding"u8);
                 Row();
                 MatCombo("pcac" + pid, Str(p, "armClad", ShipDesigner.DesignArmour.DefClad), ShipDesigner.HullBody.CladKinds, v => Cmd(C("setPiece", ("id", pid), ("armClad", v))));

@@ -18,8 +18,12 @@ public static class DesignArmour
     public const double MinW = 1, MaxW = 80, DefW = 8, MinH = 1, MaxH = 40, DefH = 4, MinT = 0.05, MaxT = 2, DefT = 0.3, MinOff = 0.3, MaxOff = 8, DefOff = 1.2;
     public const string DefClad = "Plates";
     public const double DefCladSize = 1.5;
+    /// <summary>How it is held off (Karl, 2026-11-27: "a thick structural or a set of three or four in a line"): one thick arm at its
+    /// middle, or a row of three or four posts along its middle.</summary>
+    public static readonly string[] StrutKinds = ["Arm", "Row of 3", "Row of 4"];
+    public const string DefStruts = "Row of 3";
     /// <summary>Struts about this far apart (m) each way, at least two each way on a plate long enough.</summary>
-    private const double StrutSpacing = 3, StrutHalf = 0.12;
+    private const double ArmHalf = 0.6, PostHalf = 0.32;
     /// <summary>The inner face's panels: about this size (m), the seam between them, and how far they stand off the plate's back (no shared plane).</summary>
     private const double PanelSize = 1.25, PanelSeam = 0.03, PanelRise = 0.006;
     private const string Back = "#3b3f44", Panel = "#62676d";
@@ -34,7 +38,7 @@ public static class DesignArmour
 
     public static bool Is(Piece p) => p.Kind == Kind;
 
-    public static JsonObject Defaults() => new() { ["armW"] = DefW, ["armH"] = DefH, ["armT"] = DefT, ["armOff"] = DefOff, ["armClad"] = DefClad, ["armCladSize"] = DefCladSize };
+    public static JsonObject Defaults() => new() { ["armW"] = DefW, ["armH"] = DefH, ["armT"] = DefT, ["armOff"] = DefOff, ["armClad"] = DefClad, ["armCladSize"] = DefCladSize, ["armStruts"] = DefStruts };
 
     /// <summary>A plate's JSON fields (only a plate's: every other piece's JSON stays as it was, so its design's hash does).</summary>
     public static JsonObject Write(Piece p, JsonObject o)
@@ -47,6 +51,7 @@ public static class DesignArmour
         o["armOff"] = ShipDesign.R(p.ArmOff);
         o["armClad"] = p.ArmClad;
         o["armCladSize"] = ShipDesign.R(p.ArmCladSize);
+        o["armStruts"] = p.ArmStruts;
         return o;
     }
 
@@ -60,6 +65,7 @@ public static class DesignArmour
         p.ArmOff = Math.Clamp(ShipDesign.F(o["armOff"], DefOff), MinOff, MaxOff);
         p.ArmClad = HullBody.CladKinds.Contains((string?)o["armClad"]) ? (string)o["armClad"]! : DefClad;
         p.ArmCladSize = Math.Clamp(ShipDesign.F(o["armCladSize"], DefCladSize), HullBody.CladSizeMin, HullBody.CladSizeMax);
+        p.ArmStruts = StrutKinds.Contains((string?)o["armStruts"]) ? (string)o["armStruts"]! : DefStruts;
         return p;
     }
 
@@ -74,6 +80,12 @@ public static class DesignArmour
         if (o["armT"] is not null) p.ArmT = Math.Clamp(Snap(ShipDesign.F(o["armT"], DefT), 0.01), MinT, MaxT);
         if (o["armOff"] is not null) p.ArmOff = Math.Clamp(Snap(ShipDesign.F(o["armOff"], DefOff), 0.05), MinOff, MaxOff);
         if (o["armCladSize"] is not null) p.ArmCladSize = Math.Clamp(Snap(ShipDesign.F(o["armCladSize"], DefCladSize), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
+        if ((string?)o["armStruts"] is { } st)
+        {
+            if (!StrutKinds.Contains(st))
+                return $"an armour plate is held by one of these: {string.Join(", ", StrutKinds)}";
+            p.ArmStruts = st;
+        }
         if ((string?)o["armClad"] is { } c)
         {
             if (!HullBody.CladKinds.Contains(c))
@@ -87,7 +99,7 @@ public static class DesignArmour
     public static string SceneJson(Piece p) => !Is(p) ? "" :
         new StringBuilder(",\"armour\":true,\"armW\":").Append(ShipDesign.S(p.ArmW)).Append(",\"armH\":").Append(ShipDesign.S(p.ArmH))
             .Append(",\"armT\":").Append(ShipDesign.S(p.ArmT)).Append(",\"armOff\":").Append(ShipDesign.S(p.ArmOff))
-            .Append(",\"armClad\":").Append(DesignScene.Q(p.ArmClad)).Append(",\"armCladSize\":").Append(ShipDesign.S(p.ArmCladSize)).ToString();
+            .Append(",\"armClad\":").Append(DesignScene.Q(p.ArmClad)).Append(",\"armCladSize\":").Append(ShipDesign.S(p.ArmCladSize)).Append(",\"armStruts\":").Append(DesignScene.Q(p.ArmStruts)).ToString();
 
     // ---- where it lies
 
@@ -226,7 +238,7 @@ public static class DesignArmour
         InnerPanels(m, g, off);
         if (p.ArmClad != "Off")
             Clad(m, p, g, top, skin);
-        Struts(m, g, off);
+        Struts(m, g, p, off);
         return true;
     }
 
@@ -266,33 +278,65 @@ public static class DesignArmour
         DesignScene.LayPlates(m, nu, nv, g.Arc, g.Len, new Random(unchecked(p.Id * 7919 + 4111)), p.ArmClad == "Heavy", 1, skin, P, Nrm, W, new bool[nu, nv], hex: p.ArmClad == "Hex");
     }
 
-    /// <summary>Where its struts stand: shares (u round, v along) of the grid, about <see cref="StrutSpacing"/> apart, in from the plate's edges.</summary>
-    public static List<(double U, double V)> StrutSpots(Grid g)
+    /// <summary>Where its struts stand: shares (u round, v along) of the grid and each one's half width. An arm: one at its middle; a row:
+    /// three or four along its middle, in from its ends.</summary>
+    public static List<(double U, double V, double Half)> StrutSpots(Grid g, Piece p)
     {
-        int cu = Math.Clamp((int)Math.Round(g.Arc / StrutSpacing), g.Arc > 1.5 ? 2 : 1, 8), cv = Math.Clamp((int)Math.Round(g.Len / StrutSpacing), g.Len > 1.5 ? 2 : 1, 12);
-        var o = new List<(double, double)>();
-        for (var a = 0; a < cu; a++)
-            for (var b = 0; b < cv; b++)
-                o.Add(((a + 0.5) / cu, (b + 0.5) / cv));
+        var o = new List<(double, double, double)>();
+        if (p.ArmStruts == "Arm")
+        {
+            o.Add((0.5, 0.5, Math.Min(ArmHalf, 0.2 * Math.Min(g.Arc, g.Len))));
+            return o;
+        }
+        var n = p.ArmStruts == "Row of 4" ? 4 : 3;
+        var half = Math.Min(PostHalf, 0.2 * Math.Min(g.Arc, g.Len / n));
+        for (var b = 0; b < n; b++)
+            o.Add((0.5, (b + 0.5) / n, half));
         return o;
     }
 
-    /// <summary>Its struts: a square post from 5 cm under the skin to 2 cm into the plate, with a foot pad on the skin.</summary>
-    private static void Struts(DesignMesh m, Grid g, double off)
+    /// <summary>How far a ram's rod runs (m): a short stroke, slow and heavy (Karl, 2026-11-27: "thick, powerful and slow arms, the kind which
+    /// have tiny travel"). Its chrome shows this much plus a little, so the stroke reads.</summary>
+    public const double RamTravel = 0.25;
+
+    /// <summary>
+    /// Its struts as hydraulic rams (Karl, 2026-11-27): a heavy base on the skin with clevis lugs, a thick barrel, a gland ring, a short chrome
+    /// rod (its stroke, <see cref="RamTravel"/>) and a head plate under the armour. An arm's barrel is braced fore and aft by gussets at its foot.
+    /// </summary>
+    private static void Struts(DesignMesh m, Grid g, Piece p, double off)
     {
-        foreach (var (u, v) in StrutSpots(g))
+        foreach (var (u, v, hw) in StrutSpots(g, p))
         {
-            var s = g.Lerp(u, v, 0);
-            var n = g.LerpN(u, v);
-            var along = Norm(Sub(g.Lerp(u, Math.Min(1, v + 0.01), 0), g.Lerp(u, Math.Max(0, v - 0.01), 0)));
-            along = Norm(Add(along, n, -Dot(along, n)));
-            var x = Cross(n, along);
+            var (s, n, along, x) = StrutFrame(g, u, v);
             m.Frame(s[0], s[1], s[2], x, n, along);
-            m.Box(-StrutHalf, -0.05, -StrutHalf, StrutHalf, off + 0.02, StrutHalf, PieceKinds.Gun);
-            m.Box(-StrutHalf * 2.2, -0.05, -StrutHalf * 2.2, StrutHalf * 2.2, 0.06, StrutHalf * 2.2, PieceKinds.Armour); // (its foot)
-            m.Box(-StrutHalf * 1.6, off - 0.09, -StrutHalf * 1.6, StrutHalf * 1.6, off - 0.002 - PanelRise, StrutHalf * 1.6, PieceKinds.Armour); // (its head, under the panels)
+            double baseTop = 0.08 + hw * 0.15, head0 = off - 0.12, rod = Math.Min(RamTravel + 0.1, Math.Max(0.05, (head0 - baseTop) * 0.35));
+            double barrelTop = Math.Max(baseTop + 0.05, head0 - rod);
+            m.Box(-hw * 1.9, -0.05, -hw * 1.9, hw * 1.9, baseTop, hw * 1.9, PieceKinds.Armour); // (its base, sunk 5 cm into the skin)
+            m.Box(-hw * 1.25, baseTop - 0.004, -hw * 0.35, -hw * 0.9, baseTop + hw * 0.9, hw * 0.35, PieceKinds.Gun); // (clevis lugs either side)
+            m.Box(hw * 0.9, baseTop - 0.004, -hw * 0.35, hw * 1.25, baseTop + hw * 0.9, hw * 0.35, PieceKinds.Gun);
+            m.Frustum(baseTop - 0.01, hw * 0.85, barrelTop, hw * 0.85, 16, PieceKinds.Gun); // (the barrel)
+            m.Frustum(barrelTop - 0.08, hw * 0.95, barrelTop + 0.01, hw * 0.92, 16, PieceKinds.Armour); // (its gland ring)
+            m.Frustum(barrelTop, hw * 0.45, head0 + 0.01, hw * 0.45, 12, PieceKinds.Pale, cap0: false); // (the chrome rod)
+            m.Frustum(baseTop + 0.15, hw * 0.88, baseTop + 0.2, hw * 0.88, 16, PieceKinds.Amber, cap0: false, cap1: false); // (a warning band)
+            m.Box(-hw * 1.4, head0, -hw * 1.4, hw * 1.4, off - 0.002 - PanelRise, hw * 1.4, PieceKinds.Armour); // (its head, under the panels)
+            if (p.ArmStruts == "Arm")
+            {
+                // Gussets fore and aft of the barrel at its foot.
+                var gh = Math.Min((barrelTop - baseTop) * 0.6, hw * 2);
+                m.Box(-hw * 0.2, baseTop - 0.004, hw * 0.8, hw * 0.2, baseTop + gh, hw * 1.85, PieceKinds.Gun);
+                m.Box(-hw * 0.2, baseTop - 0.004, -hw * 1.85, hw * 0.2, baseTop + gh, -hw * 0.8, PieceKinds.Gun);
+            }
         }
         m.World();
+    }
+
+    private static (double[] S, double[] N, double[] Along, double[] X) StrutFrame(Grid g, double u, double v)
+    {
+        var s = g.Lerp(u, v, 0);
+        var n = g.LerpN(u, v);
+        var along = Norm(Sub(g.Lerp(u, Math.Min(1, v + 0.01), 0), g.Lerp(u, Math.Max(0, v - 0.01), 0)));
+        along = Norm(Add(along, n, -Dot(along, n)));
+        return (s, n, along, Cross(n, along));
     }
 
     // ---- solid in the game
@@ -323,16 +367,12 @@ public static class DesignArmour
                     }
                 o.Add(pts);
             }
-        foreach (var (u, v) in StrutSpots(g))
+        foreach (var (u, v, hw) in StrutSpots(g, p))
         {
-            var s = g.Lerp(u, v, 0);
-            var n = g.LerpN(u, v);
-            var along = Norm(Sub(g.Lerp(u, Math.Min(1, v + 0.01), 0), g.Lerp(u, Math.Max(0, v - 0.01), 0)));
-            along = Norm(Add(along, n, -Dot(along, n)));
-            var x = Cross(n, along);
+            var (s, n, along, x) = StrutFrame(g, u, v);
             var pts = new List<double[]>();
-            foreach (var sx in new[] { -StrutHalf, StrutHalf })
-                foreach (var sz in new[] { -StrutHalf, StrutHalf })
+            foreach (var sx in new[] { -hw, hw })
+                foreach (var sz in new[] { -hw, hw })
                     foreach (var sy in new[] { 0.05, off })
                         pts.Add([s[0] + x[0] * sx + n[0] * sy + along[0] * sz, s[1] + x[1] * sx + n[1] * sy + along[1] * sz, s[2] + x[2] * sx + n[2] * sy + along[2] * sz]);
             o.Add(pts);

@@ -1516,6 +1516,7 @@ function armourControls(p) {
     slider("Height (round)", p.armH, 1, 40, 0.05, " m", () => {}, v => send({ armH: v }), D.armH),
     slider("Thickness", Math.round(p.armT * 100), 5, 200, 1, " cm", () => {}, v => send({ armT: v / 100 }), Math.round(D.armT * 100)),
     slider("Stand-off", Math.round(p.armOff * 100), 30, 800, 5, " cm", () => {}, v => send({ armOff: v / 100 }), Math.round(D.armOff * 100)),
+    el("div", { class: "row" }, el("span", {}, "Held by"), ...["Arm", "Row of 3", "Row of 4"].map(k => el("button", { class: p.armStruts === k ? "on" : "", onclick: () => send({ armStruts: k }) }, k))),
     el("div", { class: "row" }, el("span", {}, "Outer cladding"), ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: p.armClad === k ? "on" : "", onclick: () => send({ armClad: k }) }, k)))];
   if (p.armClad !== "Off") out.push(slider("Panel size", p.armCladSize, 0.4, 6, 0.05, " m", () => {}, v => send({ armCladSize: v }), D.armCladSize));
   out.push(el("p", { class: "hint" }, "It follows the hull's shape at its stand-off, held off the skin on struts. Its outer face takes a hull cladding style; its inner face is plain panels. Solid in the game."));
