@@ -8,8 +8,9 @@ namespace CallOfSlop;
 /// and a hull grapple added where it has none (on its first body's top and keel: a test ship, never written anywhere), built on the ground
 /// in a world of its own, then each system worked through the game's own code: the floods lit from the helm's switch (and put out), a tow
 /// eye coupled to the hitch, a loose beam caught by the clamp, the grapple's hook key toggled, and the guns fired on the helm's fire key
-/// (none before it). Last a joined client's copy (the full body, its poses, the couplings and the shots, through the wire) agrees with
-/// the host's. Short: about 12 s of world steps.
+/// (none before it), then each turret laid by the helm's look swung 35 degrees to either side and fired. A joined client's copy (the full
+/// body, its poses and turrets, the couplings and the shots, through the wire) agrees with the host's. Last the hangars on a test carrier
+/// (<see cref="Hangars"/>). Short: about 35 s of world steps.
 /// </summary>
 public static partial class DesignCheck
 {

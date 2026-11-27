@@ -550,7 +550,7 @@ public static partial class DesignParts
         var limit = ConstructCargo.SideLimit(d);
         var want = size;
         size = Vector3.Min(size, new Vector3(limit));
-        if (want != size)
+        if (Vector3.Distance(want, size) > 0.05f)
             Console.WriteLine($"[design] the {e.Name} {e.Id}'s catch box is {want.X:0.#} x {want.Y:0.#} x {want.Z:0.#} m, past its part's {limit:0} m side: held to {size.X:0.#} x {size.Y:0.#} x {size.Z:0.#}");
         d.Config = [.. d.Config.Select(x => x.Id switch
         {
