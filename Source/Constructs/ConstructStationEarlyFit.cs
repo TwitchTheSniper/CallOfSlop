@@ -6,7 +6,6 @@ public sealed partial class StationJob
 {
     public bool[] Held = []; // server: each unfitted step stands on the floor or touches a fitted step (an early fit has something under it)
     public bool HeldStale = true; // Held is made again before it is next read (a costing, a restart, a load)
-    public bool Early; // a step went on before its parent in this build (its links come when the parent does: ConstructBuild.LinkLate)
 }
 
 /// <summary>
@@ -99,17 +98,10 @@ public static partial class ConstructStation
     private static string? FitEither(ConstructWorld world, Construct b, StationJob j, int k)
     {
         var bp = j.Bp!;
-        string? why;
-        if (k > 0 && !ParentsOn(j, k) && j.Plan is { } plan && plan.Free.Length == j.PartOf.Length && plan.Free[k])
-        {
-            why = ConstructBuild.FitAt(world, b, bp, k, j.PartOf, plan.At[k], plan.RotIx[k]);
-            if (why == null)
-                j.Early = true;
-        }
-        else
-            why = ConstructBuild.FitStep(world, b, bp, k, j.PartOf);
+        var early = k > 0 && !ParentsOn(j, k) && j.Plan is { } plan && plan.Free.Length == j.PartOf.Length && plan.Free[k];
+        var why = early ? ConstructBuild.FitAt(world, b, bp, k, j.PartOf, j.Plan!.At[k], j.Plan.RotIx[k]) : ConstructBuild.FitStep(world, b, bp, k, j.PartOf);
         if (why == null)
-            ConstructBuild.LinkLate(world, b, bp, k, j.PartOf, j.Early);
+            ConstructBuild.LinkLate(world, b, bp, k, j.PartOf, early); // (and the links of steps that went on before it, a load between or not)
         return why;
     }
 

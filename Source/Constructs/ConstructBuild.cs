@@ -1001,15 +1001,16 @@ public static class ConstructBuild
     }
 
     /// <summary>
-    /// After step <paramref name="k"/> went on: the links its blueprint names between it and steps that are on (its parent and "also"
-    /// steps, and steps that name it as theirs and went on before it, <see cref="FitAt"/>) that the body lacks. Only when
-    /// <paramref name="early"/> says a step went on early in this build: the usual order makes every link at its step.
+    /// After step <paramref name="k"/> went on: the links its blueprint names between it and steps that are on that the body lacks: those
+    /// of steps that name it as their parent or "also" and went on before it (<see cref="FitAt"/>), and, when it went on early itself
+    /// (<paramref name="early"/>), its own to the steps it names that are on. A plain fit's own links are made by its step. Allocates nothing.
     /// </summary>
     public static void LinkLate(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf, bool early)
     {
-        if (!early || partOf[k] < 0)
+        if (partOf[k] < 0)
             return;
-        Ensure(k);
+        if (early)
+            Ensure(k);
         for (var s = k + 1; s < bp.Steps.Count && s < partOf.Length; s++)
             if (partOf[s] >= 0 && (bp.Steps[s].On == k || Names(s)))
                 Ensure(s);
@@ -1051,7 +1052,8 @@ public static class ConstructBuild
                 if ((ln.A == a && ln.SA == ia && ln.B == b && ln.SB == ib) || (ln.A == b && ln.SA == ib && ln.B == a && ln.SB == ia))
                     return;
             }
-            world.AddLink(c, a, ia, b, ib);
+            if (world.AddLink(c, a, ia, b, ib))
+                Console.WriteLine($"[station] {bp.Name}: step {Array.IndexOf(partOf, b)} linked to step {Array.IndexOf(partOf, a)} as it came (\"{sb}\" to \"{sa}\"): one went on early");
         }
     }
 

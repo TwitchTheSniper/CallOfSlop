@@ -2200,7 +2200,7 @@ public static partial class ConstructStation
                 j.Started = Stopwatch.GetTimestamp();
                 j.State = StationState.Building;
                 (j.GateRank, j.GateStall, j.BuiltTop) = (0, 0, 0f);
-                (j.HeldStale, j.Early) = (true, false);
+                j.HeldStale = true;
                 ResetArms(world, c, j);
                 j.Note = "";
                 world.StationChanged(c);
