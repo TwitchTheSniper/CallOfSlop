@@ -20,9 +20,62 @@ public sealed unsafe partial class Renderer
         public int Count;
     }
 
-    private GlProgram _designProgram;
+    private GlProgram _designProgram, _designDepth;
     private bool _designReady, _designBroken;
     private MergeLoc _dLoc;
+    private int _ddViewProj = -1, _ddBody = -1;
+
+    /// <summary>
+    /// The depth-only program of a design mesh's first pass (<see cref="DrawDesign"/>): the same position as the lit one (both
+    /// <c>invariant</c>), no colour. Null (0) where it would not link: the mesh is then drawn lit alone, as before.
+    /// </summary>
+    private void MakeDesignDepth()
+    {
+        const string vs = """
+            #version 410 core
+            layout(location = 0) in vec3 aPos;
+            uniform mat4 uViewProj;
+            uniform mat4 uBody;
+            invariant gl_Position;
+            void main()
+            {
+                vec4 w = uBody * vec4(aPos, 1.0);
+                gl_Position = uViewProj * w;
+            }
+            """;
+        const string fs = """
+            #version 410 core
+            void main() { }
+            """;
+        try
+        {
+            var v = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vs)).Compile();
+            var f = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fs)).Compile();
+            var program = CreateProgram();
+            Native.glAttachShader(program, v);
+            Native.glAttachShader(program, f);
+            Native.glLinkProgram(program);
+            int linked;
+            Native.glGetProgramiv(program, GL_LINK_STATUS, &linked);
+            v.Dispose();
+            f.Dispose();
+            if (linked == 0)
+            {
+                Console.WriteLine("[render] ship design depth pass off: it did not link");
+                return;
+            }
+            GlDebug.Label(GL_PROGRAM, program.Id, "Renderer.designDepth");
+            fixed (byte* p = "uViewProj\0"u8)
+                _ddViewProj = Native.glGetUniformLocation(program, p);
+            fixed (byte* p = "uBody\0"u8)
+                _ddBody = Native.glGetUniformLocation(program, p);
+            _designDepth = program;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[render] ship design depth pass off: {ex.Message}");
+        }
+    }
 
     private bool InitDesign()
     {
@@ -52,6 +105,7 @@ public sealed unsafe partial class Renderer
                 out vec4 vColorI;
                 flat out float vModeI;
                 flat out float vLayerI;
+                invariant gl_Position; // (the depth pass below works it out the same, to the bit: DrawDesign)
                 void main()
                 {
                     vec4 w = uBody * vec4(aPos, 1.0);
@@ -75,6 +129,7 @@ public sealed unsafe partial class Renderer
                 }
                 """;
             _designProgram = MakeMerged(vsSrc, out _dLoc);
+            MakeDesignDepth();
             _program.Use();
             _vao.Bind();
             _designReady = true;
@@ -145,15 +200,32 @@ public sealed unsafe partial class Renderer
         m.Count = 0;
     }
 
-    /// <summary>Draws a merged design mesh at <paramref name="frame"/> (its body's pose; relative to the origin while <see cref="Relative"/>).</summary>
-    public void DrawDesign(DesignGpu m, in Matrix4x4 frame)
+    /// <summary>
+    /// Draws a merged design mesh at <paramref name="frame"/> (its body's pose; relative to the origin while <see cref="Relative"/>).
+    /// <paramref name="depthFirst"/> (a solid mesh): its depth alone first, then lit where it is nearest, so each pixel is lit once.
+    /// A design's mesh is in part order, the hull skin first and the rooms and their fittings inside it after, so from inside the
+    /// ship every layer behind the nearest was lit too, with every lamp near (Karl, 2026-11-27: 60 fps aboard his Zero Day design
+    /// with the GPU 10 ms a frame on it). The depth test passes on equal (LessEqual, GreaterEqual reversed), and both programs
+    /// work the position out alike (<c>invariant</c>). Never for glass, which is blended over what is behind it.
+    /// </summary>
+    public void DrawDesign(DesignGpu m, in Matrix4x4 frame, bool depthFirst = false)
     {
         if (m.Count == 0 || m.Vao.Id == 0 || !_designReady)
             return;
-        MergedUniforms(_designProgram, in _dLoc);
         var f = FromOrigin(frame);
-        Native.glUniformMatrix4fv(_dLoc.Body, 1, false, &f.M11);
         m.Vao.Bind();
+        if (depthFirst && _designDepth.Id != 0)
+        {
+            _designDepth.Use();
+            var vp = _viewProjRel;
+            Native.glUniformMatrix4fv(_ddViewProj, 1, false, &vp.M11);
+            Native.glUniformMatrix4fv(_ddBody, 1, false, &f.M11);
+            Native.glColorMask(false, false, false, false);
+            Native.glDrawArrays(GL_TRIANGLES, 0, m.Count);
+            Native.glColorMask(true, true, true, true);
+        }
+        MergedUniforms(_designProgram, in _dLoc);
+        Native.glUniformMatrix4fv(_dLoc.Body, 1, false, &f.M11);
         Native.glDrawArrays(GL_TRIANGLES, 0, m.Count);
         PerfCounters.Draw(m.Count);
         _program.Use();
