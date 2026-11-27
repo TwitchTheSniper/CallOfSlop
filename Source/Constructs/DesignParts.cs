@@ -45,7 +45,7 @@ public static partial class DesignParts
     public const string Prefix = "Design (#";
     public const int MaxText = 1 << 20; // bytes of one design's text
     public const int MaxWorld = 256; // designs one world keeps
-    public const int MaxHulls = 1024; // colliders one design makes (its bands', joins' and pieces' hulls, its rooms' boxes and thin hulls, one for an element with only its mass box: DesignParts.Hull.cs Colliders; past it the last are left out, logged)
+    public const int MaxHulls = 2048; // colliders one design makes (1024 until 2026-11-27: a Zero Day with its rooms out to the hull and two engine pods made 1106 even with the hull shells' strips merged) (its bands', joins' and pieces' hulls, its rooms' boxes and thin hulls, one for an element with only its mass box: DesignParts.Hull.cs Colliders; past it the last are left out, logged)
 
     // ---- Mass: plain figures, all here (Karl's plan: skin area times a plate density, plus decks and pieces) ----
     public const float SkinKgPerM2 = 80f; // a hull plate, about 1 cm of steel with its frames
