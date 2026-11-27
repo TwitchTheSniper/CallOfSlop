@@ -21,7 +21,13 @@ namespace CallOfSlop;
 /// sound), its muzzle at the drawn barrel's tip and its bore along the drawn barrel, an ammo box (hidden, full as a spawned ship's are)
 /// welded to it. Each Gunner seat gets a hidden Fire Director (the helm's when there is none) wired from the seat and into the guns
 /// nearest it, so the seat's fire key fires them (ConstructWeapons.StepGuns). The torpedo sponson has no gun in the game yet: drawn,
-/// inert, logged. Turrets (a joint under the weapon) are the next wave's (package H): their weapons fire fixed for now.</item>
+/// inert, logged.</item>
+/// <item>Turrets (package H): a turret ring's weapon rides two joints, a bearing (a turntable) and a trunnion (a motor hinge), so the
+/// director's seat lays it on what its sitter looks at (ConstructWeapons.Aim: AimJoints); a director's wire through relays still counts
+/// as the director's (ConstructWeapons.RelayedDirector). The renderer draws a joint's segment at its live pose (ConstructRenderDesign).</item>
+/// <item>Hangars (package H): a hangar bay is the game's Hangar Bay dock of its size, its catch box the designer's bay volume (held to the
+/// part's side), its frame the designer's boxes, its door the drawn leaf (an event door: F); a lift platform is a one-span lift (a
+/// piston) and a ramp deck a motor hinge, each with the designer's deck as its leaf, worked by F as a lift's car (DesignParts.Risers.cs).</item>
 /// </list>
 /// The vectors an element carries for its function (Element.ThrustAt, Element.Exhaust: a point and a direction, moved into the part's frame
 /// by IntoFrames) are a gun's muzzle and bore, a lamp's lens and beam, a hitch's coupling point and a clamp's pad face; Element.Force is a
@@ -232,6 +238,7 @@ public static partial class DesignParts
 
     public const float TurretElevMin = -10f, TurretElevMax = 80f; // degrees a turret's trunnion lays its weapon below and above its ring
     public const float BearingKgPerSize = 40f; // a turret's bearing and its trunnion, each, at Size 1 (squared with the size)
+    public const float TurretSideways = 0.25f; // a ring whose axis's climb is under this (over 75 degrees off the vertical) turns about its own way, not the ship's up
 
     /// <summary>
     /// A turret ring's two joints, added before its weapon (a joint's parts come after it: BuildSteps): its bearing, a turntable about the
@@ -253,28 +260,35 @@ public static partial class DesignParts
             return (a.At, 0);
         }
         var y = Vector3.Normalize(a.Y);
-        var up = NearestDir(y);
+        // Its bearing upright (up or down the ship) unless the ring stands within TurretSideways of the vertical: a gunner's aim reads a
+        // joint about a level axis as an elevation (ConstructWeapons.Aim), so a shoulder's ring tilted well off the vertical still turns
+        // about the ship's up, and only a ring on a near-vertical side turns about its own (nearest) way.
+        var up = MathF.Abs(y.Y) >= TurretSideways ? (byte)(y.Y > 0 ? 2 : 3) : NearestDir(y);
         var tilt = MathF.Acos(Math.Clamp(Vector3.Dot(ConstructParts.DirVector(up), y), -1, 1)) * 180 / MathF.PI;
         if (tilt > 15)
-            Console.WriteLine($"[design] the turret {a.E.Id} stands {tilt:0} degrees off the ship's axes: it turns about the nearest, {ConstructParts.DirVector(up)}");
+            Console.WriteLine($"[design] the turret {a.E.Id} stands {tilt:0} degrees off the ship's axes: it turns about {ConstructParts.DirVector(up)}");
         var part = ConstructParts.Find("Turret Ring " + ring.Name[^1]) ?? ConstructParts.Find("Turret Ring S");
         var (speed, strength) = part != null ? (part.MotorSpeed, part.MotorStrength) : (MathF.PI / 3, 12000f);
-        strength *= a.S * a.S * a.S; // (a bigger ring turns a heavier house)
+        // (a bigger ring turns a heavier house: at least three times the weapon's weight a metre off its pivot, so it never sags)
+        strength = MathF.Max(strength * a.S * a.S * a.S, g.Kg * 9.81f * 3f * MathF.Max(1f, (g.BoxMax - g.BoxMin).Length() * 0.5f));
         var top = a.O + y * ((float)ring.Top * a.S);
         var kg = BearingKgPerSize * a.S * a.S;
         var bearing = new Element
         {
             Id = a.E.Id + ".ring", Kind = "turret", Name = "Turret bearing", Kg = kg, BoxMin = top - y * 0.06f - new Vector3(0.05f), BoxMax = top - y * 0.06f + new Vector3(0.05f),
             NoCollider = true, // (inside the ring's own hull)
-            Joint = new JointSpec { Type = JointType.Turntable, Axis = up, Pivot = top, Speed = speed, Strength = strength, Limited = false },
+            Joint = new JointSpec { Type = JointType.Turntable, Axis = up, Pivot = top, Speed = speed, Strength = strength, Limited = false, Min = float.NegativeInfinity, Max = float.PositiveInfinity }, // (turning for ever, as a Turret Ring's)
         };
         els.Add(bearing);
         var bi = els.Count - 1;
         Weld(els, a.At, bi);
-        // The trunnion through the weapon's middle, across its bore, turned so that a positive angle raises the bore off the ring.
+        // The trunnion through the weapon's middle, across its bore and the bearing's axis (so the two lay it both ways), turned so that a
+        // positive angle raises the bore off the ring.
         var mid = (g.BoxMin + g.BoxMax) * 0.5f;
-        var across = NearestDir(Vector3.Cross(y, bore));
-        if (Vector3.Dot(Vector3.Cross(ConstructParts.DirVector(across), bore), y) < 0)
+        var axisUp = ConstructParts.DirVector(up);
+        var acrossWay = Vector3.Cross(axisUp, bore);
+        var across = NearestDir(acrossWay.LengthSquared() > 0.1f ? acrossWay : Vector3.Cross(y, bore));
+        if (Vector3.Dot(Vector3.Cross(ConstructParts.DirVector(across), bore), axisUp) < 0)
             across ^= 1;
         var trunnion = new Element
         {

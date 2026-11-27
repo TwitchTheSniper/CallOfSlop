@@ -1120,7 +1120,7 @@ public static class ConstructWeapons
     }
 
     /// <summary>Which way to point gun <paramref name="k"/> at a point: straight at it, or along the arc that lands there for a shell gun. Holding the seat's aim key takes the high arc.</summary>
-    private static Vector3 AimWay(Construct c, int k, Vector3 muzzle, Vector3 point)
+    internal static Vector3 AimWay(Construct c, int k, Vector3 muzzle, Vector3 point)
     {
         ref var g = ref c.Guns[k];
         if ((g.Effects & GunEffect.Shell) != 0 && c.DefOf(g.Part).GunThrust > 0)
