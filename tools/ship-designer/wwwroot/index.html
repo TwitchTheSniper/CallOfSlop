@@ -1686,6 +1686,9 @@ function stationPanel(h) {
   const src = h.cladFrom && S.hulls.find(o => o.id === h.cladFrom);
   box.append(el("h3", {}, "Cladding"),
     el("div", { class: "row" }, el("span", {}, "Match body"), matchSel),
+    ...(clad.kind === "Off" ? [] : [el("div", { class: "row" },
+      el("label", {}, el("input", { type: "checkbox", ...(h.cladFore !== false ? { checked: "" } : {}), onchange: e => hs({ cladFore: e.target.checked }) }), "Clad front"),
+      el("label", {}, el("input", { type: "checkbox", ...(h.cladAft !== false ? { checked: "" } : {}), onchange: e => hs({ cladAft: e.target.checked }) }), "Clad back"))]),
     ...(src ? [el("p", { class: "hint" }, `Follows ${src.name}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.`)] : [
     el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex", "Panelled"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
     ...(clad.kind === "Off" ? [] : [el("div", { class: "row" }, el("span", {}, "Material"), matSel(clad.material || "Hull", ["Hull", ...MAT_NAMES], "Cladding material", v => hs({ cladMaterial: v })),

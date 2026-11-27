@@ -90,7 +90,7 @@ public sealed class DesignSession
             },
             ["hull"] = new JsonObject
             {
-                ["cladSize"] = h.CladSize, ["cladDepth"] = h.CladDepth, ["roundFore"] = h.RoundFore, ["roundAft"] = h.RoundAft,
+                ["cladSize"] = h.CladSize, ["cladDepth"] = h.CladDepth, ["roundFore"] = h.RoundFore, ["roundAft"] = h.RoundAft, ["cladFore"] = h.CladFore, ["cladAft"] = h.CladAft,
                 ["accentAmount"] = h.AccentAmount, ["stripe"] = h.Stripe, ["wear"] = h.Wear,
                 ["material"] = h.Material, ["cladMaterial"] = h.CladMaterial, ["damage"] = h.Damage, ["damageSeed"] = h.DamageSeed, ["cladFrom"] = null,
             },
