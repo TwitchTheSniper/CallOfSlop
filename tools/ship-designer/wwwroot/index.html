@@ -1419,6 +1419,13 @@ function seatControls(p) {
       el("button", { class: "reset", title: `Reset role to ${D.role}`, onclick: () => send({ role: D.role }) }, "\u21ba")),
     el("p", { class: "hint" }, p.role === "Helm" ? "The helm flies the ship: its drives and RCS answer this seat, with nothing to wire." : "It stands on its room's floor, facing the bow (turn it with Turn left and right).")];
 }
+// A boarding ramp's extension (Karl, 2026-11-27; Source/ShipDesigner/DesignRamp.cs): how far its second section runs out once it is down.
+function rampControls(p) {
+  if (p.extend === undefined) return [];
+  return [el("h3", {}, "Ramp"),
+    slider("Extension", Math.round(p.extend * 100), 0, Math.round((p.extendMax ?? 2.5) * 100), 5, " cm", () => {}, v => cmd({ op: "setPiece", id: p.id, extend: v / 100 }), dflt("ramp", "extend", 100)),
+    el("p", { class: "hint" }, "F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.")];
+}
 // A floodlight's aim and beam colour (Karl, 2026-11-26), with resets from CAT.defaults.fitting; a tow point's note.
 function fittingControls(p) {
   const send = o => cmd({ op: "setPiece", id: p.id, ...o }), D = CAT.defaults.fitting;
@@ -1904,6 +1911,7 @@ function inspector() {
       ...mountControls(p),
       ...fittingControls(p),
       ...seatControls(p),
+      ...rampControls(p),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),

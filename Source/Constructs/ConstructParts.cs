@@ -127,6 +127,19 @@ public enum JointType : byte
     Swivel, // a free rotation part (ConstructLinear.cs): turns with no motor, no spring and by default no limits; a signal locks it (wire byte 8, protocol 137)
 }
 
+/// <summary>
+/// A two-stage pair of joints worked as one latch (a ship design's boarding ramp, Karl 2026-11-27: DesignParts.RampLeaves): the one that
+/// Follows rides the Leader's segment and moves out only once the Leader is at its open end, and the Leader closes only once the
+/// follower is back in, so the ramp swings down, then runs out, and comes back in the other order. The server's motors alone read it
+/// (ConstructPhysics.Latched); the pose, the wire and the save carry each joint as any other.
+/// </summary>
+public enum JointChain : byte
+{
+    None,
+    Leads,
+    Follows,
+}
+
 /// <summary>What moves a linear rail's carriage (ConstructLinear.cs; "rail" in a joint block).</summary>
 public enum RailDriveKind : byte
 {
@@ -578,6 +591,7 @@ public sealed partial class ConstructPartDef
     public JointType JointType; // hinge: Passive; joint: the rest
     public float MotorSpeed, MotorStrength; // joint: radians (metres for a piston) a second; N m (N for a piston)
     public bool JointLimited = true; // a turntable without min/max turns forever
+    public JointChain JointChain; // joint: one of a two-stage pair worked as one (a ship design's boarding ramp: ConstructPhysics.Latched)
     public float JointGive; // joint: how far it has given at twice its rating ("give": metres for a piston, else degrees; radians here)
     public float FlexTwist; // flex joint: how far it twists about its axis each way (radians; 0: it doesn't, and takes one joint less)
     public float FlexStiffness; // flex joint: N m a radian of bend or twist

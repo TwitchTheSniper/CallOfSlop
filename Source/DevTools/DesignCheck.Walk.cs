@@ -311,8 +311,8 @@ public static partial class DesignCheck
         Span<int> slots = stackalloc int[Construct.MaxJoints];
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (!Id(i).EndsWith(".car", StringComparison.Ordinal) || !DesignParts.IsLift(c.DefOf(i)))
-                continue;
+            if (!Id(i).EndsWith(".car", StringComparison.Ordinal) || !DesignParts.IsLift(c.DefOf(i)) || DesignParts.IsRamp(c.DefOf(i)))
+                continue; // (a boarding ramp has no stops: F lowers or raises it whole)
             lifts++;
             var n = DesignParts.LiftJoints(c, i, slots);
             if (n == 0)
