@@ -3,7 +3,7 @@ namespace CallOfSlop.ShipDesigner;
 public static partial class DesignScene
 {
     /// <summary>The most triangles one room's interior cladding may add (solid and glow together); past it the rest is left bare.</summary>
-    private const double HullSideOff = 0.012; // how much further off its skin's line a side out to the hull is clad (Side)
+    private const double HullSideOff = 0.08; // how much further off its skin's line a side out to the hull is clad (Side; 1.2 cm left the shell showing through the panels in jags on the sloped upper and lower walls, Karl 2026-11-27)
 
     public const int MaxInteriorTris = 20000; // (9000 ran out on a long room out to the hull, its later posts and trim left bare: Karl, 2026-11-27)
 
@@ -74,16 +74,24 @@ public static partial class DesignScene
                 for (var k = 0; k < gu.Count; k++)
                     (eL[i, k], eR[i, k]) = Edges(d, r, gv[i], gu[k]);
         }
-        double Ed(double[,] e, double l, double u)
+        // inward: +1 for the low side (its room lies at greater a), -1 for the high side. The shell draws each cell as two triangles split
+        // corner to corner (Quad: a, b, c then a, c, d), not the bilinear sheet, so in a twisted cell its face stood proud of the panels and
+        // showed through them in jags (Karl, 2026-11-27): the panels take whichever of the two splits and the sheet lies furthest in.
+        double Ed(double[,] e, double l, double u, double inward)
         {
             var fi = Math.Clamp((l - sp0) / Math.Max(1e-6, sp1 - sp0) * (gv.Count - 1), 0, gv.Count - 1 - 1e-9);
             var fk = Math.Clamp(u / Math.Max(1e-6, hgt) * (gu.Count - 1), 0, gu.Count - 1 - 1e-9);
             int i = (int)fi, k = (int)fk;
             double ti = fi - i, tk = fk - k;
-            return (e[i, k] * (1 - ti) + e[i + 1, k] * ti) * (1 - tk) + (e[i, k + 1] * (1 - ti) + e[i + 1, k + 1] * ti) * tk;
+            double e00 = e[i, k], e10 = e[i + 1, k], e01 = e[i, k + 1], e11 = e[i + 1, k + 1];
+            var sheet = (e00 * (1 - ti) + e10 * ti) * (1 - tk) + (e01 * (1 - ti) + e11 * ti) * tk;
+            // (split a to c: below the diagonal a, b, c, above it a, c, d; split b to d: the other pair)
+            var ac = tk <= ti ? e00 + ti * (e10 - e00) + tk * (e11 - e10) : e00 + tk * (e01 - e00) + ti * (e11 - e01);
+            var bd = ti + tk <= 1 ? e00 + ti * (e10 - e00) + tk * (e01 - e00) : e11 + (1 - ti) * (e01 - e11) + (1 - tk) * (e10 - e11);
+            return inward > 0 ? Math.Max(sheet, Math.Max(ac, bd)) : Math.Min(sheet, Math.Min(ac, bd));
         }
-        double Lft(double l, double u) => hull ? Ed(eL, l, u) + sd : A0;
-        double Rgt(double l, double u) => hull ? Ed(eR, l, u) - sd : A1;
+        double Lft(double l, double u) => hull ? Ed(eL, l, u, 1) + sd : A0;
+        double Rgt(double l, double u) => hull ? Ed(eR, l, u, -1) - sd : A1;
 
         double[] W(double a, double l, double u) { var v = new double[3]; v[ax] = a; v[al] = l; v[up] = floor + sg * u; return v; }
         (double, double, double) T(double[] v) => (v[0], v[1], v[2]);
