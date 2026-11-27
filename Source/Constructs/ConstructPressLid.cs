@@ -13,7 +13,7 @@ namespace CallOfSlop;
 /// <item><b>A stroke.</b> The blank lies on the lower die; the lid swings shut (<see cref="ShutSec"/>), the latch hooks on the Core's
 /// frame swing over its top (<see cref="LatchSec"/>), the lid squeezes down by its tool's reach while the part is pressed, and the part is
 /// made at the stroke's end. Then the hooks open and the lid rises (<see cref="UnlatchSec"/>), swings open (<see cref="OpenSec"/>) and an
-/// ejector lifts the part out of the die (<see cref="EjectSec"/>); the next stroke waits for that (<see cref="LidOpenSteps"/>).</item>
+/// ejector lifts the part out of the die (<see cref="EjectSec"/>); only then does the part leave the press, and the next stroke may start (<see cref="LidOpenSteps"/>).</item>
 /// <item><b>Drawn only.</b> The lid, the jaws and the pieces on the die are a function of the time into the stroke and since it ended: a
 /// peer sees a stroke start when its store turns Busy or its progress falls back to the 0 each stroke sends at its start, and end when Busy
 /// falls (<see cref="StrokeUpdate"/>). Nothing new goes on the wire. The blocks' cells are the collision; the lid has none.</item>
@@ -37,10 +37,10 @@ public static partial class ConstructPress
     public const int StrokeMinSteps = (int)((ShutSec + LatchSec + 0.5) * 10) + 1;
     /// <summary>A creative stroke, in press steps: free, but it still takes its swing.</summary>
     public const int CreativeStrokeSteps = StrokeMinSteps + 2;
-    /// <summary>Press steps after a stroke before the next may start: the lid opens and the ejector lifts the part out.</summary>
+    /// <summary>Press steps after a stroke before its part leaves and the next may start: the lid opens and the ejector lifts the part out.</summary>
     public const int LidOpenSteps = (int)((UnlatchSec + OpenSec + EjectSec) * 10) + 1;
-    /// <summary>How long the new part shows on the die once it is lifted out (s).</summary>
-    public const double MadeShows = 0.8;
+    /// <summary>How long the drawn part shows on the die once it is lifted out (s): until the real one leaves (LidOpenSteps rounds up a step).</summary>
+    public const double MadeShows = 0.1;
 
     /// <summary>What lies on the die, as drawn.</summary>
     public enum BedShow : byte { None, Blank, Made }
