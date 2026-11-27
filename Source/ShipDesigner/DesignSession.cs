@@ -110,6 +110,8 @@ public sealed class DesignSession
             ["ramp"] = DesignRamp.Defaults(),
             // A light bar's length, brightness, height and colour (DesignLightBars).
             ["bar"] = DesignLightBars.Defaults(),
+            // A stand-off armour plate's sizes and cladding (DesignArmour).
+            ["armour"] = DesignArmour.Defaults(),
         };
         return c.ToJsonString();
     }
