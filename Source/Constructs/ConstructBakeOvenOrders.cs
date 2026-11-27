@@ -365,7 +365,7 @@ public static partial class ConstructBakeOven
     /// bed, on its way, and at its stations, this station's own build with them), or null (no such oven, or nothing more queued).
     /// The station orders its pieces ahead (ConstructStationAhead.cs). Once every 10 s a station.
     /// </summary>
-    public static ConstructBuild.Blueprint? NextKitFor(ConstructWorld world, Construct c, int t)
+    public static ConstructBuild.Blueprint? NextKitFor(ConstructWorld world, Construct c, int t, int ahead = 0)
     {
         var oven = ConstructRollOut.RunOut(c, t) is var run and >= 0 ? ConstructRollOut.OvenOf(c, run) : -1;
         if (oven < 0 || world.StoreOf(c, oven) is not { } st || c.Parts[oven].Orders is not { Count: > 0, Bill: false })
@@ -377,7 +377,7 @@ public static partial class ConstructBakeOven
             if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && c.Parts[s].Station is { } j && KitUnderWay(world, c, s, j, onWay)
                 && ConstructRollOut.RunOut(c, s) is var r and >= 0 && ConstructRollOut.OvenOf(c, r) == oven)
                 under++;
-        return KitAfter(c, oven, under);
+        return KitAfter(c, oven, under + ahead); // (ahead: that many kits further on)
     }
 
     private static void Note(ConstructWorld world, Construct c, int part, string note)

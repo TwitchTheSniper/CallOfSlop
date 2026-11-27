@@ -21,30 +21,38 @@ public sealed partial class StationJob
 /// </summary>
 public static partial class ConstructStation
 {
-    private const int MaxNextKinds = 32; // kinds of a next kit ordered ahead (a deck kit has a dozen)
+    private const int MaxNextKinds = 32; // kinds of the next kits ordered ahead (a deck kit has a dozen)
+    public const int AheadKits = 3; // kits past the one it builds whose pieces it orders ahead (Sean, 2026-11-27: one wasn't enough, the line's Extruder still waited on the oven)
 
     /// <summary>Server, every <see cref="BayEvery"/> looks: the kit its oven bakes after the one it builds, as kinds and counts (none when it builds no oven's kit).</summary>
     private static void NoteNextKit(ConstructWorld world, Construct c, int t, StationJob j)
     {
         j.NextN = 0;
         j.NextName = "";
-        if (!c.DefOf(t).StationNoHold || j.Role == 1 || j.Bp == null || BakeKits.FindPrint(j.Name) == null || ConstructBakeOven.NextKitFor(world, c, t) is not { } next)
+        if (!c.DefOf(t).StationNoHold || j.Role == 1 || j.Bp == null || BakeKits.FindPrint(j.Name) == null)
             return;
         if (j.NextDef.Length == 0)
             (j.NextDef, j.NextNeed) = (new ushort[MaxNextKinds], new int[MaxNextKinds]); // (once a job: no allocation a look)
-        foreach (var s in next.Steps)
+        // The next AheadKits kits, in the order the oven bakes them, their kinds in that order (the nearest kit's pieces are ordered first).
+        for (var a = 0; a < AheadKits; a++)
         {
-            var d = ConstructParts.Find(s.Part) ?? (s.Part.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) && Extrusion.ParseKey(s.Part) is { } key
-                ? Extrusion.Def(key with { Growing = false }) : null); // (an extrusion no machine has made yet isn't found by name)
-            if (d == null || IsLaid(d))
-                continue; // (a dress piece is laid from stock at the station, never ordered)
-            var k = Array.IndexOf(j.NextDef, (ushort)d.Id, 0, j.NextN);
-            if (k >= 0)
-                j.NextNeed[k]++;
-            else if (j.NextN < MaxNextKinds)
-                (j.NextDef[j.NextN], j.NextNeed[j.NextN++]) = ((ushort)d.Id, 1);
+            if (ConstructBakeOven.NextKitFor(world, c, t, a) is not { } next)
+                break;
+            foreach (var s in next.Steps)
+            {
+                var d = ConstructParts.Find(s.Part) ?? (s.Part.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) && Extrusion.ParseKey(s.Part) is { } key
+                    ? Extrusion.Def(key with { Growing = false }) : null); // (an extrusion no machine has made yet isn't found by name)
+                if (d == null || IsLaid(d))
+                    continue; // (a dress piece is laid from stock at the station, never ordered)
+                var k = Array.IndexOf(j.NextDef, (ushort)d.Id, 0, j.NextN);
+                if (k >= 0)
+                    j.NextNeed[k]++;
+                else if (j.NextN < MaxNextKinds)
+                    (j.NextDef[j.NextN], j.NextNeed[j.NextN++]) = ((ushort)d.Id, 1);
+            }
+            if (a == 0)
+                j.NextName = next.Name; // (the nearest, for the log)
         }
-        j.NextName = next.Name;
     }
 
     /// <summary>Is a kind one the next kit needs (<see cref="StationJob.NextDef"/>)?</summary>

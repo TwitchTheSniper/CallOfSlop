@@ -2478,7 +2478,8 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   pieces queue on its pick pads as early pieces do (half the pad's floor). The oven starts that next kit at the station as soon as its bay
   is clear, while it bakes (a kit rolling to a bed, or lying on one, no longer holds the bay: `ConstructStation.BayClearOf`). A
   crane-fed station still takes one kit at a time. Code: `ConstructStationAhead.cs`. Headless Works II, 900 s: 16 hull pieces baked
-  before, 29 after.
+  before, 29 after. Sean then saw a line's Extruder still wait on its oven: the station orders the pieces of the next three kits
+  (`ConstructStation.AheadKits`), nearest first; 900 s: 34 baked, each big line's Extruder idle about 70 s instead of about 200.
 - **Trying it.** `--bake-kit [NAME;NAME...|all]` builds each kit from its blueprint and bakes it, then lays it at five other turns: it
   must come out as the part, at the turn, where the kit lay. `--station-check "Zero Day Works" --oven-order PART [--oven-at X,Z]
   [--kit-loose] [--kit-carry]` queues an order on a site's oven and runs it: `--kit-loose` sets the kit's pieces down in the station's
