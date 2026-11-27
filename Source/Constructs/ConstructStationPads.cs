@@ -100,6 +100,9 @@ public static partial class ConstructStation
             // pad laid against them is the station's input too, Zero Day Works II's press lines' pads, 2026-11-26)
             Span<Vector2> outside = stackalloc Vector2[MaxOutsideBlocks];
             var outN = OutsideBlocks(c, t, hx, hz, outside);
+            // (whether another station lies nearer each pad: asked once a pad, not once a pass, as it may walk the body's parts)
+            Span<sbyte> nearer = c.PieceRackCount <= 1024 ? stackalloc sbyte[c.PieceRackCount] : default;
+            nearer.Clear();
             // The nearest pads first: a few passes, each taking the nearest pad not yet taken (MaxOwnPads is small).
             for (var pass = 0; pass < MaxOwnPads; pass++)
             {
@@ -115,7 +118,7 @@ public static partial class ConstructStation
                     // a roller run from the line sets a piece down). The runway or the bridges reach on over it (StationRender.cs).
                     if (MathF.Abs(mid.Y) > 3f || (SideOff(mid, half, hx, hz) ?? ButtOff(mid, half, outside[..outN])) is not { } off)
                         continue;
-                    if (NearerStation(c, t, p, off))
+                    if (b < nearer.Length ? (nearer[b] != 0 ? nearer[b] > 0 : (nearer[b] = (sbyte)(NearerStation(c, t, p, off) ? 1 : -1)) > 0) : NearerStation(c, t, p, off))
                         continue; // (another station's bay lies nearer it: Zero Day Works II's small-line oven pads lie against the main station's side and past the line station's end, 2026-11-27)
                     if (off < bestOff)
                         (best, bestOff) = (p, off);
