@@ -331,12 +331,25 @@ public static partial class ConstructRender
 
     /// <summary>
     /// The far detail level (docs/render/MERGED-MESHES.md "Far detail"): a merged box's size class by the square root of its
-    /// two biggest sides (a long rod counts by its length as well as its width); a glowing box two classes bigger, so lit
+    /// two biggest sides (a long rod counts by its length as well as its width); a glowing box four classes bigger, so lit
     /// lamps still read from afar. A chunk past a class's distance doesn't draw that class: a box that would be under
     /// <see cref="LodPixels"/> pixels on screen isn't drawn.
     /// </summary>
-    public const int LodClasses = 5;
-    private static readonly float[] LodClassTop = [float.PositiveInfinity, 4f, 1f, 0.25f, 0.0625f]; // metres: class k's biggest box
+    public const int LodClasses = 9;
+    // Metres: class k's biggest box. Halving steps (2026-11-27; they were quarters, 4 m / 1 m / 25 cm / 6 cm): a class is left
+    // out once its biggest box is under LodPixels, so with steps of four a 7 cm bolt was drawn until a 25 cm box went, out to
+    // nearly four times the distance where it was itself under a pixel. Works II's floor tiles are mostly such bolts and plates.
+    private static readonly float[] LodClassTop = [float.PositiveInfinity, 4f, 2f, 1f, 0.5f, 0.25f, 0.125f, 0.0625f, 0.03125f];
+    private const int LodGlowClasses = 4; // a glowing box or a lamp counts this many classes bigger (sixteen times its size: lights read from afar)
+
+    /// <summary>The size class of a box whose two biggest sides' square root is <paramref name="m"/> metres (0 the biggest).</summary>
+    private static int ClassOfSize(float m)
+    {
+        var k = 0;
+        while (k < LodClasses - 1 && m < LodClassTop[k + 1])
+            k++;
+        return k;
+    }
     public static float LodPixels = 1f;
     public static bool LodPixelsForced; // (--lod-px: the Video settings leave it alone)
     public static bool ChunkLodOn = true; // (--no-chunk-lod, the bench)
@@ -350,9 +363,8 @@ public static partial class ConstructRender
         var c = MathF.Abs(box.Half.Z) * 2;
         var big = MathF.Max(a, MathF.Max(b, c));
         var mid = MathF.Max(MathF.Min(a, b), MathF.Min(MathF.Max(a, b), c));
-        var m = MathF.Sqrt(big * mid);
-        var k = m >= 4f ? 0 : m >= 1f ? 1 : m >= 0.25f ? 2 : m >= 0.0625f ? 3 : 4;
-        return box.Glow || lamp ? Math.Max(0, k - 2) : k;
+        var k = ClassOfSize(MathF.Sqrt(big * mid));
+        return box.Glow || lamp ? Math.Max(0, k - LodGlowClasses) : k;
     }
 
     /// <summary>
@@ -368,9 +380,8 @@ public static partial class ConstructRender
         var c = new Vector3(m.M31, m.M32, m.M33).Length();
         var big = MathF.Max(a, MathF.Max(b, c));
         var mid = MathF.Max(MathF.Min(a, b), MathF.Min(MathF.Max(a, b), c));
-        var s = MathF.Sqrt(big * mid);
-        var k = s >= 4f ? 0 : s >= 1f ? 1 : s >= 0.25f ? 2 : s >= 0.0625f ? 3 : 4;
-        return box.Code < 0 ? Math.Max(0, k - 2) : k; // (Code -1: drawn glowing)
+        var k = ClassOfSize(MathF.Sqrt(big * mid));
+        return box.Code < 0 ? Math.Max(0, k - LodGlowClasses) : k; // (Code -1: drawn glowing)
     }
 
     /// <summary>The smallest size class a chunk this far off (metres to its nearest side) draws.</summary>

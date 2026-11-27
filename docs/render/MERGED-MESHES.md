@@ -76,13 +76,18 @@ where the float maths runs in another order. One program for both GL tiers (`#ve
 ## Far detail
 
 A chunk's slots are sorted by shape, then by **size class**, biggest first (`SizeClass`: the square root of a box's two
-biggest sides, in five classes at 4 m, 1 m, 25 cm and 6 cm; a glowing box or a lamp's two classes up, so lights read from
+biggest sides, in nine classes halving from 4 m to 3 cm; a glowing box or a lamp's four classes up, so lights read from
 afar). `MergedMesh.GroupClassEnd` holds, for each shape group, how many of its first slots are of each class or bigger, so
 a far chunk draws only the head of each group: no second copy of anything, no rebuild as the eye moves. A class is left
-out once its biggest box would be under `LodPixels` pixels (1; the projection's scale and the view's height give pixels a
-metre) at the chunk's nearest side. On a 1080p view at the default field of view that is 6 cm boxes past about 50 m,
-25 cm past 190 m, 1 m past 770 m. Video settings: **Far detail** (Low 2.5 pixels, Medium 1, High: every box at any
-distance); `--no-chunk-lod`, `--lod-px N`.
+out once its biggest box would be under `LodPixels` pixels (the projection's scale and the view's height give pixels a
+metre) at the chunk's nearest side. On a 1080p view at the default field of view and 1 pixel that is boxes under 3 cm past
+about 25 m, 6 cm past 50 m, 12 cm past 100 m, 25 cm past 200 m, 1 m past 800 m. Video settings: **Far detail** (Low 3
+pixels, Medium 1.5, High 0.5); `--no-chunk-lod`, `--lod-px N`.
+
+The classes were quarter steps (4 m, 1 m, 25 cm, 6 cm) until 2026-11-27. A class goes when its biggest box is under the
+pixel limit, so a 7 cm bolt waited for 25 cm boxes and was drawn out to nearly four times the distance where it was itself
+under a pixel. Works II's floor tiles (Bay Blocks, Pad Tiles, Roller Tiles, Laser Bed Blocks: 2.5 M of its 5 M triangles)
+are mostly bolts and plates under 25 cm, so halving steps drop them near their own pixel size.
 
 ## Occlusion
 
