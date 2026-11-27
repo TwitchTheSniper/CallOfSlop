@@ -1296,19 +1296,13 @@ public static partial class DesignScene
         if (!el && !er)
             return (r.X0, r.X1);
         var w = d.World(d.Decks[r.Deck], 0, v, up);
-        var w0 = d.World(d.Decks[r.Deck], 0, v, 0.05);
         double lo = r.X0, hi = r.X1, slo = double.MaxValue, shi = double.MinValue;
         var home = HomeBody(d, r);
         foreach (var h in d.Hulls)
             if (h != home) continue; else
             for (var c = 0; c < h.Copies; c++)
             {
-                // Never wider than at the floor (Karl, 2026-11-27: where the skin flares out above the floor the wall leaned out past the
-                // floor's edge, the clip pulled parts of it back and the hull showed through in jags): the walls rise straight from the
-                // floor's edge and only lean in where the skin narrows.
                 var half = EasedHalf(h, w[2] - h.Z, w[1] - h.Y);
-                if (up > 0.06 && half >= 0.1)
-                    half = Math.Min(half, EasedHalf(h, w0[2] - h.Z, w0[1] - h.Y));
                 if (half < 0.1)
                     continue;
                 var cx = h.CopyX(c);
