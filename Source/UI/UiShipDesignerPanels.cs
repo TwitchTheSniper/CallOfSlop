@@ -127,6 +127,80 @@ public sealed partial class Ui
 
     private static void EndRow() => _wrapInRow = false;
 
+    /// <summary>The piece gallery's filter: "All", "Outside", "Inside" or one group; and its search text.</summary>
+    private string _palCat = "All";
+    private ImInputString? _palFind;
+
+    /// <summary>The outside groups in the gallery's order (any other group the catalogue names goes after them).</summary>
+    private static readonly string[] OutsideGroups = ["Sockets", "Boarding", "Docking", "Hangar", "Drives", "Weapons", "Systems", "Lights"];
+
+    private static string GroupTitle(string g) => g == "Sockets" ? "Airlocks, docks and hatches" : g;
+
+    /// <summary>
+    /// The Pieces palette as a gallery (Karl, 2026-11-27): filters for outside the hull, inside a room and each category, a search over names
+    /// and descriptions, then picture cards (DesignThumbs.cs) under their category headings, outside pieces first. A piece is inside when it
+    /// stands on a room's floor (the seat's socket: DesignSeats, DesignFurnishings).
+    /// </summary>
+    private void PieceGallery()
+    {
+        var pieces = Arr(CAT, "pieces").ToList();
+        bool Inside(JsonElement k) => Str(k, "socket") == "seat";
+        var groups = pieces.Select(p => Str(p, "group")).Distinct().ToList();
+        int Order(string g) => Array.IndexOf(OutsideGroups, g) is var i and >= 0 ? i : Array.IndexOf(ShipDesigner.DesignFurnishings.Groups, g) is var j and >= 0 ? 100 + j : 200;
+        groups = [.. groups.OrderBy(g => pieces.Any(p => Str(p, "group") == g && Inside(p)) ? 1 : 0).ThenBy(Order)];
+        EndRow();
+        foreach (var f in new[] { "All", "Outside", "Inside" })
+            if (WrapButton($"{f}##sdpalf{f}", _palCat == f))
+                _palCat = f;
+        EndRow();
+        foreach (var g in groups)
+            if (WrapButton($"{g}##sdpalg{g}", _palCat == g))
+                _palCat = _palCat == g ? "All" : g;
+        EndRow();
+        _palFind ??= new ImInputString(48);
+        ImGui.SetNextItemWidth(-1);
+        ImGui.InputTextWithHint("##sdpalfind"u8, "Search pieces"u8, _palFind, ImGuiInputTextFlags.None);
+        var find = ImGuiSafe.Text(_palFind).Trim();
+        var shown = 0;
+        string? side = null;
+        foreach (var g in groups)
+        {
+            var inG = pieces.Where(p => Str(p, "group") == g).ToList();
+            var inside = inG.Any(Inside);
+            if (_palCat is "Outside" && inside || _palCat is "Inside" && !inside || _palCat is not ("All" or "Outside" or "Inside") && _palCat != g)
+                continue;
+            if (find.Length > 0)
+                inG = [.. inG.Where(p => Str(p, "name").Contains(find, StringComparison.OrdinalIgnoreCase) || Str(p, "desc").Contains(find, StringComparison.OrdinalIgnoreCase) || g.Contains(find, StringComparison.OrdinalIgnoreCase))];
+            if (inG.Count == 0)
+                continue;
+            var s = inside ? "Inside a room" : "Outside the hull";
+            if (s != side && _palCat is "All")
+            {
+                ImGui.Separator();
+                H2(s);
+                Hint(inside ? "Drop it on the hull by a room (or link it to one): it stands on that room's floor, a wall piece against the nearest wall." :
+                    "Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside.");
+            }
+            side = s;
+            H2(GroupTitle(g), $"{inG.Count}");
+            EndRow();
+            foreach (var k in inG)
+            {
+                var name = Str(k, "name");
+                var sock = Has(k, "socket") && !Inside(k);
+                PieceTile(name, _paletteDrag?.Kind == name, sock);
+                shown++;
+                if (ImGui.IsItemActivated())
+                    PaletteStart(name);
+                if (ImGui.IsItemHovered())
+                    ImGuiSafe.WrappedTooltip($"{Str(k, "desc")}\n{(Inside(k) ? "in a room" : Has(k, "socket") ? "needs " + Str(k, "needs") : Str(k, "where") == "skin" ? "on the skin" : "on a hull's end")}", 320 * _scale);
+            }
+            EndRow();
+        }
+        if (shown == 0)
+            Hint("No piece matches.");
+    }
+
     private void LeftPanel()
     {
         var rooms = Arr(S, "rooms").ToList();
@@ -164,30 +238,13 @@ public sealed partial class Ui
         else if (_sdMode == "pieces")
         {
             H2("Pieces");
-            Hint("Drag onto the hull. Sockets (amber edge) cut their opening through the skin and open into a room inside; an airlock brings its own airlock room.");
+            Hint("Drag a picture onto the hull. An airlock brings its own airlock room.");
             Checkbox("Mirror on its own body##sdpm", _pMirror, v => _pMirror = v);
             Checkbox("On a mirrored pair of bodies, put it on both##sdpp", _pPair, v => _pPair = v);
             Slider("Size to place", Math.Round(_pieceSize * 100), 25, 400, 5, "%", v => _pieceSize = v / 100, "ps");
             Slider("Recess to place", Math.Round(_pieceRecess * 100), 0, 200, 5, " cm", v => _pieceRecess = v / 100, "pr");
             DesignThumbs.Want(); // (the piece pictures: made over the next frames, then kept)
-            var pieces = Arr(CAT, "pieces").ToList();
-            var groups = pieces.Select(p => Str(p, "group")).Distinct().OrderBy(g => g == "Sockets" ? 0 : 1).ToList();
-            foreach (var g in groups)
-            {
-                H2(g == "Sockets" ? "Airlocks, docks and hatches" : g);
-                EndRow();
-                foreach (var k in pieces.Where(p => Str(p, "group") == g))
-                {
-                    var name = Str(k, "name");
-                    var sock = Has(k, "socket");
-                    PieceTile(name, _paletteDrag?.Kind == name, sock);
-                    if (ImGui.IsItemActivated())
-                        PaletteStart(name);
-                    if (ImGui.IsItemHovered())
-                        ImGuiSafe.WrappedTooltip($"{Str(k, "desc")}\n{(sock ? "needs " + Str(k, "needs") : Str(k, "where") == "skin" ? "on the skin" : "on a hull's end")}", 320 * _scale);
-                }
-                EndRow();
-            }
+            PieceGallery();
         }
         else
         {
