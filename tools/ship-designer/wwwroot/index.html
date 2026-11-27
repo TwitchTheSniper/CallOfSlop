@@ -1404,10 +1404,11 @@ function hangarControls(p) {
     const fl = el("select", { "aria-label": "Floor" }); for (const t of ["Fixed", "Lift-out"]) fl.append(el("option", t === p.bayFloor ? { selected: "" } : {}, t));
     fl.addEventListener("change", () => send({ bayFloor: fl.value }));
     return [el("h3", {}, "Hangar bay"),
-      m("Width", "bayW", 5, 96, 0.5), m("Height", "bayH", 3, 48, 0.5), m("Depth", "bayD", 5, 96, 0.5),
+      (() => { const cb = el("input", { type: "checkbox", "aria-label": "Match door" }); cb.checked = !!p.bayMatch; cb.addEventListener("change", () => send({ bayMatch: cb.checked })); return el("label", { class: "row" }, cb, " Match door (width and height)"); })(),
+      ...(p.bayMatch ? [] : [m("Width", "bayW", 5, 96, 0.5), m("Height", "bayH", 3, 48, 0.5)]), m("Depth", "bayD", 5, 96, 0.5),
       el("div", { class: "row" }, el("button", { class: "reset", title: "Width, height and depth back to the bay's own", onclick: () => send({ bayW: D.bayW, bayH: D.bayH, bayD: D.bayD }) }, "Reset all")),
       el("h3", {}, "Hangar door"),
-      m("Door width", "bayDoorW", 5, Math.min(48, p.bay[0]), 0.5), m("Door height", "bayDoorH", 3, Math.min(32, p.bay[1]), 0.5),
+      m("Door width", "bayDoorW", 5, p.bayMatch ? 48 : Math.min(48, p.bay[0]), 0.5), m("Door height", "bayDoorH", 3, p.bayMatch ? 32 : Math.min(32, p.bay[1]), 0.5),
       el("div", { class: "row" }, el("span", {}, "Type"), ty, el("button", { class: "reset", title: "Door back to its defaults", onclick: () => send({ bayDoorW: D.bayDoorW, bayDoorH: D.bayDoorH, bayDoor: D.bayDoor }) }, "Reset all")),
       el("h3", {}, "Hangar floor"), el("div", { class: "row" }, el("span", {}, "Floor"), fl),
       ...(p.bayFloor === "Lift-out" ? [el("p", { class: "hint" }, "The floor is a platform the craft stands on: F pushes it out through the mouth by the bay's depth (up from a roof bay, down from a belly bay, sideways from a side bay).")] : []),
