@@ -1798,6 +1798,11 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
   arm rather than drive. A piece swings round the mast in an arc. Rovers keep apart: a spot beside along the lane first, then a later
   start, waiting up to 300 s. An idle rover waits 15 s and drives home. Plans are sent whole (keys of base and hook), and both peers
   play them from the start time; the mast rises as a rover leaves its dock and folds down with its arm when parked.
+- **The wrist** (the lab's, 2026-11-27): between leaving its pad and coming over its place a piece swings round (yaw) with its
+  leading end lifted (pitch), square again before it goes down (a long piece more, a plate tilted edge first; the side alternates trip
+  by trip), on top of its turn towards its place. The gripper's head turns about its knuckle to keep the jaws across the piece and tilts
+  with it, easing back once it lets go. While a piece is held in its place for the weld a pale blue shell flickers round it. Times
+  come from the trip's hook keys (`RoverPlan.CarryTimes`), so a client draws the same with nothing more on the wire.
 - **The build order** (`BuildOrder`): Keel pieces first, then what lies wholly under the lowest deck, then deck by deck (structure, then
   fittings); a step never goes before its parent's rank. With nothing fitted for 30 s the next rank may go (`StallTicks`).
 - **Zero Day Works**: every station keeps its Core's Small rover; the yard has two Large Dock Expansions between and east of its pick
