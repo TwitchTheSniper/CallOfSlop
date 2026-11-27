@@ -31,9 +31,10 @@ public static class DesignHangar
     /// <summary>A bay door's kinds (Karl, 2026-11-27): Rolling runs out along the outside of the hull on rails twice the opening's length
     /// (half the door's run, half where it parks); Shutter is a sectional garage door of slats in the well that run on tracks to a side
     /// and on along the bay's ceiling there, all to the side it is set to or split in the middle to both, with no drum (Karl, 2026-11-27, in
-    /// place of an iris); Sliding runs aside
+    /// place of an iris); Side shutter is a side-sliding sectional door, a chain of hinged panels that runs to the side and turns the corner
+    /// down into the ship along that side of the bay, one set or two (one into each side) (Karl, 2026-11-27); Sliding runs aside
     /// inside the well on a piston; Hinged swings out on motor hinges.</summary>
-    public static readonly string[] DoorTypes = ["Rolling", "Shutter", "Sliding", "Hinged"];
+    public static readonly string[] DoorTypes = ["Rolling", "Shutter", "Side shutter", "Sliding", "Hinged"];
     public const string DefDoor = "Rolling";
     /// <summary>A shutter's sides (in the bay's frame: Fore +z, Aft -z, Right +x, Left -x): the one its roller is at, or, split onto two
     /// rollers, the axis it splits across. Its slats, each roller's, 1 to <see cref="ShutterMaxSlats"/>.</summary>
@@ -297,6 +298,7 @@ public static class DesignHangar
     /// </summary>
     public static void Fit(ShipDesign d)
     {
+        LinkRooms(d);
         if (d.Stacked)
             return;
         foreach (var p in d.Pieces)
@@ -309,6 +311,36 @@ public static class DesignHangar
             double? hgt = Vertical(w) == 1 ? (w.Y[1] > 0 ? mouth - floor : null) : 2 * (mouth - floor);
             if (hgt is { } v && v > 0)
                 p.BayH = Math.Clamp(Math.Round(v * 20) / 20, BayMinH, BayMaxH);
+        }
+    }
+
+    /// <summary>How far from a bay's volume the room it opens into may be, when it is picked for it.</summary>
+    public const double RoomReach = 3;
+
+    /// <summary>
+    /// Links every bay with no room (or whose room is gone) to the room nearest its volume, within <see cref="RoomReach"/> (Karl,
+    /// 2026-11-27: "hangars should be connected to a room"); one with none in reach stays unlinked and its check says so.
+    /// </summary>
+    private static void LinkRooms(ShipDesign d)
+    {
+        foreach (var p in d.Pieces)
+        {
+            if (!IsBay(p.Kind) || p.Room != 0 && d.RoomById(p.Room) is not null || Of(p) is not { } b || d.Hull(p.Hull) is not { } h)
+                continue;
+            p.Room = 0;
+            var w = DesignScene.Where(h, p);
+            var (ex, ey, ez) = Extent(b, w);
+            var box = Box(w.O, w.X, w.Y, w.Z, ex, ey + p.Recess, ez);
+            var best = RoomReach + 1e-6;
+            foreach (var r in d.Rooms)
+            {
+                var o = DesignScene.Outer(d, r);
+                double gap = 0;
+                for (var k = 0; k < 3; k++)
+                    gap = Math.Max(gap, Math.Max(o[2 * k] - box[2 * k + 1], box[2 * k] - o[2 * k + 1]));
+                if (gap < best)
+                    (best, p.Room) = (gap, r.Id);
+            }
         }
     }
 
@@ -328,6 +360,12 @@ public static class DesignHangar
             var (dx, dz) = DoorExtent(p, w);
             if (Math.Max(dx * p.Hole - ex, dz * p.Hole - ez) > 1e-6)
                 c.Issues.Add(new("warn", $"{p.Kind}'s door ({p.BayDoorW:0.#} x {p.BayDoorH:0.#} m) is bigger than the bay's side it is in ({(Vertical(w) == 0 ? ez : ex):0.#} x {(Vertical(w) == 0 ? ex : ez):0.#} m): make the door smaller or the bay bigger", $"piece:{p.Id}"));
+            if (p.BayDoorType == "Side shutter")
+            {
+                var run = (p.ShutterSide is "Fore" or "Aft" ? dz : dx) * p.Hole / (p.ShutterRollers == 2 ? 2 : 1);
+                if (run + 1 > ey + 1e-6)
+                    c.Issues.Add(new("warn", $"{p.Kind}'s side shutter runs {run + 1:0.#} m down its side, past the bay's {ey:0.#} m: split it in two or make the bay deeper", $"piece:{p.Id}"));
+            }
             var back = Add(w.O, w.Y, -ey - p.Recess);
             var mid = Add(w.O, w.Y, -ey / 2 - p.Recess);
             if (h.Depth(back[0], back[1], back[2]) < 0 || h.Depth(mid[0], mid[1], mid[2]) < 0)
@@ -347,7 +385,12 @@ public static class DesignHangar
             }
             // Linked to a room as a socket (Karl, 2026-11-27): a way aboard into it, through a wide doorway (or a hole in its ceiling or
             // floor when the bay is over or under it), with its link line drawn from the bay's middle.
-            if (p.Room != 0)
+            if (p.Room == 0)
+            {
+                ok = false;
+                c.Issues.Add(new("error", $"{p.Kind} isn't connected to a room: put one within {RoomReach:0} m of it, or pick the room it opens into", $"piece:{p.Id}"));
+            }
+            else
             {
                 if (d.RoomById(p.Room) is not { } lr)
                 {
@@ -453,7 +496,7 @@ public static class DesignHangar
         Ring(m, hx, hz, 0.08, -1.2, 0.02, PieceKinds.Gun);
         // The door, open: a rolling door run out along the hull on its rails, a shutter's slats rolled up onto its roller, a sliding door run
         // aside on its piston, a hinged one swung out 70 degrees on its lower (aft) edge (shut: over its hole).
-        var th = Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2);
+        var th = ShutterThick(hx, hz);
         if (p.BayDoorType == "Rolling")
         {
             DrawRolling(m, p, hx, hz, band, th, shut);
@@ -461,7 +504,12 @@ public static class DesignHangar
         }
         if (p.BayDoorType == "Shutter")
         {
-            DrawShutter(m, p, hx, hz, th, shut);
+            DrawShutter(m, Slats(p, hx, hz, th), shut);
+            goto bay;
+        }
+        if (p.BayDoorType == "Side shutter")
+        {
+            DrawShutter(m, Panels(p, b, w), shut);
             goto bay;
         }
         if (p.BayDoorType == "Sliding")
@@ -657,7 +705,7 @@ public static class DesignHangar
 
     /// <summary>A shutter's slat: its leaf, its box in the bay's frame shut (across the mouth) and open (on the bay's ceiling, on its
     /// edge: the slat turned a quarter turn about the cross axis), the frame axis it runs to (0 X, 2 Z) and which way (+1 or -1).</summary>
-    public readonly record struct Slat(int Leaf, double[] Lo, double[] Hi, double[] OpenLo, double[] OpenHi, int Axis, int Sign);
+    public readonly record struct Slat(int Leaf, double[] Lo, double[] Hi, double[] OpenLo, double[] OpenHi, int Axis, int Sign, bool Turns = false);
 
     /// <summary>The depth step between a shutter's slats (shut, each laps under the next; they keep it open, end to end on the ceiling).</summary>
     private const double SlatStep = 0.04;
@@ -704,24 +752,82 @@ public static class DesignHangar
     public static double ShutterRun(Piece p, double hx, double hz) =>
         (p.ShutterSide is "Fore" or "Aft" ? hz : hx) * (p.ShutterRollers == 2 ? 1 : 2) + ShutterGap;
 
+    /// <summary>The gap between a side shutter's panels, end to end (none share an end face's plane).</summary>
+    private const double PanelJoint = 0.02;
+
+    /// <summary>How far past the bay's side wall (or the mouth's edge, whichever is farther out) a side shutter's open panels stand.</summary>
+    private const double PanelOff = 0.15;
+
+    /// <summary>A shutter's thickness for a mouth of half sizes <paramref name="hx"/> by <paramref name="hz"/>.</summary>
+    public static double ShutterThick(double hx, double hz) => Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2);
+
+    /// <summary>
+    /// A side shutter's panels (Karl, 2026-11-27: a side-sliding sectional door, like a garage's, "they go into the ship on the side of the
+    /// hangar door", one set or two, one into each side), in the bay's frame. Shut, they lie end to end across the mouth in the well; open,
+    /// the chain has run to its side and turned the corner, each panel standing on its end just outside the bay's side wall, going down into
+    /// the ship from the mouth (panel 0, the one nearest the side, deepest), so they are never in the bay's way. The game turns each a
+    /// quarter turn from the one to the other (<see cref="Slat.Turns"/>).
+    /// </summary>
+    public static List<Slat> Panels(Piece p, BaySize b, DesignScene.Place w)
+    {
+        var list = new List<Slat>();
+        var (dx, dz) = DoorExtent(p, w);
+        double hx = dx / 2 * p.Hole, hz = dz / 2 * p.Hole, th = ShutterThick(hx, hz);
+        var (ex, _, ez) = Extent(b, w);
+        var axis = p.ShutterSide is "Fore" or "Aft" ? 2 : 0;
+        double ha = axis == 2 ? hz : hx, hc = axis == 2 ? hx : hz, wall = Math.Max(ha, (axis == 2 ? ez : ex) / 2) + PanelOff;
+        var n = Math.Clamp(p.ShutterSlats, 1, ShutterMaxSlats);
+        int[] signs = p.ShutterRollers == 2 ? [1, -1] : [p.ShutterSide is "Fore" or "Right" ? 1 : -1];
+        var pw = (p.ShutterRollers == 2 ? ha : 2 * ha) / n;
+        var c = 2 - axis;
+        var leaf = 0;
+        foreach (var sg in signs)
+            for (var k = 0; k < n; k++)
+            {
+                // Shut: from the side's edge inwards, [ha - (k+1)pw, ha - k pw] (each end but the side's in by half a joint).
+                double u0 = ha - (k + 1) * pw + PanelJoint / 2, u1 = ha - k * pw - (k > 0 ? PanelJoint / 2 : 0);
+                var lo = new double[3]; var hi = new double[3];
+                (lo[axis], hi[axis]) = (Math.Min(sg * u0, sg * u1), Math.Max(sg * u0, sg * u1));
+                (lo[c], hi[c]) = (-hc - 0.1, hc + 0.1);
+                (lo[1], hi[1]) = (-1.0 - th, -1.0);
+                // Open: on its end past the wall, from the corner down; the last panel at the top.
+                var olo = (double[])lo.Clone(); var ohi = (double[])hi.Clone();
+                (olo[axis], ohi[axis]) = sg > 0 ? (wall, wall + th) : (-wall - th, -wall);
+                (olo[1], ohi[1]) = (-1.0 - th - (n - k) * pw + PanelJoint / 2, -1.0 - th - (n - 1 - k) * pw - PanelJoint / 2);
+                list.Add(new Slat(leaf++, lo, hi, olo, ohi, axis, sg, true));
+            }
+        return list;
+    }
+
     /// <summary>
     /// A sectional shutter: its slats (leaves 0 up, each a door of its own in the game that slides its run to the side and on under the
     /// ceiling, welded so F on any opens them all; drawn open unless shut), each with a rib on its bay side, and a track at each end of the
     /// slats along the ceiling, from the far edge of the mouth to the end of the run.
     /// </summary>
-    private static void DrawShutter(DesignMesh m, Piece p, double hx, double hz, double th, bool shut)
+    private static void DrawShutter(DesignMesh m, List<Slat> slats, bool shut)
     {
-        var slats = Slats(p, hx, hz, th);
         foreach (var sl in slats)
         {
             double[] lo = shut ? sl.Lo : sl.OpenLo, hi = shut ? sl.Hi : sl.OpenHi;
+            // (its long way: across the mouth shut, and so open on the ceiling; a side shutter's open panel stands on its end)
+            var up = !shut && sl.Turns;
             m.Leaf(sl.Leaf, () =>
             {
                 m.Box(lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], PieceKinds.Gun);
                 double[] rl = (double[])lo.Clone(), rh = (double[])hi.Clone();
-                var mid = (lo[sl.Axis] + hi[sl.Axis]) / 2;
-                (rl[sl.Axis], rh[sl.Axis]) = (mid - 0.06, mid + 0.06);
-                (rl[1], rh[1]) = (lo[1] - 0.03, lo[1]);
+                if (up)
+                {
+                    // (a rib across its face towards the bay)
+                    var mid = (lo[1] + hi[1]) / 2;
+                    (rl[1], rh[1]) = (mid - 0.06, mid + 0.06);
+                    (rl[sl.Axis], rh[sl.Axis]) = sl.Sign > 0 ? (lo[sl.Axis] - 0.03, lo[sl.Axis]) : (hi[sl.Axis], hi[sl.Axis] + 0.03);
+                }
+                else
+                {
+                    var mid = (lo[sl.Axis] + hi[sl.Axis]) / 2;
+                    (rl[sl.Axis], rh[sl.Axis]) = (mid - 0.06, mid + 0.06);
+                    (rl[1], rh[1]) = (lo[1] - 0.03, lo[1]);
+                }
                 m.Box(rl[0], rl[1], rl[2], rh[0], rh[1], rh[2], PieceKinds.Pale);
             });
         }
@@ -729,12 +835,31 @@ public static class DesignHangar
         {
             var f = g.First();
             var c = 2 - f.Axis;
-            var (a0, a1) = (g.Min(x => Math.Min(x.Lo[f.Axis], x.OpenLo[f.Axis])), g.Max(x => Math.Max(x.Hi[f.Axis], x.OpenHi[f.Axis])));
             var deep = g.Min(x => x.Lo[1]);
+            if (f.Turns)
+            {
+                // A side shutter's track at each end of its panels: across the mouth to the corner, and on down the side.
+                double a0 = g.Min(x => x.Lo[f.Axis]), a1 = g.Max(x => x.Hi[f.Axis]);
+                double w0 = g.Min(x => x.OpenLo[f.Axis]), w1 = g.Max(x => x.OpenHi[f.Axis]), bottom = g.Min(x => x.OpenLo[1]);
+                foreach (var end in new[] { f.Lo[c] - 0.14, f.Hi[c] + 0.02 })
+                {
+                    var lo = new double[3]; var hi = new double[3];
+                    (lo[f.Axis], hi[f.Axis]) = (Math.Min(a0, w0), Math.Max(a1, w1));
+                    (lo[c], hi[c]) = (end, end + 0.12);
+                    (lo[1], hi[1]) = (deep - 0.05, -0.98);
+                    m.Box(lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], PieceKinds.Pale);
+                    (lo[f.Axis], hi[f.Axis]) = (w0 - 0.05, w1 + 0.05);
+                    (lo[c], hi[c]) = (end + 0.004, end + 0.116); // (4 mm in from the track across, where the two meet)
+                    (lo[1], hi[1]) = (bottom - 0.05, deep - 0.02);
+                    m.Box(lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], PieceKinds.Pale);
+                }
+                continue;
+            }
+            var (b0, b1) = (g.Min(x => Math.Min(x.Lo[f.Axis], x.OpenLo[f.Axis])), g.Max(x => Math.Max(x.Hi[f.Axis], x.OpenHi[f.Axis])));
             foreach (var end in new[] { f.Lo[c] - 0.14, f.Hi[c] + 0.02 })
             {
                 var lo = new double[3]; var hi = new double[3];
-                (lo[f.Axis], hi[f.Axis]) = (a0, a1);
+                (lo[f.Axis], hi[f.Axis]) = (b0, b1);
                 (lo[c], hi[c]) = (end, end + 0.12);
                 (lo[1], hi[1]) = (deep - 0.05, -0.98);
                 m.Box(lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], PieceKinds.Pale);

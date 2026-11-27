@@ -1099,19 +1099,21 @@ public sealed partial class Ui
             ImGui.Text("Type");
             Row();
             MatCombo("hgdoor" + pid, Str(p, "bayDoor", ShipDesigner.DesignHangar.DefDoor), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
-            if (Str(p, "bayDoor") == "Shutter")
+            if (Str(p, "bayDoor") is "Shutter" or "Side shutter")
             {
                 var two = I(p, "shutterRollers", 1) == 2;
-                ImGui.Text("Rollers");
+                var sideways = Str(p, "bayDoor") == "Side shutter";
+                ImGui.Text(sideways ? "Sets" : "Rollers");
                 Row();
-                MatCombo("hgsr" + pid, two ? "Two (split in the middle)" : "One", ["One", "Two (split in the middle)"], v => Cmd(C("setPiece", ("id", pid), ("shutterRollers", v == "One" ? 1 : 2))));
-                ImGui.Text(two ? "Split" : "Roller at");
+                string[] counts = sideways ? ["One", "Two (one into each side)"] : ["One", "Two (split in the middle)"];
+                MatCombo("hgsr" + pid, two ? counts[1] : counts[0], counts, v => Cmd(C("setPiece", ("id", pid), ("shutterRollers", v == "One" ? 1 : 2))));
+                ImGui.Text(two ? "Split" : sideways ? "Runs to" : "Roller at");
                 Row();
                 var side = Str(p, "shutterSide", "Fore");
                 string[] sides = two ? ["Fore and aft", "Left and right"] : ShipDesigner.DesignHangar.ShutterSides;
                 var shown = two ? (side is "Fore" or "Aft" ? sides[0] : sides[1]) : side;
                 MatCombo("hgss" + pid, shown, sides, v => Cmd(C("setPiece", ("id", pid), ("shutterSide", v == "Fore and aft" ? "Fore" : v == "Left and right" ? "Right" : v))));
-                Slider("Slats", I(p, "shutterSlats", 4), 1, ShipDesigner.DesignHangar.ShutterMaxSlats, 1, two ? " each" : "", v => Cmd(C("setPiece", ("id", pid), ("shutterSlats", (int)v))), "hgsl" + pid, 4);
+                Slider(sideways ? "Panels" : "Slats", I(p, "shutterSlats", 4), 1, ShipDesigner.DesignHangar.ShutterMaxSlats, 1, two ? " each" : "", v => Cmd(C("setPiece", ("id", pid), ("shutterSlats", (int)v))), "hgsl" + pid, 4);
             }
             H3("Hangar floor");
             ImGui.Text("Floor");
@@ -1127,6 +1129,7 @@ public sealed partial class Ui
                 {
                     "Rolling" => "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.",
                     "Shutter" => "A sectional garage door: its slats run on tracks to the side you pick and on along the bay's ceiling there, or split in the middle to both sides.",
+                    "Side shutter" => "A side-sliding sectional door: a chain of hinged panels that runs to the side you pick and turns the corner down into the ship beside the bay, or two sets, one into each side.",
                     "Hinged" => "The door swings out on motor hinges.",
                     _ => "The door slides aside inside the well on a piston.",
                 }} {n} docking fitting{(n == 1 ? "" : "s")} linked.");
@@ -1650,7 +1653,7 @@ public sealed partial class Ui
             if (drive)
                 Hint($"Its service socket (feed and access panel) is inside, opposite it, in {(roomId != 0 ? RoomText() : "the nearest room it can reach")}.");
             if (sock)
-                Hint(roomId != 0 ? $"Opens into {RoomText()}." : bay ? "Opens into no room: pick the room it opens into (a wide doorway into it)." : "Opens into the nearest room it can reach.");
+                Hint(roomId != 0 ? $"Opens into {RoomText()}." : bay ? $"Opens into no room: there is none within {ShipDesigner.DesignHangar.RoomReach:0} m of it. Pick the room it opens into (a wide doorway into it), or put one beside it." : "Opens into the nearest room it can reach.");
             if (drive || sock)
             {
                 if (OnButton("Pick its room##sdpcpr", _pickRoomFor == pid))
