@@ -1286,6 +1286,8 @@ public sealed partial class Game
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { Loose: true, PartCount: 1 } module && ToolUpgrades.Current.ModuleOf(module.Parts[0].Def) != null)
                     return hands.FitUpgrade(Constructs, p.Id, eye, module); // (a tool upgrade: fitted, ConstructEditsUpgrades.cs)
+                if (Constructs.Get(body) is { } lf && part < lf.PartCount && ConstructRide.LadderOfFoot(lf, part) is var footOf and >= 0)
+                    part = (ushort)footOf; // (a boarding hatch's lowered ladder: F there is F on the ladder it lowers, so it is climbed)
                 if (Constructs.Get(body) is { } lh && part < lh.PartCount && lh.DefOf(part).LadderTop > 0 && !LadderOnShutDoor(lh, part) && ConstructRide.OpenWay(Constructs, lh, part))
                     return ""; // (a ladder in a shaft: its shut deck hatch, belly door or stowed sections open on F, and F again climbs it)
                 if (Constructs.Get(body) is { } lc && part < lc.PartCount && lc.DefOf(part).LadderTop > 0 && !LadderOnShutDoor(lc, part))
@@ -2250,7 +2252,7 @@ public sealed partial class Game
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = !c.MovesNow ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
         using var body = World.Body(p.Sim); // (a robot shell's size on the rungs)
-        var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.FramedRider)
+        var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.FramedRider, look: p.Pitch)
             : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.FramedRider);
         if (why == null)
             Constructs.Events.Add($"player {p.Id} grabbed on to construct {c.Id}");

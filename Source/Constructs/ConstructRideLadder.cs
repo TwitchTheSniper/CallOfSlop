@@ -52,7 +52,7 @@ public static partial class ConstructRide
     /// F on a vertical ladder: from near its foot, climbs it to the landing; from up there, climbs down to its foot. Returns
     /// null when the climb started, else why not (too far from either end, a stowed boarding ladder, already climbing).
     /// </summary>
-    public static string? ClimbLadder(ref MoveState s, Construct c, int part, float height, bool frame = false)
+    public static string? ClimbLadder(ref MoveState s, Construct c, int part, float height, bool frame = false, float look = 0)
     {
         if (s.RideClimb > 0)
             return "already climbing";
@@ -66,6 +66,8 @@ public static partial class ConstructRide
             return "nothing to climb there";
         if (StowedFoot(c, part))
             return "the ladder is stowed: F on its foot rolls it down";
+        if (FootMoving(c, part))
+            return "the ladder is still coming down"; // (a boarding hatch's sections telescoping out: climbed once they rest)
         if (ConstructDoor.EventDoor(c, part) is var hatch and >= 0 && hatch != part && (ConstructDoors.IsMoving(c, hatch) || !ConstructDoors.SettledOpen(c, hatch)))
             return ConstructDoors.IsMoving(c, hatch) ? "the hatch is still moving" : "the ladder is stowed: F opens the hatch"; // (a ladder on a door's leaf, the Dray's belly hatch: its pose is the leaf's only once the door rests open; crews too)
         if (NextLid(c, part) is var lid and >= 0)
@@ -81,6 +83,12 @@ public static partial class ConstructRide
         LadderEnds(d, out var foot, out var top);
         LadderLine(d, out var low, out var high);
         var atTop = feetLocal.Y > (foot.Y + top.Y) * 0.5f;
+        // Where the climber looks picks the way when they can reach both ends (Karl, 2026-11-27: "facing up will go up, facing down will
+        // go down"): looking up, from the foot; looking down, from the top. Level, or out of reach of that end: the nearer end, as before.
+        if (look > LookPicks && atTop && CanStart(feetLocal, foot))
+            atTop = false;
+        else if (look < -LookPicks && !atTop && CanStart(feetLocal, top))
+            atTop = true;
         var from = atTop ? top : foot;
         var across = new Vector2(feetLocal.X - from.X, feetLocal.Z - from.Z).Length();
         if (across > GrabReach + World.BodyRadius || MathF.Abs(feetLocal.Y - from.Y) > 1.2f)
@@ -114,6 +122,46 @@ public static partial class ConstructRide
         s.RideLadder = (byte)(LadderOn | (atTop ? LadderDown : 0) | 2);
         s.RideLadderPart = (ushort)part;
         return null;
+    }
+
+    /// <summary>A look this far up or down (radians, about 20 degrees) picks which way a ladder is climbed (<see cref="ClimbLadder"/>).</summary>
+    private const float LookPicks = 0.35f;
+
+    /// <summary>Whether feet at <paramref name="feetLocal"/> (the ladder's frame) can start a climb from end <paramref name="end"/>.</summary>
+    private static bool CanStart(Vector3 feetLocal, Vector3 end) =>
+        new Vector2(feetLocal.X - end.X, feetLocal.Z - end.Z).Length() <= GrabReach + World.BodyRadius && MathF.Abs(feetLocal.Y - end.Y) <= 1.2f;
+
+    /// <summary>A door linked to the ladder (a boarding hatch's sections, a stowed foot) still moving: the climb waits for it.</summary>
+    internal static bool FootMoving(Construct c, int ladder)
+    {
+        if (c.DoorMovingCount == 0)
+            return false;
+        for (var l = 0; l < c.LinkCount; l++)
+        {
+            ref var ln = ref c.Links[l];
+            var other = ln.A == ladder ? ln.B : ln.B == ladder ? ln.A : -1;
+            if (other >= 0 && c.DoorOf(other) is var k and >= 0 && c.Doors[k].Part == other && ConstructDoors.IsMoving(c, other))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The ladder a door part is the foot of (a boarding hatch's sections: linked to a ladder, which they lower), or -1: F on the foot
+    /// is F on its ladder (Karl, 2026-11-27: the lowered ladder showed no line and F there did nothing).
+    /// </summary>
+    public static int LadderOfFoot(Construct c, int part)
+    {
+        if ((uint)part >= (uint)c.PartCount || c.Parts[part].D.Door is not { Seq: > 0 } || c.DoorOfListed(part) is not (var k and >= 0) || c.Doors[k].Part != part)
+            return -1;
+        for (var l = 0; l < c.LinkCount; l++)
+        {
+            ref var ln = ref c.Links[l];
+            var other = ln.A == part ? ln.B : ln.B == part ? ln.A : -1;
+            if (other >= 0 && other < c.PartCount && c.Parts[other].D.LadderTop > 0 && !c.Parts[other].Broken)
+                return other;
+        }
+        return -1;
     }
 
     /// <summary>

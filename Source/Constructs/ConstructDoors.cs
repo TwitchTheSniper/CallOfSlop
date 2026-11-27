@@ -43,6 +43,11 @@ public sealed class CDoorDef
     // raycast spring (ConstructPhysics.GearFeet) and its solid boxes meet the ground only past the travel (a bump stop); its "oleo" boxes
     // are drawn up by the squash. A held door's only. SpringTravel 0: none.
     public float SpringTravel, SpringHz, SpringDamp;
+    // A staged group (a ship design's boarding hatch, Karl 2026-11-27): doors with the same Seq on a body are worked as one, in two
+    // stages (SeqStage): opening, the leads (its lid) open first and the followers (its ladder's sections) only once they rest open;
+    // shutting, the followers first and the leads once they rest shut (ConstructDoors.Command). 0: none. Made by the design, not the part files.
+    public ushort Seq;
+    public byte SeqStage;
     public int Ticks => Math.Max(1, (int)MathF.Round(Seconds * World.TickRate));
 }
 
@@ -79,6 +84,7 @@ public sealed partial class ConstructWorld
 public static class ConstructDoors
 {
     public const byte Moving = 1, Target = 2; // CPart.State of a door part
+    public const byte SeqLeads = 1, SeqFollows = 2; // CDoorDef.SeqStage
     private const float PlayerHalf = 0.3f; // (a player's column round their feet, for "don't shut on a player")
 
     // ---- The part file --------------------------------------------------------------------------------------------
@@ -243,8 +249,16 @@ public static class ConstructDoors
 
     public static bool IsMoving(Construct c, int part) => (c.Parts[part].State & Moving) != 0;
 
-    /// <summary>Where it is going (moving), or where it is.</summary>
-    public static bool TargetOpen(Construct c, int part) => IsMoving(c, part) ? (c.Parts[part].State & Target) != 0 : SettledOpen(c, part);
+    /// <summary>Where it is going (moving, or waiting on its staged group to move first: <see cref="CDoorDef.Seq"/>), or where it is.</summary>
+    public static bool TargetOpen(Construct c, int part)
+    {
+        if (c.DoorPendingCount > 0 && c.DoorOfListed(part) is var k and >= 0 && c.Doors[k].Part == part && c.Doors[k].Pending != 0)
+            return c.Doors[k].Pending == 1;
+        return MovingTo(c, part);
+    }
+
+    /// <summary>Where it is going (moving), or where it is, by its own state alone.</summary>
+    private static bool MovingTo(Construct c, int part) => IsMoving(c, part) ? (c.Parts[part].State & Target) != 0 : SettledOpen(c, part);
 
     public static bool Locked(Construct c, int part)
     {
@@ -298,12 +312,106 @@ public static class ConstructDoors
         return "";
     }
 
-    /// <summary>Server: door <paramref name="k"/> heads for open or shut (from wherever it is: a door on its way turns back).</summary>
+    /// <summary>
+    /// Server: door <paramref name="k"/> heads for open or shut (from wherever it is: a door on its way turns back). A door of a staged
+    /// group (<see cref="CDoorDef.Seq"/>) works its whole group, in turn.
+    /// </summary>
     public static void Command(ConstructWorld world, Construct c, int k, bool open)
+    {
+        if (c.Parts[c.Doors[k].Part].D.Door!.Seq is var seq and > 0)
+            CommandSeq(world, c, seq, open);
+        else
+            Move(world, c, k, open);
+    }
+
+    /// <summary>
+    /// A staged group heads for open or shut: the first stage (the leads to open, the followers to shut) moves now; the second moves at once
+    /// if the first already rests there, else waits (<see cref="CDoor.Pending"/>) until it does (<see cref="StepPending"/>).
+    /// </summary>
+    private static void CommandSeq(ConstructWorld world, Construct c, ushort seq, bool open)
+    {
+        var first = open ? SeqLeads : SeqFollows;
+        for (var k = 0; k < c.DoorCount; k++)
+            if (c.Parts[c.Doors[k].Part].D.Door! is { } dd && dd.Seq == seq && dd.SeqStage == first && !c.Parts[c.Doors[k].Part].Broken && !Locked(c, c.Doors[k].Part))
+                Move(world, c, k, open);
+        var rests = StageRests(c, seq, first, open);
+        for (var k = 0; k < c.DoorCount; k++)
+        {
+            if (c.Parts[c.Doors[k].Part].D.Door! is not { } dd || dd.Seq != seq || dd.SeqStage == first || c.Parts[c.Doors[k].Part].Broken)
+                continue;
+            if (rests)
+                Move(world, c, k, open);
+            else
+                SetPending(c, k, (sbyte)(open ? 1 : 2));
+        }
+    }
+
+    /// <summary>Whether every door of stage <paramref name="stage"/> of group <paramref name="seq"/> rests open (or shut), not moving.</summary>
+    private static bool StageRests(Construct c, ushort seq, byte stage, bool open)
+    {
+        for (var k = 0; k < c.DoorCount; k++)
+        {
+            var part = c.Doors[k].Part;
+            if (c.Parts[part].D.Door! is { } dd && dd.Seq == seq && dd.SeqStage == stage && !c.Parts[part].Broken && (IsMoving(c, part) || SettledOpen(c, part) != open))
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>Whether every door of stage <paramref name="stage"/> of group <paramref name="seq"/> is still headed open (or shut).</summary>
+    private static bool StageHeads(Construct c, ushort seq, byte stage, bool open)
+    {
+        for (var k = 0; k < c.DoorCount; k++)
+        {
+            var part = c.Doors[k].Part;
+            if (c.Parts[part].D.Door! is { } dd && dd.Seq == seq && dd.SeqStage == stage && !c.Parts[part].Broken && MovingTo(c, part) != open)
+                return false;
+        }
+        return true;
+    }
+
+    private static void SetPending(Construct c, int k, sbyte to)
+    {
+        ref var dr = ref c.Doors[k];
+        if (dr.Pending == 0 && to != 0)
+            c.DoorPendingCount++;
+        else if (dr.Pending != 0 && to == 0)
+            c.DoorPendingCount--;
+        dr.Pending = to;
+    }
+
+    /// <summary>
+    /// Server: staged doors waiting on their group's first stage move once it rests where they are headed; one whose first stage was
+    /// turned back (or stopped short: locked, wrecked) waits no more and stays as it is.
+    /// </summary>
+    private static void StepPending(ConstructWorld world, Construct c)
+    {
+        for (var k = 0; k < c.DoorCount && c.DoorPendingCount > 0; k++)
+        {
+            ref var dr = ref c.Doors[k];
+            if (dr.Pending == 0)
+                continue;
+            var open = dr.Pending == 1;
+            var dd = c.Parts[dr.Part].D.Door!;
+            var first = open ? SeqLeads : SeqFollows;
+            if (StageRests(c, dd.Seq, first, open))
+            {
+                SetPending(c, k, 0);
+                Move(world, c, k, open);
+            }
+            else if (!StageHeads(c, dd.Seq, first, open))
+                SetPending(c, k, 0);
+        }
+    }
+
+    /// <summary>Server: door <paramref name="k"/> alone heads for open or shut.</summary>
+    private static void Move(ConstructWorld world, Construct c, int k, bool open)
     {
         ref var dr = ref c.Doors[k];
         ref var p = ref c.Parts[dr.Part];
-        if (TargetOpen(c, dr.Part) == open)
+        if (dr.Pending != 0)
+            SetPending(c, k, 0);
+        if (MovingTo(c, dr.Part) == open)
             return;
         var f = OpenFraction(c, k, byTicks: true);
         Start(c, k, open, f);
@@ -349,7 +457,7 @@ public static class ConstructDoors
                 ShutLaunchHatches(world, c);
             if (c.GearTicks > 0 && --c.GearTicks == 0)
                 CommandGear(world, c, c.GearOut ? (byte)2 : (byte)1, c.GearOut); // (the second half of a gear key: the legs after the canopy, or the canopy after the legs)
-            if ((c.DoorMovingCount | c.DoorWiredCount) == 0)
+            if ((c.DoorMovingCount | c.DoorWiredCount | c.DoorPendingCount) == 0)
                 continue;
             if (c.GearOut && c.DoorMovingCount > 0)
                 GearLift(c);
@@ -658,7 +766,7 @@ public static class ConstructDoors
                 if (c.Dirty)
                     return; // (the body waits for a rebuild: the list is built again next tick)
             }
-        if (c.DoorMovingCount == 0)
+        if ((c.DoorMovingCount | c.DoorPendingCount) == 0)
             return;
         for (var k = 0; k < c.DoorCount; k++)
         {
@@ -673,13 +781,15 @@ public static class ConstructDoors
             var open = (p.State & Target) != 0;
             if (!open && SettledOpen(c, c.Doors[k].Part) && OnPlayer(world, c, k))
             {
-                Command(world, c, k, true); // (a player in the doorway: it opens again)
+                Move(world, c, k, true); // (a player in the doorway: it opens again)
                 continue;
             }
             Settle(c, k, open);
             world.DoorEvents.Add((c.Id, c.Doors[k].Part, (byte)((open ? 1 : 0) | 2)));
             world.DoorHeard.Add((c.Id, c.Doors[k].Part, (byte)((open ? 1 : 0) | 2)));
         }
+        if (c.DoorPendingCount > 0)
+            StepPending(world, c); // (a staged group's second stage, once its first rests)
     }
 
     /// <summary>

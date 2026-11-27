@@ -137,12 +137,23 @@ public static class DesignRamp
         }
     }
 
+    // ---- The boarding hatch's ladder (Karl, 2026-11-27): 1 to 3 telescoping sections that come down out of its well once its lid is open
+    // (DesignParts.Pieces.cs HatchDrop). It keeps its count in the piece's Segments, as "ladderSegs" in the file.
+
+    public const string HatchKind = "Boarding hatch";
+    public const int MinLadderSegments = 1, MaxLadderSegments = 3, DefLadderSegments = 1;
+
+    /// <summary>A boarding hatch's ladder sections, held to the range.</summary>
+    public static int LadderSegmentsOf(Piece p) => Math.Clamp(p.Segments, MinLadderSegments, MaxLadderSegments);
+
     // ---- the design file and the page
 
-    public static JsonObject Defaults() => new() { ["extend"] = DefExtend, ["rampW"] = DefWidth, ["rampL"] = DefLength, ["rampSegs"] = DefSegments, ["rampAngle"] = 0 };
+    public static JsonObject Defaults() => new() { ["extend"] = DefExtend, ["rampW"] = DefWidth, ["rampL"] = DefLength, ["rampSegs"] = DefSegments, ["rampAngle"] = 0, ["ladderSegs"] = DefLadderSegments };
 
     public static JsonObject Write(Piece p, JsonObject o)
     {
+        if (p.Kind == HatchKind && LadderSegmentsOf(p) != DefLadderSegments)
+            o["ladderSegs"] = LadderSegmentsOf(p);
         if (p.Kind == Kind)
         {
             o["extend"] = ShipDesign.R(p.Extend);
@@ -159,6 +170,8 @@ public static class DesignRamp
     public static Piece Read(JsonObject o, Piece p)
     {
         p.Extend = Math.Clamp(ShipDesign.F(o["extend"], DefExtend), 0, MaxExtend);
+        if (p.Kind == HatchKind)
+            p.Segments = LadderSegs(o, DefLadderSegments);
         if (p.Kind != Kind)
             return p;
         // A design from before the two keeps the hatch it had (the kind's opening times its size and hole size); from then on the
@@ -175,6 +188,12 @@ public static class DesignRamp
     /// <summary>The page's setPiece fields; an error text, or empty.</summary>
     public static string Set(Piece p, JsonObject o)
     {
+        if (p.Kind == HatchKind)
+        {
+            if (o["ladderSegs"] is not null)
+                p.Segments = LadderSegs(o, LadderSegmentsOf(p));
+            return "";
+        }
         if (o["extend"] is not null)
             p.Extend = Math.Clamp(Math.Round(ShipDesign.F(o["extend"], DefExtend) * 20) / 20, 0, MaxExtend);
         if (o["rampW"] is not null)
@@ -189,11 +208,13 @@ public static class DesignRamp
         return "";
     }
 
+    private static int LadderSegs(JsonObject o, int dflt) => (int)Math.Clamp(Math.Round(ShipDesign.F(o["ladderSegs"], dflt)), MinLadderSegments, MaxLadderSegments);
+
     /// <summary>A set angle in degrees, or 0 (the automatic one) below the range.</summary>
     private static double AngleSetting(double deg) => deg < MinAngle - 0.5 ? 0 : Math.Clamp(deg, MinAngle, MaxAngle);
 
     /// <summary>The page's ramp fields: its run and the longest its length allows, its width and length.</summary>
-    public static string SceneJson(Piece p, double depth) => p.Kind != Kind ? "" :
+    public static string SceneJson(Piece p, double depth) => p.Kind == HatchKind ? $",\"ladderSegs\":{LadderSegmentsOf(p)}" : p.Kind != Kind ? "" :
         new StringBuilder(",\"extend\":").Append(ShipDesign.S(p.Extend)).Append(",\"extendMax\":")
             .Append(ShipDesign.S(Math.Floor(TotalMax(p) * 20) / 20))
             .Append(",\"rampSegs\":").Append(SegmentsOf(p)).Append(",\"rampAngle\":").Append(ShipDesign.S(p.RampAngle))

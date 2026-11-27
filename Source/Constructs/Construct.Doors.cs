@@ -28,6 +28,7 @@ public struct CDoor
     public float Squash, PrevSquash; // a sprung landing foot's (CDoorDef.SpringTravel): how far its spring is in, metres (server physics: ConstructPhysics.GearFeet)
     public float Shown; // ...and as drawn on this peer (ConstructPhysics.FitGear)
     public bool Touch; // its spring is on the ground
+    public sbyte Pending; // server: a staged door waiting on its group's first stage (CDoorDef.Seq): 1 to open, 2 to shut, 0 none; not saved
 }
 
 public sealed partial class Construct
@@ -43,7 +44,7 @@ public sealed partial class Construct
     public ushort[] DoorLeaves = [];
     public int DoorLeafCount;
     public int DoorDockCount; // docking hatches among them (ConstructDoors.StepDocks)
-    public int DoorMovingCount, DoorWiredCount; // (the server's step looks at a body only while one is above 0)
+    public int DoorMovingCount, DoorWiredCount, DoorPendingCount; // (the server's step looks at a body only while one is above 0)
     public int GearTicks; // server: ticks until a gear key's second half (ConstructDoors.ToggleGear); not saved
     public bool GearOut; // ...and which way it goes: true lowers the legs (after the canopy), false shuts the canopy (after the legs)
     public int GearFootCount; // sprung landing feet among them (CDoorDef.SpringTravel: ConstructPhysics.GearFeet)
@@ -77,7 +78,7 @@ public sealed partial class Construct
                 _doorOld = new CDoor[Doors.Length];
             Array.Copy(Doors, _doorOld, oldCount);
         }
-        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = DoorDockCount = DoorHeldCount = GearFootCount = 0;
+        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = DoorPendingCount = DoorDockCount = DoorHeldCount = GearFootCount = 0;
         foreach (var i in Specials)
         {
             ref var p = ref Parts[i];
@@ -124,6 +125,8 @@ public sealed partial class Construct
                 dr.PrevSquash = _doorOld[o].PrevSquash;
                 dr.Shown = _doorOld[o].Shown;
                 dr.Touch = _doorOld[o].Touch;
+                if ((dr.Pending = _doorOld[o].Pending) != 0)
+                    DoorPendingCount++;
             }
             else
             {
