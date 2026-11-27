@@ -121,8 +121,13 @@ public static partial class DesignScene
             else
                 open.Add((q[ax] - half, q[ax] + half, dL0 < dL1 ? q[al] - 0.6 : q[al] - reach, dL0 < dL1 ? q[al] + reach : q[al] + 0.6, u0, u1, false));
         }
+        var voids = PieceVoids(d); // (an open hangar or airlock: no cladding across it, as no shell)
         bool Clear(double[] c0, double[] c1)
         {
+            double[] mid = [(c0[0] + c1[0]) / 2, (c0[1] + c1[1]) / 2, (c0[2] + c1[2]) / 2];
+            foreach (var v in voids)
+                if (v.Holds(mid) || v.Holds(c0) && v.Holds(c1))
+                    return false;
             double a0 = Math.Min(c0[ax], c1[ax]), a1 = Math.Max(c0[ax], c1[ax]), l0 = Math.Min(c0[al], c1[al]), l1 = Math.Max(c0[al], c1[al]);
             double u0 = sg * (c0[up] - floor), u1 = sg * (c1[up] - floor);
             if (u1 < u0) (u0, u1) = (u1, u0);
