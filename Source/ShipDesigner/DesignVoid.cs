@@ -60,6 +60,7 @@ public static partial class DesignScene
             case "B": VoidLined(c); break;
             case "C": VoidTruss(c); break;
             case "D": VoidServices(c); break;
+            case "E": VoidSolid(c); break;
         }
         Console.WriteLine($"ship designer: void fill {VoidStyle} on \"{h.Name}\" copy {copy}: {m.Tris} triangles");
         return m;
