@@ -1587,6 +1587,7 @@ function placeJoin() {
   conn.joinId = a.id; conn.step = "set";
   conn.hullId = conn.newBody ? S.hulls[S.hulls.length - 1].id : 0;
 }
+let shapeFrom = null; // the station Copy shape remembered
 let styleFrom = 0; // the body Copy settings remembered
 let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
@@ -1798,7 +1799,11 @@ function stationPanel(h) {
       el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 1.1 }) }, "Taller"),
       el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 0.9 }) }, "Lower"),
       el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1.1, sy: 1.1 }) }, "Bigger"),
-      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 0.9, sy: 0.9 }) }, "Smaller")));
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 0.9, sy: 0.9 }) }, "Smaller"),
+      el("button", { onclick: () => cmd({ op: "shiftStation", hull: h.id, i, dy: 0.25 }) }, "Up"),
+      el("button", { onclick: () => cmd({ op: "shiftStation", hull: h.id, i, dy: -0.25 }) }, "Down"),
+      el("button", { onclick: () => { shapeFrom = { hull: h.id, i }; toast("Shape copied.", true); panels(); } }, "Copy shape"),
+      el("button", { ...(shapeFrom ? {} : { disabled: "" }), onclick: () => { const a = cmd({ op: "pasteShape", hull: h.id, i, fromHull: shapeFrom.hull, from: shapeFrom.i }); if (a.error) toast(a.error); } }, "Paste shape")));
   }
   // Each station keeps its own point count (Karl, 2026-11-24): with a station picked the list changes that one, else every station.
   const one = sel.station >= 0 && sel.station < h.stations.length;

@@ -13,6 +13,7 @@ public sealed partial class Ui
 {
     private string _shapePick = "Zero Day beam";
     private string _newBody = "Main hull";
+    private (int Hull, int I)? _shapeFrom; // the station whose cross-section Copy shape remembered
     private int _styleFrom; // the body whose settings Copy settings remembered
 
     /// <summary>The Connect tool's settings (the page's cOpt): the section, the numbers by their command keys, and three ticks.</summary>
@@ -680,6 +681,13 @@ public sealed partial class Ui
             foreach (var (t, sx, sy) in new[] { ("Wider", 1.1, 1.0), ("Narrower", 0.9, 1.0), ("Taller", 1.0, 1.1), ("Lower", 1.0, 0.9), ("Bigger", 1.1, 1.1), ("Smaller", 0.9, 0.9) })
                 if (WrapButton($"{t}##sdsc{t}"))
                     Cmd(C("scaleStation", ("hull", hid), ("i", i), ("sx", sx), ("sy", sy)));
+            foreach (var (t, dy) in new[] { ("Up", 0.25), ("Down", -0.25) })
+                if (WrapButton($"{t}##sdsh{t}"))
+                    Cmd(C("shiftStation", ("hull", hid), ("i", i), ("dy", dy)));
+            if (WrapButton("Copy shape##sdcpsh"))
+                _shapeFrom = (hid, i);
+            if (_shapeFrom is { } sf && WrapButton("Paste shape##sdpssh"))
+                Cmd(C("pasteShape", ("hull", hid), ("i", i), ("fromHull", sf.Hull), ("from", sf.I)));
             EndRow();
         }
         // Each station keeps its own point count: with a station picked the list changes that one, else every station.
