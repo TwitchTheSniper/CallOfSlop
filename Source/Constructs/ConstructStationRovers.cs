@@ -162,7 +162,9 @@ public static class StationRovers
     ];
 
     public const float VSpeed = 1.5f; // m/s the hook rises and falls
-    public const float GripSeconds = 0.6f, ReleaseSeconds = 0.4f;
+    public const float DropSpeed = 4f; // m/s the hook goes down onto a piece or its place and back up (Sean 2026-11-27: the drive is the time, the drop in is quick)
+    public const float DropSeconds = 0.5f; // s a rover holds a piece on its place before it lets go (the fit; a crane's weld time is the station's own)
+    public const float GripSeconds = 0.4f, ReleaseSeconds = 0.3f;
     public const float ClassPenalty = 90f; // s: a piece taken by the wrong class costs this a class (the lab's rule)
     public const float MaxWait = 300f; // s a trip waits for its way to clear before it goes anyway
     public const float HomeAfter = 15f; // s idle in the bay before a rover drives home
@@ -612,7 +614,7 @@ public static class StationRovers
         if (pick is { } q)
         {
             var low = q - new Vector3(s1.X, 0, s1.Y);
-            var dDown = MathF.Max(0.4f, (up - q.Y) / VSpeed);
+            var dDown = MathF.Max(0.3f, (up - q.Y) / DropSpeed);
             p.AddHook(t += dDown, low);
             p.GripT = t += GripSeconds;
             p.AddHook(t, low);
@@ -627,12 +629,12 @@ public static class StationRovers
         p.AddBase(t, pos.X, pos.Y, head);
         p.AddHook(t, aboveTgt);
         var at2 = place - new Vector3(s2.X, 0, s2.Y);
-        var dPlace = MathF.Max(0.4f, (up - place.Y) / VSpeed);
+        var dPlace = MathF.Max(0.3f, (up - place.Y) / DropSpeed);
         p.AddHook(t += dPlace, at2);
         p.FitT = t += weld;
         p.AddHook(t, at2);
         p.AddHook(t += ReleaseSeconds, at2);
-        p.AddHook(t += MathF.Max(0.4f, dPlace * 0.6f), at2 with { Y = MathF.Min(up, place.Y + 2.5f) - 0f });
+        p.AddHook(t += MathF.Max(0.3f, dPlace * 0.6f), at2 with { Y = MathF.Min(up, place.Y + 2.5f) - 0f });
         p.AddBase(t, pos.X, pos.Y, head);
         p.Up = up;
         p.Total = t + 0.1f;
