@@ -336,6 +336,13 @@ public sealed partial class Ui
                 Hint("Joins the rooms it stands in on each deck it passes. A ladder needs 0.8 x 0.7 m of room; a lift its car, 2 x 2 m to start (1 to 8 m a side).");
                 return;
             }
+            H2("Rooms");
+            if (ImGui.Button("Fill unset rooms##sdfill"u8))
+            {
+                var a = Cmd(C("fillUnset"));
+                Toast(Str(a, "error") is { Length: > 0 } e ? e : "Rooms with no interior got Clean cladding, and touching rooms with no door got the default door. Undo takes it back.", true);
+            }
+            Hint("Rooms with interior Off get the Clean style; rooms that share a wall and have no door get a default door. Rooms and doors you set are kept.");
             H2("Decks");
             Hint("Orientation");
             if (OnButton("Along the length##sdor0", !Stacked) && Stacked)

@@ -1675,6 +1675,9 @@ function leftPanel() {
         el("p", { class: "hint" }, "Joins the rooms it stands in on each deck it passes. A ladder needs 0.8 x 0.7 m of room; a lift its car, 2 x 2 m to start (1 to 8 m a side).")));
       return;
     }
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Rooms"),
+      el("button", { onclick: () => { const a = cmd({ op: "fillUnset" }); toast(a.error || "Rooms with no interior got Clean cladding, and touching rooms with no door got the default door. Undo takes it back.", !a.error); rebuild(); panels(); } }, "Fill unset rooms"),
+      el("p", { class: "hint" }, "Rooms with interior Off get the Clean style; rooms that share a wall and have no door get a default door. Rooms and doors you set are kept.")));
     const orient = el("div", { class: "row" },
       el("button", { class: S.stacked ? "" : "on", onclick: () => { if (S.stacked) { cmd({ op: "orient", stacked: false }); deck = 0; toast("Decks laid along the length. Undo brings the old decks and rooms back.", true); panels(); } } }, "Along the length"),
       el("button", { class: S.stacked ? "on" : "", onclick: () => { if (!S.stacked) { cmd({ op: "orient", stacked: true }); deck = 0; toast("Decks stacked across the ship, floors facing the bow: thrust is down. Undo brings the old ones back.", true); panels(); } } }, "Stacked (thrust is down)"));

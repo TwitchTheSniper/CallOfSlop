@@ -743,6 +743,34 @@ public sealed class DesignEditor
                 (k.From, k.To) = (f, t);
                 return "";
             }
+            // ---- every room still unset takes the defaults (Karl, 2026-11-27): interior cladding Off becomes Clean, and each pair of
+            // rooms on one deck that share a door's width of wall (not segments of one room) without a placed door gets the default one.
+            // Rooms and doors already set are kept.
+            case "fillUnset":
+            {
+                int clad = 0, doors = 0;
+                foreach (var r in d.Rooms)
+                    if (r.Interior == "Off" && r.Kind != "Shaft")
+                    {
+                        r.Interior = "Clean";
+                        clad++;
+                    }
+                foreach (var a in d.Rooms)
+                    foreach (var b in d.Rooms)
+                    {
+                        if (a.Id >= b.Id || a.Deck != b.Deck || a.Group != 0 && a.Group == b.Group || d.Doors.Any(q => q.Kind == "Door" && q.Joins(a, b)))
+                            continue;
+                        var oz = Math.Min(a.Z1, b.Z1) - Math.Max(a.Z0, b.Z0);
+                        var ox = Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0);
+                        var alongZ = oz >= 0.89 && (Math.Abs(a.X1 - b.X0) < 0.02 || Math.Abs(b.X1 - a.X0) < 0.02);
+                        var alongX = ox >= 0.89 && (Math.Abs(a.Z1 - b.Z0) < 0.02 || Math.Abs(b.Z1 - a.Z0) < 0.02);
+                        if (!alongZ && !alongX || d.Doors.Count >= ShipDesign.MaxRooms * 2)
+                            continue;
+                        d.Doors.Add(new RoomDoor { Id = d.NewId(), A = a.Id, B = b.Id, Kind = "Door", W = 0.9, H = 2.1 });
+                        doors++;
+                    }
+                return clad + doors == 0 ? "every room already has its cladding and doors" : "";
+            }
             // ---- doors placed between rooms (Karl, 2026-11-24)
             case "addDoor":
             {
