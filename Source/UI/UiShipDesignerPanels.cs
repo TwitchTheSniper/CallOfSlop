@@ -909,6 +909,78 @@ public sealed partial class Ui
     }
 
     /// <summary>The page's material drop-down.</summary>
+    /// <summary>
+    /// A hangar piece's own controls, as the page's hangarControls (Karl, 2026-11-27: "hangar size doesn't change anything"): a bay's
+    /// width, height and depth and its door's width, height and type; a lift platform's or ramp deck's width, length and travel; a docking
+    /// arm's or cradle's bay and its spot in the bay. Resets from the catalogue's defaults.hangar[kind].
+    /// </summary>
+    private void HangarControls(JsonElement p, int pid)
+    {
+        var kind = Str(p, "kind");
+        var dk = Get(Get(Get(CAT, "defaults"), "hangar"), kind);
+        if (!Found(dk))
+            return;
+        void M(string label, string key, double min, double max, double step) =>
+            Slider(label, D(p, key), min, max, step, " m", v => Cmd(C("setPiece", ("id", pid), (key, v))), "hg" + key + pid, D(dk, key));
+        if (Has(p, "bay"))
+        {
+            var size = Nums(Get(p, "bay"));
+            H3("Hangar bay");
+            M("Width", "bayW", ShipDesigner.DesignHangar.BayMinW, ShipDesigner.DesignHangar.BayMaxW, 0.5);
+            M("Height", "bayH", ShipDesigner.DesignHangar.BayMinH, ShipDesigner.DesignHangar.BayMaxH, 0.5);
+            M("Depth", "bayD", ShipDesigner.DesignHangar.BayMinD, ShipDesigner.DesignHangar.BayMaxD, 0.5);
+            if (ResetAll("hgbay" + pid, "Width, height and depth back to the bay's own"))
+                Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayW", "bayH", "bayD")]));
+            H3("Hangar door");
+            M("Door width", "bayDoorW", ShipDesigner.DesignHangar.DoorMinW, Math.Min(ShipDesigner.DesignHangar.DoorMaxW, size.Length > 0 ? size[0] : 48), 0.5);
+            M("Door height", "bayDoorH", ShipDesigner.DesignHangar.DoorMinH, Math.Min(ShipDesigner.DesignHangar.DoorMaxH, size.Length > 1 ? size[1] : 32), 0.5);
+            ImGui.Text("Type");
+            Row();
+            MatCombo("hgdoor" + pid, Str(p, "bayDoor", "Sliding"), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
+            if (ResetAll("hgdoor" + pid, "Door back to its defaults"))
+                Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayDoorW", "bayDoorH", "bayDoor")]));
+            var n = I(p, "fittings");
+            if (size.Length == 3)
+                Hint($"The bay is {Fmt(size[0])} m across, {Fmt(size[1])} m tall and {Fmt(size[2])} m deep. {(Str(p, "bayDoor") == "Hinged" ? "The door swings out on motor hinges." : "The door slides aside on a piston.")} {n} docking fitting{(n == 1 ? "" : "s")} linked.");
+            return;
+        }
+        if (Has(p, "travel"))
+        {
+            H3(kind);
+            M("Width", "w", ShipDesigner.DesignHangar.DeckMin, ShipDesigner.DesignHangar.DeckMax, 0.5);
+            M("Length", "l", ShipDesigner.DesignHangar.DeckMin, ShipDesigner.DesignHangar.DeckMax, 0.5);
+            M("Travel", "travel", ShipDesigner.DesignHangar.TravelMin, ShipDesigner.DesignHangar.TravelMax, 0.1);
+            if (ResetAll("hgdeck" + pid, "Width, length and travel back to their defaults"))
+                Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "w", "l", "travel")]));
+            return;
+        }
+        if (Has(p, "link"))
+        {
+            H3("Hangar link");
+            var bays = Arr(S, "pieces").Where(q => Has(q, "bay")).ToList();
+            var link = I(p, "link");
+            var names = new List<string> { "Not linked" };
+            names.AddRange(bays.Select(b => $"{Str(b, "kind")} #{I(b, "id")}"));
+            var at = bays.FindIndex(b => I(b, "id") == link);
+            ImGui.Text("Bay");
+            Row();
+            MatCombo("hglink" + pid, at >= 0 ? names[at + 1] : names[0], names, v =>
+            {
+                var i = names.IndexOf(v);
+                Cmd(C("setPiece", ("id", pid), ("link", i <= 0 ? 0 : I(bays[i - 1], "id"))));
+            });
+            void Pc(string label, string key) =>
+                Slider(label, Math.Round(D(p, key) * 100), -50, 50, 1, "%", v => Cmd(C("setPiece", ("id", pid), (key, v / 100))), "hg" + key + pid, Math.Round(D(dk, key) * 100));
+            Pc("Along the bay", "along");
+            Pc("Across the bay", "across");
+            Hint(link != 0 ? "Linked to the bay and its door; it sits on the bay's floor." : "Not linked: it sits where it was dropped. Pick the bay it serves.");
+        }
+    }
+
+    /// <summary>The given keys of a defaults object, as a command's fields.</summary>
+    private static (string, JsonNode?)[] DfltOf2(JsonElement k, params string[] keys) =>
+        keys.Select(x => (x, k.TryGetProperty(x, out var e) ? JsonNode.Parse(e.GetRawText()) : null)).ToArray();
+
     private void MatCombo(string id, string value, IEnumerable<string> names, Action<string> set, float width = 170)
     {
         ImGui.SetNextItemWidth(width * _scale);
@@ -1227,7 +1299,10 @@ public sealed partial class Ui
             var sock = Has(k, "socket");
             H2(Str(p, "kind"), B(p, "ok", true) ? "fits" : "see checks");
             Hint(Str(k, "desc"));
-            Slider("Size", Math.Round(D(p, "size") * 100), 25, 400, 5, "%", v => Cmd(C("setPiece", ("id", pid), ("size", v / 100))), "pcs");
+            var bay = Has(p, "bay"); // a hangar bay's size is its own width, height and depth (HangarControls), not the Size slider
+            if (!bay)
+                Slider("Size", Math.Round(D(p, "size") * 100), 25, 400, 5, "%", v => Cmd(C("setPiece", ("id", pid), ("size", v / 100))), "pcs");
+            HangarControls(p, pid);
             if (sock)
                 Slider("Cladding", Math.Round(D(p, "clad") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("clad", v / 100))), "pcc");
             Slider("Recess", Math.Round(D(p, "recess") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("recess", v / 100))), "pcr");

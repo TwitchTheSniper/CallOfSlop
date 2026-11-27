@@ -367,6 +367,7 @@ public sealed class Piece
     public string Door = "sliding";
     public int Feed; // an ammo socket's gun (a piece id; 0: the nearest weapon)
     // Hangar pieces' own (DesignHangar, Karl 2026-11-26): a bay's door size and type; a lift's or ramp deck's size and travel; a fitting's bay and spot in it.
+    public double BayW = 20, BayH = 8, BayD = 20; // a bay's own volume across, tall and deep (Karl 2026-11-27; DesignHangar.Of)
     public double BayDoorW = 5, BayDoorH = 3, W = 5, L = 5, Travel = 3, Along, Across;
     public string BayDoorType = "Sliding";
     public int Link;

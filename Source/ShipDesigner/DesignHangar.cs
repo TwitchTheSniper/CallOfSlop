@@ -24,10 +24,17 @@ public static class DesignHangar
     ];
 
     public const double DoorMinW = 5, DoorMaxW = 48, DoorMinH = 3, DoorMaxH = 32;
+    /// <summary>A bay's own volume (Karl, 2026-11-27: "hangar size doesn't change anything"): S, M and L are where a new bay starts; its
+    /// width, height and depth are then its own, from a 5 m shed to the Large's 96 m.</summary>
+    public const double BayMinW = 5, BayMaxW = 96, BayMinH = 3, BayMaxH = 48, BayMinD = 5, BayMaxD = 96;
     public const double DeckMin = 2, DeckMax = 48, TravelMin = 0.5, TravelMax = 30;
     public static readonly string[] DoorTypes = ["Sliding", "Hinged"];
 
     public static BaySize? Bay(string kind) => Array.Find(Bays, b => b.Name == kind);
+
+    /// <summary>A bay piece's own size (its volume and door as set on it), or null for other pieces. Everything that draws, checks or
+    /// builds a bay reads this, never the kind's starting size.</summary>
+    public static BaySize? Of(Piece p) => Bay(p.Kind) is { } b ? b with { W = p.BayW, H = p.BayH, D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH } : null;
     public static bool IsBay(string kind) => Bay(kind) is not null;
     public static bool IsFitting(string kind) => kind is "Docking arm" or "Docking cradle";
     public static bool IsDeck(string kind) => kind is "Lift platform" or "Ramp deck";
@@ -48,7 +55,13 @@ public static class DesignHangar
     public static void Init(ShipDesign d, Piece p)
     {
         if (Bay(p.Kind) is { } b)
-            (p.BayDoorW, p.BayDoorH) = (b.DoorW, b.DoorH);
+        {
+            // A bay placed at another size starts that much bigger or smaller (its Size is then 1: the bay's own sizes are what count).
+            var s = p.Size;
+            (p.BayW, p.BayH, p.BayD) = (Math.Clamp(b.W * s, BayMinW, BayMaxW), Math.Clamp(b.H * s, BayMinH, BayMaxH), Math.Clamp(b.D * s, BayMinD, BayMaxD));
+            (p.BayDoorW, p.BayDoorH) = (Math.Clamp(Math.Min(b.DoorW * s, p.BayW), DoorMinW, DoorMaxW), Math.Clamp(Math.Min(b.DoorH * s, p.BayH), DoorMinH, DoorMaxH));
+            p.Size = 1;
+        }
         else if (p.Kind == "Lift platform")
             (p.W, p.L, p.Travel) = (5, 5, 3);
         else if (p.Kind == "Ramp deck")
@@ -69,7 +82,7 @@ public static class DesignHangar
         {
             var p = new Piece { Kind = k.Name };
             Init(new ShipDesign(), p);
-            o[k.Name] = new JsonObject { ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
+            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
         }
         return o;
     }
@@ -80,6 +93,7 @@ public static class DesignHangar
     {
         if (IsBay(p.Kind))
         {
+            o["bayW"] = ShipDesign.R(p.BayW); o["bayH"] = ShipDesign.R(p.BayH); o["bayD"] = ShipDesign.R(p.BayD);
             o["bayDoorW"] = ShipDesign.R(p.BayDoorW); o["bayDoorH"] = ShipDesign.R(p.BayDoorH); o["bayDoor"] = p.BayDoorType;
         }
         else if (IsDeck(p.Kind))
@@ -96,6 +110,9 @@ public static class DesignHangar
     public static Piece Read(JsonObject o, Piece p)
     {
         Init(new ShipDesign(), p);
+        p.BayW = Math.Clamp(ShipDesign.F(o["bayW"], p.BayW), BayMinW, BayMaxW);
+        p.BayH = Math.Clamp(ShipDesign.F(o["bayH"], p.BayH), BayMinH, BayMaxH);
+        p.BayD = Math.Clamp(ShipDesign.F(o["bayD"], p.BayD), BayMinD, BayMaxD);
         p.BayDoorW = Math.Clamp(ShipDesign.F(o["bayDoorW"], p.BayDoorW), DoorMinW, DoorMaxW);
         p.BayDoorH = Math.Clamp(ShipDesign.F(o["bayDoorH"], p.BayDoorH), DoorMinH, DoorMaxH);
         p.BayDoorType = (string?)o["bayDoor"] == "Hinged" ? "Hinged" : "Sliding";
@@ -112,8 +129,17 @@ public static class DesignHangar
     public static string Set(ShipDesign d, Piece p, JsonObject o)
     {
         static double Sn(double v, double s) => Math.Round(v / s) * s;
+        if (o["bayW"] is not null) p.BayW = Math.Clamp(Sn((double)o["bayW"]!, 0.5), BayMinW, BayMaxW);
+        if (o["bayH"] is not null) p.BayH = Math.Clamp(Sn((double)o["bayH"]!, 0.5), BayMinH, BayMaxH);
+        if (o["bayD"] is not null) p.BayD = Math.Clamp(Sn((double)o["bayD"]!, 0.5), BayMinD, BayMaxD);
         if (o["bayDoorW"] is not null) p.BayDoorW = Math.Clamp(Sn((double)o["bayDoorW"]!, 0.5), DoorMinW, DoorMaxW);
         if (o["bayDoorH"] is not null) p.BayDoorH = Math.Clamp(Sn((double)o["bayDoorH"]!, 0.5), DoorMinH, DoorMaxH);
+        if (IsBay(p.Kind) && (o["bayW"] ?? o["bayH"]) is not null)
+        {
+            // A bay made smaller takes its door down with it (the door never outgrows its bay's mouth).
+            p.BayDoorW = Math.Clamp(Math.Min(p.BayDoorW, p.BayW), DoorMinW, DoorMaxW);
+            p.BayDoorH = Math.Clamp(Math.Min(p.BayDoorH, p.BayH), DoorMinH, DoorMaxH);
+        }
         if (o["bayDoor"] is not null) p.BayDoorType = (string?)o["bayDoor"] == "Hinged" ? "Hinged" : "Sliding";
         if (o["w"] is not null) p.W = Math.Clamp(Sn((double)o["w"]!, 0.5), DeckMin, DeckMax);
         if (o["l"] is not null) p.L = Math.Clamp(Sn((double)o["l"]!, 0.5), DeckMin, DeckMax);
@@ -134,7 +160,7 @@ public static class DesignHangar
     public static string SceneJson(ShipDesign d, Piece p)
     {
         var sb = new StringBuilder();
-        if (Bay(p.Kind) is { } b)
+        if (Of(p) is { } b)
             sb.Append(",\"bayDoorW\":").Append(ShipDesign.S(p.BayDoorW)).Append(",\"bayDoorH\":").Append(ShipDesign.S(p.BayDoorH)).Append(",\"bayDoor\":").Append(DesignScene.Q(p.BayDoorType))
               .Append(",\"bay\":[").Append(ShipDesign.S(b.W)).Append(',').Append(ShipDesign.S(b.H)).Append(',').Append(ShipDesign.S(b.D)).Append(']')
               .Append(",\"fittings\":").Append(d.Pieces.Count(q => IsFitting(q.Kind) && q.Link == p.Id));
@@ -186,7 +212,7 @@ public static class DesignHangar
     /// it, its Y up off the floor and its Z into the bay. Null when unlinked (it then sits on the skin where it was dropped).</summary>
     public static DesignScene.Place? PlaceOf(ShipDesign d, Piece p)
     {
-        if (!IsFitting(p.Kind) || d.PieceById(p.Link) is not { } bay || Bay(bay.Kind) is not { } b || d.Hull(bay.Hull) is not { } h)
+        if (!IsFitting(p.Kind) || d.PieceById(p.Link) is not { } bay || Of(bay) is not { } b || d.Hull(bay.Hull) is not { } h)
             return null;
         var w = DesignScene.Where(h, bay);
         var (ex, ey, ez) = Extent(b, w);
@@ -220,7 +246,7 @@ public static class DesignHangar
     {
         var h = d.Hull(p.Hull)!;
         var w = DesignScene.Where(h, p);
-        if (Bay(p.Kind) is { } b)
+        if (Of(p) is { } b)
         {
             var ok = true;
             if (p.BayDoorW > b.W + 1e-6)
@@ -261,7 +287,7 @@ public static class DesignHangar
             else if (PlaceOf(d, p) is { } fw)
             {
                 var bw = DesignScene.Where(bh, bay);
-                var bb = Bay(bay.Kind)!;
+                var bb = Of(bay)!;
                 // A link line to the bay's door and one to the bay's middle (the data links, drawn like the sockets').
                 var (_, ey, _) = Extent(bb, bw);
                 c.Links.Add((fw.O, bw.O, true, 0, false, bw.Y, "hangar"));
@@ -290,7 +316,7 @@ public static class DesignHangar
     public static bool Draw(ShipDesign d, Piece p, DesignScene.Place w, DesignMesh m, bool shut = false)
     {
         var o = Add(w.O, w.Y, -p.Recess);
-        if (Bay(p.Kind) is { } b)
+        if (Of(p) is { } b)
         {
             m.Frame(o[0], o[1], o[2], w.X, w.Y, w.Z, 1, 1);
             DrawBay(m, p, b, w, shut);
