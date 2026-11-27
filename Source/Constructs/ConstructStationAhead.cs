@@ -21,6 +21,8 @@ public sealed partial class StationJob
 /// </summary>
 public static partial class ConstructStation
 {
+    private const int MaxNextKinds = 32; // kinds of a next kit ordered ahead (a deck kit has a dozen)
+
     /// <summary>Server, every <see cref="BayEvery"/> looks: the kit its oven bakes after the one it builds, as kinds and counts (none when it builds no oven's kit).</summary>
     private static void NoteNextKit(ConstructWorld world, Construct c, int t, StationJob j)
     {
@@ -28,26 +30,20 @@ public static partial class ConstructStation
         j.NextName = "";
         if (!c.DefOf(t).StationNoHold || j.Role == 1 || j.Bp == null || BakeKits.FindPrint(j.Name) == null || ConstructBakeOven.NextKitFor(world, c, t) is not { } next)
             return;
-        var defs = new List<ushort>();
-        var need = new List<int>();
+        if (j.NextDef.Length == 0)
+            (j.NextDef, j.NextNeed) = (new ushort[MaxNextKinds], new int[MaxNextKinds]); // (once a job: no allocation a look)
         foreach (var s in next.Steps)
         {
             var d = ConstructParts.Find(s.Part) ?? (s.Part.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) && Extrusion.ParseKey(s.Part) is { } key
                 ? Extrusion.Def(key with { Growing = false }) : null); // (an extrusion no machine has made yet isn't found by name)
             if (d == null || IsLaid(d))
                 continue; // (a dress piece is laid from stock at the station, never ordered)
-            var k = defs.IndexOf((ushort)d.Id);
-            if (k < 0)
-            {
-                defs.Add((ushort)d.Id);
-                need.Add(1);
-            }
-            else
-                need[k]++;
+            var k = Array.IndexOf(j.NextDef, (ushort)d.Id, 0, j.NextN);
+            if (k >= 0)
+                j.NextNeed[k]++;
+            else if (j.NextN < MaxNextKinds)
+                (j.NextDef[j.NextN], j.NextNeed[j.NextN++]) = ((ushort)d.Id, 1);
         }
-        j.NextDef = defs.ToArray();
-        j.NextNeed = need.ToArray();
-        j.NextN = defs.Count;
         j.NextName = next.Name;
     }
 

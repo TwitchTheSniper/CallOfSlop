@@ -240,7 +240,7 @@ public static partial class ConstructBakeOven
         // A kit of this order already at a station: building, or done and waiting in its bay for a lifter.
         int mine = -1, idle = -1, ahead = -1;
         float mineDist = float.MaxValue, idleDist = float.MaxValue;
-        var under = (onWay != 0 ? 1 : 0) + (bedKit ? 1 : 0); // (the queue's kits under way: on the bed, on their way to it, at its stations)
+        var under = RollsTo(world, c, part, onWay) + (onWay != 0 ? 1 : 0) + (bedKit ? 1 : 0); // (the queue's kits under way: on the bed, on their way to it, at its stations)
         for (var s = 0; s < c.PartCount; s++)
         {
             if (!c.DefOf(s).IsBuildStation || c.Parts[s].Broken)
@@ -331,7 +331,17 @@ public static partial class ConstructBakeOven
             || j.State == StationState.Done && j.Body != onWay && world.Get(j.Body) is { } jb && !ConstructStation.BayClearOf(world, c, s, jb));
 
     /// <summary>Does an unbaked kit lie on an open oven's bed (its stall says what is there)?</summary>
-    internal static bool BedKit(OvenStall why) => why is not (OvenStall.Empty or OvenStall.Done or OvenStall.Failed or OvenStall.NoBed or OvenStall.NoPower);
+    internal static bool BedKit(OvenStall why) => why is not (OvenStall.Empty or OvenStall.Done or OvenStall.Failed or OvenStall.NoBed);
+
+    /// <summary>Bodies rolling along a run onto oven <paramref name="part"/>'s bed other than <paramref name="onWay"/> (the one its OvenKits holds): kits under way too.</summary>
+    private static int RollsTo(ConstructWorld world, Construct c, int part, ushort onWay)
+    {
+        var n = 0;
+        foreach (var r in world.BodyRolls)
+            if (r.Host == c.Id && r.Oven == part && r.Body != onWay)
+                n++;
+        return n;
+    }
 
     /// <summary>The kit of the queue's unit after the first <paramref name="under"/> (the kits under way), in queue order; null when the queue holds no more.</summary>
     private static ConstructBuild.Blueprint? KitAfter(Construct c, int part, int under)
@@ -362,7 +372,7 @@ public static partial class ConstructBakeOven
             return null;
         var phase = (OvenPhase)st.Blocked;
         var onWay = world.OvenKits.TryGetValue(c.Id << 16 | oven, out var carried) && world.Get(carried) != null ? carried : (ushort)0;
-        var under = (onWay != 0 ? 1 : 0) + (phase is OvenPhase.Drop or OvenPhase.Heat || phase == OvenPhase.Open && BedKit((OvenStall)st.Refused) ? 1 : 0);
+        var under = RollsTo(world, c, oven, onWay) + (onWay != 0 ? 1 : 0) + (phase is OvenPhase.Drop or OvenPhase.Heat || phase == OvenPhase.Open && BedKit((OvenStall)st.Refused) ? 1 : 0);
         for (var s = 0; s < c.PartCount; s++)
             if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && c.Parts[s].Station is { } j && KitUnderWay(world, c, s, j, onWay)
                 && ConstructRollOut.RunOut(c, s) is var r and >= 0 && ConstructRollOut.OvenOf(c, r) == oven)
