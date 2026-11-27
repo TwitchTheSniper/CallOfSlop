@@ -95,7 +95,9 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 Group = "Factories",
             };
             using var doc = JsonDocument.Parse(layoutText);
-            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(MovedOut).Select(NarrowOut).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
+            items.AddRange(DeepPads(items));
+            items.AddRange(NarrowStrip(items));
             s.Lay(items);
             s.LayLinks();
             s.StationConsoles();
@@ -116,6 +118,76 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             ("press", 39, 30, [("w", 4), ("z", 29)]),
             ("Die Rack", 39, 24, [("z", 22)]),
         ];
+
+        /// <summary>
+        /// Big square stations whose two lines (cutter, former, Extruder and what stands behind them) move out from the bay, in the
+        /// layout's x, z: the station's middle and how far, m. 2026-11-26, Sean chose "Move cutter lines 8 m out": each big station's
+        /// Lower Deck Aft sheet (9.5 x 10.2 m, riding lengthwise) waited on its cutter's bed, as the lay-by pads were 4 m deep; the lines
+        /// either side of that bay move 8 m away from it, and the freed cells become more lay-by pad, 12 m deep (<see cref="DeepPads"/>).
+        /// </summary>
+        private static readonly (float X, float Z, float Out)[] LinesOut = [(-82, 0, 8), (82, 0, 8)];
+
+        /// <summary>An item past a <see cref="LinesOut"/> station's lay-by, within its bay's width: moved away from the bay.</summary>
+        private static JsonElement MovedOut(JsonElement e)
+        {
+            foreach (var (sx, sz, by) in LinesOut)
+            {
+                float dz = Num(e, "z") - sz;
+                if (MathF.Abs(Num(e, "x") - sx) < StationHalf && MathF.Abs(dz) > StationHalf + LayBy)
+                {
+                    var node = System.Text.Json.Nodes.JsonNode.Parse(e.GetRawText())!.AsObject();
+                    node["z"] = Num(e, "z") + MathF.Sign(dz) * by;
+                    return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
+                }
+            }
+            return e;
+        }
+
+        /// <summary>The cells a <see cref="LinesOut"/> move freed: more rows of the lay-by's Roller Tiles (laid as Pad Tiles), each column as the layout's lay-by row nearest them.</summary>
+        private static IEnumerable<JsonElement> DeepPads(List<JsonElement> items)
+        {
+            foreach (var (sx, sz, by) in LinesOut)
+                foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")).ToList())
+                {
+                    float dz = Num(it, "z") - sz;
+                    if (MathF.Abs(Num(it, "x") - sx) >= StationHalf || MathF.Abs(MathF.Abs(dz) - (StationHalf + LayBy - 1)) > 0.1f)
+                        continue; // (the outer lay-by row only)
+                    for (var k = 2f; k <= by; k += 2)
+                        yield return JsonDocument.Parse($$"""{"t": "part", "name": "Roller Tile", "x": {{Num(it, "x")}}, "z": {{Num(it, "z") + MathF.Sign(dz) * k}}, "rot": {{Int(it, "rot")}}}""").RootElement.Clone();
+                }
+        }
+
+        /// <summary>
+        /// The narrow lines (Laser Cutter, Panel Former, transfer table, Extruder, its feed, Materials Bin and Line Console, layout |x| 43 to 68,
+        /// z -53 to -19) moved this far away from their station, m. 2026-11-27, Sean chose "Shift narrow lines 2 m out": most frigate walls' plates
+        /// are 3 m wide and the line's end strip, one 2 m row of tiles between the cutter and the station's bay, couldn't hold them; the freed row
+        /// becomes a second row of the strip, so the end pad is 4 m deep (<see cref="NarrowStrip"/>). The rover docks by the bay stay.
+        /// </summary>
+        private const float NarrowShift = 2;
+
+        private static bool InNarrowLine(JsonElement e) => Str(e, "t") != "rover" && MathF.Abs(Num(e, "x")) is >= 43 and <= 68 && Num(e, "z") is > -53 and < -19;
+
+        private static JsonElement NarrowOut(JsonElement e)
+        {
+            if (!InNarrowLine(e))
+                return e;
+            var node = System.Text.Json.Nodes.JsonNode.Parse(e.GetRawText())!.AsObject();
+            node["x"] = Num(e, "x") + MathF.Sign(Num(e, "x")) * NarrowShift;
+            return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
+        }
+
+        /// <summary>The row <see cref="NarrowShift"/> freed between each narrow cutter's strip and its station: Roller Tiles as the strip's, laid as its pad.</summary>
+        private static IEnumerable<JsonElement> NarrowStrip(List<JsonElement> items)
+        {
+            foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && MathF.Abs(MathF.Abs(Num(i, "x")) - (43 + NarrowShift)) < 0.1f && Num(i, "z") is > -40 and < -20).ToList())
+                yield return JsonDocument.Parse($$"""{"t": "part", "name": "Roller Tile", "x": {{Num(it, "x") - MathF.Sign(Num(it, "x")) * NarrowShift}}, "z": {{Num(it, "z")}}, "rot": {{Int(it, "rot")}}}""").RootElement.Clone();
+        }
+
+        private const float BigOvenClear = 6; // (m: a big line's Bake Oven's Tunnel height)
+
+        private const float StationHalf = 14; // (a big square station's half side, m: its lab item's w, 14 cells of 2 m)
+
+        private static float LayByOf(float sx, float sz) => LayBy + LinesOut.Where(l => MathF.Abs(l.X - sx) < 0.1f && MathF.Abs(l.Z - sz) < 0.1f).Sum(l => l.Out);
 
         /// <summary>
         /// Pieces added to the lab's export, in its own x, z, beside Sean's (none of his move). 2026-11-26, Sean chose "Add one per line":
@@ -389,9 +461,34 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 foreach (var it in items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")))
                 {
                     float dx = MathF.Abs(Num(it, "x") - sx), dz = MathF.Abs(Num(it, "z") - sz);
-                    if (dx < half && dz > half && dz < half + LayBy)
+                    if (dx < half && dz > half && dz < half + LayByOf(sx, sz))
                         _layBy.Add(Round(new Vector2(Num(it, "x"), -Num(it, "z"))));
                 }
+            }
+            // The narrow lines' last strip, the column of Roller Tiles past each 10 x 3 Laser Cutter's Out Tables: their line's end, where the
+            // pieces wait for their station, laid as Pad Tiles in the same cells as the big stations' lay-bys are, so the strip butting the
+            // station's dock is one of its pick pads (2026-11-26: the strip was a run with no way on, and a line's pieces stopped there).
+            foreach (var lc in items.Where(i => Str(i, "t") == "lab" && Str(i, "id") == "laser-cutter" && Int(i, "l") <= 3))
+            {
+                int w = Int(lc, "w"), l = Int(lc, "l"), rot = Int(lc, "rot");
+                float lx = Num(lc, "x"), lz = Num(lc, "z"), sx = w * 2, sz = l * 2;
+                var flow = Flow(rot);
+                Vector2 At(int i, int j) => Local(lx, lz, rot, -sx / 2 + 1 + 2 * i, -sz / 2 + 1 + 2 * j);
+                var last = Vector2.Dot(At(0, l - 1) - At(0, 0), flow) > 0 ? l - 1 : 0;
+                var strip = Enumerable.Range(0, w).Select(i => Round(At(i, last) + flow * 2)).ToList();
+                var tiles = items.Where(i => Str(i, "name") == "Roller Tile" && !Flag(i, "swivel")).Select(i => Round(new Vector2(Num(i, "x"), -Num(i, "z")))).ToHashSet();
+                if (strip.All(tiles.Contains))
+                {
+                    foreach (var cell in strip)
+                        _layBy.Add(cell);
+                    // (and the row past it, when it is all Roller Tiles too: the narrow lines' 4 m end pad, NarrowShift)
+                    var next = Enumerable.Range(0, w).Select(i => Round(At(i, last) + flow * 4)).ToList();
+                    if (next.All(tiles.Contains))
+                        foreach (var cell in next)
+                            _layBy.Add(cell);
+                }
+                else
+                    Note($"the narrow Laser Cutter at ({lx}, {-lz}) has no full strip of Roller Tiles past its Out Tables: it stays as laid");
             }
             // The press lines' Turntable Tiles that butt a Press's bed are laid as Roller Tiles rolling into it: a short run from the
             // turntables into the bed (Sean 2026-11-26, "Lay a short roller run"), since a Turntable Tile passes only onto runs, never
@@ -580,7 +677,9 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             // A Bake Oven's tunnel runs from its Core's row (its way in) to the far row (its way out): its Core stands by the row up the
             // flow, so a kit rolled out of its line's station bay comes in at the in end and the baked part rolls on toward the main station
             // (Sean's layout drew each oven's Core at its down-flow end, where the kits rolled into the tunnel's out end: 2026-11-26).
-            var far = id == "bake-oven" ? lastRow == 0 && l > 1 : Flag(it, "coreFar");
+            // A Panel Former's Core likewise stands by the up-flow row: on the narrow lines' 10 x 3 formers the layout's Core row was the Out
+            // Table row, and a Core welded only to Out Tables has no bed (2026-11-26: those two formers had no cells, so nothing ran there).
+            var far = id is "bake-oven" or "panel-former" ? lastRow == 0 && l > 1 : Flag(it, "coreFar");
             var coreLocal = new Vector2(coreSide * (sx / 2 + 1), far ? sz / 2 - 1 : -sz / 2 + 1);
             var core = Local(x, z, rot, coreLocal.X, coreLocal.Y);
 
@@ -631,7 +730,13 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 case "bake-oven":
                 {
                     if (CoreOn("Bake Oven", "+z", by, core, paint) is { } c)
+                    {
+                        // (a big line's oven, 10 x 10 cells, clears a deck's kit: the Lower Deck Aft's stood 3.2 m tall and was let go at the
+                        // default 3 m tunnel's mouth, 2026-11-26; the old works' line ovens clear 6 to 12 m)
+                        if (w * l >= 100)
+                            Config(c, ("height", BigOvenClear));
                         _labs.Add((id, new Vector2(x, -z), c, flow));
+                    }
                     break;
                 }
                 case "building-station":

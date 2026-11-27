@@ -238,6 +238,272 @@ public static class RollerRuns
             }
             c.Routes[k].ConvW = c.Routes[k].ConvH = want.Width;
         }
+        SyncCrossings(world, c);
+    }
+
+    // ---- Turntable fields ------------------------------------------------------------------------------------------------
+
+    private const int MaxCrossings = 32, MaxField = 256, MaxCrossNodes = 6;
+
+    private struct Crossing
+    {
+        public ushort From, To;
+        public byte FromPort, ToPort;
+        public int NodeN;
+        public ushort Width;
+        public bool Have;
+    }
+
+    private static readonly Crossing[] _crossings = new Crossing[MaxCrossings];
+    private static readonly ushort[] _crossHosts = new ushort[MaxCrossings * MaxCrossNodes];
+    private static readonly Vector3[] _crossAt = new Vector3[MaxCrossings * MaxCrossNodes];
+    private static readonly ushort[] _field = new ushort[MaxField];
+    private static readonly short[] _fieldFrom = new short[MaxField];
+
+    /// <summary>
+    /// Is link <paramref name="k"/> a turntable field's crossing (Zero Day Works II, 2026-11-26): a conveyor laid by the server from a Turntable
+    /// Tile a run ends in to the one in the same field a run starts from, every node on a Turntable Tile, the ends the tiles themselves?
+    /// </summary>
+    public static bool IsCrossing(Construct c, int k)
+    {
+        ref readonly var r = ref c.Routes[k];
+        if (r.Type != RouteType.Conveyor || r.Parent != 255 || r.Count < 2 || r.From == r.To
+            || r.From >= c.PartCount || r.To >= c.PartCount || !c.Parts[r.From].D.IsTurntable
+            || !c.Parts[r.To].D.IsTurntable && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is not { OnBed: true })
+            return false; // (it ends on a tile of the field, or on the bed the field's way out leads into)
+        for (var n = 0; n < r.Count; n++)
+            if (c.RouteNodes[r.Start + n].Host is var h && (h >= c.PartCount || !c.Parts[h].D.IsTurntable
+                || Vector3.DistanceSquared(c.RouteNodes[r.Start + n].Pos, CrossNode(c, h)) > Cell * Cell * 0.5f))
+                return false; // (every node on its tile, at the run's height: a player's link between two turntables is no crossing)
+        return true;
+    }
+
+    /// <summary>Conveyor <paramref name="k"/> a run or a link that isn't a crossing, into (<paramref name="into"/>) or out of Turntable Tile <paramref name="t"/>?</summary>
+    private static bool Meets(Construct c, int k, int t, bool into)
+    {
+        ref readonly var r = ref c.Routes[k];
+        return r.Type == RouteType.Conveyor && (into ? r.To == t : r.Parent == 255 && r.From == t) && !IsCrossing(c, k);
+    }
+
+    /// <summary>
+    /// Turntable Tiles butted side by side are a field (Sean's Works II layout: a 3 x 10 field between a narrow line's Extruder and its
+    /// Panel Former). A run that ends in one tile of a field and has no way on from it is carried across the field, along its rows and
+    /// columns, to the nearest tile of the same field a run (or a link) starts from: one conveyor from tile to tile, laid by the server as
+    /// a run's is and matched again after each rebuild. Before this a piece waited for ever on the tile it came to.
+    /// </summary>
+    private static void SyncCrossings(ConstructWorld world, Construct c)
+    {
+        var n = 0;
+        var hosts = 0;
+        Span<int> path = stackalloc int[MaxField];
+        for (var t = 0; t < c.PartCount && n < MaxCrossings; t++)
+        {
+            if (!c.Parts[t].D.IsTurntable || c.Parts[t].Seg != 0 || c.Parts[t].Broken)
+                continue;
+            bool fed = false, goes = false;
+            for (var k = 0; k < c.RouteCount; k++)
+            {
+                fed |= Meets(c, k, t, true);
+                goes |= Meets(c, k, t, false);
+            }
+            if (!fed || goes)
+                continue;
+            // The field from tile t, breadth first by the 2 m grid, until a tile a way leaves from.
+            var fn = 1;
+            _field[0] = (ushort)t;
+            _fieldFrom[0] = -1;
+            var found = -1;
+            for (var q = 0; q < fn && found < 0; q++)
+            {
+                var at = c.Parts[_field[q]].Pos;
+                for (var o = 0; o < c.PartCount && found < 0; o++)
+                {
+                    if (!c.Parts[o].D.IsTurntable || c.Parts[o].Seg != 0 || c.Parts[o].Broken || o == _field[q])
+                        continue;
+                    var dv = c.Parts[o].Pos - at;
+                    if (MathF.Abs(dv.Y) > 0.1f || MathF.Abs(MathF.Abs(dv.X) + MathF.Abs(dv.Z) - Cell) > 0.1f || MathF.Abs(dv.X) > 0.1f && MathF.Abs(dv.Z) > 0.1f)
+                        continue; // (a neighbour: one tile along x or z, level)
+                    if (Array.IndexOf(_field, (ushort)o, 0, fn) >= 0)
+                        continue;
+                    if (fn >= MaxField)
+                        break;
+                    _field[fn] = (ushort)o;
+                    _fieldFrom[fn] = (short)q;
+                    for (var k = 0; k < c.RouteCount && found < 0; k++)
+                        if (Meets(c, k, o, false))
+                            found = fn;
+                    fn++;
+                }
+            }
+            if (found < 0)
+                continue;
+            // Its nodes: the first tile, each tile where the way turns, the last.
+            var pn = 0;
+            for (var q = found; q >= 0; q = _fieldFrom[q])
+                path[pn++] = _field[q];
+            path[..pn].Reverse();
+            ref var x = ref _crossings[n];
+            x = new Crossing { From = (ushort)t, To = (ushort)path[pn - 1] };
+            for (var i = 0; i < pn && x.NodeN < MaxCrossNodes; i++)
+            {
+                if (i > 0 && i < pn - 1)
+                {
+                    var d0 = c.Parts[path[i]].Pos - c.Parts[path[i - 1]].Pos;
+                    var d1 = c.Parts[path[i + 1]].Pos - c.Parts[path[i]].Pos;
+                    if (Vector3.DistanceSquared(d0, d1) < 0.01f)
+                        continue; // (straight on: no node)
+                }
+                _crossHosts[hosts + x.NodeN++] = (ushort)path[i];
+            }
+            if (x.NodeN < 2 || _crossHosts[hosts + x.NodeN - 1] != x.To)
+            {
+                Console.WriteLine($"[rollers] {c.Id}: a turntable field's way from tile {t} to tile {x.To} turns more than {MaxCrossNodes - 2} times: no crossing, pieces wait on tile {t}");
+                continue; // (a way with more turns than a crossing keeps)
+            }
+            // Its ports: out of the first tile's face toward the second node, into the last tile's face it comes in by; or, when the way
+            // out of the field is a strip into a bed beside it (the narrow lines' 2 m strip by the Panel Former, too short for a bar lying
+            // across it), on into that bed's Bed in: the piece slides off the field sideways onto the bed.
+            if (FacePort(c, t, c.Parts[_crossHosts[hosts + 1]].Pos - c.Parts[t].Pos, "Out ") is not (var fp and >= 0)
+                || FacePort(c, x.To, c.Parts[_crossHosts[hosts + x.NodeN - 2]].Pos - c.Parts[x.To].Pos, "In ") is not (var tp and >= 0))
+            {
+                Console.WriteLine($"[rollers] {c.Id}: a turntable field's way from tile {t} to tile {x.To} finds no face port: no crossing, pieces wait on tile {t}");
+                continue;
+            }
+            (x.FromPort, x.ToPort) = ((byte)fp, (byte)tp);
+            var intoBed = false;
+            for (var k = 0; k < c.RouteCount && !intoBed; k++)
+                if (Meets(c, k, x.To, false) && c.Routes[k].To < c.PartCount && ConstructRoutes.PortOf(c.DefOf(c.Routes[k].To), RouteType.Conveyor, c.Routes[k].ToPort) is { OnBed: true }
+                    && ConstructConveyor.Length(c, k) < Cell * 4f)
+                    (intoBed, x.To, x.ToPort) = (true, c.Routes[k].To, c.Routes[k].ToPort);
+            // Its nodes as a run's: the ends just inside the faces it leaves and comes in by, the turns on their tiles' middles.
+            for (var i = 0; i < x.NodeN; i++)
+                _crossAt[hosts + i] = CrossNode(c, _crossHosts[hosts + i]);
+            var first = Vector3.Normalize(_crossAt[hosts + 1] - _crossAt[hosts]);
+            var last = Vector3.Normalize(_crossAt[hosts + x.NodeN - 1] - _crossAt[hosts + x.NodeN - 2]);
+            _crossAt[hosts] += first * (Cell * 0.5f - EndIn);
+            if (!intoBed)
+                _crossAt[hosts + x.NodeN - 1] -= last * (Cell * 0.5f - EndIn); // (into a bed: its last node is the exit tile's middle, then on to the Bed in)
+            else if (StraightIntoBed(c, t, fn, x.To, x.ToPort, hosts) is var sp and >= 0)
+            {
+                // (a transfer table, Sean 2026-11-27 "weird transfer table routing": on along the way the pieces came in to the bed's middle
+                // row, then straight across onto the bed, never a turn and a jog through the field's tiles)
+                x.FromPort = (byte)sp;
+                x.NodeN = 2;
+            }
+            var width = 0;
+            for (var k = 0; k < c.RouteCount; k++)
+                if (Meets(c, k, t, true))
+                    width = Math.Max(width, c.Routes[k].ConvW);
+            x.Width = (ushort)Math.Max(width, (int)(Cell * 100));
+            hosts += MaxCrossNodes;
+            n++;
+        }
+        // Keep the crossings that are still wanted, drop the rest, lay the new ones.
+        Span<bool> gone = stackalloc bool[Construct.MaxRoutes];
+        gone.Clear();
+        var drop = false;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            if (!IsCrossing(c, k))
+                continue;
+            var match = -1;
+            for (var w = 0; w < n && match < 0; w++)
+                if (!_crossings[w].Have && SameCrossing(c, k, w))
+                    match = w;
+            if (match < 0)
+            {
+                gone[k] = drop = true;
+                continue;
+            }
+            _crossings[match].Have = true;
+            if (c.Routes[k].ConvW != _crossings[match].Width)
+            {
+                c.Routes[k].ConvW = c.Routes[k].ConvH = _crossings[match].Width;
+                world.StructureDirty.Add(c.Id);
+            }
+        }
+        if (drop)
+            ConstructRoutes.RemoveMany(world, c, gone);
+        Span<CRouteNode> nodes = stackalloc CRouteNode[MaxCrossNodes];
+        for (var w = 0; w < n; w++)
+        {
+            ref readonly var x = ref _crossings[w];
+            if (x.Have)
+                continue;
+            for (var i = 0; i < x.NodeN; i++)
+                nodes[i] = new CRouteNode { Pos = _crossAt[w * MaxCrossNodes + i], Host = _crossHosts[w * MaxCrossNodes + i] };
+            var k = ConstructRoutes.Add(world, c, RouteType.Conveyor, x.From, x.FromPort, 255, 0, default, nodes[..x.NodeN], x.To, x.ToPort);
+            if (k < 0)
+            {
+                Console.WriteLine($"[rollers] {c.Id}: no room for a turntable field's crossing (links {c.RouteCount}/{Construct.MaxRoutes})");
+                break;
+            }
+            c.Routes[k].ConvW = c.Routes[k].ConvH = x.Width;
+            Console.WriteLine($"[rollers] {c.Id}: a turntable field carries pieces from tile {x.From} to tile {x.To}, {ConstructConveyor.Length(c, k):0.0} m");
+        }
+    }
+
+    /// <summary>
+    /// A crossing from field tile <paramref name="t"/> into a bed (<paramref name="bed"/>'s Bed in <paramref name="port"/>), laid as a transfer
+    /// table's: on from <paramref name="t"/> the way its in-run comes, to the field tile level with the bed's middle, then straight across onto
+    /// the bed. Writes the two nodes at <paramref name="hosts"/>; the out port of <paramref name="t"/> it leaves by, or -1 (no such tile: the
+    /// way stays as found). Allocates nothing.
+    /// </summary>
+    private static int StraightIntoBed(Construct c, int t, int fn, int bed, byte port, int hosts)
+    {
+        var axis = Vector3.Zero;
+        for (var k = 0; k < c.RouteCount; k++)
+            if (Meets(c, k, t, true) && ConstructConveyor.LevelWay(ConstructRoutes.Point(c, k, c.Routes[k].Count - 1, out _), ConstructRoutes.Point(c, k, c.Routes[k].Count, out _), out var way))
+            {
+                axis = way;
+                break;
+            }
+        if (axis == Vector3.Zero)
+            return -1;
+        var start = CrossNode(c, t);
+        var bedAt = ConstructRoutes.PortPoint(c, bed, port, RouteType.Conveyor);
+        var along = Vector3.Dot(bedAt - start, axis);
+        if (along < Cell * 0.5f)
+            return -1; // (the bed's middle is behind the tile the pieces come in on)
+        var corner = start + axis * along;
+        int host = -1;
+        var best = Cell * Cell * 0.5f;
+        for (var q = 0; q < fn; q++)
+            if (Vector3.DistanceSquared(CrossNode(c, _field[q]), corner) is var d2 && d2 <= best)
+                (host, best) = (_field[q], d2);
+        if (host < 0 || host == t || FacePort(c, t, axis, "Out ") is not (var fp and >= 0))
+            return -1;
+        _crossHosts[hosts] = (ushort)t;
+        _crossAt[hosts] = start + axis * (Cell * 0.5f - EndIn);
+        _crossHosts[hosts + 1] = (ushort)host;
+        _crossAt[hosts + 1] = corner;
+        return fp;
+    }
+
+    /// <summary>Turntable Tile <paramref name="tile"/>'s conveyor port ("Out " or "In " and its face) on the side toward <paramref name="toward"/> (body frame), or -1.</summary>
+    private static int FacePort(Construct c, int tile, Vector3 toward, string kind)
+    {
+        var l = Rot24.Apply(MachineBlocks.Rot24Inverse(c.Parts[tile].Rot), toward);
+        var face = MathF.Abs(l.X) > MathF.Abs(l.Z) ? (l.X > 0 ? "+x" : "-x") : (l.Z > 0 ? "+z" : "-z");
+        foreach (var np in c.Parts[tile].D.NamedPorts)
+            if (np.Type == RouteType.Conveyor && np.Name.Length == kind.Length + 2 && np.Name.StartsWith(kind, StringComparison.Ordinal) && np.Name.EndsWith(face, StringComparison.Ordinal))
+                return np.Byte;
+        return -1;
+    }
+
+    private static Vector3 CrossNode(Construct c, int tile) => c.Parts[tile].Pos + Rot24.Apply(c.Parts[tile].Rot, new Vector3(0, RunY, 0));
+
+    private static bool SameCrossing(Construct c, int k, int w)
+    {
+        ref readonly var r = ref c.Routes[k];
+        ref readonly var x = ref _crossings[w];
+        if (r.From != x.From || r.To != x.To || r.FromPort != x.FromPort || r.ToPort != x.ToPort || r.Count != x.NodeN)
+            return false;
+        for (var i = 0; i < x.NodeN; i++)
+            if (c.RouteNodes[r.Start + i].Host != _crossHosts[w * MaxCrossNodes + i]
+                || Vector3.DistanceSquared(c.RouteNodes[r.Start + i].Pos, ConstructWorld.Quantise(_crossAt[w * MaxCrossNodes + i])) > 1e-4f)
+                return false;
+        return true;
     }
 
     private static bool Same(Construct c, in CRoute r, in Want w) =>
@@ -294,11 +560,50 @@ public static class RollerRuns
             return false;
         if (Butted(c, a, last, x0, across, 4, end, out var to, out var toPort, wantOut: false))
             (w.To, w.ToPort) = ((ushort)to, toPort);
+        else if (SideBed(c, seed, rot, x0, across, first, last, w.From, out var sb, out var sbPort, out var sbZ))
+        {
+            // (nothing on its out end, but a bed along its side: it hands its pieces sideways onto that bed, from the tile level with the
+            // bed's middle; Zero Day Works II's narrow lines, whose strips lie beside their Laser Cutters' beds, 2026-11-26)
+            (w.To, w.ToPort) = ((ushort)sb, sbPort);
+            w.N1 = Body(Math.Clamp(sbZ, zs + EndIn + 0.1f, ze - EndIn));
+        }
         else if (PortByte(c.Parts[h1].D, even ? EndPortHalf : EndPort) is var ep and >= 0)
             (w.To, w.ToPort) = ((ushort)h1, (byte)ep);
         else
             return false;
         return true;
+    }
+
+    /// <summary>
+    /// A bed (a Panel Former's or a Laser Cutter's, with a Bed in) lying along one long side of run <paramref name="seed"/>'s tiles, not the
+    /// machine the run starts from: its Core, its Bed in and the run's local z level with the middle of the rows the bed lies beside. False: none.
+    /// </summary>
+    private static bool SideBed(Construct c, int seed, byte rot, int x0, int across, int first, int last, ushort from, out int core, out byte port, out float z)
+    {
+        (core, port, z) = (-1, 255, 0);
+        if (last - first < 1)
+            return false; // (a one-row strip: what lies beside it is its end's business)
+        var fromCore = from < c.PartCount && MachineBlocks.TryOf(c, from, out var fa) ? fa.Core : -1;
+        for (var side = -1; side <= 1; side += 2)
+        {
+            var lx = side < 0 ? x0 * Cell - Cell * 0.5f - 0.25f : (x0 + across - 1) * Cell + Cell * 0.5f + 0.25f;
+            int bed = -1, rows = 0;
+            float sum = 0;
+            for (var tz = first; tz <= last; tz++)
+            {
+                var at = c.Parts[seed].Pos + Rot24.Apply(rot, new Vector3(lx, RunY, tz * Cell));
+                var b = MachineBlocks.BedAt(c, at);
+                if (b < 0 || b == fromCore || bed >= 0 && b != bed)
+                    continue;
+                (bed, rows, sum) = (b, rows + 1, sum + tz * Cell);
+            }
+            if (bed >= 0 && rows >= 2 && PortByte(c.DefOf(bed), ConstructParts.BedInPort) is var bp and >= 0)
+            {
+                (core, port, z) = (bed, (byte)bp, sum / rows);
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>

@@ -514,11 +514,44 @@ public sealed partial class ZeroDayWorks2
         private void Orders()
         {
             var lines = new Dictionary<VPart, List<(Vector2 At, VPart Console)>>();
+            // Each line console's own Laser Cutter: the pairing of consoles and cutters, each once, within 45 m, with the least distance in all
+            // (2026-11-27: the big lines' cutters moved 8 m out, nearer a narrow line's console than its own cutter; paired by nearest each,
+            // the narrow stations took no line and the main station's console lost its ovens, so every hull piece was "NOTHING MAKES").
+            var cutters = _labs.Where(l => l.Id == "laser-cutter").ToList();
+            var lineConsoles = _consoles.Where(c => !_labs.Any(l => l.Id == "press" && Vector2.Distance(l.At, c.At) < 20)).ToList();
+            var bestPick = new int[lineConsoles.Count];
+            var pick = new int[lineConsoles.Count];
+            var bestCost = float.MaxValue;
+            const float Unpaired = 45;
+            void Pair(int i, float cost, ulong used)
+            {
+                if (cost >= bestCost)
+                    return;
+                if (i == lineConsoles.Count)
+                {
+                    bestCost = cost;
+                    pick.CopyTo(bestPick, 0);
+                    return;
+                }
+                for (var k = 0; k < cutters.Count; k++)
+                    if ((used & (1UL << k)) == 0 && Vector2.Distance(cutters[k].At, lineConsoles[i].At) is var d and < Unpaired)
+                    {
+                        pick[i] = k;
+                        Pair(i + 1, cost + d, used | (1UL << k));
+                    }
+                pick[i] = -1;
+                Pair(i + 1, cost + Unpaired, used);
+            }
+            Pair(0, 0, 0);
+            var cutterOf = new Dictionary<VPart, (VPart Core, Vector2 At)>();
+            for (var i = 0; i < lineConsoles.Count; i++)
+                if (bestPick[i] >= 0)
+                    cutterOf[lineConsoles[i].Console] = (cutters[bestPick[i]].Core, cutters[bestPick[i]].At);
             foreach (var c in _consoles)
             {
-                if (_labs.Any(l => l.Id == "press" && Vector2.Distance(l.At, c.At) < 20) || NearestLab("laser-cutter", c.At, 45) is not { } cutter)
+                if (!cutterOf.TryGetValue(c.Console, out var cutter))
                     continue;
-                var at = _at.TryGetValue(cutter, out var a) ? a : c.At;
+                var at = cutter.At; // (the cutter's middle, not its Core: a narrow cutter's Core stands at its far end, 2026-11-27)
                 var station = _stations.OrderBy(s => Vector2.Distance(s.At, at)).FirstOrDefault().Core;
                 if (station == null)
                     continue;

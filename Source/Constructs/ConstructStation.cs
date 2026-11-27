@@ -665,7 +665,9 @@ public static partial class ConstructStation
         {
             j.BayLooks = BayEvery;
             j.Batched = HasHoldingBay(world, c, t);
-            j.PadBatched = !c.DefOf(t).StationNoHold && HasPickPads(world, c, t, j); // (a station with no hold orders only what a step can take: its pads are its hold)
+            // (a station with no hold, the rover docks, batches too: Sean, 2026-11-26, "have the other lines start production as well ... can
+            // be run in batches". Its pick pads take only what a step can fit now, PadEarly; the rest waits upstream, on its runs and beds.)
+            j.PadBatched = HasPickPads(world, c, t, j);
         }
         if (j.ParkFail > 0)
             j.ParkFail--;
@@ -1837,6 +1839,61 @@ public static partial class ConstructStation
             return false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// Server: should a piece of kind <paramref name="d"/> stay off pad <paramref name="pad"/> for now? True when the pad is a pick pad of a
+    /// rover station (no hold) building in batches, the build needs the kind, and no step that can be fitted now is left for it once what
+    /// its pick pads hold is counted (Sean, 2026-11-26: the lines make the next pieces in batches and they wait in part storage until the
+    /// station needs them). Only pieces a step can take land on its pads, so a pad never fills with parts whose parents can't come: the
+    /// rest wait where they are (on their run, on the machine's bed, in a rack). False for anything else. Allocates nothing.
+    /// </summary>
+    public static bool PadEarly(ConstructWorld world, Construct c, int pad, ConstructPartDef d)
+    {
+        pad = ConstructPads.Owner(c, pad);
+        if (pad >= c.PartCount || !c.DefOf(pad).IsLayDownPad)
+            return false;
+        Note(c);
+        for (var k = 0; k < c.StationPadN; k++)
+            if (c.StationPadPairs[2 * k + 1] == pad && c.StationPadPairs[2 * k] is var t && t < c.PartCount && Early(world, c, t, d))
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Server: may an early piece (<see cref="PadEarly"/>) that other pieces queue behind on its run lie on pick pad <paramref name="pad"/>
+    /// all the same? True while the early pieces on the pad, this one with them, cover at most half its floor (each by its largest face), so the pad keeps room for the
+    /// pieces a step can take now. A shared run (a Works II press row: two presses and an Assembler onto one pad) must never stand still
+    /// behind one piece the station will want later: the Drive Core Ms made in the first batch held the row, the Assembler's out and both
+    /// presses behind it for good (Sean, 2026-11-27). Allocates nothing.
+    /// </summary>
+    public static bool EarlyRoom(ConstructWorld world, Construct c, int pad, ConstructPartDef d)
+    {
+        pad = ConstructPads.Owner(c, pad);
+        if (pad >= c.PartCount || world.StoreOf(c, pad) is not { } st)
+            return false;
+        var hold = ConstructPads.RackDef(c, pad);
+        var room = MathF.Max(0, hold.RackHoldMax.X - hold.RackHoldMin.X) * MathF.Max(0, hold.RackHoldMax.Z - hold.RackHoldMin.Z) * 0.5f;
+        var early = Face(d.BoundsMax - d.BoundsMin);
+        for (var k = 0; k < st.KindN && early <= room; k++)
+            if (ConstructParts.Def(st.KindDef![k]) is { } kd && PadEarly(world, c, pad, kd))
+                early += st.KindCount![k] * Face(kd.BoundsMax - kd.BoundsMin);
+        return early <= room;
+        // (by floor, never stacked, each piece by its largest face: a long plate takes a lane however thin, and a flat pad's hold is near 0 m high)
+        static float Face(System.Numerics.Vector3 v) => MathF.Max(v.X * v.Z, MathF.Max(v.X * v.Y, v.Y * v.Z));
+    }
+
+    /// <summary>Is a piece of kind <paramref name="d"/> early for rover station <paramref name="t"/>'s pick pads (<see cref="PadEarly"/>)?</summary>
+    public static bool Early(ConstructWorld world, Construct c, int t, ConstructPartDef d)
+    {
+        if (!c.DefOf(t).StationNoHold || c.Parts[t].Station is not { State: StationState.Building, PadBatched: true } j)
+            return false;
+        var k = KindOf(j, (ushort)d.Id);
+        if (k < 0 || k >= j.KindReady.Length || j.KindLaid[k])
+            return false;
+        // (one piece of a kind may lie on the pads ahead of its ready steps: a kit that repeats a kind with another between, plate A,
+        // frame B, plate A, would otherwise hold the second A at its maker's bed, and B, queued behind it there, never came: merge review)
+        return j.KindReady[k] + 1 <= ConstructLifters.PickPadHolds(world, c, t, (ushort)d.Id);
     }
 
     /// <summary>Free places in the holding bays (each Piece Rack's free items, as <see cref="HasHoldingBay"/> finds them).</summary>

@@ -48,6 +48,16 @@ public static class ConstructRackPack
         lanes = Math.Min(MaxLanes, (int)((w.X + GapX + 1e-4f) / (s.X + GapX)));
         layers = Math.Min(255, (int)((w.Y + GapY + 1e-4f) / (s.Y + GapY)));
         lenMm = (int)MathF.Ceiling(s.Z * 1000 - 0.01f);
+        if (rd.BlockSeed && rd.BlockCell > 0)
+        {
+            // A Pad Tile pad lies flat and open: one piece wider than its hold may use it to its tiles' edges (a 4 m pad's hold is 3.66 m),
+            // and with no masts on it one piece of any height lies there alone (Sean, 2026-11-26: Works II's keel Hull Sections, 3.83 m
+            // wide and 2 m tall, sat on the Laser Cutter's bed for good, as its lay-by pad could never hold them).
+            if (lanes == 0 && s.X <= MathF.Ceiling(w.X / rd.BlockCell - 0.01f) * rd.BlockCell + 1e-4f)
+                lanes = 1;
+            if (layers == 0 && w.Y < ConstructPads.BaseStack + ConstructPads.PerMast * 0.5f)
+                layers = 1;
+        }
         return lanes > 0 && layers > 0 && lenMm <= (int)(w.Z * 1000 + 0.5f) && s.Z > 0;
     }
 
@@ -234,6 +244,42 @@ public static class ConstructRackPack
             {
                 slab = s;
                 return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The piece of a kind that <see cref="LastOf"/> takes after <paramref name="skip"/> takes before it (each the top of a stack): its
+    /// column, stack and layer. A loader carrying pieces off a pad takes them in this order (ConstructStationPads.cs), and the pad doesn't
+    /// draw the ones on their way (RouteRender.DrawRacks). Nothing allocates.
+    /// </summary>
+    public static bool NthLast(CStore st, ushort def, int skip, out int slab, out int lane, out int layer)
+    {
+        slab = lane = layer = -1;
+        Span<byte> left = stackalloc byte[MaxLanes];
+        for (var s = st.SlabN - 1; s >= 0; s--)
+        {
+            if (st.Slabs![s].Def != def)
+                continue;
+            int lanes = st.Slabs[s].Lanes;
+            for (var l = 0; l < lanes; l++)
+                left[l] = st.SlabLanes![s * MaxLanes + l];
+            while (true)
+            {
+                var pick = -1;
+                for (var l = 0; l < lanes; l++)
+                    if (left[l] > 0 && (pick < 0 || left[l] >= left[pick]))
+                        pick = l;
+                if (pick < 0)
+                    break; // (this column is all taken: the one before it next, as Take drops an emptied column)
+                if (skip == 0)
+                {
+                    (slab, lane, layer) = (s, pick, left[pick] - 1);
+                    return true;
+                }
+                left[pick]--;
+                skip--;
             }
         }
         return false;

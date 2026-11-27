@@ -31,6 +31,7 @@ public static class PanelFormerRender
     private const float Col = 0.3f, Ripple = 0.5f; // the die's columns, and the changeover wave's size (the Lab's 0.55 m x 0.5)
     private const int MostCols = 16; // a die's columns each way at most: a bigger die has bigger columns
     private const float FaceThick = 0.05f;
+    private const float Pull = 0.2f; // how far the end gates pull the sheet out along the bed as the die rises (the Lab's jaw pull)
     private const float Tol = 0.002f; // how far a still die's column may sit off a merged face's plane (m)
     private static readonly float[] _grid = new float[(MostCols + 1) * (MostCols + 1)]; // the die's lifts at its columns' corners, this frame
     private static readonly bool[] _done = new bool[MostCols * MostCols]; // a still die's columns already drawn in a merged face
@@ -276,11 +277,12 @@ public static class PanelFormerRender
         var endReady = morph >= 0 ? EndOf(from, (from?.Length ?? 0) * 0.5f) + (EndOf(die, halfL) - EndOf(from, (from?.Length ?? 0) * 0.5f)) * morph
             : useEnds ? MathF.Min(halfL, zjMost) : zjMost;
         var swing = Smooth(useEnds ? pose.Grip : 0);
+        var pull = useEnds ? Pull * pose.Rise : 0;
         var armLen = laneO + 0.02f;
         var gateGap = MathF.Max(0.02f, thick * 0.5f + 0.006f);
         for (var sz = -1; sz <= 1; sz += 2)
         {
-            var zz = sz * endReady;
+            var zz = sz * MathF.Min(endReady + pull, lh - 0.05f); // (pulled out as the die rises: the stretch, the Lab's 0.2 m)
             var gy = useEnds ? EdgeY(0, zz) : WorkY + 0.004f + thick * 0.5f;
             gy += (1 - swing) * 0.25f; // (open, it stands clear over the Out Table and the run)
             for (var sx = -1; sx <= 1; sx += 2)
@@ -402,14 +404,52 @@ public static class PanelFormerRender
             Box(gfx, m, new Vector3(x0, tableY, z0), new Vector3(x1, (lo + top) * 0.5f, z1), DieSteel);
             return;
         }
-        Box(gfx, m, new Vector3(x0, MathF.Min(tableY, lo - FaceThick - 0.01f), z0), new Vector3(x1, lo - FaceThick, z1), DieSteel);
+        // Its body (inset 6 mm) up to under its lowest corner, its face a plate on the tilted top, and where the top rises over the body a
+        // thin skin on each side, cut along the face's edge (a box sheared in its own plane: its broad faces keep their normals). The face
+        // was once one plate as thick as the column's rise along its tilted normal: on a steep face it stood out sideways past the column,
+        // as far as the rise (Sean, 2026-11-26: slabs and wedges over the bed hiding the stroke).
+        const float In = 0.006f, Skin = 0.003f;
+        Box(gfx, m, new Vector3(x0 + In, MathF.Min(tableY, lo - FaceThick - 0.01f), z0 + In), new Vector3(x1 - In, lo - FaceThick, z1 - In), DieSteel);
         var mid = new Vector3((x0 + x1) * 0.5f, (h00 + h10 + h01 + h11) * 0.25f, (z0 + z1) * 0.5f);
         // (the heights are at the columns' full corners, the plate spans them less their 8 mm gaps)
         var ta = new Vector3(x1 - x0, (h10 + h11 - h00 - h01) * 0.5f * (x1 - x0) / (x1 - x0 + 0.016f), 0);
         var tb = new Vector3(0, (h01 + h11 - h00 - h10) * 0.5f * (z1 - z0) / (z1 - z0 + 0.016f), z1 - z0);
         var nrm = Vector3.Normalize(Vector3.Cross(tb, ta));
-        var plate = FaceThick + (top - lo); // (thick enough to meet its column under its lowest corner)
-        Plate(gfx, m, mid - nrm * (plate * 0.5f), ta, tb, nrm, plate, DieFace);
+        var up = nrm * FaceThick;
+        var at = mid - nrm * (FaceThick * 0.5f);
+        gfx.Draw(new Matrix4x4(ta.X, ta.Y, ta.Z, 0, up.X, up.Y, up.Z, 0, tb.X, tb.Y, tb.Z, 0, at.X, at.Y, at.Z, 1) * m, DieFace);
+        LastDrawn++;
+        if (top - lo < 0.01f)
+            return;
+        // The plate's edges at the column's sides (the corners' heights brought in to the plate's span), a skin under each that rises.
+        float kx = (x1 - x0) / (x1 - x0 + 0.016f), kz = (z1 - z0) / (z1 - z0 + 0.016f);
+        float Edge(float a, float b, float k) => (a + b) * 0.5f + (a - b) * 0.5f * k;
+        float e00 = Edge(h00, h10, kx), e10 = Edge(h10, h00, kx), e01 = Edge(h01, h11, kx), e11 = Edge(h11, h01, kx); // (along x, at each z end)
+        float c00 = Edge(e00, e01, kz), c01 = Edge(e01, e00, kz), c10 = Edge(e10, e11, kz), c11 = Edge(e11, e10, kz); // (the plate's four corners)
+        SkinX(x0 + Skin * 0.5f, c00, c01);
+        SkinX(x1 - Skin * 0.5f, c10, c11);
+        SkinZ(z0 + Skin * 0.5f, c00, c10);
+        SkinZ(z1 - Skin * 0.5f, c01, c11);
+
+        // A skin in the plane x = xs from z0 (height ha) to z1 (hb), from the plate's underside down into the body.
+        void SkinX(float xs, float ha, float hb)
+        {
+            var dep = MathF.Max(ha, hb) - lo;
+            if (dep < 0.01f)
+                return;
+            float l = z1 - z0;
+            gfx.Draw(new Matrix4x4(Skin, 0, 0, 0, 0, dep, 0, 0, 0, hb - ha, l, 0, xs, (ha + hb) * 0.5f - FaceThick * 0.5f - dep * 0.5f, (z0 + z1) * 0.5f, 1) * m, DieSteel);
+            LastDrawn++;
+        }
+        void SkinZ(float zs, float ha, float hb)
+        {
+            var dep = MathF.Max(ha, hb) - lo;
+            if (dep < 0.01f)
+                return;
+            float w = x1 - x0;
+            gfx.Draw(new Matrix4x4(w, hb - ha, 0, 0, 0, dep, 0, 0, 0, 0, Skin, 0, (x0 + x1) * 0.5f, (ha + hb) * 0.5f - FaceThick * 0.5f - dep * 0.5f, zs, 1) * m, DieSteel);
+            LastDrawn++;
+        }
     }
 
     private static float Smooth(float t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
@@ -417,15 +457,6 @@ public static class PanelFormerRender
     // A box between two x values on either side (sd < 0 puts a > b): the lower and upper corners from x a to x b, y and z as given.
     private static Vector3 Lo(float a, float y, float z, float b) => new(MathF.Min(a, b), y, z);
     private static Vector3 Hi(float a, float y, float z, float b) => new(MathF.Max(a, b), y, z);
-
-    /// <summary>A plate centred at <paramref name="at"/>, spanning <paramref name="ta"/> and <paramref name="tb"/>, <paramref name="thick"/> along <paramref name="n"/>.</summary>
-    private static void Plate(Renderer gfx, Matrix4x4 frame, Vector3 at, Vector3 ta, Vector3 tb, Vector3 n, float thick, Vector3 colour)
-    {
-        var up = n * thick;
-        var mm = new Matrix4x4(ta.X, ta.Y, ta.Z, 0, up.X, up.Y, up.Z, 0, tb.X, tb.Y, tb.Z, 0, at.X, at.Y, at.Z, 1);
-        gfx.Draw(mm * frame, colour);
-        LastDrawn++;
-    }
 
     private static readonly ushort CylShape = PartShapes.For(new PartBox { Shape = "cylinder", Size = Vector3.One, Segments = 12 });
     private static readonly Matrix4x4 ToX = Matrix4x4.CreateRotationY(MathF.PI / 2), ToY = Matrix4x4.CreateRotationX(-MathF.PI / 2);

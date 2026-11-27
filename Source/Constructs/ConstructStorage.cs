@@ -95,7 +95,9 @@ public sealed class CStore
     public double StrokeSince, StrokeEnd, StrokeAt; // ...StrokeAt: the frame it was last looked at
     public ConstructPartDef? StrokeBlank, StrokeMade, StrokeLast, StrokeBlankPrev; // ...the blank on the die, the part it makes, the last stroke's part, the last blank on this die (the jaws run from its size)
     public PressDie? StrokeDie; // ...the die the stroke pressed with
+    public uint DoorAt; // a Press (server only): the server tick it last looked for a later order whose blank is at its door (ConstructPress.DoorFirst; never sent or saved)
     public byte LidCool; // a Press (server only): press steps until its lid is open again and the next stroke may start (ConstructPress.LidOpenSteps)
+    public bool FormRollsOut; // a Panel Former: its stroke ends rolling the panel to the bed's out end (it has an out run: read as the stroke begins; never sent)
     public bool FormSeen; // a Panel Former: the drawing has read its head order's shape; the shape its die shows, the one it left and when that changeover began (ConstructPanelFormer.Pose; never sent)
     public ConstructPanelFormer.DieInfo? FormDie, FormDieFrom;
     public double FormChangeAt = -1e9; // (long past: never MinValue in a subtraction)

@@ -434,9 +434,18 @@ public static partial class ConstructStation
                 var from = laid ? -3 : PickFrom(world, c, t, j, tray, kind, d, rc.Kg);
                 if (from == -2)
                     continue;
-                Vector3? pick = from >= 0 ? PadPickAt(c, t, from, d) : from == -1 ? new Vector3(docks[0].Mid.X, 1.2f, docks[0].Mid.Y) : null;
+                Vector3? pick = from >= 0 ? PadPickAt(world, c, t, j, from, d) : from == -1 ? new Vector3(docks[0].Mid.X, 1.2f, docks[0].Mid.Y) : null;
                 if (pick is { } pq && !StationRovers.Reaches(rc, StationRovers.SpotFor(g, rc, pq), pq))
-                    continue;
+                {
+                    // (the piece's own place on the pad is past this rover's reach: it takes it at the pad's edge, as rovers did before
+                    // they went to the piece, rather than leave the step for nobody)
+                    if (from < 0)
+                        continue;
+                    var pe = PadEdgeAt(c, t, from, d);
+                    if (!StationRovers.Reaches(rc, StationRovers.SpotFor(g, rc, pe), pe))
+                        continue;
+                    pick = pe;
+                }
                 PoseAt(j, docks[a], a, 0, out var at, out _);
                 var idle = j.ArmStep[a] < 0 && (j.ArmTicks[a] == 0 || j.Rov[a].Home);
                 var wait = idle ? 0f : j.ArmLeft[a] / (float)World.TickRate;
@@ -571,7 +580,10 @@ public static partial class ConstructStation
         for (var a = 0; a < n; a++)
         {
             var on = j.ArmTicks[a] > 0;
-            w.U8((byte)((on ? 1 : 0) | (j.RovSet[a] ? 2 : 0) | (j.ArmStep[a] >= 0 ? 4 : 0))).U8(j.ArmSeq[a]);
+            var pad = on && j.ArmStep[a] >= 0 ? j.ArmPad[a] : None; // (protocol 478: the pick pad it carries its piece off, so a client's pad hides it)
+            w.U8((byte)((on ? 1 : 0) | (j.RovSet[a] ? 2 : 0) | (j.ArmStep[a] >= 0 ? 4 : 0) | (pad != None ? 8 : 0))).U8(j.ArmSeq[a]);
+            if (pad != None)
+                w.U16(pad);
             if (j.RovSet[a])
             {
                 w.Cm(j.RovAt[a].X).Cm(j.RovAt[a].Y).U16(Angle(j.RovH[a]));
@@ -598,11 +610,12 @@ public static partial class ConstructStation
         int n = r.U8();
         if (j != null)
             for (var a = n; a < MaxArms; a++)
-                (j.ArmTicks[a], j.RovSet[a]) = (0, false);
+                (j.ArmTicks[a], j.RovSet[a], j.ArmPad[a]) = (0, false, None);
         for (var a = 0; a < n; a++)
         {
             var flags = r.U8();
             var seq = r.U8();
+            var pad = (flags & 8) != 0 ? r.U16() : None;
             Vector2 at = default;
             float h = 0;
             Vector3 hook = default;
@@ -615,6 +628,8 @@ public static partial class ConstructStation
             var mine = j != null && a < MaxArms;
             if (mine)
                 (j!.RovSet[a], j.RovAt[a], j.RovH[a], j.RovHook[a]) = ((flags & 2) != 0, at, h, hook);
+            if (mine)
+                j!.ArmPad[a] = pad;
             if ((flags & 1) == 0)
             {
                 if (mine)
