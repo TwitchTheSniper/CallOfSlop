@@ -31,7 +31,7 @@ public static unsafe partial class Program
                 _sdSteps.Enqueue(step);
     }
 
-    // --sd-do "wait N; mv X Y; dn; up; rdn; rup; mdn; mup; wheel N; key NAME; ctrl NAME; cam X Y Z X Y Z; shot NAME; quit": the headless mouse and keys, a step a frame.
+    // --sd-do "wait N; mv X Y; dn; up; rdn; rup; mdn; mup; m4dn; m4up; wheel N; key NAME; ctrl NAME; cam X Y Z X Y Z; shot NAME; quit": the headless mouse and keys, a step a frame.
     private static readonly Queue<string> _sdSteps = new();
     private static int _sdWait;
     private static string? _sdRelease;
@@ -61,6 +61,8 @@ public static unsafe partial class Program
             case "rup": io.AddMouseButtonEvent(1, false); break;
             case "mdn": io.AddMouseButtonEvent(2, true); break;
             case "mup": io.AddMouseButtonEvent(2, false); break;
+            case "m4dn": io.AddMouseButtonEvent(3, true); break;
+            case "m4up": io.AddMouseButtonEvent(3, false); break;
             case "wheel": io.AddMouseWheelEvent(0, F(1)); break;
             case "key" or "ctrl":
                 var k = Enum.Parse<Brutal.ImGuiApi.ImGuiKey>(w[1], true);

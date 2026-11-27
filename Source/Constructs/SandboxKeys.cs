@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class SandboxKeys
 {
-    public static string Use = "F", Fire = "LMB", Aim = "RMB", Reload = "R", Drop = "Delete", Menu = "Tab", Wheel = "MMB";
+    public static string Use = "F", Fire = "LMB", Aim = "RMB", Reload = "R", Drop = "Delete", Menu = "Tab", Wheel = "Mouse 4";
     public static string Sprint = "Left Shift", FreeRoute = "Left Shift", JumpKey = "Space";
 
     /// <summary>The selector's keys.</summary>
@@ -84,7 +84,7 @@ public static class SandboxKeys
         {
             GameAction.MoveForward => "W", GameAction.MoveBack => "S", GameAction.MoveLeft => "A", GameAction.MoveRight => "D", GameAction.Jump => "Space",
             GameAction.CrouchHold => "Left Ctrl", GameAction.Sprint or GameAction.FreeRouting => "Left Shift", GameAction.Interact => "F", GameAction.Fire => "LMB",
-            GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "MMB", GameAction.Weapon3 => "3",
+            GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "Mouse 4", GameAction.Weapon3 => "3",
             GameAction.BuildMirror => "M", GameAction.BuildLine => "O", GameAction.BuildReplace => "P", GameAction.BuildGantry => "U", GameAction.BuildPlaneUp => "Page Up", GameAction.BuildPlaneDown => "Page Down", GameAction.GantryOrbit => "Left Alt",
             GameAction.SelectMove => "M", GameAction.SelectCopy => "O", GameAction.SelectPaint => "P", GameAction.SelectWeld => "U", GameAction.SelectSave => ",", GameAction.SelectTool => ".", GameAction.SeatRollLeft => "Q", GameAction.SeatRollRight => "E", GameAction.SnapSwitch => "K",
             GameAction.SeatHook => "G", GameAction.SeatEject => "L", GameAction.SeatRadar => "MMB", GameAction.SeatDampeners => "Z", GameAction.SeatMouseSteer => "M", GameAction.SeatGear => "B", GameAction.SeatReactor => "P", GameAction.SeatThrusters => "I", _ => "?",

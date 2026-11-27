@@ -184,6 +184,9 @@ public static class Keybinds
 
     public static int Mouse(GlfwMouseButton b) => -((int)b + 2);
 
+    /// <summary>GLFW's fourth mouse button (the back side button); the binding has no name for it.</summary>
+    public const GlfwMouseButton Mouse4 = (GlfwMouseButton)3;
+
     public static int Key(GlfwKey k) => (int)k;
 
     /// <summary>A Shift chord (Shift held with the key) as a binding: the key's code with this bit set. Only Sandbox actions take chords (Shift is the sprint key everywhere else).</summary>
@@ -383,7 +386,7 @@ public static class Keybinds
         Key(GlfwKey.F6), // Look-at inspector (dev): binds version 9
         Key(GlfwKey.F5), // Copy the look-at reference (dev)
         Key(GlfwKey.F10), // Prop editor (dev)
-        Mouse(GlfwMouseButton.Middle), // Tool wheel (Sandbox): binds version 10 (Q is Swap weapon)
+        Mouse(Mouse4), // Tool wheel (Sandbox): binds version 10 (Q is Swap weapon); on Mouse 4, the back side button, from version 36
         Key(GlfwKey.H), // Stow in the backpack (Sandbox): binds version 11
         Key(GlfwKey.J), // Draw from the backpack (Sandbox)
         Key(GlfwKey.Left), // Rotate left (Sandbox): binds version 12 (the Zombies spectate keys share the arrows: other context)
@@ -422,7 +425,7 @@ public static class Keybinds
         Key(GlfwKey.L), // Eject, in an ejection seat
         Unbound, // (was the Logbook on F1, binds version 25: removed with the story)
         Unbound, // (was joining another player's talk on Backspace, binds version 26: removed with the story)
-        Mouse(GlfwMouseButton.Middle), // Radar lock, in a seat: binds version 27 (shares the tool wheel's button, which a seat doesn't read)
+        Mouse(GlfwMouseButton.Middle), // Radar lock, in a seat: binds version 27 (it shared the tool wheel's button until version 36)
         Key(GlfwKey.Home), // Command view (Sandbox): binds version 28
         Key(GlfwKey.Z), // Inertia dampeners, in a seat: binds version 29 (shares Prone's Z, which a seat doesn't read)
         Key(GlfwKey.M), // Mouse steering on or off, in a seat: binds version 30 (shares Mirror's M, which a seat doesn't read)
@@ -473,8 +476,9 @@ public static class Keybinds
     /// 31: Landing gear in a seat on B added (same rule). 32: Board inside (creative Sandbox) on End added (same rule).
     /// 33: Spectate camera (creative Sandbox) on Insert added (same rule).
     /// 34: Reactor P and Thrusters I in the pilot's seat added (same rule; P shares Replace's and the selector's key, which a seat doesn't read).
+    /// 35: Magnet boots on 7 added (same rule). 36: the tool wheel moved off the middle mouse button to Mouse 4, the back side button (Karl, 2026-11-27; a rebound wheel stays where it is).
     /// </summary>
-    public const int DefaultsVersion = 35;
+    public const int DefaultsVersion = 36;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, int Index, int Old, int New)[] Changes =
@@ -546,6 +550,7 @@ public static class Keybinds
         (34, (int)GameAction.SeatReactor, Unbound, Key(GlfwKey.P)),
         (34, (int)GameAction.SeatThrusters, Unbound, Key(GlfwKey.I)),
         (35, (int)GameAction.MagBoots, Unbound, Key(GlfwKey.Number7)),
+        (36, (int)GameAction.ToolWheel, Mouse(GlfwMouseButton.Middle), Mouse(Mouse4)), // (Karl, 2026-11-27: the wheel off the middle button)
     ];
 
     /// <summary>
