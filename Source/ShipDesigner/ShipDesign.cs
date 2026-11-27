@@ -395,6 +395,7 @@ public sealed class Piece
     public string ArmClad = DesignArmour.DefClad, ArmStruts = DesignArmour.DefStruts;
     public double[] ArmTop = new double[DesignArmour.EdgePoints], ArmBot = new double[DesignArmour.EdgePoints]; // its outline's top and bottom edges (DesignArmour.EdgeAt)
     public double ArmFollow = 1; // 1: it follows the hull's shape; 0: flat
+    public int ArmButton; // the utilities console button that works it (1-8; 0: none, F on the plate only)
 
     public JsonObject ToJson() => DesignArmour.Write(this, DesignRecess.Write(this, DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {

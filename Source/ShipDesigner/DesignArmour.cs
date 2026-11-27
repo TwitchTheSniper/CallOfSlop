@@ -22,6 +22,10 @@ public static class DesignArmour
     /// middle, or a row of three or four posts along its middle.</summary>
     public static readonly string[] StrutKinds = ["Arm", "Row of 3", "Row of 4"];
     public const string DefStruts = "Row of 3";
+    /// <summary>The utilities console that works plates by its buttons (Karl, 2026-11-27: physical in-game buttons, each plate set to one):
+    /// its kind's name, its buttons, and the leaf its first button is drawn in (DesignFurnishings.UtilitiesConsole).</summary>
+    public const string Console = "Utilities console";
+    public const int ConsoleButtons = 8, ButtonLeaf = 10;
     /// <summary>The outline's control points along each long edge (Karl, 2026-11-27: "look at the panel from a 2D perspective and sculpt"):
     /// metres each edge stands out past (or, below 0, in from) the plate's height, at <see cref="EdgePoints"/> points evenly along it.</summary>
     public const int EdgePoints = 5;
@@ -62,7 +66,7 @@ public static class DesignArmour
 
     public static bool Is(Piece p) => p.Kind == Kind;
 
-    public static JsonObject Defaults() => new() { ["armW"] = DefW, ["armH"] = DefH, ["armT"] = DefT, ["armOff"] = DefOff, ["armClad"] = DefClad, ["armCladSize"] = DefCladSize, ["armStruts"] = DefStruts, ["armFollow"] = 1 };
+    public static JsonObject Defaults() => new() { ["armW"] = DefW, ["armH"] = DefH, ["armT"] = DefT, ["armOff"] = DefOff, ["armClad"] = DefClad, ["armCladSize"] = DefCladSize, ["armStruts"] = DefStruts, ["armFollow"] = 1, ["armButton"] = 0 };
 
     /// <summary>A plate's JSON fields (only a plate's: every other piece's JSON stays as it was, so its design's hash does).</summary>
     public static JsonObject Write(Piece p, JsonObject o)
@@ -76,6 +80,8 @@ public static class DesignArmour
         o["armClad"] = p.ArmClad;
         o["armCladSize"] = ShipDesign.R(p.ArmCladSize);
         o["armStruts"] = p.ArmStruts;
+        if (p.ArmButton > 0)
+            o["armButton"] = p.ArmButton;
         if (p.ArmTop.Any(x => x != 0) || p.ArmBot.Any(x => x != 0))
         {
             o["armTop"] = WriteEdge(p.ArmTop);
@@ -100,6 +106,7 @@ public static class DesignArmour
         p.ArmTop = ReadEdge(o["armTop"], p.ArmH);
         p.ArmBot = ReadEdge(o["armBot"], p.ArmH);
         p.ArmFollow = Math.Clamp(ShipDesign.F(o["armFollow"], 1), 0, 1);
+        p.ArmButton = (int)Math.Clamp(ShipDesign.F(o["armButton"], 0), 0, ConsoleButtons);
         return p;
     }
 
@@ -114,6 +121,7 @@ public static class DesignArmour
         if (o["armT"] is not null) p.ArmT = Math.Clamp(Snap(ShipDesign.F(o["armT"], DefT), 0.01), MinT, MaxT);
         if (o["armOff"] is not null) p.ArmOff = Math.Clamp(Snap(ShipDesign.F(o["armOff"], DefOff), 0.05), MinOff, MaxOff);
         if (o["armCladSize"] is not null) p.ArmCladSize = Math.Clamp(Snap(ShipDesign.F(o["armCladSize"], DefCladSize), 0.05), HullBody.CladSizeMin, HullBody.CladSizeMax);
+        if (o["armButton"] is not null) p.ArmButton = (int)Math.Clamp(Math.Round(ShipDesign.F(o["armButton"], 0)), 0, ConsoleButtons);
         if (o["armFollow"] is not null) p.ArmFollow = Math.Clamp(Snap(ShipDesign.F(o["armFollow"], 1), 0.05), 0, 1);
         if (o["armTop"] is JsonArray) p.ArmTop = ReadEdge(o["armTop"], p.ArmH);
         if (o["armBot"] is JsonArray) p.ArmBot = ReadEdge(o["armBot"], p.ArmH);
@@ -153,7 +161,7 @@ public static class DesignArmour
         new StringBuilder(",\"armour\":true,\"armW\":").Append(ShipDesign.S(p.ArmW)).Append(",\"armH\":").Append(ShipDesign.S(p.ArmH))
             .Append(",\"armT\":").Append(ShipDesign.S(p.ArmT)).Append(",\"armOff\":").Append(ShipDesign.S(p.ArmOff))
             .Append(",\"armClad\":").Append(DesignScene.Q(p.ArmClad)).Append(",\"armCladSize\":").Append(ShipDesign.S(p.ArmCladSize)).Append(",\"armStruts\":").Append(DesignScene.Q(p.ArmStruts))
-            .Append(",\"armFollow\":").Append(ShipDesign.S(p.ArmFollow))
+            .Append(",\"armFollow\":").Append(ShipDesign.S(p.ArmFollow)).Append(",\"armButton\":").Append(p.ArmButton)
             .Append(",\"armTop\":[").AppendJoin(',', p.ArmTop.Select(ShipDesign.S)).Append("],\"armBot\":[").AppendJoin(',', p.ArmBot.Select(ShipDesign.S)).Append(']').ToString();
 
     // ---- where it lies

@@ -52,6 +52,7 @@ public static class DesignFurnishings
         new("Suit locker", "Crew", 0.5, 0.35, 2.1, true, "A space suit locker with a glass front (after the Space Suit Locker).", SuitLocker),
         new("MMU dock", "Crew", 0.6, 0.4, 1.8, true, "A wall dock for a manoeuvring pack (after the MMU Dock).", MmuDock),
         // ---- Command
+        new(DesignArmour.Console, "Command", 0.6, 0.15, 1.6, true, "A utilities console in the wall: eight numbered buttons (1 to 4 on the top row, 5 to 8 below). Each armour plate set to a button is worked by it: a press has their rams push them out, another lets them go.", UtilitiesConsole),
         new("Chart table", "Command", 0.8, 0.5, 1.0, false, "A lit chart table for plotting (after the Chart Table).", ChartTable),
         new("Engineer's panel", "Command", 0.8, 0.2, 1.9, true, "A wall panel of gauges and switches for the ship's systems (after the Engineer's Panel).", EngineersPanel),
         new("Sensor console", "Command", 0.6, 0.4, 1.4, true, "A sensor operator's console: a sweep screen and a track board.", m => Desk(m, Gl, 1)),
@@ -177,6 +178,23 @@ public static class DesignFurnishings
             Front(m, x + 0.05, 1.42, x + 0.28, 1.46, 0.312, Green);
         }
         m.Box(-0.82, 1.79, -0.32, 0.82, 1.86, 0.32, Am);
+    }
+
+    /// <summary>The utilities console (Karl, 2026-11-27: "a utilities console, similar to the in-wall bits"): a slim wall cabinet, its
+    /// face with two rows of four heavy guarded buttons, each its own leaf (<see cref="DesignArmour.ButtonLeaf"/> + its number - 1) that the
+    /// game makes a button of its own (DesignParts.Armour.cs).</summary>
+    private static void UtilitiesConsole(DesignMesh m)
+    {
+        Body(m, 0.6, 0.15, 1.6, G);
+        Front(m, -0.52, 0.85, 0.52, 1.5, 0.15, A);
+        Front(m, -0.52, 0.2, 0.52, 0.75, 0.15, Steel); // (its service hatch)
+        m.Box(-0.6, 1.56, -0.15, 0.6, 1.6, 0.17, Am);
+        for (var k = 0; k < DesignArmour.ConsoleButtons; k++)
+        {
+            double x = -0.39 + (k % 4) * 0.26, y = k < 4 ? 1.25 : 0.98;
+            m.Box(x - 0.1, y - 0.1, 0.156, x + 0.1, y + 0.1, 0.17, Bk); // (its guard ring)
+            m.Leaf(DesignArmour.ButtonLeaf + k, () => m.Box(x - 0.065, y - 0.065, 0.16, x + 0.065, y + 0.065, 0.2, k < 4 ? Red : Am));
+        }
     }
 
     private static void PowerBoard(DesignMesh m)

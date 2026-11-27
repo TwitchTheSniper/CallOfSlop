@@ -62,6 +62,8 @@ public static partial class DesignParts
                     Leg(new PieceAt(p, e, at, sets[k].W, els), m); // (its leg is landing gear, not a door F works)
                 else if (p.Kind == DesignRamp.Kind)
                     RampLeaves(new PieceAt(p, e, at, sets[k].W, els), m, rampFloor); // (its ramp and extension on their joints, F lowers them)
+                else if (p.Kind == DesignArmour.Console)
+                    ConsoleButtons(new PieceAt(p, e, at, sets[k].W, els), m); // (its buttons, each its own: DesignParts.Armour.cs)
                 else if (armour is not null)
                     ArmourLeaf(new PieceAt(p, e, at, sets[k].W, els), m); // (its plate on its rams: DesignParts.Armour.cs)
                 else

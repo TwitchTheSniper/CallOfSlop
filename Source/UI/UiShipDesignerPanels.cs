@@ -1564,6 +1564,8 @@ public sealed partial class Ui
                     v => Cmd(C("setPiece", ("id", pid), ("armT", v / 100))), "pcat", Dflt("armour", "armT", 100));
                 Slider("Stand-off", Math.Round(D(p, "armOff") * 100), Math.Round(ShipDesigner.DesignArmour.MinOff * 100), Math.Round(ShipDesigner.DesignArmour.MaxOff * 100), 5, " cm",
                     v => Cmd(C("setPiece", ("id", pid), ("armOff", v / 100))), "pcao", Dflt("armour", "armOff", 100));
+                Slider("Console button", D(p, "armButton"), 0, ShipDesigner.DesignArmour.ConsoleButtons, 1, "", v => Cmd(C("setPiece", ("id", pid), ("armButton", v))), "pcabt", 0);
+                Hint(D(p, "armButton") > 0 ? $"Worked by button {D(p, "armButton"):0} on any Utilities console aboard (Inside > Command), and by F on the plate." : "No console button: F on the plate works it. Set a button to work it from a Utilities console.");
                 ImGui.Text("Held by"u8);
                 Row();
                 MatCombo("pcab" + pid, Str(p, "armStruts", ShipDesigner.DesignArmour.DefStruts), ShipDesigner.DesignArmour.StrutKinds, v => Cmd(C("setPiece", ("id", pid), ("armStruts", v))));

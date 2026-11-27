@@ -20,6 +20,7 @@ public static partial class DesignParts
         var plate = Leaf($"{e.Id}.plate", p.Kind, m, l.From, l.To, a.X, a.Y, a.Z);
         (plate.Fn, plate.Door, plate.Kind) = ("", null, "armour");
         plate.Kg = MathF.Max(50f, plate.Area * PieceKgPerM2);
+        plate.Role = p.ArmButton > 0 ? p.ArmButton.ToString(System.Globalization.CultureInfo.InvariantCulture) : ""; // (the console button that works it)
         var joints = 0;
         foreach (var x in els)
             if (x.Joint != null)
@@ -44,6 +45,54 @@ public static partial class DesignParts
         plate.Seg = (byte)(joints + 1);
         els.Add(plate);
         Weld(els, els.Count - 2, els.Count - 1);
+    }
+
+    /// <summary>A utilities console's buttons (DesignFurnishings.UtilitiesConsole): each drawn button its own small element, its number its Role.</summary>
+    private static void ConsoleButtons(in PieceAt a, DesignMesh m)
+    {
+        var (e, els) = (a.E, a.Els);
+        for (var k = 0; k < DesignArmour.ConsoleButtons; k++)
+        {
+            if (m.Leaves?.Find(l => l.Leaf == DesignArmour.ButtonLeaf + k) is not { } l || l.To <= l.From)
+                continue;
+            var b = Leaf($"{e.Id}.btn{k + 1}", $"Utilities console button {k + 1}", m, l.From, l.To, a.X, a.Y, a.Z);
+            (b.Fn, b.Door, b.Kind, b.Role, b.Kg) = ("", null, "armourbtn", (k + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), 1f);
+            els.Add(b);
+            Weld(els, a.At, els.Count - 1);
+        }
+    }
+
+    /// <summary>Whether a design part is a utilities console's button.</summary>
+    public static bool IsArmourButton(ConstructPartDef d) => ElementOf(d) is { Kind: "armourbtn" };
+
+    /// <summary>
+    /// F on a utilities console's button: every plate aboard set to its number is worked together. While any is still in, those that are in
+    /// have their rams push them out; once all are out, they are let go. Null when something moved, a reason when not. Not per tick.
+    /// </summary>
+    public static string? ArmourButtonUse(ConstructWorld world, Construct c, int part)
+    {
+        if (ElementOf(c.DefOf(part)) is not { } btn || btn.Role.Length == 0)
+            return "the button isn't wired to anything";
+        var plates = new List<int>();
+        for (var i = 0; i < c.PartCount; i++)
+            if (ElementOf(c.DefOf(i)) is { Kind: "armour" } pe && pe.Id.EndsWith(".plate", StringComparison.Ordinal) && pe.Role == btn.Role)
+                plates.Add(i);
+        if (plates.Count == 0)
+            return $"no armour plate is set to button {btn.Role}";
+        bool In(int i) { var s = c.Parts[i].Seg; return s > 0 && s <= c.JointCount && c.Joints[s - 1].Angle < c.Joints[s - 1].Max - 0.01f; }
+        if (plates.Any(In))
+        {
+            var pushed = false;
+            foreach (var i in plates)
+                if (In(i) && !c.Joints[c.Parts[i].Seg - 1].Open)
+                    pushed |= ArmourUse(world, c, i) == null;
+            return pushed ? null : "its plates' rams are still pushing them out";
+        }
+        // All out: let them go, the last part first, so letting one go doesn't move the others' places in the body.
+        string? why = null;
+        for (var q = plates.Count - 1; q >= 0; q--)
+            why = ArmourUse(world, c, plates[q]) ?? why;
+        return why;
     }
 
     /// <summary>Whether a design part is a stand-off armour plate (its plate, which F works).</summary>

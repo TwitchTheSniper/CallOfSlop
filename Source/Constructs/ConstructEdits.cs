@@ -1253,6 +1253,8 @@ public sealed partial class ConstructEdits
         var reach = ConstructBuild.UseReach + (d.Role == PartRole.Seat && !c.Anchored && !c.Asleep ? MathF.Min(c.Vel.Length(), SeatReachSpeed) * 0.2f : 0);
         if (Reachable(eye, ReachPoint(c, part, eye), reach) is { } far)
             return far;
+        if (DesignParts.IsArmourButton(d))
+            return DesignParts.ArmourButtonUse(world, c, part); // (a utilities console's button: its plates out, then let go)
         if (DesignParts.IsArmour(d))
             return DesignParts.ArmourUse(world, c, part); // (a design's stand-off armour plate: its rams push it out, then it is let go: DesignParts.Armour.cs)
         if (DesignParts.BoardFrom(c, part, eye) is var board and >= 0)
