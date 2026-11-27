@@ -95,7 +95,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 Group = "Factories",
             };
             using var doc = JsonDocument.Parse(layoutText);
-            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(Restocked).Select(MovedOut).Select(NarrowOut).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(Restocked).Select(MovedOut).Select(NarrowOut).Select(PadGrown).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
             items.AddRange(DeepPads(items));
             items.AddRange(NarrowStrip(items));
             s.Lay(items);
@@ -209,7 +209,20 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 $$"""{"t": "part", "name": "Materials Bin", "x": {{s * 62}}, "z": 44, "rot": 0}""",
                 $$"""{"t": "part", "name": "Line Console", "x": {{(s > 0 ? 66 : -58)}}, "z": 44, "rot": 0}""",
             }),
+            .. new[] { 1, -1 }.SelectMany(s => new[] { 21, 23 }.SelectMany(x => new[] { 25, 27, 33, 35 }.Select(z => $$"""{"t": "part", "name": "Pad Tile", "x": {{s * x}}, "z": {{z}}, "rot": 0}"""))),
         ];
+
+        /// <summary>
+        /// The press lines' end pads by the main station (Pad Tiles at |x| 13 to 19, z 25 to 35 in the layout, 8 x 12 m), grown 4 m along the
+        /// row toward the presses, to 12 x 12 m (Sean, 2026-11-27: "the presses output pads could get a little bit bigger ... the roller
+        /// conveyors could be shrunk a little"): the two tiles of each roller row nearest the pad (|x| 21 and 23, z 29 and 31) become Pad
+        /// Tiles (<see cref="PadGrown"/>) and the rest of those two columns are filled (<see cref="Additions"/>). The row's run is 3 tiles
+        /// (6 m) from the block Assembler's bed. Nothing else moves.
+        /// </summary>
+        private static bool InPadGrowth(JsonElement e) => Str(e, "name") == "Roller Tile" && MathF.Abs(Num(e, "x")) is 21 or 23 && Num(e, "z") is 29 or 31; // (the columns and the rest of their rows, z 25, 27, 33 and 35: Additions)
+
+        private static JsonElement PadGrown(JsonElement e) =>
+            InPadGrowth(e) ? JsonDocument.Parse($$"""{"t": "part", "name": "Pad Tile", "x": {{Num(e, "x")}}, "z": {{Num(e, "z")}}, "rot": 0}""").RootElement.Clone() : e;
 
         private static JsonElement Revised(JsonElement e)
         {
