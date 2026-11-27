@@ -210,9 +210,7 @@ public static partial class DesignParts
 
     // ---- The ways between rooms (package J): passages through the arms, a lift passage's car, the sockets' connector shafts ----------
 
-    public const float LiftPassageStep = 0.15f; // m: the most a lift passage's floor may rise or fall along it (its car runs level over it)
-    public const float LiftPassageOff = 0.2f; // m: the most its floor may lie off the straight line between its ends
-    public const float PassageCarLen = 1.0f, PassageCarClear = 0.02f, PassageCarT = 0.05f; // its car's length, its gap over the floor, its deck
+    public const float PassageCarLen = 1.0f, PassageCarClear = 0.015f, PassageCarT = 0.035f; // its car's length, its gap over the floor, its deck (its top 5 cm over the floor: walked onto)
 
     /// <summary>The passages and the connectors, after the rooms (each welds to the rooms it joins).</summary>
     private static IEnumerable<int> AddWays(Steps st, Dictionary<int, int> roomEl)
@@ -252,7 +250,7 @@ public static partial class DesignParts
                 Weld(els, je, first);
             }
             if (k.Kind == "Lift")
-                PassageLift(st, k, fr, hw, first);
+                PassageLift(st, k, l, fr, hw, first);
             yield return els.Count;
         }
         for (var i = 0; i < check.Links.Count; i++)
@@ -325,7 +323,7 @@ public static partial class DesignParts
     /// a platform from its first door's end to its last's on one piston (<c>liftp{id}.j0</c>, its car <c>liftp{id}.car</c>), F on the car sending
     /// it to the other end (<see cref="LiftUse"/>). One that bends, climbs or runs across the ship's axes is a walkway (logged).
     /// </summary>
-    private static void PassageLift(Steps st, Passage k, List<DesignScene.PassageFrame> fr, float hw, int floorEl)
+    private static void PassageLift(Steps st, Passage k, DesignScene.PassageLay l, List<DesignScene.PassageFrame> fr, float hw, int floorEl)
     {
         var (d, els) = (st.D, st.Els);
         Vector3 F(int i) => new((float)fr[i].Floor[0], (float)fr[i].Floor[1], (float)fr[i].Floor[2]);
@@ -335,22 +333,8 @@ public static partial class DesignParts
         var axisX = MathF.Abs(flat.X) >= MathF.Abs(flat.Z);
         var along = axisX ? MathF.Abs(flat.X) : MathF.Abs(flat.Z);
         var dir = axisX ? new Vector3(MathF.Sign(flat.X), 0, 0) : new Vector3(0, 0, MathF.Sign(flat.Z));
-        float lo = float.MaxValue, hi = float.MinValue, off = 0;
-        for (var i = 0; i < fr.Count; i++)
-        {
-            var p = F(i);
-            (lo, hi) = (MathF.Min(lo, p.Y), MathF.Max(hi, p.Y));
-            var q = p - f0;
-            off = MathF.Max(off, axisX ? MathF.Abs(q.Z) : MathF.Abs(q.X));
-        }
-        string? why = null;
-        if (along < PassageCarLen + 0.5f || along < 0.97f * run.Length())
-            why = "it doesn't run level along the ship's x or z";
-        else if (hi - lo > LiftPassageStep)
-            why = $"its floor climbs {hi - lo:0.00} m along it (at most {LiftPassageStep:0.00})";
-        else if (off > LiftPassageOff)
-            why = $"it bends {off:0.00} m off the straight (at most {LiftPassageOff:0.00})";
-        else if (els.Count(x => x.Joint != null) + 1 > Construct.MaxJoints)
+        var why = DesignScene.LiftLine(DesignScene.PassageFrames(d, k, l, true)) is { Length: > 0 } w ? w : null;
+        if (why == null && els.Count(x => x.Joint != null) + 1 > Construct.MaxJoints)
             why = $"the body's {Construct.MaxJoints} joints are all taken";
         if (why != null)
         {
@@ -358,7 +342,7 @@ public static partial class DesignParts
             return;
         }
         var across = axisX ? Vector3.UnitZ : Vector3.UnitX;
-        var bottom = hi + PassageCarClear; // (level over the highest of its floor)
+        var bottom = MathF.Max(f0.Y, f1.Y) + PassageCarClear; // (level over its floor, laid straight: DesignScene.PassageFrames; its deck's top under the 6 cm a person walks over)
         var start = f0 + dir * (0.05f + PassageCarLen / 2);
         var travel = along - 0.1f - PassageCarLen;
         var ramAt = start - dir * (PassageCarLen / 2 - 0.05f) + across * (hw - 0.08f);
@@ -384,7 +368,7 @@ public static partial class DesignParts
         look.Box(deck.Min.X, deck.Min.Y, deck.Min.Z, deck.Max.X, deck.Max.Y, deck.Max.Z, "#9aa3ad");
         var car = new Element
         {
-            Id = $"liftp{k.Id}.car", Kind = "lift", Name = "Passage lift car", Seg = (byte)(joints + 1), Kg = CarKg + PassageCarLen * 2 * hw * DeckKgPerM2,
+            Id = $"liftp{k.Id}.car", Kind = "lift", Name = "Passage lift car", Fn = "walkdeck", Seg = (byte)(joints + 1), Kg = CarKg + PassageCarLen * 2 * hw * DeckKgPerM2,
             Boxes = [deck], Mesh = LookOf(look),
         };
         (car.BoxMin, car.BoxMax) = (deck.Min, deck.Max);
@@ -392,8 +376,9 @@ public static partial class DesignParts
         Weld(els, els.Count - 2, els.Count - 1);
     }
 
-    /// <summary>This file's kinds (none: a room's elements are structure).</summary>
+    /// <summary>This file's kinds: a lift passage's car is a deck a person steps up onto from the floor round it (ConstructWorld.BlockPlayer's walkable parts); the rest is structure.</summary>
     private static void RegisterRooms(KindTable k)
     {
+        k.Fn("walkdeck", _ => Template.ShallowCopy(), (_, def) => def.Walk = WalkKind.Floor);
     }
 }

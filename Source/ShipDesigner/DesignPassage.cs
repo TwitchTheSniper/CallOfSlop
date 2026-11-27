@@ -107,7 +107,60 @@ public static partial class DesignScene
     /// A passage's frames along its line: the floor 1.05 m (<see cref="PassageDoorMid"/>) under each point of its line, each end's at its room's
     /// floor top (the room's shell floor: <see cref="FloorTop"/>), the points between eased from one to the other.
     /// </summary>
-    public static List<PassageFrame> PassageFrames(ShipDesign d, Passage k, PassageLay l)
+    public static List<PassageFrame> PassageFrames(ShipDesign d, Passage k, PassageLay l) => PassageFrames(d, k, l, false);
+
+    /// <summary>A lift passage's floor may rise or fall this much along its line, lie this far off the straight between its ends, and its two ends' floors differ this much (m), for its car to run on it.</summary>
+    public const double LiftStep = 0.25, LiftOff = 0.2, LiftEnds = 0.03;
+
+    /// <summary>
+    /// Whether a lift passage's line (its frames as laid, <see cref="PassageFrames(ShipDesign, Passage, PassageLay, bool)"/> raw) runs straight
+    /// and level along the ship's x or z, so a car on one piston runs its length (package J: F's lifts' piston, which moves along an axis): ""
+    /// when it does, else why not.
+    /// </summary>
+    public static string LiftLine(List<PassageFrame> fr)
+    {
+        var (f0, f1) = (fr[0].Floor, fr[^1].Floor);
+        double rx = f1[0] - f0[0], rz = f1[2] - f0[2], run = Dist(f0, f1);
+        var axisX = Math.Abs(rx) >= Math.Abs(rz);
+        var along = Math.Abs(axisX ? rx : rz);
+        double lo = double.MaxValue, hi = double.MinValue, off = 0;
+        foreach (var f in fr)
+        {
+            (lo, hi) = (Math.Min(lo, f.Floor[1]), Math.Max(hi, f.Floor[1]));
+            off = Math.Max(off, Math.Abs(axisX ? f.Floor[2] - f0[2] : f.Floor[0] - f0[0]));
+        }
+        if (along < 1.6 || along < 0.97 * run)
+            return "it doesn't run level along the ship's x or z";
+        if (Math.Abs(f1[1] - f0[1]) > LiftEnds)
+            return $"its ends' floors are {Math.Abs(f1[1] - f0[1]):0.00} m apart (at most {LiftEnds:0.00})";
+        if (hi - lo > LiftStep)
+            return $"its floor climbs {hi - lo:0.00} m along it (at most {LiftStep:0.00})";
+        if (off > LiftOff)
+            return $"it bends {off:0.00} m off the straight (at most {LiftOff:0.00})";
+        return "";
+    }
+
+    /// <summary>
+    /// <see cref="PassageFrames(ShipDesign, Passage, PassageLay)"/>; a lift passage whose line runs straight and level (<see cref="LiftLine"/>) has its
+    /// floor laid straight from its first door's floor to its last's, for its car to run level over it (<paramref name="raw"/>: as laid, never so).
+    /// </summary>
+    public static List<PassageFrame> PassageFrames(ShipDesign d, Passage k, PassageLay l, bool raw)
+    {
+        var o = RawFrames(d, k, l);
+        if (raw || k.Kind != "Lift" || o.Count < 2 || LiftLine(o) != "")
+            return o;
+        var (f0, f1) = (o[0].Floor, o[^1].Floor);
+        var run = Sub(f1, f0);
+        var rr = Dot(run, run);
+        for (var i = 1; i + 1 < o.Count; i++)
+        {
+            var u = Math.Clamp(Dot(Sub(o[i].Floor, f0), run) / rr, 0, 1);
+            o[i] = o[i] with { Floor = Add(f0, Scale(run, u)) };
+        }
+        return o;
+    }
+
+    private static List<PassageFrame> RawFrames(ShipDesign d, Passage k, PassageLay l)
     {
         var (ra, rb) = (d.RoomById(k.A), d.RoomById(k.B));
         double la = ra is null ? 0 : FloorTop(ra), lb = rb is null ? 0 : FloorTop(rb);
@@ -222,8 +275,17 @@ public static partial class DesignScene
         double[] x, z;
         if (climb >= ClimbsAt)
         {
-            x = Unit(Cross(y, d.Stacked ? [0, 1, 0] : [0, 0, 1]));
-            z = Unit(Cross(x, y));
+            // Its ladder (on its -z wall) faces across the room's narrower way, to the side with more floor past the hole: a hatch cover
+            // slides aside along the room's longer way (DesignParts.Doors.cs), clear of a ladder's line only across it.
+            double[] across = d.Stacked ? [0, 1, 0] : [0, 0, 1];
+            if (room is not null)
+            {
+                var bx = d.Box(room);
+                var alongX = bx[1] - bx[0] >= bx[5] - bx[4];
+                across = alongX ? [0, 0, (bx[5] - b[2]) >= (b[2] - bx[4]) ? -1 : 1] : [(bx[1] - b[0]) >= (b[0] - bx[0]) ? -1 : 1, 0, 0];
+            }
+            z = Unit(Sub(across, Scale(y, Dot(across, y))));
+            x = Unit(Cross(y, z));
         }
         else
         {
