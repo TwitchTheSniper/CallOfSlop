@@ -1731,7 +1731,7 @@ public sealed partial class Ui
             Hint("A shell inside the room's box, so each room has its own walls, back to back with its neighbour's. It stops at the skin and leaves doors between rooms open (0: none).");
             ImGui.Text("Cladding"u8);
             Row();
-            MatCombo("rws" + rid, Str(r, "wallStyle", "Plain"), ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor"], v => SetW(("wallStyle", v)), 120);
+            MatCombo("rws" + rid, Str(r, "wallStyle", "Plain"), ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor", "Zero Day"], v => SetW(("wallStyle", v)), 120);
             Row();
             ImGui.Text("Colour"u8);
             Row();

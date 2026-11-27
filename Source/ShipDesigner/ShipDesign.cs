@@ -263,7 +263,7 @@ public sealed class Room
     /// <summary>The floor's tiles: the plate layer's Plates or its Hex honeycomb.</summary>
     public static readonly string[] FloorKinds = ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"];
     /// <summary>Its walls' relief in Room view when it has no interior cladding (Karl, 2026-11-25).</summary>
-    public static readonly string[] WallStyles = ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor"];
+    public static readonly string[] WallStyles = ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor", "Zero Day"];
     public string WallStyle = "Plain";
     /// <summary>A corridor's own lining and grating (Karl, 2026-11-25): a room of kind Corridor whose walls and floor are still the plain defaults takes them. Styles the user set are kept.</summary>
     public void KindDefaults()

@@ -1323,6 +1323,7 @@ const SWATCH = {
   Grate: "repeating-linear-gradient(0deg,#8a9097 0 1px,transparent 1px 4px),repeating-linear-gradient(90deg,#8a9097 0 2px,#4a5056 2px 12px)",
   Conduit: "linear-gradient(transparent 20%,#6f7a80 20% 32%,transparent 32% 66%,#6f7a80 66% 80%,transparent 80%),#8c97a0",
   Corridor: "linear-gradient(transparent 12%,#f2f6ff 12% 18%,transparent 18% 84%,#3a4046 84%),repeating-linear-gradient(90deg,#8a9097 0 4px,#a3adb5 4px 18px)",
+  "Zero Day": "linear-gradient(#e9edf0 0 8%,#e8c21a 8% 12%,#b3bcc3 12% 52%,#2f6cc0 52% 56%,#3a4148 56% 62%,#565f67 62% 90%,#2a2e33 90%)",
   Industrial: "linear-gradient(transparent 62%,#b48a3c 62% 68%,#4d565e 68%),repeating-linear-gradient(90deg,#8a9097 0 3px,#a3adb5 3px 16px)",
 };
 function swatchPick(label, value, options, onPick) {
@@ -2025,7 +2026,7 @@ function inspector() {
       (() => { const setW = o => { const a = cmd({ op: "setRoom", id: r.id, ...o }); if (a.error) toast(a.error); else { rebuild(); inspector(); } };
         const wc = el("input", { type: "color", value: r.wallColour || "#6b7480", "aria-label": "Wall colour" }); wc.addEventListener("change", () => setW({ wallColour: wc.value }));
         return el("div", {},
-          el("div", { class: "row" }, el("span", {}, "Cladding"), swatchPick("Wall cladding", r.wallStyle || "Plain", ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor"], k => setW({ wallStyle: k })),
+          el("div", { class: "row" }, el("span", {}, "Cladding"), swatchPick("Wall cladding", r.wallStyle || "Plain", ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor", "Zero Day"], k => setW({ wallStyle: k })),
             el("span", {}, "Colour"), wc, el("button", { onclick: () => setW({ wallColour: "" }) }, "Kind's")),
           el("div", { class: "row" }, el("span", {}, "Floor"), swatchPick("Floor", r.floor || "Plates", ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"], k => setW({ floor: k }))),
           slider("Seed", r.seed ?? 0, 0, 999, 1, "", () => {}, v => setW({ seed: v }), dflt("room", "seed")),

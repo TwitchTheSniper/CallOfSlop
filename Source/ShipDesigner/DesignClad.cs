@@ -1294,6 +1294,35 @@ public static partial class DesignScene
                         Run(w0, w1, top - 0.02, top, 0.06, hDark);
                         break;
                     }
+                    case "Zero Day":
+                    {
+                        // The Zero Day's own lining (Karl, 2026-11-27, its corridor before the room cladding): a white wall, pale grey
+                        // panels over a dark rail with a blue strip, dark lower panels, a kick plate, and a yellow strip under a white
+                        // cornice. Its own palette whatever the room's colour; each layer stands at least 6 mm off the one under it.
+                        const string zWhite = "#e9edf0", zUp = "#b3bcc3", zUpFace = "#c0c8ce", zRail = "#3a4148", zBlue = "#2f6cc0",
+                            zLow = "#565f67", zLowFace = "#626b73", zKick = "#2a2e33", zYellow = "#e8c21a";
+                        double rail = Math.Min(bot + 1.0, top - 0.6), lowTop = rail - 0.04;
+                        Run(w0, w1, bot, top, 0.006, zWhite);                                  // the white wall
+                        Run(w0, w1, bot, bot + 0.14, 0.03, zKick);                             // kick plate
+                        Run(w0, w1, top - 0.1, top, 0.04, zWhite);                             // cornice
+                        Run(w0, w1, top - 0.13, top - 0.1, 0.028, zYellow);                    // its yellow strip
+                        Run(w0, w1, rail, rail + 0.1, 0.04, zRail);                            // the rail
+                        Run(w0, w1, rail + 0.1, rail + 0.125, 0.032, zBlue);                   // its blue strip
+                        var ns = Math.Max(1, (int)Math.Round(len / 1.25));
+                        for (var i = 0; i < ns; i++)
+                        {
+                            double s0 = w0 + len * i / ns + 0.06, s1 = w0 + len * (i + 1) / ns - 0.06;
+                            if (s1 - s0 < 0.2)
+                                continue;
+                            double u0 = rail + 0.19, u1 = top - 0.22;
+                            if (u1 - u0 > 0.2 && Rel(s0, s1, u0, u1, 0.014, zUp))               // upper panel and its raised face
+                                Rel(s0 + 0.035, s1 - 0.035, u0 + 0.035, u1 - 0.035, 0.022, zUpFace);
+                            double l0 = bot + 0.2, l1 = lowTop - 0.06;
+                            if (l1 - l0 > 0.2 && Rel(s0, s1, l0, l1, 0.014, zLow))              // lower panel and its face
+                                Rel(s0 + 0.035, s1 - 0.035, l0 + 0.035, l1 - 0.035, 0.022, zLowFace);
+                        }
+                        break;
+                    }
                     case "Industrial":
                     {
                         Run(w0, w1, bot, bot + 0.9, 0.025, hDark);
@@ -1323,7 +1352,29 @@ public static partial class DesignScene
                     var c1 = At(s1, h1, d1);
                     m.Box(Math.Min(c0[0], c1[0]), Math.Min(c0[1], c1[1]), Math.Min(c0[2], c1[2]), Math.Max(c0[0], c1[0]), Math.Max(c0[1], c1[1]), Math.Max(c0[2], c1[2]), c);
                     budget -= 12;
-                }, metal, hDark);
+                }, r.WallStyle == "Zero Day" ? "#3a4148" : metal, r.WallStyle == "Zero Day" ? "#2a2e33" : hDark);
+            }
+            // The Zero Day's lit ceiling panels: a row down the middle of its long way, 1.2 m panels in a dark surround, 2 cm under the ceiling.
+            if (r.WallStyle == "Zero Day")
+            {
+                bool longAl = il1 - il0 >= ia1 - ia0;
+                double l0 = longAl ? il0 : ia0, l1 = longAl ? il1 : ia1, c0 = longAl ? ia0 : il0, c1 = longAl ? ia1 : il1;
+                double cm = (c0 + c1) / 2, hw = Math.Min(0.28, (c1 - c0) / 4);
+                var ns = Math.Max(1, (int)Math.Round((l1 - l0 - 0.4) / 1.6));
+                for (var i = 0; i < ns && budget >= 24; i++)
+                {
+                    double sa = l0 + 0.2 + (l1 - l0 - 0.4) * i / ns + 0.2, sb = l0 + 0.2 + (l1 - l0 - 0.4) * (i + 1) / ns - 0.2;
+                    if (sb - sa < 0.3)
+                        continue;
+                    double[] P(double c, double sAt, double h) => longAl ? V(c, sAt, Up(h)) : V(sAt, c, Up(h));
+                    void B(double[] p, double[] q, string col)
+                    {
+                        m.Box(Math.Min(p[0], q[0]), Math.Min(p[1], q[1]), Math.Min(p[2], q[2]), Math.Max(p[0], q[0]), Math.Max(p[1], q[1]), Math.Max(p[2], q[2]), col);
+                        budget -= 12;
+                    }
+                    B(P(cm - hw - 0.04, sa - 0.04, cBot + 0.005), P(cm + hw + 0.04, sb + 0.04, cBot - 0.012), "#3a4148"); // surround
+                    B(P(cm - hw, sa, cBot - 0.004), P(cm + hw, sb, cBot - 0.02), "#f6f9ff");                             // the lit panel
+                }
             }
             // The corridor's arches close over the ceiling, across its narrow way, at the frames' spacing along its long way.
             if (r.WallStyle == "Corridor")
