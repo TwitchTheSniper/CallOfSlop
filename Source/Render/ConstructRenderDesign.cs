@@ -72,7 +72,7 @@ public static partial class ConstructRender
         var n = 0;
         if (set.Gpu is { } gpu)
         {
-            gfx.DrawDesign(gpu, body);
+            gfx.DrawDesign(gpu, body, depthFirst: true); // (its depth first: lit once a pixel, Renderer.DrawDesign)
             LastDesignTris += gpu.Count / 3;
             n++;
         }
@@ -88,7 +88,7 @@ public static partial class ConstructRender
             }
             if (set.DoorGpu is { Count: > 0 } dg)
             {
-                gfx.DrawDesign(dg, body);
+                gfx.DrawDesign(dg, body, depthFirst: true);
                 LastDesignTris += dg.Count / 3;
                 n++;
             }
@@ -119,7 +119,7 @@ public static partial class ConstructRender
                 Matrix4x4.Invert(Matrix4x4.CreateFromQuaternion(rq) * Matrix4x4.CreateTranslation(rt), out var back);
                 frame = back * SegMatrix(c, m.Seg, alpha) * body;
             }
-            gfx.DrawDesign(mg, frame);
+            gfx.DrawDesign(mg, frame, depthFirst: true);
             LastDesignTris += mg.Count / 3;
             n++;
         }
