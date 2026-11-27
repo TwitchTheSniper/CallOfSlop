@@ -263,7 +263,7 @@ public sealed class Room
     /// <summary>The floor's tiles: the plate layer's Plates or its Hex honeycomb.</summary>
     public static readonly string[] FloorKinds = ["Plates", "Hex", "Plain", "Diamond", "Grating", "Tiles", "Rubber", "Wood", "Hazard"];
     /// <summary>Its walls' relief in Room view when it has no interior cladding (Karl, 2026-11-25).</summary>
-    public static readonly string[] WallStyles = ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor"];
+    public static readonly string[] WallStyles = ["Plain", "Panels", "Ribbed", "Padded", "Grate", "Conduit", "Hex", "Industrial", "Corridor", "Zero Day"];
     public string WallStyle = "Plain";
     /// <summary>A corridor's own lining and grating (Karl, 2026-11-25): a room of kind Corridor whose walls and floor are still the plain defaults takes them. Styles the user set are kept.</summary>
     public void KindDefaults()
@@ -380,6 +380,7 @@ public sealed class Piece
     public double Extend = DesignRamp.DefExtend; // a boarding ramp's extension's run, metres (DesignRamp, Karl 2026-11-27)
     // A light bar's (DesignLightBars, Karl 2026-11-27): its length (m) and brightness (0 to 1; its colour is Beam); a room bar's mount and its height over the floor (m).
     public double BarLen = DesignLightBars.DefLen, Bright = DesignLightBars.DefBright, BarUp = DesignLightBars.DefUp;
+    public string BarClad = DesignLightBars.DefClad; // a hull bar: how it meets the cladding (Cut, Flush, Over: DesignLightBars.Lift, Cuts)
     public string BarOn = "Wall";
     public double RampW = DesignRamp.DefWidth, RampL = DesignRamp.DefLength; // a boarding ramp's hatch across and along, metres (DesignRamp)
     public int Segments = DesignRamp.DefSegments; // a boarding ramp's telescoping sections (DesignRamp)
