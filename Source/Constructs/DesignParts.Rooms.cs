@@ -51,7 +51,7 @@ public static partial class DesignParts
                 Console.WriteLine($"[design] {name} on deck {r.Deck + 1}: its {r.Exts.Count} extension(s) have no wall to walk on yet ({(r.ToHull ? "a room out to the hull" : "a room with no shell")}: drawn only in the designer)");
             var boxes = new List<(double[] Lo, double[] Hi)>();
             var strips = new List<double[]>();
-            var shell = DesignScene.RoomShell(d, r, check.Doors, boxes, strips);
+            var shell = DesignScene.RoomShell(d, r, check.Doors, boxes, strips, neutral: true); // (steel, not the designer's room tint)
             var over = DesignScene.ShellOver(r); // (an up extension reaches over its ceiling)
             yield return els.Count; // (the shell, then its clip a slice of corners a step, its boxes and strips a slice a step, the merge: each a step)
             // (a corner shared by several triangles, boxes or strips is pulled in once: one memo for the shell's clip, one for the interior's)
