@@ -307,13 +307,20 @@ public sealed partial class Ui
 
     private void DragCmd(JsonObject op) => _sdPending = op;
 
-    private JsonElement? Flush()
+    // A drag's commands are throttled by their own cost (Karl, 2026-11-27: a profile point's hull rebuilt only on letting go): the
+    // frame's flush waits until as long as the last command took has passed, so a big design still redraws live during the drag and
+    // the screen keeps at least half its time. A release flushes at once.
+    private double _sdFlushAfter;
+
+    private JsonElement? Flush(bool frame = false)
     {
-        if (_sdPending == null)
+        if (_sdPending == null || (frame && _sdNow < _sdFlushAfter))
             return null;
         var op = _sdPending;
         _sdPending = null;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var a = Cmd(op, !_dragFirst);
+        _sdFlushAfter = _sdNow + Math.Min(0.25, System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalSeconds);
         _dragFirst = false;
         return a;
     }
@@ -427,7 +434,7 @@ public sealed partial class Ui
         foreach (var d in _sdOldDocs)
             d.Dispose();
         _sdOldDocs.Clear();
-        Flush(); // (the page's animation frame: a drag's command, once a frame at most)
+        Flush(true); // (the page's animation frame: a drag's command, once a frame at most, throttled by its cost)
         MountTick();
 
         var vp = ImGui.GetMainViewport();
