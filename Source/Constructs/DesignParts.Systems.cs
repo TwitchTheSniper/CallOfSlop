@@ -533,9 +533,9 @@ public static partial class DesignParts
         var axis = NearestDir(a.X);
         if (Vector3.Dot(Vector3.Cross(ConstructParts.DirVector(axis), -a.Z), a.Y) < 0)
             axis ^= 1;
-        var angle = (float)DesignRamp.Angle(floor);
+        var angle = (float)DesignRamp.Angle(p, floor);
         var secs = (float)DesignRamp.Seconds;
-        var length = (float)(3.2 * p.Size * p.Hole) + run;
+        var length = (float)(3.2 * p.RampL / DesignRamp.DefLength * p.RampW / DesignRamp.DefWidth) + run; // (the plate's weight and reach: as before at the default hatch)
         var ram = new Element
         {
             Id = $"{id}.j0", Kind = "lift", Name = "Boarding ramp hinge", Kg = 20f, NoCollider = true, BoxMin = hinge - new Vector3(0.05f), BoxMax = hinge + new Vector3(0.05f),

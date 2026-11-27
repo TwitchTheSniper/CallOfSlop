@@ -198,10 +198,10 @@ public static class PieceKinds
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>
-    internal static void RampFrame(DesignMesh m, double depth)
+    internal static void RampFrame(DesignMesh m, double depth, double hx = DesignRamp.Hx, double hz = DesignRamp.Hz)
     {
-        // (Karl, 2026-11-27: 60% wider, the hatch 4 m across)
-        const double hx = DesignRamp.Hx, hz = DesignRamp.Hz, f = 0.2;
+        // (Karl, 2026-11-27: each piece's own width and length, hx and hz in its own units: DesignRamp.OpeningOf)
+        const double f = 0.2;
         m.Box(-hx - f, 0, -hz - f, hx + f, 0.12, -hz, Armour); m.Box(-hx - f, 0, hz, hx + f, 0.12, hz + f, Armour);
         m.Box(-hx - f, 0, -hz, -hx, 0.12, hz, Armour); m.Box(hx, 0, -hz, hx + f, 0.12, hz, Armour);
         Well(m, hx, hz, depth);
