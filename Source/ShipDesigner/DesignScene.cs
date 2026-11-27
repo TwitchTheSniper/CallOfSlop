@@ -1531,10 +1531,15 @@ public static partial class DesignScene
         }
         else if (kind.Socket == "window")
         {
-            // Glazed as the piece asks (Karl, 2026-11-25): double or single, the inner pane its depth in.
-            PieceKinds.WindowFrame(m);
-            PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
-            WindowSleeve(d, h, p, kind, m); // (lined on in to the wall of the room it looks out of: DesignWindows.cs)
+            // Glazed as the piece asks (Karl, 2026-11-25): double or single, the inner pane its depth in; laid on the skin, following its
+            // slope and curve (Karl, 2026-11-27), and lined on in to the wall of the room it looks out of (DesignWindows.cs). Flat where no
+            // skin is under it.
+            if (!PieceWindowLaid(d, h, p, kind, m))
+            {
+                PieceKinds.WindowFrame(m);
+                PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
+                WindowSleeve(d, h, p, kind, m);
+            }
         }
         else if (kind.Socket == "cargo")
             PieceKinds.CargoHatch(m, CargoWell(d, p, kind)); // (its well runs in to its room's wall and no further: DesignWindows.cs)
