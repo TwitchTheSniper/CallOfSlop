@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// designs, step 4, the plan's package E). Every door is the designer's own leaf, nothing drawn a second time: the triangles a piece's drawing
 /// tags as a leaf (<see cref="DesignMesh.Leaf"/>: the airlock's outer hatch and inner door, a docking hatch's lid, a docking collar's mating hatch,
 /// a cargo hatch's two leaves, a boarding hatch's lid), a placed door's leaf between two rooms (<see cref="DesignScene.RoomDoorLeaf"/>) and the
-/// cover of a docking collar's hole through a room's floor (<see cref="DesignScene.HoleCover"/>), each taken out of its piece's look and collider.
+/// cover of a docking collar's or a boarding hatch's hole through a room's floor (<see cref="DesignScene.HoleCover"/>), each taken out of its piece's look and collider.
 /// <list type="bullet">
 /// <item>Each is an element of its own (<c>Fn "door"</c>, its def an event door, ConstructDoors): box-only (one solid box round its leaf, in a
 /// frame turned as its piece faces) on segment 0, so a settle moves only its own collider leaf (ConstructCollider.MovePart moves nothing with hulls).
@@ -77,11 +77,14 @@ public static partial class DesignParts
                 if (Shell(r) is var s and >= 0)
                     Weld(els, s, els.Count - 1);
         }
-        // A docking collar's way in through a room's floor: its own hole (not a riser's well or another socket's beside it), which the walk would fall down, gets a cover.
+        // A docking collar's or a boarding hatch's way in through a room's floor: its own hole (not a riser's well or another socket's beside
+        // it), which the walk would fall down, gets a cover. A boarding hatch's lid is down at the skin, a deck's height under the room's floor,
+        // so its well stood open in the room (a shaft room 2 m across is all well: nobody crossed it); the cover is a lid lying flat across the
+        // ladder's line, which its climb opens (ConstructRideLadder.NextLid).
         var n = 0;
         foreach (var p in d.Pieces)
         {
-            if (PieceKinds.Find(p.Kind)?.Socket != "dock" || d.Hull(p.Hull) is not { } h)
+            if (PieceKinds.Find(p.Kind)?.Socket is not ("dock" or "shaft") || d.Hull(p.Hull) is not { } h)
                 continue;
             var o = DesignScene.Where(h, p).O;
             foreach (var q in check.Doors)

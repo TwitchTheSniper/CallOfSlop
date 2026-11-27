@@ -94,7 +94,7 @@ public static partial class DesignParts
             for (var k = 1; k <= n; k++)
             {
                 var at = Vector3.Lerp(a, b, k / (float)(n + 1));
-                els.Add(new Element { Id = $"relay{relays++}", Kind = "logic", Name = "relay", Fn = "relay", Kg = LogicKg * 0.2f, BoxMin = at - new Vector3(0.03f), BoxMax = at + new Vector3(0.03f) });
+                els.Add(new Element { Id = $"relay{relays++}", Kind = "logic", Name = "relay", Fn = "relay", Kg = LogicKg * 0.2f, BoxMin = at - new Vector3(0.03f), BoxMax = at + new Vector3(0.03f), NoCollider = true }); // (on the straight line between the two, through rooms and doorways: nothing a person meets)
                 Weld(els, prev, els.Count - 1);
                 els[prev].Wires.Add(els.Count - 1);
                 prev = els.Count - 1;

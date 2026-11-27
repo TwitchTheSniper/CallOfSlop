@@ -735,6 +735,7 @@ public static partial class DesignParts
         def.Name = name;
         def.File = "";
         def.Description = $"{e.Name} of \"{made.E.Name}\", a ship from the Ship Designer.";
+        var noBox = false;
         if (e.Boxes is { Count: > 0 } boxes)
         {
             // Its own solid boxes (hidden: its look draws it), each colliding as a box, with its share of the mass.
@@ -756,6 +757,7 @@ public static partial class DesignParts
             def.SolidBoxes = 1;
             def.BoxMass = null;
             (def.BoundsMin, def.BoundsMax) = (centre - half, centre + half);
+            noBox = true;
         }
         else
         {
@@ -775,7 +777,12 @@ public static partial class DesignParts
         def.Hulls = e.Hulls;
         def.HullCovers = e.Hulls.Length > 0 ? [true] : []; // (its hulls stand for it; a floor, an RCS nozzle or the flight computer, with none, collides as its box: a nozzle's and the computer's are inside their piece's hull)
         // A player meets its hulls as skin (ConstructRideMove.AddSkin, ConstructWorld.SkinBlock), never its bounding box.
-        def.HasSkin = def.SkinOnly = e.Hulls.Length > 0;
+        def.HasSkin = e.Hulls.Length > 0;
+        // (and one with no collider: its 1 cm mass box is never met, a wire's hidden relay in a doorway's line among them)
+        // (and a ladder's rails: a Shaft room's ladder stands free in the lower room, from its floor to the well over it, its two posts 0.6 m
+        // apart in the middle of a room 2 m across, so a person, 0.8 m across, could neither pass between nor round them and the room's
+        // doorways either side were cut off from each other; its climb reads its bounds and ends, never its boxes: ConstructRideLadder)
+        def.SkinOnly = def.HasSkin || noBox || e.Kind == "ladder";
         def.HullSkin = def.HasSkin ? Enumerable.Repeat(true, e.Hulls.Length).ToArray() : null;
         (def.SkinMin, def.SkinMax) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
         foreach (var hl in e.Hulls)

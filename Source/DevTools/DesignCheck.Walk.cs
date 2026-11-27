@@ -56,20 +56,71 @@ public static partial class DesignCheck
         string InWay(Vector3 at, Vector3 dir)
         {
             var hits = new List<string>();
+            // (first the part whose colliders (hulls, or boxes) hold a person a step on: the one really in the way, not just its bounds)
+            for (var step = 0.1f; step <= 0.5f && hits.Count == 0; step += 0.1f)
+                if (ConstructRide.BlockedBy(c, -1, at + dir * step + new Vector3(0, 0.02f, 0), World.PlayerHeight) is var bi and >= 0)
+                    hits.Add($"[collider] {Named(bi)}");
+            // (the boxes a rider meets, Construct.PlayerSolids: the box and its middle)
+            for (var i = 0; i < c.PartCount && hits.Count < 3; i++)
+                for (var b = 0; b < c.PlayerSolids(i) && hits.Count < 3; b++)
+                {
+                    c.SolidBox(i, b, out var centre, out var half);
+                    var rel = Vector3.Abs(at + dir * 0.25f + new Vector3(0, 0.9f, 0) - centre);
+                    if (rel.X < half.X + World.BodyRadius && rel.Z < half.Z + World.BodyRadius && rel.Y < half.Y + 0.8f)
+                        hits.Add($"[box {b} of {Named(i)}: {Fmt(centre - half - shift)}..{Fmt(centre + half - shift)}]");
+                }
+            // (and the skin's plates a rider meets as triangles, ConstructRide.AddSkin: the plate and its bounds)
+            for (var i = 0; i < c.PartCount && hits.Count < 3; i++)
+            {
+                ref var p = ref c.Parts[i];
+                if (!p.D.HasSkin || p.D.HullSkin is not { } skin)
+                    continue;
+                var hulls = ConstructHulls.Of(p.D);
+                var rot = Rot24.Quat(p.Rot);
+                for (var h = 0; h < hulls.Length && hits.Count < 3; h++)
+                {
+                    if (h >= skin.Length || !skin[h])
+                        continue;
+                    var hull = hulls[h];
+                    var pt = at + dir * 0.25f;
+                    var hit = false;
+                    for (var y = 0.05f; y < World.PlayerHeight && !hit; y += 0.2f)
+                    {
+                        var lp = Vector3.Transform(pt + new Vector3(0, y, 0) - p.Pos, Quaternion.Conjugate(rot));
+                        var far = float.MinValue;
+                        for (var f = 0; f + 1 < hull.FaceStart.Length; f++)
+                            far = MathF.Max(far, Vector3.Dot(hull.N[f], lp - hull.V[hull.FaceIdx[hull.FaceStart[f]]]));
+                        hit = far < World.BodyRadius;
+                    }
+                    if (!hit)
+                        continue;
+                    Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
+                    foreach (var v in hull.V)
+                    {
+                        var wv = p.Pos + Vector3.Transform(v, rot) - shift;
+                        (lo, hi) = (Vector3.Min(lo, wv), Vector3.Max(hi, wv));
+                    }
+                    hits.Add($"[plate {h} of {Named(i)}: {Fmt(lo)}..{Fmt(hi)}]");
+                }
+            }
             foreach (var probe in new[] { at + dir * 0.45f + new Vector3(0, 0.3f, 0), at + dir * 0.45f + new Vector3(0, 1.2f, 0) })
                 for (var i = 0; i < c.PartCount && hits.Count < 4; i++)
                 {
                     c.RestBounds(i, out var lo, out var hi);
                     if (probe.X < lo.X || probe.Y < lo.Y || probe.Z < lo.Z || probe.X > hi.X || probe.Y > hi.Y || probe.Z > hi.Z)
                         continue;
-                    var name = c.DefOf(i).Name;
-                    var id = name.IndexOf(") ", StringComparison.Ordinal) is var k and > 0 ? name[(k + 2)..] : name;
-                    var el = r.Els.FirstOrDefault(e => e.Id == id);
-                    var what = el == null ? id : $"{id} ({el.Name})";
+                    var what = Named(i);
                     if (!hits.Contains(what))
                         hits.Add(what);
                 }
             return hits.Count == 0 ? "nothing's bounds there" : string.Join(", ", hits);
+        }
+        string Named(int i)
+        {
+            var name = c.DefOf(i).Name;
+            var id = name.IndexOf(") ", StringComparison.Ordinal) is var k and > 0 ? name[(k + 2)..] : name;
+            var el = r.Els.FirstOrDefault(e => e.Id == id);
+            return el == null ? id : $"{id} ({el.Name})";
         }
         for (var ri = 0; ri < d.Rooms.Count; ri++)
         {
@@ -84,12 +135,43 @@ public static partial class DesignCheck
             var name = $"{DesignScene.Name(room)} (deck {room.Deck + 1})";
             var floor = (float)(bx[2] + DesignScene.FloorTop(room));
             var mine = DesignScene.DoorsOf(d, room, check.Doors);
-            // Its middle, or (a hatch's hole there) the nearest place along it clear of every hole in its floor.
+            // Its middle, or (a hatch's hole there, a ladder's rails) the nearest place in it clear of every hole in its floor and of every box a
+            // person meets (a riser's rails stand in a shaft room: a start behind them walks into them, not round them).
             double mx = (bx[0] + bx[1]) / 2, mz = (bx[4] + bx[5]) / 2;
-            bool InHole(double x, double z) => mine.Any(q => DesignScene.IsHole(q) && Math.Abs(q[1] - bx[2]) < DesignScene.DoorLevel &&
-                                                             Math.Abs(x - q[0]) < DesignScene.DoorHalf(q) + 0.5 && Math.Abs(z - q[2]) < DesignScene.DoorHalf(q) + 0.5);
-            for (var k = 1; InHole(mx, mz) && k < 40; k++)
-                mz = Math.Clamp((bx[4] + bx[5]) / 2 + (k % 2 == 0 ? 1 : -1) * 0.25 * ((k + 1) / 2), bx[4] + 0.5, bx[5] - 0.5);
+            bool InHole(double x, double z, double margin) => mine.Any(q => DesignScene.IsHole(q) && Math.Abs(q[1] - bx[2]) < DesignScene.DoorLevel &&
+                                                             Math.Abs(x - q[0]) < DesignScene.DoorHalf(q) + margin && Math.Abs(z - q[2]) < DesignScene.DoorHalf(q) + margin);
+            bool Boxed(double x, double z)
+            {
+                var col = Local(x, floor, z);
+                for (var i = 0; i < c.PartCount; i++)
+                    for (var b = 0; b < c.PlayerSolids(i); b++)
+                    {
+                        c.SolidBox(i, b, out var centre, out var half);
+                        if (centre.Y - half.Y > col.Y + World.PlayerHeight || centre.Y + half.Y < col.Y + 0.1f)
+                            continue; // (the floor under the feet, or over the head)
+                        if (MathF.Abs(col.X - centre.X) < half.X + World.BodyRadius + 0.05f && MathF.Abs(col.Z - centre.Z) < half.Z + World.BodyRadius + 0.05f)
+                            return true;
+                    }
+                return false;
+            }
+            if (InHole(mx, mz, 0.5) || Boxed(mx, mz))
+            {
+                var bestD = double.MaxValue;
+                (double X, double Z) pick = (mx, mz);
+                foreach (var margin in new[] { 0.5, 0.3, 0.15, 0.05 })
+                {
+                    for (var x = bx[0] + 0.4; x <= bx[1] - 0.4 + 1e-6; x += 0.05)
+                        for (var z = bx[4] + 0.4; z <= bx[5] - 0.4 + 1e-6; z += 0.05)
+                        {
+                            var dd = (x - mx) * (x - mx) + (z - mz) * (z - mz);
+                            if (dd < bestD && !InHole(x, z, margin) && !Boxed(x, z))
+                                (bestD, pick) = (dd, (x, z));
+                        }
+                    if (bestD < double.MaxValue)
+                        break;
+                }
+                (mx, mz) = pick;
+            }
             var mid = Local(mx, floor + 0.05, mz);
             var s = new MoveState { Position = c.ToWorld(mid) };
             for (var t = 0; t < 30; t++)
@@ -97,7 +179,7 @@ public static partial class DesignCheck
             var at = c.ToLocal(s.Position);
             if (!s.Grounded || MathF.Abs(at.Y - floor - shift.Y) > 0.3f)
             {
-                problems.Add($"{name}: can't stand in its middle: ended at {Fmt(at - shift)} (floor {floor:0.00}), {(s.Grounded ? "standing" : "falling")}");
+                problems.Add($"{name}: can't stand in it: from {mx:0.00}, {mz:0.00} (holes {string.Join(" ", mine.Where(DesignScene.IsHole).Select(q => $"{q[0]:0.0},{q[2]:0.0} +-{DesignScene.DoorHalf(q):0.00}"))}) ended at {Fmt(at - shift)} (floor {floor:0.00}), {(s.Grounded ? "standing" : "falling")}");
                 continue;
             }
             stood++;

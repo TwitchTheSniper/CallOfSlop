@@ -607,8 +607,8 @@ public static partial class ConstructRide
         {
             var i = hits[ci];
             ref var p = ref c.Parts[i];
-            if (p.Broken)
-                continue;
+            if (p.Broken || (p.D.SkinOnly && p.D.Hulls is not { Length: > 0 } && c.MergeOf[i] == 0))
+                continue; // (a design element a player never meets: its mass box only, as Construct.PlayerSolids)
             c.WorldFrame(p.Seg, out var q, out var t);
             var lp = Vector3.Transform(mid - t, Quaternion.Conjugate(q));
             var hullsTried = false;
