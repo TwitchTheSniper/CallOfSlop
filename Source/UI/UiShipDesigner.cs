@@ -170,6 +170,7 @@ public sealed partial class Ui
             StopMount();
             return;
         }
+        SdWheelReset();
         ShipDesignerOpen = false;
         ShipYardFrame = null;
         _sdHeld.Clear();
