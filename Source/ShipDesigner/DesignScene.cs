@@ -1208,7 +1208,18 @@ public static partial class DesignScene
         var along = Math.Abs(q[ax] - lo[ax]) < 1e-6 || Math.Abs(q[ax] - hi[ax]) < 1e-6 ? al : ax;
         q[along] = Math.Clamp(q[along], lo[along] + w, hi[along] - w);
         q[up] = fl;
-        var top = Math.Min(kind.Socket == "airlock" ? Math.Max(DoorTopDefault, p.AirH) : DoorTopDefault, hi[up] - lo[up] - 0.05);
+        var top = kind.Socket == "airlock" ? Math.Max(DoorTopDefault, p.AirH) : DoorTopDefault;
+        if (kind.Socket == "airlock" && !d.Stacked && d.Hull(p.Hull) is { } ah)
+        {
+            // As high as the chamber's inner door reaches over this floor (walkable rooms, step 4: on a sloping skin the chamber comes in
+            // tilted, its mouth higher than the room's floor, and a cut AirH high from the floor left its top half walled).
+            var w0 = Where(ah, p);
+            double s = p.Size, ex = p.AirH / 2 * s * p.Hole, dz = Math.Min(p.DoorW, p.AirW) / 2 * s * p.Hole, dd = p.AirD * s + p.Recess;
+            foreach (var sx in new[] { -1.0, 1 })
+                foreach (var sz in new[] { -1.0, 1 })
+                    top = Math.Max(top, w0.O[up] - w0.Y[up] * dd + w0.X[up] * sx * ex + w0.Z[up] * sz * dz - fl + 0.1);
+        }
+        top = Math.Min(top, hi[up] - lo[up] - 0.05);
         return DoorAt(q, w, top);
     }
 
@@ -1465,8 +1476,8 @@ public static partial class DesignScene
         return k.ToString();
     }
 
-    /// <summary>A piece's mesh in the ship's frame (what the scene sends for it); <paramref name="copies"/> false leaves out its mirrored and paired copies (DesignParts' colliders mirror one piece's hull themselves).</summary>
-    public static DesignMesh PieceMesh(ShipDesign d, Piece p, bool copies = true)
+    /// <summary>A piece's mesh in the ship's frame (what the scene sends for it); <paramref name="copies"/> false leaves out its mirrored and paired copies (DesignParts' colliders mirror one piece's hull themselves); <paramref name="shut"/> draws every door leaf shut (the game's doors start so).</summary>
+    public static DesignMesh PieceMesh(ShipDesign d, Piece p, bool copies = true, bool shut = false)
     {
         var h = d.Hull(p.Hull)!;
         var kind = PieceKinds.Find(p.Kind)!;
@@ -1491,7 +1502,7 @@ public static partial class DesignScene
             PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
         }
         else if (kind.Socket == "airlock")
-            PieceDocking.Airlock(m, p); // a chamber sized by the piece (Karl, 2026-11-26)
+            PieceDocking.Airlock(m, p, shut); // a chamber sized by the piece (Karl, 2026-11-26); shut: both its doors shut (the game's, DesignParts.Doors.cs)
         else if (PieceWeapons.MountOf(p.Kind) is { } mk)
         {
             // A weapon mount and the weapon fitted to it, the weapon standing on the mount (Karl, 2026-11-26).

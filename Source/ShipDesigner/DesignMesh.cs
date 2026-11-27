@@ -13,6 +13,21 @@ public sealed class DesignMesh
     public readonly List<byte> C = [];
     public int Tris => P.Count / 9;
 
+    /// <summary>
+    /// The door leaves drawn in it (walkable designs, step 4: DesignParts.Doors.cs makes each one a door of its own in the game): a run of its
+    /// triangles each, From to To, and the leaf's number within its piece. Null: none.
+    /// </summary>
+    public List<(int From, int To, int Leaf)>? Leaves;
+
+    /// <summary>Draws a door leaf (<paramref name="draw"/>'s triangles), tagged as leaf <paramref name="leaf"/> of what this mesh draws.</summary>
+    public void Leaf(int leaf, Action draw)
+    {
+        var from = Tris;
+        draw();
+        if (Tris > from)
+            (Leaves ??= []).Add((from, Tris, leaf));
+    }
+
     // The frame: origin and the three axes.
     private double _ox, _oy, _oz;
     private double[] _x = [1, 0, 0], _y = [0, 1, 0], _z = [0, 0, 1];

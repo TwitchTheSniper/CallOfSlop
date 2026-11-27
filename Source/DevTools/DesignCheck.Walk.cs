@@ -42,6 +42,8 @@ public static partial class DesignCheck
         var p0 = r.Els.ToList().FindIndex(e => !roomsOnly || e.Kind == "floor");
         var shift = c.Parts[roomsOnly ? 0 : p0].Pos - r.Els[p0].Origin;
         Vector3 Local(double x, double y, double z) => new Vector3((float)x, (float)y, (float)z) + shift;
+        if (!roomsOnly)
+            OpenRoomDoors(r); // (its doors between rooms opened with F first: DesignCheck.Doors.cs)
         var problems = new List<string>();
         int stood = 0, rooms = 0, ways = 0, reached = 0;
         void Tick(ref MoveState s, Buttons bt, float yaw)

@@ -47,7 +47,7 @@ public static partial class ConstructRender
             return 0;
         gfx.DrawDesign(gpu, body);
         LastDesignTris += gpu.Count / 3;
-        return 1;
+        return 1 + DrawDesignDoors(gfx, c, body); // (its doors apart: ConstructRenderDesignDoors.cs)
     }
 
     /// <summary>Once a frame: buffers of bodies gone or long unseen go.</summary>
@@ -89,7 +89,7 @@ public static partial class ConstructRender
     {
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
-            if (DesignParts.LookOf(c.Parts[i].D) is { } l)
+            if (DesignParts.LookOf(c.Parts[i].D) is { } l && !DesignDoorApart(c.Parts[i].D))
                 n += l.Vertices;
         var pos = new float[n * 3];
         var nor = new float[n * 3];
@@ -97,8 +97,8 @@ public static partial class ConstructRender
         var at = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (DesignParts.LookOf(c.Parts[i].D) is not { } l)
-                continue;
+            if (DesignParts.LookOf(c.Parts[i].D) is not { } l || DesignDoorApart(c.Parts[i].D))
+                continue; // (a door is drawn apart, where it is now: ConstructRenderDesignDoors.cs)
             ref var p = ref c.Parts[i];
             c.RestPose(p.Seg, out var sq, out var st);
             var q = sq * Rot24.Quat(p.Rot);
