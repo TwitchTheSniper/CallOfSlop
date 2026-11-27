@@ -999,6 +999,12 @@ public sealed partial class Ui
             ImGui.Text("Type");
             Row();
             MatCombo("hgdoor" + pid, Str(p, "bayDoor", ShipDesigner.DesignHangar.DefDoor), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
+            H3("Hangar floor");
+            ImGui.Text("Floor");
+            Row();
+            MatCombo("hgfloor" + pid, Str(p, "bayFloor", "Fixed"), ShipDesigner.DesignHangar.Floors, v => Cmd(C("setPiece", ("id", pid), ("bayFloor", v))));
+            if (Str(p, "bayFloor") == "Lift-out")
+                Hint("The floor is a platform the craft stands on: F pushes it out through the mouth by the bay's depth (up from a roof bay, down from a belly bay, sideways from a side bay), carrying a held craft with it. Open the door first.");
             if (ResetAll("hgdoor" + pid, "Door back to its defaults"))
                 Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayDoorW", "bayDoorH", "bayDoor")]));
             var n = I(p, "fittings");

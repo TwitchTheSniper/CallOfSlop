@@ -35,6 +35,12 @@ public static class DesignHangar
     public const string DefDoor = "Rolling";
     public const int IrisBlades = 4;
 
+    /// <summary>A bay's floor (Karl, 2026-11-27): Fixed, or Lift-out, a platform the craft stands on that is pushed out through the mouth
+    /// by the bay's depth (up out of a roof bay, down out of a belly bay, sideways out of a side bay). Drawn as leaf <see cref="FloorLeaf"/>.</summary>
+    public static readonly string[] Floors = ["Fixed", "Lift-out"];
+    public const int FloorLeaf = 8;
+    public static bool LiftsOut(Piece p) => IsBay(p.Kind) && p.BayFloor == "Lift-out";
+
     /// <summary>A door type from text, the default when it is none of them.</summary>
     public static string DoorType(string? s) => s is not null && Array.IndexOf(DoorTypes, s) >= 0 ? s : DefDoor;
 
@@ -90,7 +96,7 @@ public static class DesignHangar
         {
             var p = new Piece { Kind = k.Name };
             Init(new ShipDesign(), p);
-            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
+            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["bayFloor"] = p.BayFloor, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
         }
         return o;
     }
@@ -102,7 +108,7 @@ public static class DesignHangar
         if (IsBay(p.Kind))
         {
             o["bayW"] = ShipDesign.R(p.BayW); o["bayH"] = ShipDesign.R(p.BayH); o["bayD"] = ShipDesign.R(p.BayD);
-            o["bayDoorW"] = ShipDesign.R(p.BayDoorW); o["bayDoorH"] = ShipDesign.R(p.BayDoorH); o["bayDoor"] = p.BayDoorType;
+            o["bayDoorW"] = ShipDesign.R(p.BayDoorW); o["bayDoorH"] = ShipDesign.R(p.BayDoorH); o["bayDoor"] = p.BayDoorType; o["bayFloor"] = p.BayFloor;
         }
         else if (IsDeck(p.Kind))
         {
@@ -124,6 +130,7 @@ public static class DesignHangar
         p.BayDoorW = Math.Clamp(ShipDesign.F(o["bayDoorW"], p.BayDoorW), DoorMinW, DoorMaxW);
         p.BayDoorH = Math.Clamp(ShipDesign.F(o["bayDoorH"], p.BayDoorH), DoorMinH, DoorMaxH);
         p.BayDoorType = DoorType((string?)o["bayDoor"]);
+        p.BayFloor = (string?)o["bayFloor"] == "Lift-out" ? "Lift-out" : "Fixed";
         p.W = Math.Clamp(ShipDesign.F(o["w"], p.W), DeckMin, DeckMax);
         p.L = Math.Clamp(ShipDesign.F(o["l"], p.L), DeckMin, DeckMax);
         p.Travel = Math.Clamp(ShipDesign.F(o["travel"], p.Travel), TravelMin, TravelMax);
@@ -149,6 +156,7 @@ public static class DesignHangar
             p.BayDoorH = Math.Clamp(Math.Min(p.BayDoorH, p.BayH), DoorMinH, DoorMaxH);
         }
         if (o["bayDoor"] is not null) p.BayDoorType = DoorType((string?)o["bayDoor"]);
+        if (o["bayFloor"] is not null) p.BayFloor = (string?)o["bayFloor"] == "Lift-out" ? "Lift-out" : "Fixed";
         if (o["w"] is not null) p.W = Math.Clamp(Sn((double)o["w"]!, 0.5), DeckMin, DeckMax);
         if (o["l"] is not null) p.L = Math.Clamp(Sn((double)o["l"]!, 0.5), DeckMin, DeckMax);
         if (o["travel"] is not null) p.Travel = Math.Clamp(Sn((double)o["travel"]!, 0.1), TravelMin, TravelMax);
@@ -169,7 +177,7 @@ public static class DesignHangar
     {
         var sb = new StringBuilder();
         if (Of(p) is { } b)
-            sb.Append(",\"bayDoorW\":").Append(ShipDesign.S(p.BayDoorW)).Append(",\"bayDoorH\":").Append(ShipDesign.S(p.BayDoorH)).Append(",\"bayDoor\":").Append(DesignScene.Q(p.BayDoorType))
+            sb.Append(",\"bayDoorW\":").Append(ShipDesign.S(p.BayDoorW)).Append(",\"bayDoorH\":").Append(ShipDesign.S(p.BayDoorH)).Append(",\"bayDoor\":").Append(DesignScene.Q(p.BayDoorType)).Append(",\"bayFloor\":").Append(DesignScene.Q(p.BayFloor))
               .Append(",\"bay\":[").Append(ShipDesign.S(b.W)).Append(',').Append(ShipDesign.S(b.H)).Append(',').Append(ShipDesign.S(b.D)).Append(']')
               .Append(",\"fittings\":").Append(d.Pieces.Count(q => IsFitting(q.Kind) && q.Link == p.Id));
         else if (IsDeck(p.Kind))
@@ -463,6 +471,66 @@ public static class DesignHangar
         else
             for (var i = -1; i <= 1; i++)
                 m.Box(i * x * 0.5 - 0.4, y1 + 0.13, -0.15, i * x * 0.5 + 0.4, y1 + 0.2, 0.15, PieceKinds.Glow);
+        if (p.BayFloor == "Lift-out" && FloorBox(p, b, w) is { } fb)
+        {
+            var t = shut ? 0 : fb.Travel;
+            var (lo, hi) = (fb.Lo, fb.Hi);
+            m.Leaf(FloorLeaf, () =>
+            {
+                m.Box(lo[0], lo[1] + t, lo[2], hi[0], hi[1] + t, hi[2], PieceKinds.Gun);
+                // Hazard strips along two edges of its top face (the face the craft stands on).
+                var (k, sg) = fb.Up;
+                var ax = (k + 1) % 3;
+                double[] a = [lo[0], lo[1] + t, lo[2]], c = [hi[0], hi[1] + t, hi[2]];
+                var top = sg > 0 ? c[k] : a[k];
+                (a[k], c[k]) = (Math.Min(top, top + sg * 0.04), Math.Max(top, top + sg * 0.04));
+                foreach (var end in new[] { 0, 1 })
+                {
+                    double[] sa = (double[])a.Clone(), sc = (double[])c.Clone();
+                    if (end == 0) sc[ax] = sa[ax] + 0.25; else sa[ax] = sc[ax] - 0.25;
+                    m.Box(sa[0], sa[1], sa[2], sc[0], sc[1], sc[2], PieceKinds.Amber);
+                }
+            });
+        }
+    }
+
+    /// <summary>
+    /// A lift-out floor's platform (in the bay's drawing frame, Y out of the mouth): its box when stowed, how far it is pushed out (+Y) and
+    /// which frame axis is its up (and that way's sign). Its face across Y fits through the door with 10 cm to spare. A roof bay's is on its
+    /// back wall and rises its depth out of the mouth; a belly bay's lies just inside the door and lowers its depth out of the belly; a side
+    /// bay's lies along the bay's floor at the door's lower edge, as deep as the bay, and runs out sideways its depth, like a drawer.
+    /// Null when the door is too small for one.
+    /// </summary>
+    public static (double[] Lo, double[] Hi, double Travel, (int Axis, int Sign) Up)? FloorBox(Piece p, BaySize b, DesignScene.Place w)
+    {
+        var (ex, ey, ez) = Extent(b, w);
+        var (dx, dz) = DoorExtent(p, w);
+        double hx = dx / 2 * p.Hole - 0.1, hz = dz / 2 * p.Hole - 0.1;
+        hx = Math.Min(hx, ex / 2 - 0.2);
+        hz = Math.Min(hz, ez / 2 - 0.2);
+        if (hx < 0.5 || hz < 0.5 || ey < 3)
+            return null;
+        const double th = 0.35;
+        var inner = -1.4 - Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2); // (behind a sliding or iris door's leaf in the well)
+        switch (Vertical(w))
+        {
+            case 1 when w.Y[1] > 0: // a roof bay: on its back wall, up out of the mouth
+                return ([-hx, -ey + 0.2, -hz], [hx, -ey + 0.2 + th, hz], ey - 0.2, (1, 1));
+            case 1: // a belly bay: just inside the door, down out of the belly
+                return ([-hx, inner - th, -hz], [hx, inner, hz], ey, (1, -1));
+            case 0:
+            {
+                var s = w.X[1] >= 0 ? -1 : 1; // (the bay's floor side along X)
+                var f = s * hx;
+                return ([Math.Min(f, f - s * th), -ey + 0.3, -hz], [Math.Max(f, f - s * th), inner, hz], ey, (0, -s));
+            }
+            default:
+            {
+                var s = w.Z[1] >= 0 ? -1 : 1;
+                var f = s * hz;
+                return ([-hx, -ey + 0.3, Math.Min(f, f - s * th)], [hx, inner, Math.Max(f, f - s * th)], ey, (2, -s));
+            }
+        }
     }
 
     /// <summary>

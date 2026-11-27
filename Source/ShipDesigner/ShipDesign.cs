@@ -370,6 +370,7 @@ public sealed class Piece
     public double BayW = 20, BayH = 8, BayD = 20; // a bay's own volume across, tall and deep (Karl 2026-11-27; DesignHangar.Of)
     public double BayDoorW = 5, BayDoorH = 3, W = 5, L = 5, Travel = 3, Along, Across;
     public string BayDoorType = DesignHangar.DefDoor;
+    public string BayFloor = "Fixed"; // a bay's floor: Fixed or Lift-out (DesignHangar.FloorBox)
     public int Link;
     public string Fit = ""; // a weapon mount's weapon (DesignWeaponMounts.cs; "": empty)
     // A floodlight's (DesignFittings, Karl 2026-11-26): its aim off the skin's normal and about it (degrees), and its beam's colour.
