@@ -19,7 +19,8 @@ public static partial class DesignCheck
         var (w, c) = (r.World, r.Body);
         c.Frozen = true; // (held where it landed: the person walks a still ship)
         c.EnsureDoors();
-        var doors = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Door != null && DesignParts.IsDesign(c.DefOf(i))).ToList();
+        var gear = Enumerable.Range(0, c.PartCount).Count(i => c.DefOf(i).Door is { Gear: > 0 } && DesignParts.IsDesign(c.DefOf(i))); // (landing legs: the helm's gear key works them, not F; DesignCheck.Flight.cs --legs)
+        var doors = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Door is { Gear: 0 } && DesignParts.IsDesign(c.DefOf(i))).ToList();
         string Name(int part) => ElementOf(r, part) is { } e ? $"{e.Id} ({e.Name})" : $"part {part}";
         Console.WriteLine($"[design] doors: {doors.Count} door elements ({c.DoorCount} event doors listed): {string.Join(", ", doors.Select(Name))}");
         if (doors.Count == 0)
@@ -27,7 +28,7 @@ public static partial class DesignCheck
             Console.WriteLine("[design] doors: none to check");
             return;
         }
-        if (c.DoorCount != doors.Count)
+        if (c.DoorCount != doors.Count + gear)
             r.Fail($"doors: {doors.Count} door elements but {c.DoorCount} event doors (each must be one: segment 0, its def a door)");
         var edits = new ConstructEdits { Query = World.Query, InfiniteParts = true };
         Vector3 Mid(int part)

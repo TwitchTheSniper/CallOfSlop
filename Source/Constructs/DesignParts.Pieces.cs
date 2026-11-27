@@ -47,7 +47,12 @@ public static partial class DesignParts
                 if (st.BandAt(p.Hull, sets[k].Copy, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f) is var b and >= 0)
                     Weld(els, b, at);
                 Works(new PieceAt(p, e, at, sets[k].W, els));
-                PieceDoors(new PieceAt(p, e, at, sets[k].W, els), m); // (its door leaves, each a door of its own)
+                if (p.Kind == "Landing leg")
+                    Leg(new PieceAt(p, e, at, sets[k].W, els), m); // (its leg is landing gear, not a door F works)
+                else
+                    PieceDoors(new PieceAt(p, e, at, sets[k].W, els), m); // (its door leaves, each a door of its own)
+                if (p.Kind == "Boarding hatch" && k == 0)
+                    HatchDrop(new PieceAt(p, e, at, sets[k].W, els), d); // (its ladder's foot, let down to the ground: the risers' stage links it to the ladder)
             }
             yield return els.Count;
         }
@@ -65,6 +70,140 @@ public static partial class DesignParts
         k.Fn("thrust", ThrustStart, ThrustFinish);
         k.Fn("seat", _ => SeatTemplate.ShallowCopy(), SeatFinish);
         k.Fn("flight", FlightStart);
+        k.Fn("gear", GearStart);
+    }
+
+    // ---- Landing legs and the boarding ladder's drop ---------------------------------------------------------------------------
+
+    // The Landing leg's drawing (PieceKinds "Landing leg", its frame's +Y out of the skin): the pod 0 to 0.9, the strut to 3.0, the pad to 3.25, 0.85 across.
+    private const float PodDepth = 0.9f, PadTop = 3.0f, PadSole = 3.25f, PadRadius = 0.85f;
+    public const float LegSeconds = 3.5f; // a leg's way up or down (a leg pod's: LegPodParts)
+    // Its foot's spring (the XL leg pod's, whose keel stands about as high: LegPodParts), the travel by the piece's size.
+    private const float FootTravel = 0.1375f, FootHz = 2.283f, FootDamping = 0.6f;
+    // The boarding hatch's ladder as the piece draws it: 2.2 m of well (PieceKinds "Boarding hatch"); its drop's rails just outside the well's
+    // ladder's (x 0.25-0.3) and its rungs a half step off theirs, so nothing lies on a face of the fixed ladder; its foot this high over the ground.
+    private const float HatchWell = 2.2f, DropFootClear = 0.35f, DropSeconds = 1.5f;
+
+    /// <summary>
+    /// A Landing leg's leg (its leaf 0: strut and pad) as landing gear (ConstructDoors "Landing gear"): a held door that slides along the
+    /// piece's +Y, worked by the helm's gear key (<see cref="CDoorDef.Gear"/> 2) with every other leg. It is made as drawn, down, and starts
+    /// settled open (its DoorOpen setting's default, <see cref="GearStart"/>), so a design stands on its legs as the designer shows it; up, it
+    /// draws in until its pad meets the pod. Its one solid box is its pad (its foot box: what stands on the ground, sprung as a leg pod's foot,
+    /// ConstructPhysics.GearFeet, and what GearLift lifts the craft by as the legs come down on the ground); the strut is drawn only. Welded to its pod.
+    /// </summary>
+    private static void Leg(in PieceAt a, DesignMesh m)
+    {
+        if (m.Leaves?.Find(l => l.Leaf == 0) is not { } l || l.To <= l.From)
+            return;
+        var (s, o, x, y, z) = (a.S, a.O, a.X, a.Y, a.Z);
+        var e = new Element { Id = $"{a.E.Id}.leg", Kind = "gear", Name = "Landing leg", Fn = "gear", Mesh = new LookBuilder() };
+        for (var t = l.From; t < l.To; t++)
+            e.Mesh.AddTri(m, t, Vector3.One, new Vector3(float.NaN));
+        // The pad's box, in the ship's frame (its part stands square to the ship: a keel's slant is a few degrees).
+        Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
+        for (var i = 0; i < 8; i++)
+        {
+            var q = o + s * (x * ((i & 1) != 0 ? PadRadius : -PadRadius) + y * ((i & 2) != 0 ? PadSole : PadTop) + z * ((i & 4) != 0 ? PadRadius : -PadRadius));
+            (lo, hi) = (Vector3.Min(lo, q), Vector3.Max(hi, q));
+        }
+        e.Boxes = [new ElementBox(lo, hi)];
+        (e.BoxMin, e.BoxMax) = (lo, hi);
+        e.Area = e.Mesh.Area;
+        e.Kg = MathF.Max(20f, e.Area * PieceKgPerM2);
+        a.E.Kg = MathF.Max(1f, a.E.Kg - e.Kg);
+        var dir = NearestDir(y);
+        var travel = Math.Clamp((PadSole - PodDepth) * s, 0.05f, 20f); // (up, its sole at the pod's underside)
+        e.Door = new CDoorDef
+        {
+            Slide = true, Held = true, Axis = dir, Travel = travel, Shift = ConstructParts.DirVector(dir) * travel, Seconds = LegSeconds, Hang = 0, Gear = 2,
+            SpringTravel = Math.Clamp(FootTravel * s, 0.02f, 0.9f), SpringHz = Math.Clamp(FootHz / MathF.Sqrt(MathF.Max(0.1f, s)), 0.3f, 10f), SpringDamp = FootDamping,
+        };
+        a.Els.Add(e);
+        Weld(a.Els, a.At, a.Els.Count - 1);
+    }
+
+    /// <summary>A landing leg's part: the door template's, settled open from the start (its legs down, as drawn).</summary>
+    private static ConstructPartDef GearStart(Element e)
+    {
+        var d = DoorTemplate.ShallowCopy();
+        d.Config = [.. d.Config.Select(c => c.Id == CfgKey.DoorOpen ? c.Copy(dflt: 1f) : c)];
+        return d;
+    }
+
+    /// <summary>
+    /// Where a design's lowest landing pad's sole is (the ship's Y, its legs down: what it stands on), or null with no legs; from the pieces as
+    /// drawn (a mirrored leg's is as high).
+    /// </summary>
+    private static float? StandY(ShipDesign d)
+    {
+        float? low = null;
+        foreach (var p in d.Pieces)
+            if (p.Kind == "Landing leg" && d.Hull(p.Hull) is { } h)
+            {
+                var w = DesignScene.Where(h, p);
+                var y = (float)(w.O[1] - w.Y[1] * p.Recess + w.Y[1] * PadSole * p.Size);
+                low = low is { } v ? MathF.Min(v, y) : y;
+            }
+        return low;
+    }
+
+    /// <summary>
+    /// A boarding hatch's drop (step 4: from the ground nobody could reach the belly ladder's foot, 3.2 m up on the Zero Day's legs): a short
+    /// ladder, two rails and rungs stowed up the hatch's well beside the drawn ladder's rails, a slide door that lets it down out of the hatch
+    /// until its foot is <see cref="DropFootClear"/> over the ground the design stands on with its legs down (at most the well's depth). The
+    /// risers' stage welds it to the hatch's ladder and lowers that ladder's foot by its travel (<see cref="DropOnto"/>): F on the ladder lets
+    /// it down with the lid (ConstructRide.OpenWay), a climb waits for it (StowedFoot), and the climb starts from the ground. None when the
+    /// design has no legs or its belly is a step up.
+    /// </summary>
+    private static void HatchDrop(in PieceAt a, ShipDesign d)
+    {
+        if (StandY(d) is not { } ground || a.Y.Y > -0.9f)
+            return; // (no legs; or the hatch isn't on a belly: it has no ladder, DesignParts.Risers.cs)
+        var p = a.P;
+        var s = a.S;
+        var drop = MathF.Min(a.O.Y - ground - DropFootClear, HatchWell * s); // (from its foot on the skin, where the drawn ladder's rails end)
+        if (drop < 0.3f)
+            return;
+        var across = PieceKinds.Find(p.Kind)?.Footprint is not null ? (float)p.Hole : 1f;
+        var w = a.W;
+        var m = new DesignMesh();
+        m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across);
+        var len = drop / s; // (the hatch's frame: stowed, from len into the ship to the skin)
+        m.Box(-0.35, -len, 0.385, -0.305, 0, 0.425, PieceKinds.Amber);
+        m.Box(0.305, -len, 0.385, 0.35, 0, 0.425, PieceKinds.Amber);
+        for (var r = -len + 0.15; r < -0.05; r += 0.3)
+            m.Box(-0.305, r, 0.395, 0.305, r + 0.04, 0.415, PieceKinds.Gun);
+        var e = new Element { Id = $"{a.E.Id}.drop", Kind = "ladder", Name = "Boarding ladder drop", Fn = "door", Mesh = new LookBuilder() };
+        for (var t = 0; t < m.Tris; t++)
+            e.Mesh.AddTri(m, t, Vector3.One, new Vector3(float.NaN));
+        var (o, ax, ay, az) = (a.O, a.X, a.Y, a.Z);
+        Vector3 P(float x, float y, float z) => o + s * (ax * (x * across) + ay * y + az * (z * across));
+        e.Boxes = [];
+        foreach (var (x0, x1) in new[] { (-0.35f, -0.305f), (0.305f, 0.35f) })
+        {
+            var (b0, b1) = (P(x0, (float)-len, 0.385f), P(x1, 0, 0.425f));
+            e.Boxes.Add(new ElementBox(Vector3.Min(b0, b1), Vector3.Max(b0, b1)));
+        }
+        (e.BoxMin, e.BoxMax) = (Vector3.Min(e.Boxes[0].Min, e.Boxes[1].Min), Vector3.Max(e.Boxes[0].Max, e.Boxes[1].Max));
+        e.Area = e.Mesh.Area;
+        e.Kg = MathF.Max(5f, drop * DropKgPerM);
+        e.Door = new CDoorDef { Slide = true, Axis = NearestDir(a.Y), Travel = Math.Clamp(drop, 0.05f, 20f), Seconds = DropSeconds, Hang = 0 };
+        a.Els.Add(e);
+        Weld(a.Els, a.At, a.Els.Count - 1);
+    }
+
+    private const float DropKgPerM = 12f; // (two light rails and their rungs)
+
+    /// <summary>
+    /// The risers' stage, a boarding hatch's ladder just made (element <paramref name="ladder"/>, hatch piece <paramref name="piece"/>): welded to
+    /// the hatch's drop if it has one, and its foot let down by the drop's travel, so the climb runs from the drop's foot to the ladder's top.
+    /// </summary>
+    private static void DropOnto(List<Element> els, int ladder, int piece)
+    {
+        if (els.FindIndex(x => x.Id == $"p{piece}.drop" || x.Id == $"p{piece}.0.drop") is not (var k and >= 0) || els[k].Door is not { } dd)
+            return;
+        els[ladder].LadderFoot -= dd.Travel;
+        Weld(els, k, ladder);
     }
 
     /// <summary>A drive pushes along its bell's axis, away from its exhaust.</summary>

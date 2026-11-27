@@ -139,6 +139,8 @@ public static partial class DesignParts
         els.Add(e);
         if (l.Hatch != null && els.FindIndex(x => x.Id == $"p{l.HatchIndex}") is var pe and >= 0)
             Weld(els, pe, at);
+        if (l.Hatch != null)
+            DropOnto(els, at, l.HatchIndex); // (its foot let down to the ground: DesignParts.Pieces.cs)
         foreach (var r in l.Rooms)
             if (roomAt(r) is var k and >= 0)
                 Weld(els, k, at);
@@ -195,6 +197,7 @@ public static partial class DesignParts
         els.Add(e);
         if (els.FindIndex(x => x.Id == $"p{pi}") is var pe and >= 0)
             Weld(els, pe, at);
+        DropOnto(els, at, pi); // (its foot let down to the ground: DesignParts.Pieces.cs)
         if (roomAt(room) is var k and >= 0)
             Weld(els, k, at);
         // TODO(package E): the hatch's lid is a door element across this ladder's line (NextLid then opens it on F); none yet.
