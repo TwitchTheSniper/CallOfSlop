@@ -232,7 +232,7 @@ public sealed class DesignEditor
             }
             case "pasteHullStyle":
             {
-                // Another body's settings onto this one (Karl, 2026-11-27): profile, cladding, beading, paint and the rest, not its place,
+                // Another body's settings onto this one (Karl, 2026-11-27): profile, cladding, paint and the rest, not its place,
                 // name or mirroring.
                 var h = H();
                 var from = d.Hull(I(o, "from")) ?? throw new InvalidOperationException("no such hull to copy from");
@@ -301,14 +301,6 @@ public sealed class DesignEditor
                 if (o["cladDepth"] is not null) h.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 if (o["cladFore"] is not null) h.CladFore = (bool?)o["cladFore"] ?? true;
                 if (o["cladSmooth"] is not null) h.CladSmooth = (bool?)o["cladSmooth"] ?? false;
-                if (o["bead"] is not null)
-                {
-                    if (!HullBody.BeadKinds.Contains(Str(o, "bead")))
-                        return "the beading is Off, Creases or All";
-                    h.Bead = Str(o, "bead");
-                }
-                if (o["beadSize"] is not null) h.BeadSize = Math.Clamp(Snap(D(o, "beadSize"), 0.005), HullBody.BeadSizeMin, HullBody.BeadSizeMax);
-                if (o["beadColour"] is not null) h.BeadColour = Str(o, "beadColour") is { Length: 7 } bc && bc[0] == '#' ? bc.ToLowerInvariant() : "";
                 if (o["cladAft"] is not null) h.CladAft = (bool?)o["cladAft"] ?? true;
                 if (o["material"] is not null)
                 {
