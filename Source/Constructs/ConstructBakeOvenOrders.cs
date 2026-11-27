@@ -201,23 +201,35 @@ public static partial class ConstructBakeOven
         return false;
     }
 
-    /// <summary>Server, an oven's step with its hood up: its head order's kit started, carried and let go on the bed.</summary>
-    private static void Kits(ConstructWorld world, Construct c, int part, in CMachineAsm asm, in Bed bed, OvenStall why, int group)
+    /// <summary>
+    /// Server, an oven's step: its head order's kit started, carried and let go on the bed (<paramref name="open"/>: its hood up); and, at a
+    /// station whose builds roll along a run onto this bed, the next kit started as soon as the station's bay is clear, whatever the bed
+    /// is doing (Sean, 2026-11-27: the lines keep running; ConstructStationAhead.cs). <paramref name="bedKit"/>: an unbaked kit lies on the
+    /// bed (it counts as one of the queue's kits under way).
+    /// </summary>
+    private static void Kits(ConstructWorld world, Construct c, int part, in CMachineAsm asm, in Bed bed, OvenStall why, bool open, bool bedKit)
     {
         var key = c.Id << 16 | part;
+        ushort onWay = 0;
         if (world.OvenKits.TryGetValue(key, out var carried))
         {
             // A kit set on the bed is let go (it was held frozen on the hook): it settles, and the oven bakes it.
             if (world.Get(carried) is not { } kb)
-                world.OvenKits.Remove(key);
-            else if (ConstructLifters.CarryingBody(world, carried) == null)
             {
+                world.OvenKits.Remove(key);
+                return;
+            }
+            if (ConstructLifters.CarryingBody(world, carried) == null)
+            {
+                if (!open)
+                    return;
                 if (kb.HeldBy == c.Id)
                     kb.HeldBy = 0;
                 ConstructEdits.Unfreeze(world, kb);
                 world.OvenKits.Remove(key);
+                return;
             }
-            return;
+            onWay = carried; // (on a hook or rolling to the bed: it is under way, and the next kit may start behind it, below)
         }
         if (world.OvenLooks % KitEvery != part % KitEvery)
             return;
@@ -226,8 +238,9 @@ public static partial class ConstructBakeOven
             return;
         var bedMid = Vector3.Transform(bed.Mid(bed.Along * 0.5f), CoreFrame(c, part));
         // A kit of this order already at a station: building, or done and waiting in its bay for a lifter.
-        int mine = -1, idle = -1;
+        int mine = -1, idle = -1, ahead = -1;
         float mineDist = float.MaxValue, idleDist = float.MaxValue;
+        var under = RollsTo(world, c, part, onWay) + (onWay != 0 ? 1 : 0) + (bedKit ? 1 : 0); // (the queue's kits under way: on the bed, on their way to it, at its stations)
         for (var s = 0; s < c.PartCount; s++)
         {
             if (!c.DefOf(s).IsBuildStation || c.Parts[s].Broken)
@@ -239,21 +252,33 @@ public static partial class ConstructBakeOven
                 continue;
             ConstructStation.Bay(c, s, out var floor, out _, out _);
             var dist = rolls == part ? -1 : Vector3.DistanceSquared(floor, bedMid);
-            if (c.Parts[s].Station is { } j && j.Name.Equals(bp.Name, StringComparison.OrdinalIgnoreCase)
-                && (j.State is StationState.Costing or StationState.Building || j.State == StationState.Done && world.Get(j.Body) is { } jb && !ConstructStation.BayClearOf(world, c, s, jb)))
+            var sj = c.Parts[s].Station;
+            var kit = sj != null && KitUnderWay(world, c, s, sj, onWay);
+            if (kit && sj!.Name.Equals(bp.Name, StringComparison.OrdinalIgnoreCase))
             {
+                under++;
                 if (dist < mineDist)
                     (mine, mineDist) = (s, dist);
                 continue;
             }
-            if (dist < idleDist && ConstructStationTree.Idle(world, c, s) && ConstructRecycler.Powered(world, c, s) && ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, s)) == null)
-                (idle, idleDist) = (s, dist);
+            if (kit && rolls == part)
+            {
+                under++; // (a later order's kit, started ahead at this bed's own station)
+                continue;
+            }
+            if (ConstructStationTree.Idle(world, c, s) && ConstructRecycler.Powered(world, c, s))
+            {
+                if (dist < idleDist && ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, s)) == null)
+                    (idle, idleDist) = (s, dist);
+                if (rolls == part && ahead < 0)
+                    ahead = s;
+            }
         }
-        if (mine >= 0)
+        if (mine >= 0 && open && onWay == 0 && c.Parts[mine].Station!.State == StationState.Done)
         {
             var mj = c.Parts[mine].Station!;
-            if (mj.State != StationState.Done || why != OvenStall.Empty || world.Get(mj.Body) is not { } kit || ConstructLifters.CarryingBody(world, kit.Id) != null)
-                return; // (building, or the bed isn't clear yet)
+            if (why != OvenStall.Empty || world.Get(mj.Body) is not { } kit || ConstructLifters.CarryingBody(world, kit.Id) != null)
+                return; // (the bed isn't clear yet)
             if (ConstructRollOut.RunOut(c, mine) is var way and >= 0 && ConstructRollOut.OvenOf(c, way) == part)
                 return; // (its station rolls it out along the run to this bed: ConstructRollOut.FromStation)
             if (Landing(c, part, asm, bed, kit, out var toPos, out var toRot) is { } no)
@@ -271,20 +296,88 @@ public static partial class ConstructBakeOven
                 Note(world, c, part, $"the {d.Name} kit waits in its station's bay: {cant}");
             return;
         }
-        if (why != OvenStall.Empty)
-            return; // (one kit at a time: the bed is busy, or what is on it waits to be lifted off)
-        if (idle < 0)
+        if (under == 0)
         {
-            Note(world, c, part, $"no Building Station free for the {d.Name} kit (idle, powered, its bay big enough)");
+            // Nothing under way: the head order's kit, at the nearest idle station (one kit at a time where no station rolls to this bed).
+            if (!open || why != OvenStall.Empty)
+                return; // (the bed is busy, or what is on it waits to be lifted off)
+            if (idle < 0)
+            {
+                Note(world, c, part, $"no Building Station free for the {d.Name} kit (idle, powered, its bay big enough)");
+                return;
+            }
+            if (ConstructStation.Start(world, c, idle, bp.Name, 0) is { } refused)
+                Note(world, c, part, $"the {d.Name} kit: {refused}");
+            else
+            {
+                Note(world, c, part, "");
+                Console.WriteLine($"[oven] construct {c.Id} part {part}: the {d.Name} kit started at the {c.DefOf(idle).Name} {idle}");
+            }
             return;
         }
-        if (ConstructStation.Start(world, c, idle, bp.Name, 0) is { } refused)
-            Note(world, c, part, $"the {d.Name} kit: {refused}");
+        // Kits under way: the next order's kit starts ahead, only at a station whose builds roll onto this bed (it waits at the run's end
+        // behind the one before; a crane-fed station's kit would wait in its bay and hold the station for another oven's kit).
+        if (ahead < 0 || KitAfter(c, part, under) is not { } next || ConstructStation.QuickRefusal(next, ConstructStation.BaySize(c, ahead)) != null)
+            return;
+        if (ConstructStation.Start(world, c, ahead, next.Name, 0) is { } no2)
+            Console.WriteLine($"[oven] construct {c.Id} part {part}: the next kit ({next.Name}) can't start ahead: {no2}");
         else
+            Console.WriteLine($"[oven] construct {c.Id} part {part}: the {next.Name} started ahead at the {c.DefOf(ahead).Name} {ahead} ({under} under way)");
+    }
+
+    /// <summary>Is station <paramref name="s"/> building a kit, or done with one still in its bay (not the one <paramref name="onWay"/> to the bed)?</summary>
+    private static bool KitUnderWay(ConstructWorld world, Construct c, int s, StationJob j, ushort onWay) =>
+        j.Role != 1 && (j.State is StationState.Costing or StationState.Building
+            || j.State == StationState.Done && j.Body != onWay && world.Get(j.Body) is { } jb && !ConstructStation.BayClearOf(world, c, s, jb));
+
+    /// <summary>Does an unbaked kit lie on an open oven's bed (its stall says what is there)?</summary>
+    internal static bool BedKit(OvenStall why) => why is not (OvenStall.Empty or OvenStall.Done or OvenStall.Failed or OvenStall.NoBed);
+
+    /// <summary>Bodies rolling along a run onto oven <paramref name="part"/>'s bed other than <paramref name="onWay"/> (the one its OvenKits holds): kits under way too.</summary>
+    private static int RollsTo(ConstructWorld world, Construct c, int part, ushort onWay)
+    {
+        var n = 0;
+        foreach (var r in world.BodyRolls)
+            if (r.Host == c.Id && r.Oven == part && r.Body != onWay)
+                n++;
+        return n;
+    }
+
+    /// <summary>The kit of the queue's unit after the first <paramref name="under"/> (the kits under way), in queue order; null when the queue holds no more.</summary>
+    private static ConstructBuild.Blueprint? KitAfter(Construct c, int part, int under)
+    {
+        if (c.Parts[part].Orders is not { Count: > 0, Bill: false } q)
+            return null;
+        for (var k = 0; k < q.Count; k++)
         {
-            Note(world, c, part, "");
-            Console.WriteLine($"[oven] construct {c.Id} part {part}: the {d.Name} kit started at the {c.DefOf(idle).Name} {idle}");
+            ref readonly var o = ref q.Items[k];
+            if (o.IsPiece || o.Name != null || ConstructParts.Get(o.Part) is not { } d || BakeKits.BlueprintOf(d) is not { } bp)
+                continue;
+            if (under < o.Left)
+                return bp;
+            under -= o.Left;
         }
+        return null;
+    }
+
+    /// <summary>
+    /// Server: the kit the oven that station <paramref name="t"/>'s builds roll onto bakes after every kit now under way (the one on its
+    /// bed, on its way, and at its stations, this station's own build with them), or null (no such oven, or nothing more queued).
+    /// The station orders its pieces ahead (ConstructStationAhead.cs). Once every 10 s a station.
+    /// </summary>
+    public static ConstructBuild.Blueprint? NextKitFor(ConstructWorld world, Construct c, int t)
+    {
+        var oven = ConstructRollOut.RunOut(c, t) is var run and >= 0 ? ConstructRollOut.OvenOf(c, run) : -1;
+        if (oven < 0 || world.StoreOf(c, oven) is not { } st || c.Parts[oven].Orders is not { Count: > 0, Bill: false })
+            return null;
+        var phase = (OvenPhase)st.Blocked;
+        var onWay = world.OvenKits.TryGetValue(c.Id << 16 | oven, out var carried) && world.Get(carried) != null ? carried : (ushort)0;
+        var under = RollsTo(world, c, oven, onWay) + (onWay != 0 ? 1 : 0) + (phase is OvenPhase.Drop or OvenPhase.Heat || phase == OvenPhase.Open && BedKit((OvenStall)st.Refused) ? 1 : 0);
+        for (var s = 0; s < c.PartCount; s++)
+            if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && c.Parts[s].Station is { } j && KitUnderWay(world, c, s, j, onWay)
+                && ConstructRollOut.RunOut(c, s) is var r and >= 0 && ConstructRollOut.OvenOf(c, r) == oven)
+                under++;
+        return KitAfter(c, oven, under);
     }
 
     private static void Note(ConstructWorld world, Construct c, int part, string note)

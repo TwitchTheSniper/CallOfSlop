@@ -249,7 +249,7 @@ public static partial class ConstructBakeOven
             else if (why == OvenStall.None && !powered)
                 why = OvenStall.NoPower;
             if (powered && !held && !p.Broken && p.Orders is { Count: > 0 })
-                Kits(world, c, part, asm, bed, why, group); // (its orders: a kit built at a station and set on the bed, ConstructBakeOvenOrders.cs)
+                Kits(world, c, part, asm, bed, why, open: true, bedKit: BedKit(why)); // (its orders: a kit built at a station and set on the bed, ConstructBakeOvenOrders.cs)
             if (why == OvenStall.Empty && powered && !held && !p.Broken)
                 ConstructRollOut.RiderOnto(world, c, part); // (a piece waiting at the end of a run the oven takes rolls into the tunnel: ConstructRollOut.cs)
             if (why != OvenStall.None || held || p.Broken)
@@ -278,6 +278,8 @@ public static partial class ConstructBakeOven
         SetStall(world, st, OvenStall.None);
         ConstructGatherer.SetBusy(world, st, true);
         AddHazards(world, c, part, bed, phase);
+        if (!held && !p.Broken && p.Orders is { Count: > 0 })
+            Kits(world, c, part, asm, bed, OvenStall.None, open: false, bedKit: phase is OvenPhase.Drop or OvenPhase.Heat); // (the next kit starts at its station while this one bakes: ConstructStationAhead.cs)
         if (st.JobFull == 0) // (loaded mid-cycle: the total isn't saved, so count it again from here)
             st.JobFull = Full(d, st.OvenParts, bed);
         if (--st.JobTicks > 0)

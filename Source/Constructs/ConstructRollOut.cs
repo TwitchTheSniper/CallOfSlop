@@ -200,6 +200,10 @@ public static class ConstructRollOut
     {
         if (j.Body == 0 || j.RolledBody == j.Body)
             return;
+        if (RunOut(c, t) is var run0 and >= 0 && OvenOf(c, run0) is var oven0 and >= 0)
+            foreach (var r0 in world.BodyRolls)
+                if (r0.Host == c.Id && r0.Oven == oven0 && r0.Body != j.Body)
+                    return; // (a kit before it still rolls to that bed, or waits at the run's end: this one waits in the bay, never posed on top of it; kits ahead, 2026-11-27)
         j.RolledBody = j.Body; // (tried once a build: a body that can't roll stays for a crane or its driver)
         if (world.Get(j.Body) is not { } b || b == c || b.HeldBy != 0 || b.CarriedBy != 0 || Of(world, b.Id) != null
             || ConstructLifters.CarryingBody(world, b.Id) != null || ConstructStation.BayClearOf(world, c, t, b))

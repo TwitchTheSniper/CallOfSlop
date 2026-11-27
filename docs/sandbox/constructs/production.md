@@ -2471,6 +2471,14 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
   off the bed (the bed is the oven's Out point, as a block Assembler's is) to whoever wants it, or to storage. Once a second an oven, at
   its 10 Hz step; the kit on the hook is the world's (`OvenKits`), not saved (a load mid-carry leaves the kit in the bay, carried again).
   The oven's queue note says what it waits for (no free station, no lifter reaches both, the kit doesn't fit the bed).
+- **Kits ahead (2026-11-27).** Sean: the hull lines waited for each piece to be baked before starting the next segment's pieces, while
+  the rovers are rarely the limit. A station whose builds roll along a run onto an oven's bed (Zero Day Works II) works ahead: once every
+  piece of the kit it builds is fitted, held or asked, it orders the pieces of the kit its oven bakes next (`ConstructBakeOven.NextKitFor`:
+  the queue's unit after every kit under way, on the bed, rolling to it and at its stations), and those orders outlive the kit's end; the
+  pieces queue on its pick pads as early pieces do (half the pad's floor). The oven starts that next kit at the station as soon as its bay
+  is clear, while it bakes (a kit rolling to a bed, or lying on one, no longer holds the bay: `ConstructStation.BayClearOf`). A
+  crane-fed station still takes one kit at a time. Code: `ConstructStationAhead.cs`. Headless Works II, 900 s: 16 hull pieces baked
+  before, 29 after.
 - **Trying it.** `--bake-kit [NAME;NAME...|all]` builds each kit from its blueprint and bakes it, then lays it at five other turns: it
   must come out as the part, at the turn, where the kit lay. `--station-check "Zero Day Works" --oven-order PART [--oven-at X,Z]
   [--kit-loose] [--kit-carry]` queues an order on a site's oven and runs it: `--kit-loose` sets the kit's pieces down in the station's
