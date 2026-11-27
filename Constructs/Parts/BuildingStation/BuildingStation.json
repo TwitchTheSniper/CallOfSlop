@@ -113,6 +113,19 @@
       ],
       "default": 0,
       "tooltip": "The extra bits it lays with the armour: A bolt rows and chevrons, B vents, D lights, F conduit. All: every one; None: armour, rails and the strip only."
+    },
+    {
+      "key": "lineSplit",
+      "label": "Line split",
+      "group": "Lines",
+      "type": "choice",
+      "options": [
+        "Share",
+        "Whole orders",
+        "First line"
+      ],
+      "default": 0,
+      "tooltip": "How orders are shared over alike machines on its lines. Share: split so each line finishes together. Whole orders: each to the least busy line. First line: all to the first that takes it."
     }
   ],
   "storage": {

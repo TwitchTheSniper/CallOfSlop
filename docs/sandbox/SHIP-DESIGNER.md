@@ -55,6 +55,13 @@ is in `DesignParts.cs` (the bill of materials):
   facing the bow (turned by Turn). Its role is Helm, Captain, Gunner, Engineer, Navigation, Sensors, Comms or Passenger; in the
   game it is a seat part on its own element, the Helm the drive seat, the others the cockpit stations' kinds where one
   matches. The design checks warn when a ship with drives has no Helm. F on the hull sits you at the free helm.
+- **Light bars** (`DesignLightBars.cs`, Karl 2026-11-27): a glowing strip in a dark channel, with its length, colour and
+  brightness. A Light bar goes on the skin (along the hull it follows the skin's curve, turned it runs straight across; the
+  cladding keeps clear of it). A Light bar (room) is dropped by a room or linked to one, as a seat is, and goes on that room's
+  wall nearest the drop point at its height over the floor, or on its ceiling or floor (turned 90 degrees: upright on a wall,
+  across on a ceiling). Its strip is a lit run of its mesh (`DesignMesh.Glowing`): the designer and the page draw it unlit,
+  and the game's design shader draws a vertex whose colour has alpha 0 unlit with bloom (a lit room's ceiling strips too). In
+  the game its element has no collider and holds lamps along the strip, one every 1.8 m (at most 14), always on.
 - **Thrusters:** a drive pushes along its face's normal (`ThrustExhaust`, any direction, not only an axis), 3 MN for a Main
   drive and 0.8 MN for a Small one at size 1, by size squared. An RCS quad is four nozzle elements (two across, two along), 5 MN
   each at size 1 (Heavy RCS 1.6 times its size). **Unfed for now:** `EngineFuel.None`, no tank, no power drawn, in Creative and

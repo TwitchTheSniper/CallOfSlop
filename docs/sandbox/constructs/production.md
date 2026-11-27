@@ -1381,6 +1381,16 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   best-ranked link, and a terminal's own order that asked the same machine for that kind earlier is served first. Every root is
   Normal until phase 3's priorities; stock targets will rank below Low. **The Building Station** is a root like a terminal (it is
   one by data): its craft orders chain the same way, and its panel lists the chained orders' lines under its note.
+- **Line split** (2026-11-27, Sean: a station with an extrusion line on each side of its pick pads sent every extrusion job to one
+  side; protocol 480). A Building Station's `lineSplit` setting (group Lines) says how an order it asks of its network's machines is
+  shared over the alike ones of the same pass (a way to its pads, or none): Extruders and Formers with each other, Panel Formers with
+  each other, Laser Cutters with each other (`ConstructCrafting.SplitAsk`; a Press, an Assembler and an oven are never split, ovens
+  keep `LeastOven`). **Share** (the default) gives each piece of the order to the machine whose queued work would end soonest (work: an
+  extrusion's length, 1 m at least, times the pieces left), so the lines either side of the bay finish together; **Whole orders** sends
+  the order whole to the least loaded machine; **First line** is the old rule, the first machine that takes it. Ties go by the order's
+  id, so a station's orders alternate. A machine that refuses the order (too short a run, too narrow a die, its pads can't hold the
+  piece) takes no share, so a future line with other machines splits only what it can make. Zero Day Works II's line stations are
+  laid with Share (`ZeroDayWorks2.Orders`); a player sets it with the configure tool on the station's Core.
 - **Chain lines** (protocol 268). Each order's chain is made into at most 6 lines on the server (`ChainLine`: depth, kind, arrived,
   asked, maker, destination, stock claimed, the reason; "and N more"), only when they change, and sent with the order in
   `CBodyKind.Craft`; the Orders tab draws them indented under the order's row on both peers (`ConstructLogisticsPlan.LineText`), a

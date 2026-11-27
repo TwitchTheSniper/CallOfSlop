@@ -1488,7 +1488,7 @@ public static partial class DesignScene
     {
         var h = d.Hull(p.Hull)!;
         var kind = PieceKinds.Find(p.Kind)!;
-        var w = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
+        var w = DesignSeats.PlaceOf(d, p) ?? DesignLightBars.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
         var m = new DesignMesh();
         var across = kind.Footprint is not null ? p.Hole : 1;
         m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across);
@@ -1522,7 +1522,7 @@ public static partial class DesignScene
                 m.Frame(ro[0] + oo[0] * p.Size, ro[1] + oo[1] * p.Size, ro[2] + oo[2] * p.Size, L(ax), L(ay), L(az), p.Size);
             });
         }
-        else if (!DesignHangar.Draw(d, p, w, m, shut) && !DesignFittings.Draw(p, w, m))
+        else if (!DesignHangar.Draw(d, p, w, m, shut) && !DesignFittings.Draw(p, w, m) && !DesignLightBars.Draw(d, p, m))
             kind.Draw(m);
         if (p.Clad > 0 && (DesignHangar.OpeningOf(p, w) is { } so ? so : kind.Socket == "airlock" ? PieceDocking.FootprintOf(p, kind) : kind.Opening) is { } op)
         {
@@ -1654,12 +1654,22 @@ public static partial class DesignScene
             var p = d.Pieces[i];
             var h = d.Hull(p.Hull)!;
             var kind = PieceKinds.Find(p.Kind)!;
-            var w = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
+            var w = DesignSeats.PlaceOf(d, p) ?? DesignLightBars.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
             var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" or "window" ? plans : "") + DesignHangar.Key(d, p), () =>
             {
                 var text = new StringBuilder();
-                PieceMesh(d, p).Write(text, Made("p" + p.Id));
+                var pm = PieceMesh(d, p);
+                if (pm.Glows is null)
+                    pm.Write(text, Made("p" + p.Id));
+                else
+                {
+                    // Its lit runs (a light bar's strip) as a mesh of their own, which the page draws unlit: "mesh":{...},"glow":{...}.
+                    var (solid, lit) = pm.SplitGlow();
+                    solid.Write(text, Made("p" + p.Id));
+                    text.Append(",\"glow\":");
+                    lit.Write(text, Made("pg" + p.Id));
+                }
                 return text.ToString();
             });
             if (i > 0) sb.Append(',');
@@ -1672,7 +1682,7 @@ public static partial class DesignScene
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
-              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w)).Append(DesignSeats.SceneJson(p)).Append(DesignRamp.SceneJson(p))
+              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w)).Append(DesignSeats.SceneJson(p)).Append(DesignRamp.SceneJson(p)).Append(DesignLightBars.SceneJson(d, p))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
             sb.Append(mesh);

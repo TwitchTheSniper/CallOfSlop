@@ -175,7 +175,7 @@ public enum CfgKey : byte
     HomeY, WaypointY, // Flight Stabilizer: on a round world, the rest of the point
     ArmHead, // an Arm Core: which head is on its Wrist (0 its own, then the spares on Head Stands in reach; ArmKit.cs). Was Stations, retired: the Modular Bomb Rack's station count, which no part had
     RackLayout, // Ordnance Rack: grid or drum (its shape follows: ModularRack.cs)
-    RackSize, // retired: the Modular Bomb Rack's light, heavy or giant (RackLength and RackDiameter took over)
+    LineSplit, // Building Station: how its line orders are shared over alike machines (LineSplit: share, whole orders, first line; ConstructCrafting.SplitAsk). Was the retired RackSize, 2026-11-27: the enum is full
     FireOrder, // bomb rack: one at a time, or a salvo (everything it holds on one press)
     RackInterval, // bomb rack: seconds between drops one at a time (a drum's turn)
     RackRows, // Ordnance Rack: a grid's rows fore and aft, a drum's layers along its axis
@@ -817,7 +817,7 @@ public static class ConstructConfig
         >= CfgKey.ShellKit0 and <= CfgKey.ShellKit2 => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
-        CfgKey.DressStyle or CfgKey.DressExtras => "choice",
+        CfgKey.DressStyle or CfgKey.DressExtras or CfgKey.LineSplit => "choice",
         CfgKey.ModKind or CfgKey.ModStyle or CfgKey.ModPrimary => "choice",
         CfgKey.SeatFn => "choice",
         CfgKey.ModKeyed or CfgKey.ModLock => "toggle",
@@ -868,7 +868,7 @@ public static class ConstructConfig
                 CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage or CfgKey.LineStopAfter => ProductionLines.IsConsole(d),
                 CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
-                CfgKey.DressStyle or CfgKey.DressSalt or CfgKey.DressExtras or (>= CfgKey.FillFuel and <= CfgKey.FillWait) or CfgKey.SubJobs => d.IsBuildStation,
+                CfgKey.DressStyle or CfgKey.DressSalt or CfgKey.DressExtras or (>= CfgKey.FillFuel and <= CfgKey.FillWait) or CfgKey.SubJobs or CfgKey.LineSplit => d.IsBuildStation,
                 CfgKey.RouterSpill or CfgKey.RouterHold => d.IsRouter && d.IsConveyorJunction,
                 CfgKey.StoreKeep or CfgKey.StorePriority or CfgKey.StoreTakes => StockTargets.IsStore(d),
                 CfgKey.LiftMode or CfgKey.CarryHeight => d.Lifter != null, // (a Loader Arm: ConstructLifters.cs)
