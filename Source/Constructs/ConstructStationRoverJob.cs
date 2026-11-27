@@ -237,7 +237,7 @@ public static partial class ConstructStation
     }
 
     /// <summary>The first rover the trip in <c>j.Try</c> for rover <paramref name="a"/> would meet (-1: none), sampled a second apart.</summary>
-    private static int FirstClash(StationJob j, ReadOnlySpan<StationDock> docks, int n, int a)
+    private static int FirstClash(StationJob j, ReadOnlySpan<StationDock> docks, int n, int a, bool moving = false)
     {
         var p = j.Try;
         for (var u = 0f; u <= p.Total + 0.01f; u += 1f)
@@ -246,7 +246,7 @@ public static partial class ConstructStation
             var me = new Vector2(x, z);
             for (var b = 0; b < n; b++)
             {
-                if (b == a)
+                if (b == a || moving && j.ArmTicks[b] == 0)
                     continue;
                 PoseAt(j, docks[b], b, u, out var ob, out _);
                 if (StationRovers.Clash(docks[a], me, docks[b], ob, 0.3f))
@@ -325,18 +325,12 @@ public static partial class ConstructStation
         var g = GroundOf(c, t, j);
         var keep = j.ArmTicks[a];
         j.ArmTicks[a] = 0; // (its own old trip is no obstacle to itself)
-        for (var w = 0f; w <= 60f; w += 1f)
+        for (var w = 0f; w <= 60f; w += 2f)
         {
+            // (it waits only for rovers on a trip: no wait clears one standing still, and it used to wait the whole minute for that)
             StationRovers.PlanHome(j.Try, g, dk, at, h, hook, w);
-            var hit = FirstClash(j, docks, n, a);
-            if (hit < 0 || w >= 60f)
+            if (FirstClash(j, docks, n, a, moving: true) < 0 || w >= 60f)
                 break;
-            if (j.ArmTicks[hit] == 0)
-            {
-                // (a rover standing still in its way: no wait clears that, and it waited the whole minute; it goes now)
-                StationRovers.PlanHome(j.Try, g, dk, at, h, hook, 0);
-                break;
-            }
         }
         j.ArmTicks[a] = keep;
         Begin(world, c, j, a, -1, None, None);
@@ -364,7 +358,8 @@ public static partial class ConstructStation
             var want = StationRovers.Want(d);
             var mine = true;
             for (var b = 0; b < n && mine; b++)
-                mine = b == a || StationRovers.Classes[docks[b].Cls].Kg < d.Mass || Math.Abs(docks[b].Cls - want) >= Math.Abs(cls - want);
+                mine = b == a || StationRovers.Classes[docks[b].Cls].Kg < d.Mass || Math.Abs(docks[b].Cls - want) >= Math.Abs(cls - want)
+                    || j.ArmStep[b] >= 0; // (a nearer class busy: Assign may give it to this one, as its class cost allows)
             if (mine)
                 return true;
         }

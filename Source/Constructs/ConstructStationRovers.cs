@@ -128,6 +128,35 @@ public sealed class RoverPlan
             }
     }
 
+    /// <summary>
+    /// How far into its driving pose the rover is drawn at <paramref name="t"/> (0 none, 1 tucked): over the keys where its hook stands
+    /// tucked by the mast (<see cref="StationRovers.StowOf"/> at its first heading), eased in from the key before and out to the key after,
+    /// so the pose never jumps. A carry holds a piece out of it; a trip home stays tucked to its pad.
+    /// </summary>
+    public float Tuck(float t, in RoverClass rc)
+    {
+        if (NH < 2 || NB == 0)
+            return 0;
+        var stow = StationRovers.StowOf(rc, Bh[0]);
+        int k0 = -1, k1 = -1;
+        for (var k = 1; k < NH; k++)
+            if (Vector3.DistanceSquared(Ho[k], stow) < 1e-4f)
+            {
+                if (k0 < 0)
+                    k0 = k;
+                k1 = k;
+            }
+            else if (k0 >= 0)
+                break;
+        if (k0 < 0 || t <= Ht[k0 - 1])
+            return 0;
+        if (t < Ht[k0])
+            return StationRovers.Ease((t - Ht[k0 - 1]) / MathF.Max(1e-3f, Ht[k0] - Ht[k0 - 1]));
+        if (t <= Ht[k1] || k1 == NH - 1)
+            return 1;
+        return t >= Ht[k1 + 1] ? 0 : 1f - StationRovers.Ease((t - Ht[k1]) / MathF.Max(1e-3f, Ht[k1 + 1] - Ht[k1]));
+    }
+
     /// <summary>The hook's offset from the body at <paramref name="t"/>: round the mast in angle, radius and height between its keys.</summary>
     public Vector3 HookAt(float t)
     {
