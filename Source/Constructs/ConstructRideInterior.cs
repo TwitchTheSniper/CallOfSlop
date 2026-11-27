@@ -48,6 +48,47 @@ public static partial class ConstructRide
         return !w.CapsuleClear(c, s.Position + up * (r + 0.05f), s.Position + up * (World.HeightOf(Stance.Stand) - r), r);
     }
 
+    /// <summary>
+    /// Shared step: a flyer leaving noclip in no construct's frame (they flew in from outside, so <see cref="NoclipFrame"/> has none)
+    /// who is inside a construct's hull all the same: they join its frame, to be held for a set-down inside as a rider would. Karl,
+    /// 2026-11-27: noclip off in a Zero Day's airlock room took the plain way out (the first room straight up), through the room's
+    /// ceiling onto the hull's roof. Null: inside none. Only on the tick noclip ends; the bodies near the flyer only.
+    /// </summary>
+    public static Construct? NoclipHullAround(ref MoveState s)
+    {
+        if (Bodies is not { } w)
+            return null;
+        var up = GravityFrames.UpAt(s.Position);
+        foreach (var c in w.Bodies)
+        {
+            if (c.PartCount == 0 || c.SpaceAway != 0 || Vector3.DistanceSquared(c.WorldCom, s.Position) > (c.Radius + 1f) * (c.Radius + 1f))
+                continue;
+            if (c.Dirty)
+                c.Rebuild();
+            if (!InFrame(c, c.ToLocal(s.Position), Vector3.Transform(up, Quaternion.Conjugate(c.Rot)), 0f, 0f))
+                continue;
+            var keep = s;
+            Join(ref s, c, 0, UpFor(c, up), Vector3.Zero);
+            if (NoclipInsideHull(ref s, c) && Enclosed(w, ref s, c))
+                return c;
+            s = keep; // (over an open deck or beside it: left as they were)
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Under a roof of <paramref name="c"/> and on a floor of it too (a ray down meets it within <see cref="InteriorRoof"/>), or in its
+    /// geometry: a flyer under a landed ship's belly, between its legs, has its roof overhead but the ground below, and drops to the ground.
+    /// </summary>
+    private static bool Enclosed(ConstructWorld w, ref MoveState s, Construct c)
+    {
+        var up = s.RideUpW != Vector3.Zero ? s.RideUpW : Vector3.Normalize(Vector3.Transform(s.RideUp, c.Rot));
+        if (w.Raycast(s.Position + up * 0.5f, -up, InteriorRoof, out var floor, only: c) && floor.Body == c)
+            return true;
+        var r = World.BodyRadius;
+        return !w.CapsuleClear(c, s.Position + up * (r + 0.05f), s.Position + up * (World.HeightOf(Stance.Stand) - r), r);
+    }
+
     /// <summary>Shared step: held still in frame <paramref name="c"/>, noclip on, while the server finds them a floor inside.</summary>
     public static void NoclipHoldStill(ref MoveState s, Construct c)
     {

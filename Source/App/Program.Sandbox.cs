@@ -275,7 +275,8 @@ public static unsafe partial class Program
                       ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0) // (hands out: what the click does, and whether they are full)
                       ^ (d.Labelled && part.Text != null ? (long)part.Text.GetHashCode() * 6151L : 0) // (a switch's label)
                       ^ (d.ModPart == ModPart.Socket ? (ModControlAt(hit, out _) + 1L) * 104729L ^ (long)hit.Body.RebuildStamp * 7907L ^ (ConstructConfig.Get(part, d, CfgKey.ModLock, 0) >= 0.5f ? 1L << 52 : 0) : 0) // (a socket: its frame's control under the crosshair, its module, its lock)
-                      ^ (g.CrewInfo.TryGetValue(hit.Body.Id, out var crewKey) ? (long)(crewKey.Faction * 256 + crewKey.Alive) * 104729L : 0); // (a crewed body's faction and crew)
+                      ^ (g.CrewInfo.TryGetValue(hit.Body.Id, out var crewKey) ? (long)(crewKey.Faction * 256 + crewKey.Alive) * 104729L : 0) // (a crewed body's faction and crew)
+                      ^ (DesignParts.IsDesign(d) ? DesignEyeKey(hit.Body, eye) * 7368787L : 0); // (a ship design's hull: board from outside only, DesignParts.BoardFrom; the eye in the ship's frame, so a ship in flight keeps its key)
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
@@ -293,7 +294,7 @@ public static unsafe partial class Program
                 _sbLookText = d.Role switch
                 {
                     _ when h.Tool == ConstructTool.Hands && (hit.Body.Loose || ConstructEdits.WreckedAlone(hit.Body)) => HandsLook(hit.Body, d, near, h.Held != ConstructParts.None, carriedIn),
-                    PartRole.Frame or PartRole.Thruster or PartRole.Logic when bare && near && !DesignParts.KeepsUse(d) && DesignParts.BoardSeat(hit.Body, hit.Part) is var boardSeat and >= 0 => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, hit.Body.DefOf(boardSeat).Helm ? "board: sit at the helm" : "board: sit down")), // (a ship design's solid hull: ConstructEdits.Use)
+                    PartRole.Frame or PartRole.Thruster or PartRole.Logic when bare && near && DesignParts.BoardFrom(hit.Body, hit.Part, eye) is var boardSeat and >= 0 => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, hit.Body.DefOf(boardSeat).Helm ? "board: sit at the helm" : "board: sit down")), // (a ship design's solid hull: ConstructEdits.Use)
                     PartRole.Frame when near && DesignParts.IsLift(d) => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, d.Name.EndsWith(".car", StringComparison.Ordinal) ? "lift: on to the next deck" : "lift: call it to this deck")), // (a ship design's lift: DesignParts.Risers.cs)
                     PartRole.Suspension when ConstructRoutes.HalfShaftLook(hit.Body, hit.Part) is { } halfLook => SandboxKeys.Line(d.Name, halfLook),
                     PartRole.Rotor when ConstructRotor.Of(hit.Body, hit.Part) >= 0 => SandboxKeys.Line(d.Name, ConstructRotor.Note(hit.Body, hit.Part), null, null),
@@ -349,6 +350,8 @@ public static unsafe partial class Program
                     _sbLookText = d.ModPart == ModPart.Socket ? SandboxKeys.Line(d.Name, modLook) : $"{_sbLookText}  ({modLook})"; // (module sockets: the socket's state, or the module a part is in, ModuleSockets.cs)
                 if (d.ModPart == ModPart.Socket && near && ModControlAt(hit, out _) is var modCtl and > 0)
                     _sbLookText = $"{_sbLookText}  {SandboxKeys.Do(use, modCtl == 1 ? "eject the module" : ModuleSockets.Locked(hit.Body, hit.Part) ? "unlock" : "lock")}"; // (its frame's eject button and lock slider)
+                if (DesignParts.ShownName(d) is { } shown && _sbLookText != null)
+                    _sbLookText = _sbLookText.Replace(d.Name, shown); // (a ship design's part: "Zero Day - Bridge", "Airlock inner door: shut", never its key)
                 if (HullHoles.IsHoled(d) && _sbLookText != null)
                     _sbLookText = _sbLookText.Replace(d.Name, HullHoles.Shown(d)); // (a cut or sealed part: its file part's name, not its key)
                 if (g.CrewLook(hit.Body.Id) is { } crewNote)

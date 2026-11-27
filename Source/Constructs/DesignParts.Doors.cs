@@ -201,6 +201,9 @@ public static partial class DesignParts
             case "shaft":
                 MakeLid(a, m);
                 break;
+            case "hangar" or "lift" or "rampdeck":
+                HangarLeaves(a, m); // (a bay's door, a lift platform's deck and a ramp deck: DesignParts.Systems.cs)
+                break;
             default:
                 Console.WriteLine($"[design] {p.Kind} draws {leaves.Count} door leaves but makes no doors of them yet (drawn as part of it)");
                 break;

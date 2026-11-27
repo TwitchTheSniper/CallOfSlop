@@ -25,6 +25,9 @@ public static partial class ConstructPhysics
     private const int MaxCand = 4096;
     private const int KeepPerNormal = 9; // the deepest and the eight furthest round it
     private const float ClusterDot = 0.95f;
+    // (a point further off along its normal counts this much less far out per metre of gap: a fast piece over a thin plate with
+    // a floor under it kept the floor's speculative corners and only the plate's deepest point, which spun it through; 2026-11-27)
+    private const float NearFirst = 4f;
     private const float MaxGroundDepth = 1f; // a piece further than this behind a sheet of ground has gone through it, or never met it
     private const int BigFootprintCells = 900; // a group over more ground cells than this asks for them leaf by leaf
 
@@ -667,7 +670,7 @@ public static partial class ConstructPhysics
 
     /// <summary>
     /// The points of one rigid group against one thing, thinned: per normal, the deepest and the furthest out round it (a
-    /// flat hull needs its corners, not every part's). Returns how many stay, at the start of <paramref name="p"/>.
+    /// flat hull needs its corners, not every part's), the nearer surface first where pieces lie in layers (<see cref="NearFirst"/>). Returns how many stay, at the start of <paramref name="p"/>.
     /// </summary>
     private static int ReducePoints(Span<CPoint> p)
     {
@@ -722,7 +725,7 @@ public static partial class ConstructPhysics
                 {
                     if (_cluster[k] != c)
                         continue;
-                    var s = Vector3.Dot(dirs[d], p[k].P);
+                    var s = Vector3.Dot(dirs[d], p[k].P) - NearFirst * p[k].Gap;
                     if (s > far)
                         (far, best) = (s, k);
                 }

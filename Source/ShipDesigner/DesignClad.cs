@@ -864,11 +864,35 @@ public static partial class DesignScene
         bool InMate(double[] p) => mates.Any(o => p[0] > o[0] && p[0] < o[1] && p[1] > o[2] && p[1] < o[3] && p[2] > o[4] && p[2] < o[5]);
         // probe: a point just beyond the wall's outer face (in a group-mate: the wall is open, left out).
         // flat: a cell of the floor or the ceiling (cut only by a hole through it), else of a wall (cut only by a door in it).
+        // Its extensions (step 4, package J): a wall one opens its wall across its width, floor to ceiling; an up one opens its ceiling.
+        var exts = t >= 0.005 && !r.ToHull ? r.Exts : [];
+        bool InExt(double[] p, double[]? probe, bool flat)
+        {
+            foreach (var e in exts)
+            {
+                if (e.Side == "up")
+                {
+                    if (flat && Math.Abs(p[up] - (d.Stacked ? lo[up] : hi[up])) < Math.Abs(p[up] - (d.Stacked ? hi[up] : lo[up])))
+                        return true; // (a cell of its ceiling)
+                    continue;
+                }
+                if (flat || probe is null)
+                    continue;
+                var (s0, s1, _, _) = ExtSpan(r, e);
+                var beyond = e.Side switch { "x0" => probe[ax] < r.X0, "x1" => probe[ax] > r.X1, "z0" => probe[al] < r.Z0, _ => probe[al] > r.Z1 };
+                var s = e.Side is "x0" or "x1" ? p[al] : p[ax];
+                if (beyond && s > s0 && s < s1)
+                    return true;
+            }
+            return false;
+        }
         bool Keep(double[] p, double[]? probe, bool hull, bool flat)
         {
             if (hull && !d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) > 0.01))
                 return false;
             if (probe is not null && InMate(probe))
+                return false;
+            if (exts.Count > 0 && InExt(p, probe, flat))
                 return false;
             foreach (var q in doors)
             {
@@ -898,6 +922,13 @@ public static partial class DesignScene
                     else { e.Add(q[up] - 0.3); e.Add(q[up] + DoorTop(q)); }
                 }
                 else { e.Add(q[k] - DoorHalf(q)); e.Add(q[k] + DoorHalf(q)); }
+            foreach (var x in exts)
+                if (x.Side != "up" && (k == ax) == (x.Side is "z0" or "z1"))
+                {
+                    var (s0, s1, _, _) = ExtSpan(r, x);
+                    e.Add(s0);
+                    e.Add(s1);
+                }
         }
         List<double> Breaks(double a, double b, int k)
         {
@@ -980,6 +1011,8 @@ public static partial class DesignScene
             Slab(V(a1 - t, l0 + 0.003, u0), V(a1 - 0.003, l1 - 0.003, u1), al, up, ax, 1);
             Slab(V(a0 + 0.006, l0 + 0.006, v0), V(a1 - 0.006, l0 + t + 0.003, v1), ax, up, al, -1);
             Slab(V(a0 + 0.006, l1 - t - 0.003, v0), V(a1 - 0.006, l1 - 0.006, v1), ax, up, al, 1);
+            foreach (var e in exts)
+                ExtShell(d, r, e, t, colour, m, strips);
         }
         var budget = MaxShellDressTris;
         var sh = ShellDepth(r);
@@ -1499,6 +1532,109 @@ public static partial class DesignScene
     /// same four heights and the same 50 cm slices), so it follows the skin as the hologram does: its outer face 4 mm in from the hologram,
     /// its inner face t further in (Karl, 2026-11-25: inside its own room). A quad whose outside is in a door or a group-mate's room is left out.
     /// </summary>
+    /// <summary>
+    /// A wall extension's place on its room's wall (<see cref="ExtRings"/>'s): its span along the wall (plan metres), the wall's plan
+    /// coordinate, and the way out of it (-1 or 1).
+    /// </summary>
+    public static (double S0, double S1, double Wall, double Out) ExtSpan(Room r, RoomExt e)
+    {
+        var alongZ = e.Side is "x0" or "x1";
+        double lo = alongZ ? r.Z0 : r.X0, len = (alongZ ? r.Z1 : r.X1) - lo, width = Math.Min(e.Width, len);
+        var m = lo + width / 2 + (len - width) * e.T;
+        return (m - width / 2, m + width / 2, e.Side switch { "x0" => r.X0, "x1" => r.X1, "z0" => r.Z0, _ => r.Z1 }, e.Side is "x0" or "z0" ? -1 : 1);
+    }
+
+    /// <summary>How far over a room's ceiling its shell may reach when it is pulled inside the skin: its wall, and an up extension's height over it.</summary>
+    public static double ShellOver(Room r)
+    {
+        var o = r.WallThick;
+        foreach (var e in r.Exts)
+            if (e.Side == "up")
+                o = Math.Max(o, e.Depth + r.WallThick);
+        return o;
+    }
+
+    /// <summary>
+    /// A room's extension walled (step 4, package J: an extension was a hologram only): its outline's walls, each a thin convex piece
+    /// <paramref name="t"/> thick inside the outline, a post at each end of its base closing the corner with the room's wall (cut open across
+    /// it: RoomShell), and for a wall one its floor and its ceiling, the outline closed along the wall (onto the room's floor's end, as the room's
+    /// own shell is ShellGap in from its box); for an up one (a vault over the ceiling, which is left out) its end caps. Into the room's shell
+    /// mesh, and each piece's corners into <paramref name="sink"/> (the game's walkable room collides as them: DesignParts.Rooms.cs).
+    /// </summary>
+    private static void ExtShell(ShipDesign d, Room r, RoomExt e, double t, (byte, byte, byte) col, DesignMesh m, List<double[]>? sink)
+    {
+        const double g = ShellGap;
+        var b = d.Box(r);
+        int ax = 0, al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
+        double fl = d.Stacked ? b[5] : b[2], sg = d.Stacked ? -1 : 1, hgt = d.Stacked ? b[5] - b[4] : b[3] - b[2];
+        double[] W(double u, double v, double h) { var o = new double[3]; o[ax] = u; o[al] = v; o[up] = fl + sg * h; return o; }
+        var side = e.Side;
+        var wallUp = side == "up";
+        double s0, s1, wall = 0, so = 1, l0 = 0, l1 = 0, mid;
+        var acrossX = r.X1 - r.X0 <= r.Z1 - r.Z0;
+        if (wallUp)
+        {
+            (s0, s1) = acrossX ? (r.X0, r.X1) : (r.Z0, r.Z1);
+            (l0, l1) = acrossX ? (r.Z0, r.Z1) : (r.X0, r.X1);
+        }
+        else
+            (s0, s1, wall, so) = ExtSpan(r, e);
+        mid = (s0 + s1) / 2;
+        var ol = e.Outline(s1 - s0);
+        if (ol.Count < 2)
+            return;
+        // A plan point of its outline (a across, o out of the wall or up over the ceiling) at height h (a wall one's) or along l (an up one's).
+        double[] P(double a, double o, double hl)
+        {
+            if (wallUp)
+                return acrossX ? W(mid + a, hl, hgt + o) : W(hl, mid + a, hgt + o);
+            var alongZ = side is "x0" or "x1";
+            double u = alongZ ? wall + so * o : mid + a, v = alongZ ? mid + a : wall + so * o;
+            return W(u, v, hl);
+        }
+        double ca = 0, co = 0;
+        foreach (var (a, o) in ol)
+            (ca, co) = (ca + a / ol.Count, co + o / ol.Count);
+        // Its two ends in its run: a wall one's floor to ceiling, an up one's along the room.
+        double e0 = wallUp ? l0 + g : g + 0.003, e1 = wallUp ? l1 - g : hgt - g - 0.003;
+        void Piece(List<(double A, double O)> q, double h0, double h1)
+        {
+            Prism(m, [.. q.Select(v => P(v.A, v.O, h0))], [.. q.Select(v => P(v.A, v.O, h1))], col, sink);
+        }
+        for (var i = 0; i + 1 < ol.Count; i++)
+        {
+            var (q0, q1) = (ol[i], ol[i + 1]);
+            double da = q1.A - q0.A, dO = q1.B - q0.B, len = Math.Sqrt(da * da + dO * dO);
+            if (len < 1e-4)
+                continue;
+            double na = -dO / len, no = da / len;
+            if (na * (ca - (q0.A + q1.A) / 2) + no * (co - (q0.B + q1.B) / 2) < 0)
+                (na, no) = (-na, -no);
+            Piece([q0, q1, (q1.A + na * t, q1.B + no * t), (q0.A + na * t, q0.B + no * t)], e0, e1);
+        }
+        // The posts at its base's ends, into the room wall's thickness (its cut there).
+        var h = (s1 - s0) / 2;
+        foreach (var sa in new[] { -1.0, 1.0 })
+        {
+            double a0 = sa * h, a1 = sa * (h - t);
+            Piece([(Math.Min(a0, a1), -(g + t)), (Math.Max(a0, a1), -(g + t)), (Math.Max(a0, a1), 0), (Math.Min(a0, a1), 0)], e0, e1);
+        }
+        // Its outline closed along its base, a hair onto the room's side of the wall line.
+        var closed = new List<(double A, double O)>(ol);
+        closed[0] = (closed[0].A, -g);
+        closed[^1] = (closed[^1].A, -g);
+        if (wallUp)
+        {
+            Piece(closed, l0 + g, l0 + g + t);
+            Piece(closed, l1 - g - t, l1 - g);
+        }
+        else
+        {
+            Piece(closed, g, g + t);
+            Piece(closed, hgt - g - t, hgt - g);
+        }
+    }
+
     private static void HullShell(ShipDesign d, Room r, double t, (byte, byte, byte) col, Func<double[], bool, bool> keep, DesignMesh m, List<double[]> doors, List<double[]>? strips)
     {
         const double g = ShellGap;

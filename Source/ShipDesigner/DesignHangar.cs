@@ -283,20 +283,23 @@ public static class DesignHangar
     // ---- meshes
 
     /// <summary>Draws a hangar piece in metres (resetting the mesh's frame: a bay's volume doesn't grow with its size or hole sliders).
-    /// False for other pieces.</summary>
-    public static bool Draw(ShipDesign d, Piece p, DesignScene.Place w, DesignMesh m)
+    /// False for other pieces. What moves in the game is drawn as a leaf (<see cref="DesignMesh.Leaf"/>, leaf 0: DesignParts.Systems.cs makes
+    /// it an element of its own): a bay's door, a lift platform's deck with its rams, a ramp deck's slab. <paramref name="shut"/> draws them as
+    /// the game starts them (the door shut over its hole, the platform up flush in its well, the ramp up flush in the skin); otherwise they
+    /// are shown open, as the page has them.</summary>
+    public static bool Draw(ShipDesign d, Piece p, DesignScene.Place w, DesignMesh m, bool shut = false)
     {
         var o = Add(w.O, w.Y, -p.Recess);
         if (Bay(p.Kind) is { } b)
         {
             m.Frame(o[0], o[1], o[2], w.X, w.Y, w.Z, 1, 1);
-            DrawBay(m, p, b, w);
+            DrawBay(m, p, b, w, shut);
             return true;
         }
         if (IsDeck(p.Kind))
         {
             m.Frame(o[0], o[1], o[2], w.X, w.Y, w.Z, 1, 1);
-            if (p.Kind == "Lift platform") DrawLift(m, p); else DrawRamp(m, p);
+            if (p.Kind == "Lift platform") DrawLift(m, p, shut); else DrawRamp(m, p, shut);
             return true;
         }
         if (IsFitting(p.Kind))
@@ -315,7 +318,7 @@ public static class DesignHangar
         m.Box(hx, y0, -hz, hx + band, y1, hz, col);
     }
 
-    private static void DrawBay(DesignMesh m, Piece p, BaySize b, DesignScene.Place w)
+    private static void DrawBay(DesignMesh m, Piece p, BaySize b, DesignScene.Place w, bool shut)
     {
         var (dx, dz) = DoorExtent(p, w);
         double hx = dx / 2 * p.Hole, hz = dz / 2 * p.Hole;
@@ -324,17 +327,29 @@ public static class DesignHangar
         Ring(m, hx + band, hz + band, 0.12, 0.25, 0.3, PieceKinds.Amber);
         // The door's well, from the skin to the bay's mouth.
         Ring(m, hx, hz, 0.08, -1.2, 0.02, PieceKinds.Gun);
-        // The door, open: a sliding door run aside on its piston, a hinged one swung out 70 degrees on its lower (aft) edge.
+        // The door, open: a sliding door run aside on its piston, a hinged one swung out 70 degrees on its lower (aft) edge (shut: over its hole).
         var th = Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2);
         if (p.BayDoorType == "Sliding")
         {
             var along = hz >= hx; // it slides along its long side
-            double sx = along ? 0 : hx * 1.2, sz = along ? hz * 1.2 : 0;
-            m.Box(-hx + sx, -1.0 - th, -hz + sz, hx + sx, -1.0, hz + sz, PieceKinds.Gun);
-            m.Box(-hx * 0.9 + sx, -1.0 - th - 0.02, -0.06 + sz, hx * 0.9 + sx, -1.0 + 0.02, 0.06 + sz, PieceKinds.Amber);
-            // The piston: a cylinder and its rod, along the way it slides.
+            var open = shut ? 0 : 1.2;
+            double sx = along ? 0 : hx * open, sz = along ? hz * open : 0;
+            m.Leaf(0, () =>
+            {
+                m.Box(-hx + sx, -1.0 - th, -hz + sz, hx + sx, -1.0, hz + sz, PieceKinds.Gun);
+                m.Box(-hx * 0.9 + sx, -1.0 - th - 0.02, -0.06 + sz, hx * 0.9 + sx, -1.0 + 0.02, 0.06 + sz, PieceKinds.Amber);
+            });
+            // The piston: a cylinder and its rod, along the way it slides (shut, the game's: its cylinder beside the hole, where the door
+            // runs to, never across the bay's mouth).
             var r = Math.Max(0.12, th * 0.6);
-            if (along)
+            if (shut)
+            {
+                if (along)
+                    m.Box(-r, -1.0 - th - 2 * r, hz + 0.1, r, -1.0 - th, hz + 0.1 + hz * 2.2, PieceKinds.Pale);
+                else
+                    m.Box(hx + 0.1, -1.0 - th - 2 * r, -r, hx + 0.1 + hx * 2.2, -1.0 - th, r, PieceKinds.Pale);
+            }
+            else if (along)
             {
                 m.Box(-r, -1.0 - th - 2 * r, -hz, r, -1.0 - th, hz, PieceKinds.Pale);
                 m.Box(-r * 0.5, -1.0 - th - 1.5 * r, hz, r * 0.5, -1.0 - th - 0.5 * r, hz + hz * 1.2, PieceKinds.Amber);
@@ -347,13 +362,13 @@ public static class DesignHangar
         }
         else
         {
-            const double a = 70 * Math.PI / 180;
+            var a = shut ? 0 : 70 * Math.PI / 180;
             if (Vertical(w) == 0)
             {
                 // On a side wall: hinged along its lower edge, the leaf swung out and down like a drawbridge.
                 var s = w.X[1] >= 0 ? -1 : 1;
                 double ca = Math.Cos(a), sa = Math.Sin(a);
-                Slab(m, (s * hx - s * ca * hx, sa * hx, 0), (-s * ca * hx, sa * hx, 0), (s * sa * th / 2, ca * th / 2, 0), (0, 0, hz), PieceKinds.Gun);
+                m.Leaf(0, () => Slab(m, (s * hx - s * ca * hx, sa * hx, 0), (-s * ca * hx, sa * hx, 0), (s * sa * th / 2, ca * th / 2, 0), (0, 0, hz), PieceKinds.Gun));
                 for (var k = -1; k <= 1; k += 2)
                     m.Box(s * hx - th, -th, k * hz * 0.7 - th, s * hx + th, th, k * hz * 0.7 + th, PieceKinds.Amber);
                 goto bay;
@@ -361,7 +376,7 @@ public static class DesignHangar
             var len = 2 * hz;
             // The leaf from the hinge on the -Z edge, swung out (+Y).
             var c = (0.0, Math.Sin(a) * len / 2, -hz + Math.Cos(a) * len / 2);
-            Slab(m, c, (hx, 0, 0), (0, Math.Cos(a) * th / 2, -Math.Sin(a) * th / 2), (0, Math.Sin(a) * len / 2, Math.Cos(a) * len / 2), PieceKinds.Gun);
+            m.Leaf(0, () => Slab(m, c, (hx, 0, 0), (0, Math.Cos(a) * th / 2, -Math.Sin(a) * th / 2), (0, Math.Sin(a) * len / 2, Math.Cos(a) * len / 2), PieceKinds.Gun));
             for (var s = -1; s <= 1; s += 2)
                 m.Box(s * hx * 0.7 - th, -th, -hz - th, s * hx * 0.7 + th, th, -hz + th, PieceKinds.Amber); // the motor hinges
         }
@@ -403,39 +418,59 @@ public static class DesignHangar
                 m.Box(i * x * 0.5 - 0.4, y1 + 0.13, -0.15, i * x * 0.5 + 0.4, y1 + 0.2, 0.15, PieceKinds.Glow);
     }
 
-    private static void DrawLift(DesignMesh m, Piece p)
+    /// <summary>A lift platform's deck lies this far into its well when up (shut), its outer face flush with the skin.</summary>
+    public const double LiftDeck = 0.2;
+
+    private static void DrawLift(DesignMesh m, Piece p, bool shut)
     {
         double hx = p.W / 2 * p.Hole, hz = p.L / 2 * p.Hole, t = p.Travel;
         Ring(m, hx, hz, 0.25, 0, 0.18, PieceKinds.Armour);
         Ring(m, hx + 0.25, hz + 0.25, 0.1, 0.18, 0.22, PieceKinds.Amber);
         Ring(m, hx, hz, 0.06, -1.0, 0.02, PieceKinds.Gun);
-        // Lowered by its travel out of the belly, on four pistons.
-        m.Box(-hx + 0.05, t, -hz + 0.05, hx - 0.05, t + 0.2, hz - 0.05, PieceKinds.Gun);
-        Ring(m, hx - 0.05, hz - 0.05, 0.08, t + 0.2, t + 0.26, PieceKinds.Amber);
+        // Lowered by its travel out of the belly, on four pistons (shut, the game's: up flush in its well, the rams up inside the ship; the
+        // deck, its rim and the rams are one leaf, which its piston lowers by its travel).
+        var y = shut ? -LiftDeck - t : 0;
+        m.Leaf(0, () =>
+        {
+            m.Box(-hx + 0.05, t + y, -hz + 0.05, hx - 0.05, t + 0.2 + y, hz - 0.05, PieceKinds.Gun);
+            Ring(m, hx - 0.05, hz - 0.05, 0.08, t + 0.2 + y, t + 0.26 + y, PieceKinds.Amber);
+            foreach (var sx in new[] { -1, 1 })
+                foreach (var sz in new[] { -1, 1 })
+                {
+                    double px = sx * (hx - 0.5), pz = sz * (hz - 0.5);
+                    m.Box(px - 0.1, shut ? -LiftDeck - 0.05 - t : t * 0.5, pz - 0.1, px + 0.1, shut ? -LiftDeck : t, pz + 0.1, PieceKinds.Amber);
+                }
+        });
         foreach (var sx in new[] { -1, 1 })
             foreach (var sz in new[] { -1, 1 })
             {
                 double px = sx * (hx - 0.5), pz = sz * (hz - 0.5);
-                m.Box(px - 0.18, -1.0, pz - 0.18, px + 0.18, t * 0.5, pz + 0.18, PieceKinds.Pale);
-                m.Box(px - 0.1, t * 0.5, pz - 0.1, px + 0.1, t, pz + 0.1, PieceKinds.Amber);
+                m.Box(px - 0.18, -1.0, pz - 0.18, px + 0.18, shut ? -LiftDeck - 0.05 : t * 0.5, pz + 0.18, PieceKinds.Pale);
             }
     }
 
-    private static void DrawRamp(DesignMesh m, Piece p)
+    /// <summary>The angle a ramp deck is lowered to (radians about its aft edge: its far end its travel out of the skin).</summary>
+    public static double RampAngle(Piece p) => Math.Asin(Math.Min(1, p.Travel / (p.L * p.Hole)));
+
+    private static void DrawRamp(DesignMesh m, Piece p, bool shut)
     {
         double hx = p.W / 2 * p.Hole, hz = p.L / 2 * p.Hole;
         Ring(m, hx, hz, 0.25, 0, 0.18, PieceKinds.Armour);
         Ring(m, hx, hz, 0.06, -1.0, 0.02, PieceKinds.Gun);
-        // Hinged at its aft edge (+Z toward the bow is -Z aft... the frame's -Z), lowered till its far end is Travel out.
+        // Hinged at its aft edge (+Z toward the bow is -Z aft... the frame's -Z), lowered till its far end is Travel out (shut, the game's:
+        // up flush in the skin; the slab and its hazard edges are one leaf, which its hinge lowers).
         var len = 2 * hz;
-        var a = Math.Asin(Math.Min(1, p.Travel / len));
+        var a = shut ? 0 : RampAngle(p);
         const double th = 0.25;
         var c = (0.0, Math.Sin(a) * len / 2, -hz + Math.Cos(a) * len / 2);
-        Slab(m, c, (hx, 0, 0), (0, Math.Cos(a) * th / 2, -Math.Sin(a) * th / 2), (0, Math.Sin(a) * len / 2, Math.Cos(a) * len / 2), PieceKinds.Gun);
-        // Hazard edges and the hinge.
-        foreach (var s in new[] { -1, 1 })
-            Slab(m, (s * (hx - 0.1), c.Item2 - Math.Cos(a) * th * 0.6, c.Item3 + Math.Sin(a) * th * 0.6), (0.1, 0, 0), (0, Math.Cos(a) * 0.04, -Math.Sin(a) * 0.04), (0, Math.Sin(a) * len / 2, Math.Cos(a) * len / 2), PieceKinds.Amber);
-        m.Box(-hx, -0.2, -hz - 0.2, hx, 0.2, -hz + 0.2, PieceKinds.Pale);
+        m.Leaf(0, () =>
+        {
+            Slab(m, c, (hx, 0, 0), (0, Math.Cos(a) * th / 2, -Math.Sin(a) * th / 2), (0, Math.Sin(a) * len / 2, Math.Cos(a) * len / 2), PieceKinds.Gun);
+            // Hazard edges.
+            foreach (var s in new[] { -1, 1 })
+                Slab(m, (s * (hx - 0.1), c.Item2 - Math.Cos(a) * th * 0.6, c.Item3 + Math.Sin(a) * th * 0.6), (0.1, 0, 0), (0, Math.Cos(a) * 0.04, -Math.Sin(a) * 0.04), (0, Math.Sin(a) * len / 2, Math.Cos(a) * len / 2), PieceKinds.Amber);
+        });
+        m.Box(-hx, -0.2, -hz - 0.2, hx, 0.2, -hz + 0.2, PieceKinds.Pale); // the hinge
     }
 
     /// <summary>A docking arm in a fitting's frame (Y up off the bay's floor, Z into the bay): a base, a column and a boom out towards

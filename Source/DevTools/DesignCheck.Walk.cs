@@ -268,6 +268,7 @@ public static partial class DesignCheck
             r.Fail($"the walk: {problems.Count} place(s) a person can't stand in or reach");
         if (!roomsOnly)
         {
+            PassageWalk(r, d, check, w, c, shift); // (between the bodies: DesignCheck.Passages.cs)
             Risers(r, w, c);
             DeckGravity(r, d, w, c, shift);
         }
@@ -297,6 +298,11 @@ public static partial class DesignCheck
                 var why = LadderCheck.Try(w, c, i, down);
                 if (why == null)
                     climbs++;
+                else if (down && why.StartsWith("the docking hatch is shut", StringComparison.Ordinal))
+                {
+                    climbs++; // (a ladder down to a docking hatch is climbed down only with a craft docked there, as LadderCheck has it)
+                    Console.WriteLine($"[design]   {Id(i)}: climbed down only with a craft docked ({why})");
+                }
                 else
                     problems.Add($"{Id(i)} ({d.LadderTop - d.LadderFoot:0.0} m): can't climb {(down ? "down" : "up")} it: {why}");
             }

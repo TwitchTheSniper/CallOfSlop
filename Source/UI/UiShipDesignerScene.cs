@@ -882,6 +882,12 @@ public sealed partial class Ui
             var shaft = (float)D(l, "shaft");
             if (!(shaft > 0))
                 continue;
+            if (Has(l, "mesh"))
+            {
+                // Its walls and ladder as the game builds them (DesignPassage.cs ConnectorOf).
+                Add(GeoOf(Get(l, "mesh")), new Mat(0xffffff, Metal: 0.45f, Order: 4), null, false, default, true);
+                continue;
+            }
             var dd = b - a;
             var ln = dd.Length();
             if (ln < 0.1f)
@@ -1233,7 +1239,13 @@ public sealed partial class Ui
                     Vector3 R(int s, float a) => C[s] + rad * (MathF.Cos(a) * fr[s].S + MathF.Sin(a) * fr[s].U);
                     tube.Quad(R(i, a0), R(i, a1), R(i + 1, a1), R(i + 1, a0));
                 }
-            Add(tube, new Mat(ok ? 0x9fd3ffu : 0xff6a50u, Alpha: only != null ? 0.18f : 0.32f, Transparent: true, DepthWrite: false, Emissive: picked ? 0x1d4f86u : 0, Order: 5), pick, true);
+            var built = Has(k, "mesh"); // (its walls, floor and roof as the game builds them: DesignPassage.cs; the glass is what is picked)
+            Add(tube, new Mat(ok ? 0x9fd3ffu : 0xff6a50u, Alpha: built ? (only != null ? 0.06f : 0.1f) : only != null ? 0.18f : 0.32f, Transparent: true, DepthWrite: false, Emissive: picked ? 0x1d4f86u : 0, Order: 5), pick, true);
+            if (built)
+            {
+                Add(GeoOf(Get(k, "mesh")), new Mat(0xffffff, Metal: 0.4f, Emissive: picked ? 0x1d4f86u : 0, Order: 5), pick, true, default, true);
+                continue;
+            }
             var steel = new Mat(ok ? 0xd8b04au : 0xff5a44u, Metal: 0.5f, Emissive: picked ? 0x1d4f86u : 0, Order: 5);
             // Its track: two rails on the tube's floor.
             var rails = new GB();
