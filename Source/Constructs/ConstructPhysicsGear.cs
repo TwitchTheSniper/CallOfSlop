@@ -44,6 +44,10 @@ public static partial class ConstructPhysics
         var com = c.WorldCom;
         Span<float> shares = stackalloc float[c.DoorCount]; // (at most Construct.MaxDoors: 4 KB)
         FootShares(c, shares);
+        // The pads on the ground (not a deck) grip together after the springs, in passes (below); a deck's pad grips on its own.
+        Span<Vector3> gripAt = stackalloc Vector3[MaxGripFeet], gripN = stackalloc Vector3[MaxGripFeet], gripAcc = stackalloc Vector3[MaxGripFeet];
+        Span<float> gripMax = stackalloc float[MaxGripFeet];
+        var grips = 0;
         for (var k = 0; k < c.DoorCount; k++)
         {
             ref var dr = ref c.Doors[k];
@@ -90,6 +94,12 @@ public static partial class ConstructPhysics
             ApplyImpulse(c, invI, r, up * jn);
             if (deck != null)
                 DeckPush(deck, deckSeg, point, up * jn);
+            if (deck == null && grips < MaxGripFeet && jn > 0)
+            {
+                (gripAt[grips], gripN[grips], gripAcc[grips], gripMax[grips]) = (point, hit.Normal, Vector3.Zero, jn * PadGrip);
+                grips++;
+                continue;
+            }
             // The pad's grip: what slides along the ground is stopped (its share of it), up to what the load allows.
             var vp = c.PointVel(point) - deckVel;
             var vt = vp - hit.Normal * Vector3.Dot(vp, hit.Normal);
@@ -103,7 +113,30 @@ public static partial class ConstructPhysics
                     DeckPush(deck, deckSeg, point, -dir * jt);
             }
         }
+        // The pads' grip on the ground, all together: each pass stops what still slides at each pad, its total held to what its load
+        // allows (Karl, 2026-11-27: one pass, each pad stopping its share of the slide, left a landed ship creeping ~1-2 cm/s while it
+        // was awake, a lift running in it, its yaw turning, since a share of each tick's slide was always left over).
+        for (var pass = 0; pass < GripPasses && grips > 0; pass++)
+            for (var f = 0; f < grips; f++)
+            {
+                var r = gripAt[f] - com;
+                var vp = c.PointVel(gripAt[f]);
+                var vt = vp - gripN[f] * Vector3.Dot(vp, gripN[f]);
+                var speed = vt.Length();
+                if (speed < 1e-5f)
+                    continue;
+                var dir = vt / speed;
+                var old = gripAcc[f];
+                var acc = old - dir * (speed / InvMassAt(c, invI, r, dir));
+                if (acc.LengthSquared() > gripMax[f] * gripMax[f])
+                    acc *= gripMax[f] / acc.Length();
+                gripAcc[f] = acc;
+                ApplyImpulse(c, invI, r, acc - old);
+            }
     }
+
+    /// <summary>The landing pads gripping together on the ground at most (the rest grip one by one), and the passes they grip in.</summary>
+    private const int MaxGripFeet = 32, GripPasses = 6;
 
     /// <summary>
     /// Each lowered sprung foot's share of the craft's mass as it stands (by door, 0 for the rest): a plane through the feet's

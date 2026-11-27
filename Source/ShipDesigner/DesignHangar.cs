@@ -783,6 +783,9 @@ public static class DesignHangar
     /// <summary>A lift platform's deck lies this far into its well when up (shut), its outer face flush with the skin.</summary>
     public const double LiftDeck = 0.2;
 
+    /// <summary>The triangles of a lift platform's deck at the start of its leaf (one box: DrawLift draws it first); the game collides with these alone.</summary>
+    public const int LiftDeckTris = 12;
+
     private static void DrawLift(DesignMesh m, Piece p, bool shut)
     {
         double hx = p.W / 2 * p.Hole, hz = p.L / 2 * p.Hole, t = p.Travel;
@@ -794,7 +797,7 @@ public static class DesignHangar
         var y = shut ? -LiftDeck - t : 0;
         m.Leaf(0, () =>
         {
-            m.Box(-hx + 0.05, t + y, -hz + 0.05, hx - 0.05, t + 0.2 + y, hz - 0.05, PieceKinds.Gun);
+            m.Box(-hx + 0.05, t + y, -hz + 0.05, hx - 0.05, t + 0.2 + y, hz - 0.05, PieceKinds.Gun); // (first: LiftDeckTris)
             Ring(m, hx - 0.05, hz - 0.05, 0.08, t + 0.2 + y, t + 0.26 + y, PieceKinds.Amber);
             foreach (var sx in new[] { -1, 1 })
                 foreach (var sz in new[] { -1, 1 })
