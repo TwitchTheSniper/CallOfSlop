@@ -1109,14 +1109,6 @@ public sealed partial class Ui
             if (p.Id != 0)
             {
                 Take(_sd!.Scene()); // now cut its opening
-                // An airlock comes with its chamber: an Airlock room behind it, in the same undo step.
-                if (Str(Arr(CAT, "pieces").FirstOrDefault(k => Str(k, "name") == p.Kind), "socket") == "airlock")
-                {
-                    var n = Arr(S, "rooms").Count();
-                    var a = Cmd(new JsonObject { ["op"] = "autoRoom", ["id"] = p.Id }, true);
-                    if (Str(a, "error").Length == 0)
-                        Toast(Arr(S, "rooms").Count() > n ? "Airlock placed, with an airlock room behind it." : "Airlock placed: it opens into the room already there.", true);
-                }
                 Select("piece", p.Id);
             }
         }
