@@ -340,9 +340,23 @@ public sealed partial class Ui
             if (ImGui.Button("Fill unset rooms##sdfill"u8))
             {
                 var a = Cmd(C("fillUnset"));
-                Toast(Str(a, "error") is { Length: > 0 } e ? e : "Rooms with no interior got Clean cladding, and touching rooms with no door got the default door. Undo takes it back.", true);
+                Toast(Str(a, "error") is { Length: > 0 } e ? e : ManualDoors ? "Rooms with no interior got Clean cladding. Undo takes it back." : "Rooms with no interior got Clean cladding, and touching rooms with no door got the default door. Undo takes it back.", true);
             }
-            Hint("Rooms with interior Off get the Clean style; rooms that share a wall and have no door get a default door. Rooms and doors you set are kept.");
+            Hint(ManualDoors ? "Rooms with interior Off get the Clean style. Rooms you set are kept." : "Rooms with interior Off get the Clean style; rooms that share a wall and have no door get a default door. Rooms and doors you set are kept.");
+            H2("Doors");
+            Hint("Placement");
+            if (OnButton("Automatic##sddp0", !ManualDoors) && ManualDoors)
+            {
+                Cmd(C("doorPlacement", ("manual", false)));
+                Toast("Every two rooms that share a wall get a doorway. Undo takes it back.", true);
+            }
+            Row();
+            if (OnButton("Manual##sddp1", ManualDoors) && !ManualDoors)
+            {
+                Cmd(C("doorPlacement", ("manual", true)));
+                Toast("Only the doors you place are cut: a shared wall with none stays a wall. Undo takes it back.", true);
+            }
+            Hint(ManualDoors ? "Place each door yourself: pick a room, Add a door, then click the room beside it. Rooms with no door between them are not joined." : "Rooms on one deck that share 0.9 m of wall get a doorway, in the middle of the wall unless you place the door.");
             H2("Decks");
             Hint("Orientation");
             if (OnButton("Along the length##sdor0", !Stacked) && Stacked)
