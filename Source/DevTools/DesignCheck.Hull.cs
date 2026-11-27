@@ -126,7 +126,13 @@ public static partial class DesignCheck
             Console.WriteLine("[design] hollow: no Chest blueprint to drop");
             return;
         }
+        // (from higher and higher at the middle of the spine, then the fastest at four more spots along it: one spot proves little)
+        var spots = new List<(float Height, float Along)>();
         foreach (var height in new[] { 3f, 20f, 80f, 320f, 1200f })
+            spots.Add((height, 0.5f));
+        foreach (var along in new[] { 0.25f, 0.4f, 0.6f, 0.75f })
+            spots.Add((1200f, along));
+        foreach (var (height, along) in spots)
         {
             var world = new ConstructWorld();
             var ship = ConstructBuild.BuildOnGround(world, ConstructBuild.ParseBlueprint(r.Blueprint!, "design check.json"), r.Ground, 0, out var why);
@@ -141,7 +147,7 @@ public static partial class DesignCheck
             var top = float.NaN;
             for (var k = 0; k <= 40 && float.IsNaN(top); k++)
             {
-                var f = 0.5f + (k % 2 == 0 ? 1 : -1) * ((k + 1) / 2) / 41f;
+                var f = along + (k % 2 == 0 ? 1 : -1) * ((k + 1) / 2) / 41f;
                 var from = ship.ToWorld(new Vector3((lo.X + hi.X) / 2, hi.Y + 5, lo.Z + (hi.Z - lo.Z) * f));
                 var t = RayHulls(ship, from, -Vector3.UnitY, 50, out var part);
                 if (!float.IsNaN(t) && part >= 0 && KindOf(r, ship, part) == "band")
@@ -171,10 +177,11 @@ public static partial class DesignCheck
             var above = RayHulls(ship, box.WorldCom, Vector3.UnitY, 30);
             var rest = box.WorldCom.Y - top;
             var through = !float.IsNaN(above);
+            var sunk = !through && rest < 0; // (its middle under the skin's top, held in the plate: a ray from inside a plate meets nothing)
             var at = Vector3.Transform(box.WorldCom - ship.Pos, Quaternion.Conjugate(ship.Rot));
-            Console.WriteLine($"[design] hollow: a chest meeting the spine at {meet:0} m/s (from {height:0} m) rests with its middle {rest:+0.00;-0.00} m off the skin's top there, at {at.X:0.00}, {at.Y:0.00}, {at.Z:0.00} in the ship{(through ? $": THROUGH IT ({above:0.00} m under a collider)" : "")}, speed {box.Vel.Length():0.00} m/s; worst step {worst:0.0} ms");
-            if (through)
-                r.Fail($"a chest at {meet:0} m/s went through the hull's plates");
+            Console.WriteLine($"[design] hollow: a chest meeting the spine at {meet:0} m/s (from {height:0} m) {(along != 0.5f ? $"{along:0.00} along " : "")}rests with its middle {rest:+0.00;-0.00} m off the skin's top there, at {at.X:0.00}, {at.Y:0.00}, {at.Z:0.00} in the ship{(through ? $": THROUGH IT ({above:0.00} m under a collider)" : sunk ? ": SUNK INTO IT" : "")}, speed {box.Vel.Length():0.00} m/s; worst step {worst:0.0} ms");
+            if (through || sunk)
+                r.Fail($"a chest at {meet:0} m/s went {(through ? "through" : "into")} the hull's plates");
         }
     }
 

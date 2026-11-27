@@ -107,7 +107,7 @@ public static partial class DesignParts
     // openings are the designer's, nothing worked out again: a facet the skin covers whole is one plate, one it covers in part is tested in
     // cells and the cells it covers merged into rectangles, one it doesn't cover at all is open.
 
-    public const float PlateM = 0.05f; // a hull plate's collider, inwards from the skin (thin: tunnelling is the risk; thicker eats the rooms)
+    public const float PlateM = 0.05f; // a hull plate's collider, inwards from the skin (thin; a fast piece is held on it by contacts nearest first, ConstructPhysicsContacts.NearFirst; thicker eats the rooms)
     private const float PlateCell = 0.2f; // m: the cells a part-covered facet is tested in (the designer cuts holed bands at 20 cm too)
     private const float OnSkin = 0.05f; // m: how far a skin triangle may lie off its facet (dents, a twisted facet) and still cover it
 
