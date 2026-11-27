@@ -743,6 +743,8 @@ public sealed partial class Ui
 
     // The half profile at one station, drawn whole (both sides), with its neighbours ghosted and the decks across it; drag a point to move it.
     private int _profDrag = -1;
+    private double _profSc, _profCy; // the view's scale and middle height, held while a point is dragged
+    private (double X, double Y) _profLast;
 
     private void ProfileEditor(JsonElement h, int i)
     {
@@ -764,6 +766,12 @@ public sealed partial class Ui
         var p0 = ImGui.GetCursorScreenPos();
         var cx = p0.X + W / 2;
         var cy = p0.Y + Hh / 2 + (y0 + y1) / 2 * sc;
+        // While a point is dragged the view holds still: a scale worked out from the point being moved ran it away from the mouse.
+        if (_profDrag >= 0 && _profSc > 0)
+        {
+            sc = _profSc;
+            cy = p0.Y + _profCy;
+        }
         float X(double x) => (float)(cx + x * sc);
         float Y(double y) => (float)(cy - y * sc);
         ImGui.InvisibleButton("##sdprof"u8, new float2(W, Hh));
@@ -817,17 +825,27 @@ public sealed partial class Ui
                 }
             }
             _dragFirst = true;
+            _profSc = sc;
+            _profCy = cy - p0.Y;
+            _profLast = _profDrag >= 0 ? cur[_profDrag] : default;
         }
+        // The hull follows the point live (Karl, 2026-11-27): a command only when the point has moved, which the frame's flush
+        // throttles by its cost; letting go sends the last one at once.
         if (ImGui.IsItemActive() && _profDrag >= 0 && _profDrag < cur.Count)
         {
             var nx = Math.Max(0.05, Math.Abs((mouse.X - cx) / sc));
             var ny = (cy - mouse.Y) / sc;
             cur[_profDrag] = (nx, ny);
-            DragCmd(C("setPoint", ("hull", hid), ("i", i), ("k", _profDrag), ("h", nx), ("y", ny), ("all", _allStations)));
+            if (Math.Abs(nx - _profLast.X) > 1e-4 || Math.Abs(ny - _profLast.Y) > 1e-4)
+            {
+                _profLast = (nx, ny);
+                DragCmd(C("setPoint", ("hull", hid), ("i", i), ("k", _profDrag), ("h", nx), ("y", ny), ("all", _allStations)));
+            }
         }
         if (ImGui.IsItemDeactivated() && _profDrag >= 0)
         {
             _profDrag = -1;
+            _profSc = 0;
             Flush();
         }
         for (var k = 0; k < cur.Count; k++)
@@ -1005,12 +1023,24 @@ public sealed partial class Ui
             M("Door height", "bayDoorH", ShipDesigner.DesignHangar.DoorMinH, Math.Min(ShipDesigner.DesignHangar.DoorMaxH, size.Length > 1 ? size[1] : 32), 0.5);
             ImGui.Text("Type");
             Row();
-            MatCombo("hgdoor" + pid, Str(p, "bayDoor", "Sliding"), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
+            MatCombo("hgdoor" + pid, Str(p, "bayDoor", ShipDesigner.DesignHangar.DefDoor), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
+            H3("Hangar floor");
+            ImGui.Text("Floor");
+            Row();
+            MatCombo("hgfloor" + pid, Str(p, "bayFloor", "Fixed"), ShipDesigner.DesignHangar.Floors, v => Cmd(C("setPiece", ("id", pid), ("bayFloor", v))));
+            if (Str(p, "bayFloor") == "Lift-out")
+                Hint("The floor is a platform the craft stands on: F pushes it out through the mouth by the bay's depth (up from a roof bay, down from a belly bay, sideways from a side bay), carrying a held craft with it. Open the door first.");
             if (ResetAll("hgdoor" + pid, "Door back to its defaults"))
                 Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayDoorW", "bayDoorH", "bayDoor")]));
             var n = I(p, "fittings");
             if (size.Length == 3)
-                Hint($"The bay is {Fmt(size[0])} m across, {Fmt(size[1])} m tall and {Fmt(size[2])} m deep. {(Str(p, "bayDoor") == "Hinged" ? "The door swings out on motor hinges." : "The door slides aside on a piston.")} {n} docking fitting{(n == 1 ? "" : "s")} linked.");
+                Hint($"The bay is {Fmt(size[0])} m across, {Fmt(size[1])} m tall and {Fmt(size[2])} m deep. {Str(p, "bayDoor") switch
+                {
+                    "Rolling" => "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.",
+                    "Iris" => "Four blades inside the mouth swing out to the sides like a shutter.",
+                    "Hinged" => "The door swings out on motor hinges.",
+                    _ => "The door slides aside inside the well on a piston.",
+                }} {n} docking fitting{(n == 1 ? "" : "s")} linked.");
             return;
         }
         if (Has(p, "travel"))
@@ -1375,6 +1405,15 @@ public sealed partial class Ui
             if (sock)
                 Slider("Cladding", Math.Round(D(p, "clad") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("clad", v / 100))), "pcc");
             Slider("Recess", Math.Round(D(p, "recess") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("recess", v / 100))), "pcr");
+            if (D(p, "recess") > 0)
+            {
+                // Its recess's walls clad (DesignRecess, Karl 2026-11-27), in its hull's cladding colour unless unticked.
+                Checkbox("Clad the recess walls##sdprc" + pid, B(p, "recessClad", false), v => Cmd(C("setPiece", ("id", pid), ("recessClad", v))));
+                if (B(p, "recessClad", false))
+                    Checkbox("Cladding from the hull##sdpch" + pid, B(p, "cladHull", true), v => Cmd(C("setPiece", ("id", pid), ("cladHull", v))));
+            }
+            if (Str(p, "socket") == "window")
+                Checkbox("Line the inner reveal (wall panel)##sdprv" + pid, B(p, "revealClad", false), v => Cmd(C("setPiece", ("id", pid), ("revealClad", v))));
             CutControls(p, kv => Cmd(C("setPiece", [("id", pid), .. kv])), "piece", Str(p, "socket") == "window");
             if (Str(p, "kind") == ShipDesigner.DesignSeats.Kind)
             {
@@ -1437,7 +1476,14 @@ public sealed partial class Ui
                         : "It has no room: drop it on the skin by a room, or pick its room below.");
                 }
                 else
+                {
+                    // How it meets the hull's cladding (Karl, 2026-11-27): cut round it, flush with the plates, or over them.
+                    ImGui.Text("Cladding"u8);
+                    Row();
+                    MatCombo("pcbk" + pid, Str(p, "barClad", ShipDesigner.DesignLightBars.DefClad), ShipDesigner.DesignLightBars.CladModes, v => Cmd(C("setPiece", ("id", pid), ("barClad", v))));
+                    Hint(BarCladHint(Str(p, "barClad", ShipDesigner.DesignLightBars.DefClad), B(p, "barCladOn")));
                     Hint("Along the hull it follows the skin's curve; turned it runs straight across. In the game it lights what is round it, always on.");
+                }
             }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))
@@ -1876,6 +1922,14 @@ public sealed partial class Ui
             ImGui.EndTable();
         }
     }
+
+    /// <summary>What a hull light bar's cladding setting does (DesignLightBars.Lift, Cuts); the page says the same.</summary>
+    private static string BarCladHint(string mode, bool clad) => (mode switch
+    {
+        "Flush" => "Flush: the plates are cut close round it and it stands on a housing, its face level with the plates' tops.",
+        "Over" => "Over: the plates run on under it and it sits on a housing over them.",
+        _ => "Cut: the plates are cut round its whole length and it lies on the skin in the channel (Gap sets how wide).",
+    }) + (clad ? "" : " This body has no cladding yet, so it lies on the skin.");
 }
 
 internal static class SdJsonExt

@@ -464,6 +464,9 @@ public sealed class DesignEditor
                 if (o["size"] is not null) p.Size = Math.Clamp(Snap(D(o, "size"), 0.05), 0.25, 4);
                 if (o["recess"] is not null) p.Recess = Math.Clamp(Snap(D(o, "recess"), 0.05), 0, 2);
                 if (o["clad"] is not null) p.Clad = Math.Clamp(Snap(D(o, "clad"), 0.05), 0, 2);
+                if (o["recessClad"] is not null) p.RecessClad = (bool)o["recessClad"]!;
+                if (o["cladHull"] is not null) p.CladHull = (bool)o["cladHull"]!;
+                if (o["revealClad"] is not null) p.RevealClad = (bool)o["revealClad"]!;
                 if (o["turn"] is not null) p.Turn = Snap(D(o, "turn"), 5) % 360;
                 if (o["gap"] is not null) p.Gap = D(o, "gap") < 0 ? -1 : Math.Clamp(Snap(D(o, "gap"), 0.01), 0, 2);
                 if (o["hole"] is not null) p.Hole = Math.Clamp(Snap(D(o, "hole"), 0.05), 0.5, 2.5);

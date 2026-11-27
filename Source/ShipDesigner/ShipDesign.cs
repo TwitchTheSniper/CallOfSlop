@@ -354,6 +354,7 @@ public sealed class Piece
     public bool Mirror; // a twin across its own hull copy's centreline
     public bool Pair = true; // on a mirrored pair of bodies, the same piece on the other body too, mirrored across the ship (Karl, 2026-11-24)
     public double Recess; // metres the piece sits back into the wall, behind its hole (Karl, 2026-11-24)
+    public bool RecessClad, CladHull = true, RevealClad; // its recess's walls clad, in its hull's cladding colour; a window's reveal lined (DesignRecess, Karl 2026-11-27)
     public double Clad; // metres of cladding plate round a socket's frame on the skin (Karl, 2026-11-24: sized with the window)
     public double Size = 1; // its scale: a socket's opening and the piece drawn grow with it (Karl, 2026-11-24)
     public double Turn; // degrees about the skin's normal
@@ -369,7 +370,8 @@ public sealed class Piece
     // Hangar pieces' own (DesignHangar, Karl 2026-11-26): a bay's door size and type; a lift's or ramp deck's size and travel; a fitting's bay and spot in it.
     public double BayW = 20, BayH = 8, BayD = 20; // a bay's own volume across, tall and deep (Karl 2026-11-27; DesignHangar.Of)
     public double BayDoorW = 5, BayDoorH = 3, W = 5, L = 5, Travel = 3, Along, Across;
-    public string BayDoorType = "Sliding";
+    public string BayDoorType = DesignHangar.DefDoor;
+    public string BayFloor = "Fixed"; // a bay's floor: Fixed or Lift-out (DesignHangar.FloorBox)
     public int Link;
     public string Fit = ""; // a weapon mount's weapon (DesignWeaponMounts.cs; "": empty)
     // A floodlight's (DesignFittings, Karl 2026-11-26): its aim off the skin's normal and about it (degrees), and its beam's colour.
@@ -379,23 +381,24 @@ public sealed class Piece
     public double Extend = DesignRamp.DefExtend; // a boarding ramp's extension's run, metres (DesignRamp, Karl 2026-11-27)
     // A light bar's (DesignLightBars, Karl 2026-11-27): its length (m) and brightness (0 to 1; its colour is Beam); a room bar's mount and its height over the floor (m).
     public double BarLen = DesignLightBars.DefLen, Bright = DesignLightBars.DefBright, BarUp = DesignLightBars.DefUp;
+    public string BarClad = DesignLightBars.DefClad; // a hull bar: how it meets the cladding (Cut, Flush, Over: DesignLightBars.Lift, Cuts)
     public string BarOn = "Wall";
     public double RampW = DesignRamp.DefWidth, RampL = DesignRamp.DefLength; // a boarding ramp's hatch across and along, metres (DesignRamp)
     public int Segments = DesignRamp.DefSegments; // a boarding ramp's telescoping sections (DesignRamp)
     public double RampAngle; // a boarding ramp's set angle, degrees; 0: the automatic one (DesignRamp.Angle)
 
-    public JsonObject ToJson() => DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
+    public JsonObject ToJson() => DesignRecess.Write(this, DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
         ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
         ["airW"] = ShipDesign.R(AirW), ["airH"] = ShipDesign.R(AirH), ["airD"] = ShipDesign.R(AirD), ["doorW"] = ShipDesign.R(DoorW), ["door"] = Door, ["feed"] = Feed, ["fit"] = Fit,
-    })))));
+    }))))));
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
     public static Piece FromJson(JsonObject o, int id)
     {
-        var p = DesignLightBars.Read(o, DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id))))));
+        var p = DesignRecess.Read(o, DesignLightBars.Read(o, DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id)))))));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
         PieceWeapons.Init(p);
