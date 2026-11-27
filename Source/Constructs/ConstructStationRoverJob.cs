@@ -325,14 +325,50 @@ public static partial class ConstructStation
         var g = GroundOf(c, t, j);
         var keep = j.ArmTicks[a];
         j.ArmTicks[a] = 0; // (its own old trip is no obstacle to itself)
-        for (var w = 0f; w <= 60f; w += 3f)
+        for (var w = 0f; w <= 60f; w += 1f)
         {
             StationRovers.PlanHome(j.Try, g, dk, at, h, hook, w);
-            if (FirstClash(j, docks, n, a) < 0 || w >= 60f)
+            var hit = FirstClash(j, docks, n, a);
+            if (hit < 0 || w >= 60f)
                 break;
+            if (j.ArmTicks[hit] == 0)
+            {
+                // (a rover standing still in its way: no wait clears that, and it waited the whole minute; it goes now)
+                StationRovers.PlanHome(j.Try, g, dk, at, h, hook, 0);
+                break;
+            }
         }
         j.ArmTicks[a] = keep;
         Begin(world, c, j, a, -1, None, None);
+    }
+
+    private const int JobLook = 30; // ticks between an idle rover's looks for a step of its own
+
+    /// <summary>
+    /// Has idle rover <paramref name="a"/> a job coming: a ready step nobody carries whose piece it can lift and whose class is nearer
+    /// its own than any other dock's? None: it drives home at once rather than stand in the bay (Sean 2026-11-27: "unless the idle rover
+    /// knows it will have a job soon"). Bounded: one pass over the steps every <see cref="JobLook"/> ticks a standing rover.
+    /// </summary>
+    private static bool JobSoon(StationJob j, ReadOnlySpan<StationDock> docks, int n, int a)
+    {
+        if (j.Bp == null)
+            return false;
+        var cls = docks[a].Cls;
+        var kg = StationRovers.Classes[cls].Kg;
+        for (var k = 0; k < j.PartOf.Length; k++)
+        {
+            if (j.PartOf[k] != -1 || j.StepKind[k] is not (var kind and >= 0) || Array.IndexOf(j.ArmStep, k) >= 0 || !Ready(j, k))
+                continue;
+            if (ConstructParts.Get(j.KindDef[kind]) is not { } d || d.Mass > kg)
+                continue;
+            var want = StationRovers.Want(d);
+            var mine = true;
+            for (var b = 0; b < n && mine; b++)
+                mine = b == a || StationRovers.Classes[docks[b].Cls].Kg < d.Mass || Math.Abs(docks[b].Cls - want) >= Math.Abs(cls - want);
+            if (mine)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Trips counted down, fits at their weld's end, idle rovers sent home. True while any rover is on a trip.</summary>
@@ -412,7 +448,8 @@ public static partial class ConstructStation
                 j.RovSet[a] = false; // (its dock is gone: so is it)
                 continue;
             }
-            if (home || ++j.RovIdle[a] > (int)(StationRovers.HomeAfter * World.TickRate))
+            var idle = ++j.RovIdle[a];
+            if (home || idle > (int)(StationRovers.HomeAfter * World.TickRate) || idle % JobLook == 1 && !JobSoon(j, docks[..n], n, a))
             {
                 SendHome(world, c, t, j, docks[..n], n, a);
                 busy = true;

@@ -146,6 +146,10 @@ public static class StationRender
         Chassis(gfx, body, cls, moving, now);
         // The mast: three nested sections from the body's top to under the shoulder, telescoped by the hook's height (all the way down parked).
         var horiz = Vector2.Distance(at, new Vector2(hook.X, hook.Z));
+        // The driving pose (Sean 2026-11-27): an empty hook tucked in by the mast (StationRovers.StowOf) draws as the parked fold, the
+        // lower arm stood up and the forearm hung beside it and the mast down, not a boom laid out flat over the others as it drives.
+        if (carried == ushort.MaxValue)
+            fold = MathF.Max(fold, Math.Clamp((3.5f - horiz) / 1.5f, 0f, 1f));
         var sy = StationRovers.ShoulderAt(rc, horiz, hook.Y, up, fold);
         var k = cls == 3 ? Math.Clamp(rc.Reach / 9f, 1f, 3f) : cls == 2 ? 1.5f : 1f;
         float bot = rc.Shoulder - 0.5f, top = sy - 0.5f, span = top - bot;

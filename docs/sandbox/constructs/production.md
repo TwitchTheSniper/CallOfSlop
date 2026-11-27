@@ -1808,7 +1808,7 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
   keep-out ring (the build's footprint grown by the rover's half width and 0.6 m); out of and into its dock straight by the mouth; it
   squares up with its short end to the work, never drives onto a pick pad (a piece lies against the pad's bay-side edge) and swings its
   arm rather than drive. A piece swings round the mast in an arc. Rovers keep apart: a spot beside along the lane first, then a later
-  start, waiting up to 300 s. An idle rover waits 15 s and drives home. Plans are sent whole (keys of base and hook), and both peers
+  start, waiting up to 300 s. An idle rover drives home at once when no ready step is its own (a piece it lifts, of no nearer class at another dock), else after 15 s; its arm folds as it sets off, and a rover standing in its way doesn't hold it back (Sean 2026-11-27). On a home trip, and on an empty drive over 6 m to a pick (`StationRovers.TuckDrive`), the hook tucks in by the mast and the rover is drawn in its driving pose: mast down, lower arm up, forearm hung beside it. Plans are sent whole (keys of base and hook), and both peers
   play them from the start time; the mast rises as a rover leaves its dock and folds down with its arm when parked.
 - **The drop** (Sean 2026-11-27: "moving over there is the time; once there it can drop the piece quickly"): the hook goes down onto a
   piece and onto its place at 4 m/s (`DropSpeed`; it lifts at 1.5 m/s), grips in 0.4 s and holds the piece on its place 0.5 s

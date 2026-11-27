@@ -173,7 +173,7 @@ public sealed partial class Construct
 /// ring, squares up with its short end to the work, takes the piece off a pick pad from beside it (its body stays on the bay), swings it
 /// round its mast and sets it on. It stays put when its spot reaches both the pick and the place, makes one stop that reaches both when it
 /// can, and drives twice only when it must. A trip that meets another rover tries a spot beside along the lane, then a later start (up to
-/// 300 s); an idle rover in the way is sent home. Idle a while, it drives home and folds. Pieces go to their class (8 t and 3 m to small,
+/// 300 s); an idle rover in the way is sent home. Idle with no ready step of its own, or a while, it drives home, folding as it goes. Pieces go to their class (8 t and 3 m to small,
 /// 52 t and 10 m to medium, the rest to large); another class takes one only when it would have it on 90 s a class sooner. Server plans,
 /// every peer draws the same trip from the wire (StationRender.cs). Nothing here allocates in a steady state.
 /// </summary>
@@ -193,7 +193,7 @@ public static class StationRovers
     public const float GripSeconds = 0.4f, ReleaseSeconds = 0.3f;
     public const float ClassPenalty = 90f; // s: a piece taken by the wrong class costs this a class (the lab's rule)
     public const float MaxWait = 300f; // s a trip waits for its way to clear before it goes anyway
-    public const float HomeAfter = 15f; // s idle in the bay before a rover drives home
+    public const float HomeAfter = 15f; // s idle in the bay before a rover drives home (at once when no ready step is its: RoverJob JobSoon)
     public const float PickClear = 0.6f; // m between a rover's body and a pad's edge
 
     /// <summary>The class a piece goes to: 1 small (8 t, 3 m), 2 medium (52 t, 10 m), 3 large.</summary>
@@ -561,6 +561,11 @@ public static class StationRovers
         return dk.Mid + dk.Dir * (rc.PadLen * 0.5f + rc.HalfLen + 0.8f);
     }
 
+    /// <summary>The hook tucked in by the mast, ahead of a rover heading <paramref name="h"/>: its driving pose (drawn folded, StationRender).</summary>
+    public static Vector3 StowOf(in RoverClass rc, float h) => new(MathF.Sin(h) * 1.5f, rc.Shoulder + 0.5f, MathF.Cos(h) * 1.5f);
+
+    public const float TuckDrive = 6f; // m: an empty drive longer than this goes with the arm tucked (Sean 2026-11-27: less clipping)
+
     /// <summary>The trip home: round the ring to its mouth, square to the bay, and back straight onto its pad (it parks facing the bay).</summary>
     public static void PlanHome(RoverPlan p, in Ground g, in StationDock dk, Vector2 at, float h, Vector3 hook, float wait)
     {
@@ -570,13 +575,15 @@ public static class StationRovers
         float t = 0;
         p.AddBase(0, at.X, at.Y, h);
         p.AddHook(0, hook);
+        // The arm folds at once, as it sets off (Sean 2026-11-27): its fold was keyed after the wait, so on a long wait it crept to its
+        // stow over the whole wait, a raised arm standing in the others' way.
+        var stow = StowOf(rc, h);
+        p.AddHook(MathF.Min(3f, SwingSeconds(rc, hook, stow)), stow);
         if (wait > 0)
         {
             t = wait;
             p.AddBase(t, at.X, at.Y, h);
         }
-        var stow = new Vector3(MathF.Sin(h) * 1.5f, rc.Shoulder + 0.5f, MathF.Cos(h) * 1.5f);
-        p.AddHook(t + MathF.Min(3f, SwingSeconds(rc, hook, stow)), stow);
         var mouth = MouthOf(dk);
         Span<Vector2> way = stackalloc Vector2[6];
         var n = Route(g, rc, at, mouth, way);
@@ -637,7 +644,20 @@ public static class StationRovers
         var head = h;
         Drive(p, g, rc, dk, ref t, ref pos, ref head, s1, new Vector2(src.X, src.Z));
         var aboveSrc = srcUp - new Vector3(s1.X, 0, s1.Y);
-        var tArr = MathF.Max(t, t0 + SwingSeconds(rc, hook, aboveSrc));
+        float tArr;
+        if (Vector2.Distance(at, s1) > TuckDrive)
+        {
+            // (a long empty drive: the arm tucks in as it sets off and reaches out again as it comes in, not held out over the others)
+            var stow = StowOf(rc, h);
+            var tIn = t0 + MathF.Min(3f, SwingSeconds(rc, hook, stow));
+            p.AddHook(tIn, stow);
+            var sOut = SwingSeconds(rc, stow, aboveSrc);
+            var tOut = MathF.Max(tIn, t - sOut);
+            p.AddHook(tOut, stow);
+            tArr = MathF.Max(t, tOut + sOut);
+        }
+        else
+            tArr = MathF.Max(t, t0 + SwingSeconds(rc, hook, aboveSrc));
         p.AddHook(tArr, aboveSrc);
         t = tArr;
         if (pick is { } q)
