@@ -60,6 +60,8 @@ public static class NoclipMove
             frame = ConstructRide.Bodies?.Get(cmd.NoclipBoard); // (the Board inside key: into the aimed construct's frame, then set down inside it)
         if (!cmd.Noclip || board)
         {
+            if (frame == null && !board && s.Noclip)
+                frame = ConstructRide.NoclipHullAround(ref s); // (flown in from outside: inside a hull all the same, set down inside it, never pushed up through its roof)
             // Inside a construct's hull (or boarding it): held still in its frame, noclip on, while the server finds a floor
             // inside over a few ticks (Game.NoclipHoldTick); it then sets them down. A hold stays a hold until then.
             if (frame != null && (board || s.NoclipHold && s.Noclip || ConstructRide.NoclipInsideHull(ref s, frame)))

@@ -1253,10 +1253,10 @@ public sealed partial class ConstructEdits
         var reach = ConstructBuild.UseReach + (d.Role == PartRole.Seat && !c.Anchored && !c.Asleep ? MathF.Min(c.Vel.Length(), SeatReachSpeed) * 0.2f : 0);
         if (Reachable(eye, ReachPoint(c, part, eye), reach) is { } far)
             return far;
-        if (d.Role != PartRole.Seat && !DesignParts.KeepsUse(d) && DesignParts.BoardSeat(c, part) is var board and >= 0)
+        if (DesignParts.BoardFrom(c, part, eye) is var board and >= 0)
         {
-            // A ship design's hull is solid until its rooms are walkable (the plan's step 4): F on it sits the player at its helm, or
-            // its first free seat, as if they had walked in (DesignParts.cs). A design's door, ladder, hitch, dock or lamp is used where it is.
+            // F on a ship design's plain hull from outside sits the player at its helm, or its first free seat, as if they had walked in;
+            // never inside a room, nor with a door, ladder, lift, seat or switch in reach, which F works where it is (DesignParts.Lights.cs).
             part = board;
             d = c.DefOf(part);
         }

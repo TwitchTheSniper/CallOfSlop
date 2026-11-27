@@ -32,7 +32,8 @@ namespace CallOfSlop;
 /// tables (<see cref="KindTable"/>), the part a key names (<see cref="PartOf"/>), the body built (<see cref="BuildSteps"/>), the look, the wire and the save.</item>
 /// <item>DesignParts.Hull.cs: the bands, the joins and the colliders taken from a mesh. DesignParts.Pieces.cs: the pieces, the drives, RCS,
 /// seats and the flight computer. DesignParts.Rooms.cs: the rooms. DesignParts.Doors.cs, DesignParts.Risers.cs, DesignParts.Systems.cs:
-/// doors and hatches; ladders and lifts; tow points, lights, clamps, guns and turrets. DesignParts.Templates.cs: the part files a working def starts from.</item>
+/// doors and hatches; ladders and lifts; tow points, lights, clamps, guns and turrets. DesignParts.Lights.cs: the rooms' lamps, and what a
+/// player is told and given on aiming at a design (its names, the board-at-the-helm redirect). DesignParts.Templates.cs: the part files a working def starts from.</item>
 /// </list>
 /// A kind file gives the pipeline a stage (<c>AddX(Steps)</c>, called in order from <see cref="ElementSteps"/>) and fills the tables in its
 /// <c>RegisterX(KindTable)</c>: what a piece kind does (<see cref="KindTable.Piece"/>, called for each of its copies) and, for an
@@ -301,6 +302,7 @@ public static partial class DesignParts
             RegisterDoors(k);
             RegisterRisers(k);
             RegisterSystems(k);
+            RegisterLights(k);
             return k;
         }
     }
@@ -391,6 +393,8 @@ public static partial class DesignParts
         foreach (var n in AddRisers(st)) // DesignParts.Risers.cs
             yield return n;
         foreach (var n in AddSystems(st)) // DesignParts.Systems.cs
+            yield return n;
+        foreach (var n in AddLights(st)) // DesignParts.Lights.cs (each lit room's lamps)
             yield return n;
         foreach (var n in ClipHulls(st)) // DesignParts.Hull.cs (joins and pieces kept out of the rooms; MaxHulls)
             yield return n;
