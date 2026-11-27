@@ -1124,7 +1124,7 @@ public static class ConstructConveyor
                     if (nWaiting < waiting.Length)
                         waiting[nWaiting++] = k;
                 }
-                else if (Deliver(world, query!, c, k, r, d))
+                else if (Deliver(world, query!, c, k, r, d, i + 1 < c.ConveyedCount && c.Conveyed[i + 1].Route == k))
                 {
                     Remove(c, i);
                     changed = true;
@@ -1326,7 +1326,7 @@ public static class ConstructConveyor
     }
 
     /// <summary>The lead piece into what the link ends at (a Piece Rack, or a Press's bay): true when it went in.</summary>
-    private static bool Deliver(ConstructWorld world, IWorldQuery query, Construct c, int route, in CRider r, ConstructPartDef d)
+    private static bool Deliver(ConstructWorld world, IWorldQuery query, Construct c, int route, in CRider r, ConstructPartDef d, bool queued = false)
     {
         var to = ConstructPads.Owner(c, c.Routes[route].To); // (a conveyor into any tile of a pad puts into its owner's store)
         if (to >= c.PartCount)
@@ -1334,8 +1334,8 @@ public static class ConstructConveyor
         var td = c.DefOf(to);
         if (td.IsPieceRack)
         {
-            if (td.IsLayDownPad && ConstructStation.PadEarly(world, c, to, d))
-                return false; // (a rover station's piece no step can fit yet: it waits on its run until one can)
+            if (td.IsLayDownPad && ConstructStation.PadEarly(world, c, to, d) && !(queued && ConstructStation.EarlyRoom(world, c, to, d)))
+                return false; // (a rover station's piece no step can fit yet: it waits on its run until one can; one others queue behind lies on the pad while early pieces fill at most half of it, 2026-11-27)
             var ordered = r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
             if (!(td.IsBuildStation && ConstructStation.ParkEarly(world, c, to, d)) // (a batched station's early part waits in a holding bay: it counts as delivered)
                 && !world.RackPut(c, to, d, ordered) && !(td.IsBuildStation && (ConstructStation.MakeRoomFor(world, c, to, d) && world.RackPut(c, to, d, ordered) || ConstructStation.ParkEarly(world, c, to, d, full: true))))
@@ -1392,7 +1392,10 @@ public static class ConstructConveyor
         {
             var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)
             if (!ConstructPress.TakeFromConveyor(world, query, c, to, bay, d, r.Health / 255f, r.Paint, port.OnBed))
+            {
+                ConstructPress.DoorFirst(world, c, to, d); // (a later order's blank at the door: that order goes first, never a jam behind it, 2026-11-27)
                 return false;
+            }
             ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained press order's blank or kit: it counts for its link, Press phase 4)
             return true;
         }

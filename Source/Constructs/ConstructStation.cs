@@ -1860,6 +1860,29 @@ public static partial class ConstructStation
         return false;
     }
 
+    /// <summary>
+    /// Server: may an early piece (<see cref="PadEarly"/>) that other pieces queue behind on its run lie on pick pad <paramref name="pad"/>
+    /// all the same? True while the early pieces on the pad, this one with them, cover at most half its floor (each by its largest face), so the pad keeps room for the
+    /// pieces a step can take now. A shared run (a Works II press row: two presses and an Assembler onto one pad) must never stand still
+    /// behind one piece the station will want later: the Drive Core Ms made in the first batch held the row, the Assembler's out and both
+    /// presses behind it for good (Sean, 2026-11-27). Allocates nothing.
+    /// </summary>
+    public static bool EarlyRoom(ConstructWorld world, Construct c, int pad, ConstructPartDef d)
+    {
+        pad = ConstructPads.Owner(c, pad);
+        if (pad >= c.PartCount || world.StoreOf(c, pad) is not { } st)
+            return false;
+        var hold = ConstructPads.RackDef(c, pad);
+        var room = MathF.Max(0, hold.RackHoldMax.X - hold.RackHoldMin.X) * MathF.Max(0, hold.RackHoldMax.Z - hold.RackHoldMin.Z) * 0.5f;
+        var early = Face(d.BoundsMax - d.BoundsMin);
+        for (var k = 0; k < st.KindN && early <= room; k++)
+            if (ConstructParts.Def(st.KindDef![k]) is { } kd && PadEarly(world, c, pad, kd))
+                early += st.KindCount![k] * Face(kd.BoundsMax - kd.BoundsMin);
+        return early <= room;
+        // (by floor, never stacked, each piece by its largest face: a long plate takes a lane however thin, and a flat pad's hold is near 0 m high)
+        static float Face(System.Numerics.Vector3 v) => MathF.Max(v.X * v.Z, MathF.Max(v.X * v.Y, v.Y * v.Z));
+    }
+
     /// <summary>Is a piece of kind <paramref name="d"/> early for rover station <paramref name="t"/>'s pick pads (<see cref="PadEarly"/>)?</summary>
     public static bool Early(ConstructWorld world, Construct c, int t, ConstructPartDef d)
     {

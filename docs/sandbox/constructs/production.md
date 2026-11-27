@@ -2552,6 +2552,10 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
     ladders, bulkhead doors, reactor, hatches, shower, Robot Shell Docks and ord racks.
   - *Still open.* The Fuel Pump M's 2.2 m blank is wider than the 2 m roller runs to its press. The Button, Bakelite Switch, OR Gate,
     Input Reader and Leg Pod Carriage XL have no maker. The Railgun is longer than any Assembler bed.
+  - *Jams on a shared row (2026-11-27).* A press whose bays are empty takes first a queued order whose blank is at its door
+    (`ConstructPress.DoorFirst`; a Loader Arm then swaps the die), so a blank for its next order never holds the head order's blanks
+    behind it. A rover station's early piece waits on its run only while nothing queues behind it; with others behind, it lies on the
+    pick pad while early pieces cover at most half its floor, each by its largest face (`ConstructStation.EarlyRoom`); a press looks at its door at most once a second and never passes a head whose blank waits at another of its doors.
   - *Check tools.* `--station-check` adds `--floor-map X0,Z0,X1,Z1` (a 1 m map of the floor), Assembler and Extruder looks in
     `--press-order`, and, for a loose piece, why each lifter near it does or doesn't take it (`ConstructLifters.OutWhy`).
 - **Works II lines all at once (2026-11-26).** Sean: "Have the other lines start production as well for pieces, like the side pieces
