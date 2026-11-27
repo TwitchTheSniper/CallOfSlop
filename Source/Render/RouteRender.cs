@@ -479,7 +479,7 @@ public static class RouteRender
             var frame = SegFrames[seg >= 0 && seg <= c.JointCount && seg <= Construct.MaxJoints ? seg : 0];
             var m = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(origin) * frame;
             if (lead && PadLanding.PadOf(c, k) is >= 0 and var landPad)
-                PadLanding.NoteRider(world, c, landPad, r.Def, origin, rot, seg, ConstructConveyor.Clock); // (it slides into its place on the pad once in)
+                PadLanding.NoteRider(world, c, landPad, k, r.Def, origin, rot, seg, ConstructConveyor.Clock); // (it slides into its place on the pad once in)
             if (shaft)
             {
                 // Up (or down) a lift shaft on a carriage: under the piece's underside, on the line (Pose's own sum backwards).
@@ -684,6 +684,7 @@ public static class RouteRender
             var near = Vector3.DistanceSquared(eye, centre) < reach * reach;
             var hide = rd.GantryTable && world.GantryJobCount > 0 ? ConstructGantry.CarriedOff(world, c.Id, part, ConstructConveyor.Clock) : -1; // (a module a gantry's arm carries: its copy here isn't drawn)
             Span<byte> held = stackalloc byte[ConstructRackPack.MaxLanes];
+            Span<byte> ranks = stackalloc byte[ConstructStation.MaxArms];
             for (var s = 0; s < st.SlabN; s++)
             {
                 if (ConstructParts.Get(st.Slabs![s].Def) is not { } d || d.Boxes.Length == 0)
@@ -691,12 +692,12 @@ public static class RouteRender
                 // (pieces a station's rover holds off this pick pad on their way to the build: the pad's copies of them aren't drawn,
                 // the top ones of the stacks its takes come off, ConstructStationPads.HeldOff)
                 var anyHeld = false;
-                if (rd.IsLayDownPad && ConstructStation.HeldOff(c, part, st.Slabs[s].Def, ConstructConveyor.Clock) is var off and > 0)
+                if (rd.IsLayDownPad && ConstructStation.HeldOff(c, part, st.Slabs[s].Def, ConstructConveyor.Clock, ranks) is var off and > 0)
                 {
                     held.Clear();
                     for (var i = 0; i < off; i++)
-                        if (ConstructRackPack.NthLast(st, st.Slabs[s].Def, i, out var hs, out var hl, out _) && hs == s)
-                            (held[hl], anyHeld) = ((byte)(held[hl] + 1), true);
+                        if (ConstructRackPack.NthLast(st, st.Slabs[s].Def, ranks[i], out var hs, out var hl, out var hy) && hs == s)
+                            (held[hl], anyHeld) = ((byte)Math.Max(held[hl], st.SlabLanes![s * ConstructRackPack.MaxLanes + hl] - hy), true);
                 }
                 var skipLane = -1;
                 if (hide >= 0 && st.Slabs[s].Def == hide)

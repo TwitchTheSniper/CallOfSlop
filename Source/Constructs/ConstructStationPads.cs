@@ -257,17 +257,18 @@ public static partial class ConstructStation
     {
         var n = 0;
         for (var a = 0; a < MaxArms; a++)
-            if (j.ArmPad[a] == pad && j.ArmDef[a] == def && j.ArmTicks[a] > 0 && !j.Rov[a].Home)
+            if (OnPadTrip(j, a, pad, def))
                 n++;
         return n;
     }
 
     /// <summary>
-    /// How many pieces of kind <paramref name="def"/> the rovers hold off pad <paramref name="pad"/> at <paramref name="now"/> (gripped,
-    /// not yet fitted): the pad doesn't draw them, though its store gives them up only at the fit (Sean, 2026-11-27: "it should at least
-    /// be hidden while it's moving"). Either peer: a client's rovers name their pad on the wire (protocol 478).
+    /// The pieces of kind <paramref name="def"/> the rovers hold off pad <paramref name="pad"/> at <paramref name="now"/> (gripped, not yet
+    /// fitted), each as its rank in <see cref="ConstructRackPack.NthLast"/>'s order (the piece its hook went to: <see cref="Rank"/>), into
+    /// <paramref name="ranks"/>: how many. The pad doesn't draw them, though its store gives them up only at the fit (Sean, 2026-11-27:
+    /// "it should at least be hidden while it's moving"). Either peer: a client's rovers name their pad on the wire (protocol 478).
     /// </summary>
-    public static int HeldOff(Construct c, int pad, ushort def, double now)
+    public static int HeldOff(Construct c, int pad, ushort def, double now, Span<byte> ranks)
     {
         Note(c);
         var n = 0;
@@ -275,16 +276,33 @@ public static partial class ConstructStation
         {
             if (c.StationPadPairs[2 * k + 1] != pad || c.StationPadPairs[2 * k] is var t && t >= c.PartCount || c.Parts[t].Station is not { } j)
                 continue;
-            for (var a = 0; a < MaxArms; a++)
+            for (var a = 0; a < MaxArms && n < ranks.Length; a++)
             {
-                if (j.ArmPad[a] != pad || j.ArmDef[a] != def || j.ArmTicks[a] == 0 || j.Rov[a] is not { Home: false } p)
+                if (!OnPadTrip(j, a, pad, def))
                     continue;
                 var u = now - j.ArmStart[a];
-                if (u >= p.GripT && u < p.FitT)
-                    n++;
+                if (u >= j.Rov[a].GripT && u < j.Rov[a].FitT)
+                    ranks[n++] = (byte)Math.Min(255, Rank(j, a));
             }
         }
         return n;
+    }
+
+    /// <summary>Is rover <paramref name="a"/> on a trip for a piece of kind <paramref name="def"/> off pad <paramref name="pad"/>?</summary>
+    private static bool OnPadTrip(StationJob j, int a, int pad, ushort def)
+        => j.ArmPad[a] == pad && j.ArmDef[a] == def && j.ArmTicks[a] > 0 && !j.Rov[a].Home;
+
+    /// <summary>
+    /// Rover <paramref name="a"/>'s piece among those the rovers carry off its pad: how many of the others set out before it (its hook went
+    /// to the piece <see cref="ConstructRackPack.NthLast"/> gives after theirs: <see cref="Carrying"/> when it set out).
+    /// </summary>
+    private static int Rank(StationJob j, int a)
+    {
+        var r = 0;
+        for (var b = 0; b < MaxArms; b++)
+            if (b != a && OnPadTrip(j, b, j.ArmPad[a], j.ArmDef[a]) && (j.ArmStart[b] < j.ArmStart[a] || j.ArmStart[b] == j.ArmStart[a] && b < a))
+                r++;
+        return r;
     }
 
     /// <summary>

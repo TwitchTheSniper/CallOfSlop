@@ -13,15 +13,17 @@ namespace CallOfSlop;
 public static class PadLanding
 {
     private const int MaxSnap = 16; // columns of one kind a note keeps
+    private const int MaxNotes = 4; // pieces on their way in a pad keeps notes of
     private const int MaxMoves = 4; // pieces sliding at once on one pad
-    private const double NoteFresh = 1.0; // s a rider's note stands after it was last drawn
+    private const double NoteFresh = 1.0; // s a note stands after it was last made
     private const float SlideSpeed = 1.5f; // m/s (the rollers' 1 m/s and a little)
     private const float MaxSlide = 4f; // s
 
-    private sealed class Pad
+    /// <summary>A piece on its way onto the pad: its kind and last pose (the pad's segment frame), and the pad's columns of its kind then.</summary>
+    private sealed class Note
     {
-        // The lead rider into the pad as last drawn (pad's segment frame), and the pad's columns of its kind then.
-        public ushort Def = ushort.MaxValue;
+        public ushort Def;
+        public int Route; // the conveyor whose lead rider it is (-1: a loose body taken in)
         public Vector3 Pos;
         public Quaternion Rot;
         public int Seg;
@@ -29,6 +31,12 @@ public static class PadLanding
         public int SnapN;
         public readonly ushort[] SnapZ = new ushort[MaxSnap], SnapDef = new ushort[MaxSnap];
         public readonly byte[] SnapLanes = new byte[MaxSnap * ConstructRackPack.MaxLanes];
+    }
+
+    private sealed class Pad
+    {
+        public int NoteN;
+        public readonly Note[] Notes = [new(), new(), new(), new()];
         // Pieces sliding in: their column (kind, near end), stack and layer, and the slide.
         public int MoveN;
         public readonly Move[] Moves = new Move[MaxMoves];
@@ -65,23 +73,43 @@ public static class PadLanding
         return -1;
     }
 
-    /// <summary>The lead piece riding into pad <paramref name="pad"/>, drawn at (<paramref name="origin"/>, <paramref name="rot"/>) in segment <paramref name="seg"/>'s frame.</summary>
-    public static void NoteRider(ConstructWorld world, Construct c, int pad, ushort def, Vector3 origin, Quaternion rot, int seg, double now)
+    /// <summary>
+    /// The lead piece riding into pad <paramref name="pad"/> on conveyor <paramref name="route"/> (-1: a loose body the pad takes in), at
+    /// (<paramref name="origin"/>, <paramref name="rot"/>) in segment <paramref name="seg"/>'s frame. A conveyor's note is made again each
+    /// frame it is drawn; a body's is added (several may go in one tick: each slides from its own pose).
+    /// </summary>
+    public static void NoteRider(ConstructWorld world, Construct c, int pad, int route, ushort def, Vector3 origin, Quaternion rot, int seg, double now)
     {
         if (pad >= c.PartCount || world.StoreOf(c, pad) is not { } st)
             return;
         if (!Pads.TryGetValue((c.Id, pad), out var p))
             Pads[(c.Id, pad)] = p = new Pad();
-        (p.Def, p.Pos, p.Rot, p.Seg, p.Seen) = (def, origin, rot, seg, now);
+        var at = -1;
+        for (var k = 0; k < p.NoteN && route >= 0 && at < 0; k++)
+            if (p.Notes[k].Route == route)
+                at = k;
+        if (at < 0)
+        {
+            if (p.NoteN == MaxNotes)
+            {
+                var first = p.Notes[0]; // (full: the oldest goes)
+                Array.Copy(p.Notes, 1, p.Notes, 0, MaxNotes - 1);
+                p.Notes[MaxNotes - 1] = first;
+                p.NoteN--;
+            }
+            at = p.NoteN++;
+        }
+        var n = p.Notes[at];
+        (n.Def, n.Route, n.Pos, n.Rot, n.Seg, n.Seen) = (def, route, origin, rot, seg, now);
         ConstructRackPack.Ensure(ConstructPads.RackDef(c, pad), st);
-        p.SnapN = 0;
-        for (var s = 0; s < st.SlabN && p.SnapN < MaxSnap; s++)
+        n.SnapN = 0;
+        for (var s = 0; s < st.SlabN && n.SnapN < MaxSnap; s++)
         {
             if (def != AnyKind && st.Slabs![s].Def != def)
                 continue;
-            (p.SnapZ[p.SnapN], p.SnapDef[p.SnapN]) = (st.Slabs![s].Z0Mm, st.Slabs[s].Def);
-            Array.Copy(st.SlabLanes!, s * ConstructRackPack.MaxLanes, p.SnapLanes, p.SnapN * ConstructRackPack.MaxLanes, ConstructRackPack.MaxLanes);
-            p.SnapN++;
+            (n.SnapZ[n.SnapN], n.SnapDef[n.SnapN]) = (st.Slabs![s].Z0Mm, st.Slabs[s].Def);
+            Array.Copy(st.SlabLanes!, s * ConstructRackPack.MaxLanes, n.SnapLanes, n.SnapN * ConstructRackPack.MaxLanes, ConstructRackPack.MaxLanes);
+            n.SnapN++;
         }
     }
 
@@ -117,59 +145,99 @@ public static class PadLanding
                 var seg = c.Parts[pad].Seg;
                 c.WorldFrame(seg, out var q, out var t);
                 var iq = Quaternion.Conjugate(q);
-                NoteRider(world, c, pad, def, Vector3.Transform(wp - t, iq), Quaternion.Normalize(iq * wr), seg, now);
+                NoteRider(world, c, pad, -1, def, Vector3.Transform(wp - t, iq), Quaternion.Normalize(iq * wr), seg, now);
                 return;
             }
         }
     }
 
     /// <summary>
-    /// Before pad <paramref name="pad"/> is drawn: a piece of the noted rider's kind new on it since the note starts its slide from the
-    /// rider's last pose (one rider, one piece). False when nothing on this pad slides (it draws as before).
+    /// Before pad <paramref name="pad"/> is drawn: each note (oldest first) whose kind has a piece on the pad its snapshot didn't have
+    /// starts that piece's slide from the note's pose, and is used (one note, one piece). A column is matched to the snapshot by its place,
+    /// or by its order among its kind's columns when the columns closed up (<see cref="ConstructRackPack.Place"/>). False when nothing on
+    /// this pad slides (it draws as before).
     /// </summary>
     public static bool Arrivals(Construct c, int pad, CStore st, double now)
     {
         if (Pads.Count == 0 || !Pads.TryGetValue((c.Id, pad), out var p))
             return false;
-        // (slides done are dropped)
+        // (slides done and notes gone stale are dropped)
         for (var m = p.MoveN - 1; m >= 0; m--)
             if (now - p.Moves[m].Start >= p.Moves[m].Time)
                 p.Moves[m] = p.Moves[--p.MoveN];
-        if (p.Def != ushort.MaxValue && now - p.Seen < NoteFresh && now > p.Seen)
+        for (var k = 0; k < p.NoteN; k++)
+            if (now - p.Notes[k].Seen >= NoteFresh)
+                Drop(p, k--);
+        ref readonly var part = ref c.Parts[pad];
+        for (var k = 0; k < p.NoteN; k++)
         {
-            ref readonly var part = ref c.Parts[pad];
+            var n = p.Notes[k];
+            if (now <= n.Seen || part.Seg != n.Seg || !NewPiece(c, pad, st, p, n, out var s, out var l, out var layer, out var d))
+                continue;
             var rd = ConstructPads.RackDef(c, pad);
-            if (part.Seg == p.Seg)
-                for (var s = 0; s < st.SlabN && p.Def != ushort.MaxValue; s++)
+            var rot = Rot24.Quat(part.Rot);
+            var to = part.Pos + Vector3.Transform(ConstructRackPack.Origin(rd, st.Slabs![s], d, l, layer), rot);
+            var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
+            var dist = Vector3.Distance(to + Vector3.Transform(mid, rot), n.Pos + Vector3.Transform(mid, n.Rot));
+            if (p.MoveN < MaxMoves && dist > 0.05f)
+                p.Moves[p.MoveN++] = new Move
                 {
-                    if (p.Def != AnyKind && st.Slabs![s].Def != p.Def || ConstructParts.Get(st.Slabs![s].Def) is not { } d)
-                        continue;
-                    var was = -1;
-                    for (var k = 0; k < p.SnapN; k++)
-                        if (p.SnapZ[k] == st.Slabs[s].Z0Mm && p.SnapDef[k] == st.Slabs[s].Def)
-                            was = k;
-                    for (var l = 0; l < st.Slabs[s].Lanes; l++)
-                    {
-                        int now2 = st.SlabLanes![s * ConstructRackPack.MaxLanes + l], before = was < 0 ? 0 : p.SnapLanes[was * ConstructRackPack.MaxLanes + l];
-                        if (now2 <= before)
-                            continue;
-                        // The new piece: its place on the pad (segment frame) against where the rider was last drawn.
-                        var rot = Rot24.Quat(part.Rot);
-                        var to = part.Pos + Vector3.Transform(ConstructRackPack.Origin(rd, st.Slabs[s], d, l, now2 - 1), rot);
-                        var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
-                        var dist = Vector3.Distance(to + Vector3.Transform(mid, rot), p.Pos + Vector3.Transform(mid, p.Rot));
-                        if (p.MoveN < MaxMoves && dist > 0.05f)
-                            p.Moves[p.MoveN++] = new Move
-                            {
-                                Def = st.Slabs[s].Def, Z0Mm = st.Slabs[s].Z0Mm, Lane = (byte)l, Layer = (byte)(now2 - 1),
-                                From = p.Pos, FromRot = p.Rot, Start = now, Time = Math.Clamp(dist / SlideSpeed, 0.2f, MaxSlide),
-                            };
-                        p.Def = ushort.MaxValue; // (its rider is in: the note is used)
-                        break;
-                    }
-                }
+                    Def = st.Slabs[s].Def, Z0Mm = st.Slabs[s].Z0Mm, Lane = (byte)l, Layer = (byte)layer,
+                    From = n.Pos, FromRot = n.Rot, Start = now, Time = Math.Clamp(dist / SlideSpeed, 0.2f, MaxSlide),
+                };
+            Drop(p, k--); // (its piece is in: the note is used)
         }
         return p.MoveN > 0;
+    }
+
+    private static void Drop(Pad p, int k)
+    {
+        var n = p.Notes[k];
+        Array.Copy(p.Notes, k + 1, p.Notes, k, p.NoteN - k - 1);
+        p.Notes[--p.NoteN] = n;
+    }
+
+    /// <summary>A piece of note <paramref name="n"/>'s kind on the pad that its snapshot hadn't and no slide has yet: its column, stack, layer and kind.</summary>
+    private static bool NewPiece(Construct c, int pad, CStore st, Pad p, Note n, out int slab, out int lane, out int layer, out ConstructPartDef d)
+    {
+        (slab, lane, layer, d) = (-1, -1, -1, null!);
+        for (var s = 0; s < st.SlabN; s++)
+        {
+            var def = st.Slabs![s].Def;
+            if (n.Def != AnyKind && def != n.Def || ConstructParts.Get(def) is not { } sd)
+                continue;
+            // (its column then: by place, else by its order among the kind's columns when as many are there as then)
+            int was = -1, ord = 0, cols = 0, snapCols = 0;
+            for (var q = 0; q < st.SlabN; q++)
+                if (st.Slabs[q].Def == def)
+                    (ord, cols) = (q < s ? ord + 1 : ord, cols + 1);
+            for (var k = 0; k < n.SnapN; k++)
+                if (n.SnapDef[k] == def)
+                {
+                    if (n.SnapZ[k] == st.Slabs[s].Z0Mm)
+                        was = k;
+                    snapCols++;
+                }
+            if (was < 0 && snapCols == cols)
+                for (int k = 0, o = 0; k < n.SnapN && was < 0; k++)
+                    if (n.SnapDef[k] == def && o++ == ord)
+                        was = k;
+            for (var l = 0; l < st.Slabs[s].Lanes; l++)
+            {
+                int now = st.SlabLanes![s * ConstructRackPack.MaxLanes + l], before = was < 0 ? 0 : n.SnapLanes[was * ConstructRackPack.MaxLanes + l];
+                for (var y = now - 1; y >= before; y--)
+                {
+                    var taken = false;
+                    for (var m = 0; m < p.MoveN && !taken; m++)
+                        taken = p.Moves[m].Def == def && p.Moves[m].Z0Mm == st.Slabs[s].Z0Mm && p.Moves[m].Lane == l && p.Moves[m].Layer == y;
+                    if (taken)
+                        continue;
+                    (slab, lane, layer, d) = (s, l, y, sd);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /// <summary>
