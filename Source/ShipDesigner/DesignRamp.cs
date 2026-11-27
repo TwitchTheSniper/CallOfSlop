@@ -27,7 +27,14 @@ public static class DesignRamp
     // The extension, nested under the ramp (out of it) while stowed; it runs out aft, at least Overlap of it kept under the ramp.
     private const double ExtInX = 0.2, ExtInZ0 = 0.1, ExtInZ1 = 0.25, ExtY0 = 0.094, ExtY1 = 0.15, Overlap = 0.3;
     /// <summary>The designer's slider's top (m); a piece's run is held to what its ramp's length allows (<see cref="ExtendOf"/>).</summary>
-    public const double MaxExtend = 7.5, DefExtend = 1.5;
+    public const double MaxExtend = 30, DefExtend = 1.5;
+    /// <summary>How many telescoping sections run out of the ramp (Karl, 2026-11-27): each nests under the one before and runs out after it,
+    /// so the run is shared between them and the ramp reaches the ground from a hatch nearer the ship's end. Old designs: 1.</summary>
+    public const int MinSegments = 1, MaxSegments = 5, DefSegments = 1;
+    // Each further section: this much lower (thicker stack), narrower each side and shorter at its inner end than the one it nests in.
+    private const double SegStepY = 0.06, SegStepX = 0.06, SegStepZ = 0.05;
+    /// <summary>The ramp's set angle's range (degrees; 0 is the automatic angle, <see cref="Angle"/>) and the slope a person walks up.</summary>
+    public const double MinAngle = 15, MaxAngle = 60, WalkDeg = 42;
     /// <summary>Seconds the ramp takes to swing down, and its extension to run out (each).</summary>
     public const double Seconds = 1.75;
 
@@ -40,13 +47,25 @@ public static class DesignRamp
 
     /// <summary>The ramp's swing (radians): steep enough that a person walking up it clears the hatch's aft lip with the room's floor
     /// <paramref name="depth"/> in from the skin, never past what a person walks up (World.MaxSlopeDeg, 42).</summary>
-    public static double Angle(Piece p, double depth) => Math.Clamp(Math.Atan2(1.9 + Math.Max(0, depth), p.RampL), 34 * Math.PI / 180, 40 * Math.PI / 180);
+    public static double Angle(Piece p, double depth) => p.RampAngle >= MinAngle ? Math.Clamp(p.RampAngle, MinAngle, MaxAngle) * Math.PI / 180 : AutoAngle(p, depth);
 
-    /// <summary>The extension's longest run (m): its length less what it keeps under the ramp, so in proportion to the ramp's.</summary>
-    public static double SlideMax(Piece p) => Math.Max(0, p.RampL - (LeafInZ + ExtInZ1 + Overlap) * p.Size);
+    /// <summary>The automatic swing (radians), from before the angle was a setting.</summary>
+    public static double AutoAngle(Piece p, double depth) => Math.Clamp(Math.Atan2(1.9 + Math.Max(0, depth), p.RampL), 34 * Math.PI / 180, 40 * Math.PI / 180);
 
-    /// <summary>The extension's run (m) as the piece asks, held to what the ramp of its length keeps hold of.</summary>
-    public static double ExtendOf(Piece p) => Math.Clamp(p.Extend, 0, SlideMax(p));
+    /// <summary>One section's longest run (m): its length less what it keeps under the one it nests in, so in proportion to the ramp's.</summary>
+    public static double SlideMax(Piece p) => Math.Max(0, p.RampL - (LeafInZ + ExtInZ1 + SegStepZ * (SegmentsOf(p) - 1) + Overlap) * p.Size);
+
+    /// <summary>The piece's sections, held to the range.</summary>
+    public static int SegmentsOf(Piece p) => Math.Clamp(p.Segments, MinSegments, MaxSegments);
+
+    /// <summary>The longest total run (m) its sections give.</summary>
+    public static double TotalMax(Piece p) => Math.Min(MaxExtend, SegmentsOf(p) * SlideMax(p));
+
+    /// <summary>The total run (m) as the piece asks, held to what its sections keep hold of; each section runs an equal share (<see cref="RunOf"/>).</summary>
+    public static double ExtendOf(Piece p) => Math.Clamp(p.Extend, 0, TotalMax(p));
+
+    /// <summary>Each section's run (m) out of the one it nests in.</summary>
+    public static double RunOf(Piece p) => ExtendOf(p) / SegmentsOf(p);
 
     /// <summary>The ramp's hinge line's middle (the ship's frame), its floor <paramref name="depth"/> in from the skin at place <paramref name="w"/>.</summary>
     public static double[] Hinge(Piece p, DesignScene.Place w, double depth)
@@ -86,13 +105,21 @@ public static class DesignRamp
             m.Box(-leafHx + 0.005, y0 - 0.003, z0 + 0.005, -leafHx + 0.12, y0 + 0.02, z1 - 0.005, PieceKinds.Amber);
             m.Box(leafHx - 0.12, y0 - 0.003, z0 + 0.005, leafHx - 0.005, y0 + 0.02, z1 - 0.005, PieceKinds.Amber);
         });
-        var run = shut ? 0 : ExtendOf(p) / s;
-        m.Leaf(1, () =>
+        var run = shut ? 0 : RunOf(p) / s;
+        var n = SegmentsOf(p);
+        for (var k = 0; k < n; k++)
         {
-            double e0 = -hz + ExtInZ0 - hingeZ - run, e1 = hz - ExtInZ1 - hingeZ - run;
-            m.Box(-extHx, ExtY0 - LeafY0, e0, extHx, ExtY1 - LeafY0, e1, PieceKinds.Armour);
-            m.Box(-extHx - 0.004, ExtY0 - LeafY0 - 0.004, e0 - 0.004, extHx + 0.004, ExtY1 - LeafY0 + 0.004, e0 + 0.1, PieceKinds.Amber); // (its toe)
-        });
+            // Section k nests under section k - 1 (the first under the ramp), lower, narrower and shorter, and runs out k + 1 shares.
+            double off = run * (k + 1), sy = SegStepY * k, sx = extHx - SegStepX * k;
+            double e0 = -hz + ExtInZ0 - hingeZ - off, e1 = hz - ExtInZ1 - SegStepZ * k - hingeZ - off;
+            var last = k == n - 1;
+            m.Leaf(1 + k, () =>
+            {
+                m.Box(-sx, ExtY0 - LeafY0 + sy, e0, sx, ExtY1 - LeafY0 + sy, e1, PieceKinds.Armour);
+                if (last)
+                    m.Box(-sx - 0.004, ExtY0 - LeafY0 + sy - 0.004, e0 - 0.004, sx + 0.004, ExtY1 - LeafY0 + sy + 0.004, e0 + 0.1, PieceKinds.Amber); // (its toe)
+            });
+        }
         // The sills: the floor's hole is square, its half the opening's longer side (DesignScene.SocketDoor), so plates at the floor fill
         // what the ramp's plate doesn't (fore and aft of it, and its sides), level with it.
         var o = Floor(p, w, depth);
@@ -112,7 +139,7 @@ public static class DesignRamp
 
     // ---- the design file and the page
 
-    public static JsonObject Defaults() => new() { ["extend"] = DefExtend, ["rampW"] = DefWidth, ["rampL"] = DefLength };
+    public static JsonObject Defaults() => new() { ["extend"] = DefExtend, ["rampW"] = DefWidth, ["rampL"] = DefLength, ["rampSegs"] = DefSegments, ["rampAngle"] = 0 };
 
     public static JsonObject Write(Piece p, JsonObject o)
     {
@@ -121,6 +148,10 @@ public static class DesignRamp
             o["extend"] = ShipDesign.R(p.Extend);
             o["rampW"] = ShipDesign.R(p.RampW);
             o["rampL"] = ShipDesign.R(p.RampL);
+            if (p.Segments != DefSegments)
+                o["rampSegs"] = p.Segments;
+            if (p.RampAngle > 0)
+                o["rampAngle"] = ShipDesign.R(p.RampAngle);
         }
         return o;
     }
@@ -135,6 +166,8 @@ public static class DesignRamp
         var was = p.Size * p.Hole;
         p.RampW = Math.Clamp(ShipDesign.F(o["rampW"], 2 * Hx * was), MinWidth, MaxWidth);
         p.RampL = Math.Clamp(ShipDesign.F(o["rampL"], 2 * Hz * was), MinLength, MaxLength);
+        p.Segments = (int)Math.Clamp(Math.Round(ShipDesign.F(o["rampSegs"], DefSegments)), MinSegments, MaxSegments);
+        p.RampAngle = AngleSetting(ShipDesign.F(o["rampAngle"], 0));
         p.Hole = 1;
         return p;
     }
@@ -148,13 +181,22 @@ public static class DesignRamp
             p.RampW = Math.Clamp(Math.Round(ShipDesign.F(o["rampW"], DefWidth) * 20) / 20, MinWidth, MaxWidth);
         if (o["rampL"] is not null)
             p.RampL = Math.Clamp(Math.Round(ShipDesign.F(o["rampL"], DefLength) * 20) / 20, MinLength, MaxLength);
+        if (o["rampSegs"] is not null)
+            p.Segments = (int)Math.Clamp(Math.Round(ShipDesign.F(o["rampSegs"], DefSegments)), MinSegments, MaxSegments);
+        if (o["rampAngle"] is not null)
+            p.RampAngle = AngleSetting(Math.Round(ShipDesign.F(o["rampAngle"], 0)));
         p.Hole = 1; // (its width and length are its hole)
         return "";
     }
 
+    /// <summary>A set angle in degrees, or 0 (the automatic one) below the range.</summary>
+    private static double AngleSetting(double deg) => deg < MinAngle - 0.5 ? 0 : Math.Clamp(deg, MinAngle, MaxAngle);
+
     /// <summary>The page's ramp fields: its run and the longest its length allows, its width and length.</summary>
-    public static string SceneJson(Piece p) => p.Kind != Kind ? "" :
+    public static string SceneJson(Piece p, double depth) => p.Kind != Kind ? "" :
         new StringBuilder(",\"extend\":").Append(ShipDesign.S(p.Extend)).Append(",\"extendMax\":")
-            .Append(ShipDesign.S(Math.Min(MaxExtend, Math.Floor(SlideMax(p) * 20) / 20)))
+            .Append(ShipDesign.S(Math.Floor(TotalMax(p) * 20) / 20))
+            .Append(",\"rampSegs\":").Append(SegmentsOf(p)).Append(",\"rampAngle\":").Append(ShipDesign.S(p.RampAngle))
+            .Append(",\"rampAngleNow\":").Append(ShipDesign.S(Math.Round(Angle(p, depth) * 180 / Math.PI, 1)))
             .Append(",\"rampW\":").Append(ShipDesign.S(p.RampW)).Append(",\"rampL\":").Append(ShipDesign.S(p.RampL)).ToString();
 }

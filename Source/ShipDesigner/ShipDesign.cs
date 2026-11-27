@@ -381,6 +381,8 @@ public sealed class Piece
     public double BarLen = DesignLightBars.DefLen, Bright = DesignLightBars.DefBright, BarUp = DesignLightBars.DefUp;
     public string BarOn = "Wall";
     public double RampW = DesignRamp.DefWidth, RampL = DesignRamp.DefLength; // a boarding ramp's hatch across and along, metres (DesignRamp)
+    public int Segments = DesignRamp.DefSegments; // a boarding ramp's telescoping sections (DesignRamp)
+    public double RampAngle; // a boarding ramp's set angle, degrees; 0: the automatic one (DesignRamp.Angle)
 
     public JsonObject ToJson() => DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {

@@ -501,6 +501,7 @@ public static partial class DesignParts
         var (p, e, els) = (a.P, a.E, a.Els);
         FrameBoxes(e, m);
         (int From, int To) Range(int leaf) => m.Leaves?.Find(l => l.Leaf == leaf) is { } l ? (l.From, l.To) : (0, 0);
+        var n = DesignRamp.SegmentsOf(p);
         var (f0, t0) = Range(0);
         var (f1, t1) = Range(1);
         if (t0 <= f0 || t1 <= f1)
@@ -510,23 +511,38 @@ public static partial class DesignParts
         }
         var id = "liftramp" + e.Id.Replace('.', '_');
         var car = Leaf($"{id}.car", p.Kind, m, f0, t0, a.X, a.Y, a.Z);
-        var ext = Leaf($"{id}.ext", $"{p.Kind} extension", m, f1, t1, a.X, a.Y, a.Z);
         (car.Fn, car.Door, car.Kind) = ("", null, "lift");
-        (ext.Fn, ext.Door, ext.Kind) = ("", null, "lift");
+        // Its sections (one before 2026-11-27's "Segments": ".ext", then ".ext2" ...), each a leaf that nests in the one before.
+        var exts = new List<Element>();
+        for (var k = 0; k < n; k++)
+        {
+            var (fk, tk) = Range(1 + k);
+            if (tk <= fk)
+            {
+                Console.WriteLine($"[design] the {p.Kind} {e.Id} draws no section {k + 1}: it has {k}");
+                break;
+            }
+            var x = Leaf(k == 0 ? $"{id}.ext" : $"{id}.ext{k + 1}", $"{p.Kind} extension", m, fk, tk, a.X, a.Y, a.Z);
+            (x.Fn, x.Door, x.Kind) = ("", null, "lift");
+            exts.Add(x);
+        }
         var joints = 0;
         foreach (var x in els)
             if (x.Joint != null)
                 joints++;
-        var run = (float)DesignRamp.ExtendOf(p);
-        var need = run > 0.01f ? 2 : 1;
+        var run = (float)DesignRamp.RunOf(p);
+        var need = run > 0.01f ? 1 + exts.Count : 1;
         if (joints + need > Construct.MaxJoints)
         {
             // (stowed and solid: the ramp is drawn, but doesn't lower)
             Console.WriteLine($"[design] the {p.Kind} {e.Id} doesn't lower: the body's {Construct.MaxJoints} joints are all used (stowed, solid)");
             els.Add(car);
             Weld(els, a.At, els.Count - 1);
-            els.Add(ext);
-            Weld(els, a.At, els.Count - 1);
+            foreach (var x in exts)
+            {
+                els.Add(x);
+                Weld(els, a.At, els.Count - 1);
+            }
             return;
         }
         // The hinge, turned so that a positive angle swings the ramp's far end (aft of it) out of the skin.
@@ -537,36 +553,46 @@ public static partial class DesignParts
             axis ^= 1;
         var angle = (float)DesignRamp.Angle(p, floor);
         var secs = (float)DesignRamp.Seconds;
-        var length = (float)(3.2 * p.RampL / DesignRamp.DefLength * p.RampW / DesignRamp.DefWidth) + run; // (the plate's weight and reach: as before at the default hatch)
+        var length = (float)(3.2 * p.RampL / DesignRamp.DefLength * p.RampW / DesignRamp.DefWidth) + run * exts.Count; // (the plate's weight and reach: as before at the default hatch)
         var ram = new Element
         {
             Id = $"{id}.j0", Kind = "lift", Name = "Boarding ramp hinge", Kg = 20f, NoCollider = true, BoxMin = hinge - new Vector3(0.05f), BoxMax = hinge + new Vector3(0.05f),
-            Joint = new JointSpec { Type = JointType.Motor, Axis = axis, Min = 0, Max = angle, Speed = angle / secs, Strength = LiftStrength * length, Pivot = hinge, Chain = need == 2 ? JointChain.Leads : JointChain.None },
+            Joint = new JointSpec { Type = JointType.Motor, Axis = axis, Min = 0, Max = angle, Speed = angle / secs, Strength = LiftStrength * length, Pivot = hinge, Chain = JointChain.Leads },
         };
         els.Add(ram);
         Weld(els, a.At, els.Count - 1);
         car.Seg = (byte)(joints + 1);
         els.Add(car);
         Weld(els, els.Count - 2, els.Count - 1);
-        var carAt = els.Count - 1;
+        var prevAt = els.Count - 1;
+        var prev = car;
         if (need == 1)
         {
-            ext.Seg = car.Seg; // (no run: it stays nested under the ramp)
-            els.Add(ext);
-            Weld(els, carAt, els.Count - 1);
+            foreach (var x in exts)
+            {
+                x.Seg = car.Seg; // (no run: they stay nested under the ramp)
+                els.Add(x);
+                Weld(els, prevAt, els.Count - 1);
+            }
             return;
         }
-        var mid = (ext.BoxMin + ext.BoxMax) * 0.5f;
-        var slide = new Element
+        // Each section on a piston riding the one before, out in turn: the ramp, then section 1, 2 ... and in again the other way (JointChain).
+        for (var k = 0; k < exts.Count; k++)
         {
-            Id = $"{id}.j1", Kind = "lift", Name = "Boarding ramp extension ram", Kg = 15f, NoCollider = true, Seg = car.Seg, BoxMin = mid - new Vector3(0.05f), BoxMax = mid + new Vector3(0.05f),
-            Joint = new JointSpec { Type = JointType.Piston, Axis = NearestDir(-a.Z), Min = 0, Max = run, Speed = MathF.Max(run / secs, 0.2f), Strength = LiftStrength, Pivot = mid, Chain = JointChain.Follows },
-        };
-        els.Add(slide);
-        Weld(els, carAt, els.Count - 1);
-        ext.Seg = (byte)(joints + 2);
-        els.Add(ext);
-        Weld(els, els.Count - 2, els.Count - 1);
+            var ext = exts[k];
+            var mid = (ext.BoxMin + ext.BoxMax) * 0.5f;
+            var slide = new Element
+            {
+                Id = $"{id}.j{k + 1}", Kind = "lift", Name = "Boarding ramp extension ram", Kg = 15f, NoCollider = true, Seg = prev.Seg, BoxMin = mid - new Vector3(0.05f), BoxMax = mid + new Vector3(0.05f),
+                Joint = new JointSpec { Type = JointType.Piston, Axis = NearestDir(-a.Z), Min = 0, Max = run, Speed = MathF.Max(run * exts.Count / secs, 0.2f), Strength = LiftStrength, Pivot = mid, Chain = k == exts.Count - 1 ? JointChain.Follows : JointChain.Relays },
+            };
+            els.Add(slide);
+            Weld(els, prevAt, els.Count - 1);
+            ext.Seg = (byte)(joints + 2 + k);
+            els.Add(ext);
+            Weld(els, els.Count - 2, els.Count - 1);
+            (prev, prevAt) = (ext, els.Count - 1);
+        }
     }
 
     /// <summary>Which of a place's axes is nearest the ship's up (0 X, 1 Y, 2 Z), as DesignHangar reads a bay's.</summary>
