@@ -1731,7 +1731,7 @@ public static partial class DesignScene
             if (full && (r.WallThick > 0.005 || r.Floor is not ("Plates" or "Hex")))
             {
                 sb.Append(",\"wallMesh\":");
-                sb.Append(MeshPart("rs" + r.Id, ik, () => { var sm = RoomShell(d, r, c.Doors); ClipToHulls(d, sm, ShellInset, r, r.WallThick); return sm; }));
+                sb.Append(MeshPart("rs" + r.Id, ik, () => { var sm = RoomShell(d, r, c.Doors); ClipToHulls(d, sm, ShellInset, r, ShellOver(r)); return sm; }));
             }
             sb.Append(",\"interior\":").Append(Q(r.Interior)).Append(",\"ribSpacing\":").Append(ShipDesign.S(r.RibSpacing))
               .Append(",\"panelColour\":").Append(Q(r.PanelColour)).Append(",\"trimColour\":").Append(Q(r.TrimColour)).Append(",\"lights\":").Append(r.Lights ? "true" : "false").Append(",\"floor\":").Append(Q(r.Floor))
@@ -1828,14 +1828,22 @@ public static partial class DesignScene
             sb.Append(i > 0 ? "," : "").Append("{\"id\":").Append(k.Id).Append(",\"a\":").Append(k.A).Append(",\"b\":").Append(k.B).Append(",\"kind\":").Append(Q(k.Kind))
               .Append(",\"join\":").Append(l?.Join.Id ?? 0).Append(",\"ok\":").Append(l is not null && l.Clear >= Passage.MinClear ? "true" : "false").Append(",\"clear\":").Append(ShipDesign.S(l?.Clear ?? 0))
               .Append(",\"pts\":[").Append(l is null ? "" : string.Join(',', l.Pts.SelectMany(p => p).Select(ShipDesign.S)))
-              .Append("],\"ups\":[").Append(l is null ? "" : string.Join(',', l.Ups.SelectMany(p => p).Select(ShipDesign.S))).Append("]}");
+              .Append("],\"ups\":[").Append(l is null ? "" : string.Join(',', l.Ups.SelectMany(p => p).Select(ShipDesign.S))).Append(']');
+            // Its walls, floor and roof as the game builds them (DesignPassage.cs PassageShell).
+            if (l is not null)
+                sb.Append(",\"mesh\":").Append(MeshPart("ps" + k.Id, k.Id + ":" + k.Kind + "|" + l.Join.Id + "|" + shapes + "|" + plans + "|" + string.Join(',', l.Pts.SelectMany(p => p).Select(ShipDesign.S)), () => PassageShell(d, k, l)));
+            sb.Append('}');
         }
         sb.Append("],\"links\":[");
         for (var i = 0; i < c.Links.Count; i++)
         {
             var (a, b, ok, sh, sv, nn, sk) = c.Links[i];
             sb.Append(i > 0 ? "," : "").Append("{\"a\":[").Append(string.Join(',', a.Select(ShipDesign.S))).Append("],\"b\":[").Append(string.Join(',', b.Select(ShipDesign.S)))
-              .Append("],\"ok\":").Append(ok ? "true" : "false").Append(",\"shaft\":").Append(ShipDesign.S(sh)).Append(",\"service\":").Append(sv ? "true" : "false").Append(",\"n\":[").Append(string.Join(',', nn.Select(ShipDesign.S))).Append("],\"sock\":").Append(Q(sk)).Append('}');
+              .Append("],\"ok\":").Append(ok ? "true" : "false").Append(",\"shaft\":").Append(ShipDesign.S(sh)).Append(",\"service\":").Append(sv ? "true" : "false").Append(",\"n\":[").Append(string.Join(',', nn.Select(ShipDesign.S))).Append("],\"sock\":").Append(Q(sk));
+            // A connector shaft's walls and ladder as the game builds them (DesignPassage.cs ConnectorOf).
+            if (ok && sh > 0 && !sv && ConnectorOf(d, c, i) is { } cn)
+                sb.Append(",\"mesh\":").Append(MeshPart("cn" + i, string.Join(',', a.Concat(b).Select(ShipDesign.S)) + "|" + ShipDesign.S(sh) + "|" + sk + "|" + plans + "|" + doorKey, () => cn.Mesh));
+            sb.Append('}');
         }
         sb.Append("],\"issues\":[");
         for (var i = 0; i < c.Issues.Count; i++)

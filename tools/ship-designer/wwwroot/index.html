@@ -692,6 +692,12 @@ function drawPassages(only = null) {
     const steel = new THREE.MeshStandardMaterial({ color: k.ok ? 0xd8b04a : 0xff5a44, metalness: 0.5, roughness: 0.4, emissive: picked ? 0x1d4f86 : 0x000000 });
     const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(24, P.length * 8), rad, 14, false), glass);
     tube.userData = { type: "passage", id: k.id }; g.add(tube); pickables.push(tube);
+    // Its walls, floor and roof as the game builds them (DesignPassage.cs): drawn instead of the track and planks; the glass is what is picked.
+    if (k.mesh) {
+      glass.opacity = only ? 0.06 : 0.1;
+      const o = meshFrom(k.mesh, { metalness: 0.4, roughness: 0.55, emissive: picked ? 0x1d4f86 : 0x000000 }); o.userData = { type: "passage", id: k.id }; g.add(o);
+      g.traverse(o => { o.renderOrder = 5; }); world.add(g); continue;
+    }
     // Its track: two rails on the tube's floor, each frame's up from the model (the arm's own up inside it).
     const N = Math.max(24, P.length * 8), side = new THREE.Vector3(), rails = [[], []], ups = [];
     for (let i = 0; i <= N; i++) {
@@ -803,6 +809,8 @@ function drawConnectors() {
       continue;
     }
     if (!(l.shaft > 0)) continue;
+    // Its walls and ladder as the game builds them (DesignPassage.cs ConnectorOf).
+    if (l.mesh) { const o = meshFrom(l.mesh, { metalness: 0.45, roughness: 0.5 }); o.renderOrder = 4; world.add(o); continue; }
     const a = new THREE.Vector3(...l.a), b = new THREE.Vector3(...l.b), d = b.clone().sub(a), len = d.length(); if (len < 0.1) continue;
     const g = new THREE.Group(), w = l.shaft + 0.2, dir = d.clone().normalize();
     g.position.copy(a).addScaledVector(d, 0.5);
