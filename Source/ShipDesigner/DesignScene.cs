@@ -1217,15 +1217,19 @@ public static partial class DesignScene
         q[along] = Math.Clamp(q[along], lo[along] + w, hi[along] - w);
         q[up] = fl;
         var top = kind.Socket == "airlock" ? Math.Max(DoorTopDefault, p.AirH) : DoorTopDefault;
-        if (kind.Socket == "airlock" && !d.Stacked && d.Hull(p.Hull) is { } ah)
+        if (kind.Socket is "airlock" or "cargo" && !d.Stacked && d.Hull(p.Hull) is { } ah)
         {
             // As high as the chamber's inner door reaches over this floor (walkable rooms, step 4: on a sloping skin the chamber comes in
-            // tilted, its mouth higher than the room's floor, and a cut AirH high from the floor left its top half walled).
+            // tilted, its mouth higher than the room's floor, and a cut AirH high from the floor left its top half walled). A cargo hatch's
+            // cut reaches its 3 m opening's top (Karl, 2026-11-27: a door's 2.1 m left its upper part walled, a dark panel from inside and out).
             var w0 = Where(ah, p);
-            double s = p.Size, ex = p.AirH / 2 * s * p.Hole, dz = Math.Min(p.DoorW, p.AirW) / 2 * s * p.Hole, dd = p.AirD * s + p.Recess;
-            foreach (var sx in new[] { -1.0, 1 })
-                foreach (var sz in new[] { -1.0, 1 })
-                    top = Math.Max(top, w0.O[up] - w0.Y[up] * dd + w0.X[up] * sx * ex + w0.Z[up] * sz * dz - fl + 0.1);
+            var cargo = kind.Socket == "cargo";
+            double s = p.Size, ex = (cargo ? op!.Value.Hx : p.AirH / 2) * s * p.Hole, dz = (cargo ? op!.Value.Hz : Math.Min(p.DoorW, p.AirW) / 2) * s * p.Hole,
+                dd = (cargo ? CargoWell(d, p, kind) : p.AirD) * s + p.Recess;
+            foreach (var de in cargo ? new[] { p.Recess, dd } : [dd]) // (a hatch's opening on the skin and at its well's inner end)
+                foreach (var sx in new[] { -1.0, 1 })
+                    foreach (var sz in new[] { -1.0, 1 })
+                        top = Math.Max(top, w0.O[up] - w0.Y[up] * de + w0.X[up] * sx * ex + w0.Z[up] * sz * dz - fl + 0.1);
         }
         top = Math.Min(top, hi[up] - lo[up] - 0.05);
         return DoorAt(q, w, top);
@@ -1510,6 +1514,8 @@ public static partial class DesignScene
             PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
             WindowSleeve(d, h, p, kind, m); // (lined on in to the wall of the room it looks out of: DesignWindows.cs)
         }
+        else if (kind.Socket == "cargo")
+            PieceKinds.CargoHatch(m, CargoWell(d, p, kind)); // (its well runs in to its room's wall and no further: DesignWindows.cs)
         else if (kind.Socket == "airlock")
             PieceDocking.Airlock(m, p, shut); // a chamber sized by the piece (Karl, 2026-11-26); shut: both its doors shut (the game's, DesignParts.Doors.cs)
         else if (PieceWeapons.MountOf(p.Kind) is { } mk)
@@ -1657,7 +1663,7 @@ public static partial class DesignScene
             var kind = PieceKinds.Find(p.Kind)!;
             var w = DesignSeats.PlaceOf(d, p) ?? DesignLightBars.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
-            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" or "window" ? plans : "") + DesignHangar.Key(d, p), () =>
+            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" or "window" or "cargo" ? plans : "") + DesignHangar.Key(d, p), () =>
             {
                 var text = new StringBuilder();
                 var pm = PieceMesh(d, p);

@@ -13,8 +13,9 @@ namespace CallOfSlop;
 /// <item>Each is an element of its own (<c>Fn "door"</c>, its def an event door, ConstructDoors): box-only (one solid box round its leaf, in a
 /// frame turned as its piece faces) on segment 0, so a settle moves only its own collider leaf (ConstructCollider.MovePart moves nothing with hulls).
 /// F opens and shuts it (ConstructEdits.Use, past the helm redirect: KeepsUse); the server sends its moves (CBodyKind.Door) as for any door.</item>
-/// <item>An airlock is its two doors and its chamber (the piece itself): each door welded to the piece alone, so each opens on its own.
-/// A cargo hatch's leaves are welded to each other too, so F on either opens both (ConstructDoors.Use works a linked door with it).</item>
+/// <item>An airlock is its two doors and its chamber (the piece itself): each door welded to the piece and to the other, so F on either
+/// opens both (Karl, 2026-11-27: an open airlock showed its shut inner door, not the room). A cargo hatch's leaves are welded to each
+/// other too (ConstructDoors.Use works a linked door with it).</item>
 /// <item>A docking collar's mating hatch and a docking hatch's lid are docking hatches (<see cref="CDoorDef.Dock"/>): the server opens them as
 /// the body docks (ConstructDoors.StepDocks), F doesn't.</item>
 /// <item>Sliding and iris doors slide (an iris has no game form yet: Karl's call, 2026-11-26) along their opening by the leaf's own width;
@@ -155,6 +156,8 @@ public static partial class DesignParts
         switch (kind.Socket)
         {
             case "airlock":
+            {
+                var first = els.Count;
                 foreach (var (leaf, type, _, _, _) in PieceDocking.AirlockDoors(p))
                 {
                     var (f, t) = Range(leaf);
@@ -168,7 +171,10 @@ public static partial class DesignParts
                     els.Add(e);
                     Weld(els, a.At, els.Count - 1);
                 }
+                if (els.Count == first + 2)
+                    Weld(els, first, first + 1); // (F on either opens both, so an open airlock is a way through: Karl, 2026-11-27)
                 break;
+            }
             case "cargo":
             {
                 var first = els.Count;
