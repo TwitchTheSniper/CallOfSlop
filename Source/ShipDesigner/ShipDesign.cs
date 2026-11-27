@@ -383,9 +383,6 @@ public sealed class Piece
     public double Hole = 1; // the cutout (skin hole, frame, ring) scaled across the skin (Karl, 2026-11-25)
     public double Depth = 0.2; // a window's: how far in its inner pane sits behind the outer one (Karl, 2026-11-25)
     public bool Double = true; // a window's: double glazed (an outer and an inner pane, a reveal between)
-    // An airlock's chamber (Karl, 2026-11-26; DesignDocking.cs): its width (along), height (across the hatch) and depth in, its doors' width and type.
-    public double AirW = PieceDocking.AirW, AirH = PieceDocking.AirH, AirD = PieceDocking.AirD, DoorW = PieceDocking.DoorW;
-    public string Door = "sliding";
     public int Feed; // an ammo socket's gun (a piece id; 0: the nearest weapon)
     // Hangar pieces' own (DesignHangar, Karl 2026-11-26): a bay's door size and type; a lift's or ramp deck's size and travel; a fitting's bay and spot in it.
     public double BayW = 20, BayH = 8, BayD = 20; // a bay's own volume across, tall and deep (Karl 2026-11-27; DesignHangar.Of)
@@ -423,7 +420,7 @@ public sealed class Piece
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
         ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
-        ["airW"] = ShipDesign.R(AirW), ["airH"] = ShipDesign.R(AirH), ["airD"] = ShipDesign.R(AirD), ["doorW"] = ShipDesign.R(DoorW), ["door"] = Door, ["feed"] = Feed, ["fit"] = Fit,
+        ["feed"] = Feed, ["fit"] = Fit,
     })))))));
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
@@ -442,9 +439,7 @@ public sealed class Piece
         U = ShipDesign.F(o["u"], 0), V = ShipDesign.F(o["v"], 0), Side = (int?)o["side"] is -1 ? -1 : 1, Copy = (int?)o["copy"] is 1 ? 1 : 0,
         Mirror = (bool?)o["mirror"] ?? false, Pair = (bool?)o["pair"] ?? true, Size = Math.Clamp(ShipDesign.F(o["size"], 1), 0.25, 4), Recess = Math.Clamp(ShipDesign.F(o["recess"], 0), 0, 2), Clad = Math.Clamp(ShipDesign.F(o["clad"], 0), 0, 2), Turn = ShipDesign.F(o["turn"], 0), Room = (int?)o["room"] ?? 0,
         Gap = Math.Clamp(ShipDesign.F(o["gap"], -1), -1, 2), Hole = Math.Clamp(ShipDesign.F(o["hole"], 1), 0.5, 2.5), Depth = Math.Clamp(ShipDesign.F(o["depth"], 0.2), 0.05, 1), Double = (bool?)o["double"] ?? true,
-        AirW = Math.Clamp(ShipDesign.F(o["airW"], PieceDocking.AirW), 0.8, 6), AirH = Math.Clamp(ShipDesign.F(o["airH"], PieceDocking.AirH), 1.2, 6),
-        AirD = Math.Clamp(ShipDesign.F(o["airD"], PieceDocking.AirD), 0.6, 6), DoorW = Math.Clamp(ShipDesign.F(o["doorW"], PieceDocking.DoorW), 0.6, 6),
-        Door = Array.IndexOf(PieceDocking.Doors, (string?)o["door"]) >= 0 ? (string)o["door"]! : "sliding", Feed = (int?)o["feed"] ?? 0,
+        Feed = (int?)o["feed"] ?? 0,
     };
 }
 
