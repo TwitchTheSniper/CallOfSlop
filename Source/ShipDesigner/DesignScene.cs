@@ -1299,7 +1299,7 @@ public static partial class DesignScene
             if (h != home) continue; else
             for (var c = 0; c < h.Copies; c++)
             {
-                var half = EasedHalf(h, w[2] - h.Z, w[1] - h.Y);
+                var half = h.SkinHalf(w[2] - h.Z, w[1] - h.Y); // the skin as it is (Karl, 2026-11-27: eased walls made frumpy, rounded nose rooms)
                 if (half < 0.1)
                     continue;
                 var cx = h.CopyX(c);
@@ -1318,38 +1318,6 @@ public static partial class DesignScene
             return l2 < r2 ? (l2, r2) : ((l2 + r2) / 2, (l2 + r2) / 2);
         }
         return (el ? Math.Min(r.X0, lo) : r.X0, er ? Math.Max(r.X1, hi) : r.X1);
-    }
-
-    /// <summary>How far round small kinks a room out to the hull eases its walls (m along, m up; Karl, 2026-11-27: in a busy nose the walls
-    /// followed every facet of the skin and came out lumpy, and every lump was colliders).</summary>
-    public const double EaseAlong = 0.6, EaseUp = 0.35;
-
-    /// <summary>The skin's half width for a room's wall: the narrowest of it a little fore, aft, above and below, so the wall runs straight past
-    /// a bump or a facet's edge instead of following it, and stays inside the skin everywhere.</summary>
-    public static double EasedHalf(HullBody h, double z, double y)
-    {
-        // Refined (Karl, 2026-11-27: a room maxed out in the nose still rippled): the eased width is taken on a coarse grid, 1.5 m along and
-        // 0.75 m up, and drawn straight between its points, so the wall is a few flat facets, not a wave. Never past the eased width here (Karl, 2026-11-27: a straight run past it went outside the skin, the clip pulled some corners back and the cladding at the top and bottom came out jagged).
-        if (EaseHalfAt(h, z, y) < 0.1)
-            return EaseHalfAt(h, z, y);
-        const double GZ = 1.5, GY = 0.75;
-        double fz = Math.Floor(z / GZ) * GZ, fy = Math.Floor(y / GY) * GY, tz = (z - fz) / GZ, ty = (y - fy) / GY;
-        double a = EaseHalfAt(h, fz, fy), b = EaseHalfAt(h, fz + GZ, fy), c = EaseHalfAt(h, fz, fy + GY), e = EaseHalfAt(h, fz + GZ, fy + GY);
-        if (a < 0.1 || b < 0.1 || c < 0.1 || e < 0.1)
-            return EaseHalfAt(h, z, y); // a grid point past the skin's end or top: no straight run there
-        return Math.Min(EaseHalfAt(h, z, y), (a * (1 - tz) + b * tz) * (1 - ty) + (c * (1 - tz) + e * tz) * ty);
-    }
-
-    private static double EaseHalfAt(HullBody h, double z, double y)
-    {
-        var half = h.SkinHalf(z, y);
-        if (half < 0.1)
-            return half;
-        for (var a = -1; a <= 1; a++)
-            for (var b = -1; b <= 1; b++)
-                if (h.SkinHalf(z + a * EaseAlong, y + b * EaseUp) is var s && s > 0.1) // past the skin's ends or its top: not a kink
-                    half = Math.Min(half, s);
-        return half;
     }
 
     /// <summary>How far along a room runs (Karl, 2026-11-24: a bridge carried on into the nose): a room out to the hull with no room
@@ -1374,7 +1342,7 @@ public static partial class DesignScene
                     if (h != home) continue; else
                     for (var c = 0; c < h.Copies && !any; c++)
                     {
-                        var half = EasedHalf(h, w[2] - h.Z, w[1] - h.Y); // as the walls are drawn (Edges), or the run-on end pinches
+                        var half = h.SkinHalf(w[2] - h.Z, w[1] - h.Y);
                         any = half > need + 0.05 && Math.Abs(h.CopyX(c) - mid) < half - need;
                     }
                 if (!any)
