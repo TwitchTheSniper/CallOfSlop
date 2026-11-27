@@ -488,20 +488,36 @@ public sealed partial class Game
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         AllocProfile.Mark("sandbox: spawns, pilots, debris");
         var perf = Perf.Measure(PerfArea.SandboxWorld);
+        var part = Perf.Measure(PerfArea.SwSpawns); // (the F9 window's rows under "Spawns, pilots, debris")
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
+        part.Dispose();
         // One build slice a tick (VehicleSpawner.SliceMs), shared: a ship rebuilt at a Ship Docking Station takes its share first
         // (half while the spawner is busy too: GameSandboxDock.cs), the faction vehicles and big blueprints the rest (GameSandboxVehicles.cs).
-        var dockMs = _dockJobs.Count > 0 ? SandboxDockTick(_vehicleSpawn is { Pending: > 0 } ? VehicleSpawner.SliceMs / 2 : VehicleSpawner.SliceMs) : 0;
+        var dockMs = 0.0;
+        if (_dockJobs.Count > 0)
+            using (Perf.Measure(PerfArea.SwDock))
+                dockMs = SandboxDockTick(_vehicleSpawn is { Pending: > 0 } ? VehicleSpawner.SliceMs / 2 : VehicleSpawner.SliceMs);
         if (_vehicleSpawn != null)
         {
+            using var vs = Perf.Measure(PerfArea.SwVehicles);
             _vehicleSpawn.Budget = Math.Max(VehicleSpawner.SliceMs - dockMs, VehicleSpawner.MinSliceMs);
             _vehicleSpawn.Tick();
         }
+        part = Perf.Measure(PerfArea.SwHeld);
         SpawnHeldTick(); // pending spawns of the dead, the gone and the forgotten go (GameSandboxBlueprintGhost.cs)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.SwPilots);
         SandboxPilotsTick(); // bot pilots of AI aircraft (GameSandboxAircraft.cs)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.SwShots);
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
+        part.Dispose();
+        part = Perf.Measure(PerfArea.SwDebris);
         SandboxDebris(now);
+        part.Dispose();
+        part = Perf.Measure(PerfArea.SwFlush);
         SandboxFlush();
+        part.Dispose();
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Colony);
         AllocProfile.Mark("sandbox: colony");
@@ -637,6 +653,7 @@ public sealed partial class Game
                     _sbLater.Add(id); // (a big body's edits go together: ConstructPatch.cs)
                     continue;
                 }
+                using var sent = Perf.Measure(PerfArea.SwFlushBodies);
                 if (c.Dirty)
                     c.Rebuild();
                 SandboxBroadcastBody(c);

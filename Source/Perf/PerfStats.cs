@@ -29,6 +29,11 @@ public sealed class PerfStats
     /// <summary>Frames in the last second, and the server tick figures over it.</summary>
     public int RecentFrames;
 
+    /// <summary>The average frame over the last second (ms), and what limits it then (<see cref="PerfLimit"/>; <see cref="LimitGpuMs"/> -1: no GPU timer).</summary>
+    public float RecentMs, LimitCpuMs, LimitGpuMs = -1;
+
+    public PerfLimitKind Limit;
+
     public float TickWorstMs, TickAvgMs, TicksPerSecond, MusicMsPerSecond;
 
     /// <summary>Over the last second: draw calls, triangles, instances, main-thread / all-thread allocated bytes per frame.</summary>
@@ -141,6 +146,9 @@ public sealed class PerfStats
             AllocBytes /= RecentFrames;
             AllocAllBytes /= RecentFrames;
         }
+        RecentMs = RecentFrames > 0 ? (float)(span / RecentFrames) : 0;
+        LimitGpuMs = Perf.Gpu is { Available: true } g && g.FramesRead > 0 ? g.TotalAvgMs() : -1f;
+        Limit = PerfLimit.Judge(RecentMs, AreaAvg[(int)PerfArea.Swap], AreaAvg[(int)PerfArea.Limiter], LimitGpuMs, out LimitCpuMs);
         TickAvgMs = ticks > 0 ? (float)(tickSum / ticks) : 0;
         TicksPerSecond = span > 0 ? (float)(ticks * 1000 / span) : 0;
         MusicMsPerSecond = span > 0 ? (float)(music * 1000 / span) : 0;
@@ -163,6 +171,7 @@ public sealed class PerfStats
         var sb = new StringBuilder();
         sb.Append(c, $"Call of Slop perf snapshot, build {BuildInfo.Version}, {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC\n");
         sb.Append(c, $"frames {Frames}: avg {AvgMs:0.00} ms ({Fps:0} fps), min {MinMs:0.00}, max {MaxMs:0.00}, 1% low {Low1Ms:0.00} ms ({Low1Fps:0} fps)\n");
+        sb.Append(PerfLimit.Line(RecentMs, AreaAvg[(int)PerfArea.Swap], AreaAvg[(int)PerfArea.Limiter], LimitGpuMs)); // (over the last second)
         sb.Append("worst frames:");
         for (var k = 0; k < Worst; k++)
             if (WorstBack[k] >= 0)

@@ -2433,7 +2433,8 @@ public sealed partial class ConstructWorld
         part.Dispose();
         part = Perf.Measure(PerfArea.PExtruders);
         AllocProfile.Mark("machines: ConstructExtruder");
-        ConstructExtruder.Step(this, query); // (Extruders and Wheel Formers grow their pieces and cut them off)
+        using (Perf.Measure(PerfArea.PExtruder))
+            ConstructExtruder.Step(this, query); // (Extruders and Wheel Formers grow their pieces and cut them off)
         part.Dispose();
         part = Perf.Measure(PerfArea.PConveyors);
         AllocProfile.Mark("machines: ConstructConveyor");
@@ -2457,7 +2458,8 @@ public sealed partial class ConstructWorld
         part.Dispose();
         part = Perf.Measure(PerfArea.PExtruders);
         AllocProfile.Mark("machines: ConstructPress");
-        ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
+        using (Perf.Measure(PerfArea.PPress))
+            ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
         part.Dispose();
         part = Perf.Measure(PerfArea.PRaw);
         AllocProfile.Mark("machines: ConstructBakeOven");

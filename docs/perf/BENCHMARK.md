@@ -76,6 +76,17 @@ time something new, add a `PerfArea` (and its name and parent in `Perf.cs`) and 
 `using (Perf.Measure(PerfArea.X))`: closed, a scope is one bool test. A GPU pass is a `PerfGpuPass` in draw order and
 `Perf.Pass(area, pass)`.
 
+The big construct rows have finer children (2026-11-27, Sean's works recording): *Extruders, presses* splits into the
+Extruders and the Presses, each with its body rebuilds (a cut or a hand-off leaves the 5,000-part body to rebuild, and the
+next machine to look pays for it); *Conveyors* into body rebuilds, Roller runs synced, riders moved and Routers;
+*Spawns, pilots, debris* into each of its calls, the flush and its changed bodies sent; *Sun shadows* into the pick, caster
+lists made, the still map redrawn and the moving bodies; *Bodies: cull, chunks, parts* into flames, designs and far detail,
+merged plans, merged chunks (with chunk meshes built and waiting chunks), walked parts, machine work, idle meshes, unmerged
+bodies and panels; *Links, tracks, legs, ropes, panels* into each kind of link. What a parent has left over its children is
+its own work (the snapshot's "self" column): for *Bodies*, the per-body cull. The window's top line, its overlay, the
+snapshot and the recording also say what limits the frame (`PerfLimit.cs`): CPU (the frame less the Swap and limiter waits)
+against GPU (the timed passes), within a tenth "CPU and GPU", or VSync or the Max FPS cap when both finish early.
+
 ## Spots files
 
 `tools/bench/factory.json` (`--bench factory`) measures one big build rather than a world: its `"blueprint"` (the Zero Day

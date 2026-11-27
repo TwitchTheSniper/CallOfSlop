@@ -92,7 +92,8 @@ public static partial class ConstructExtruder
             if (!c.HasExtruder)
                 continue;
             if (c.Dirty)
-                c.Rebuild();
+                using (Perf.Measure(PerfArea.PExtRebuild)) // (the F9 window: a cut or hand-off last step left the body to rebuild)
+                    c.Rebuild();
             for (var i = 0; i < c.PartCount; i++)
                 if (c.Parts[i].D.IsExtruder && world.StoreOf(c, i) is { } st && Work(world, query, c, i, st))
                     break; // (a cut took a part off: the indices moved, and the rest wait for the next step)
