@@ -1798,6 +1798,12 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
   arm rather than drive. A piece swings round the mast in an arc. Rovers keep apart: a spot beside along the lane first, then a later
   start, waiting up to 300 s. An idle rover waits 15 s and drives home. Plans are sent whole (keys of base and hook), and both peers
   play them from the start time; the mast rises as a rover leaves its dock and folds down with its arm when parked.
+- **The drop** (Sean 2026-11-27: "moving over there is the time; once there it can drop the piece quickly"): the hook goes down onto a
+  piece and onto its place at 4 m/s (`DropSpeed`; it lifts at 1.5 m/s), grips in 0.4 s and holds the piece on its place 0.5 s
+  (`DropSeconds`) before it lets go; a rover no longer takes the Core's weld time (2 s + 0.02 s/kg, up to 10 s). The drawn trip is
+  eased onto the ticked one each tick (`DrawnPace`; a client's start is set again from each message more than 0.25 s out), so on a
+  works whose tick runs over its budget the piece goes on where and when the rover is drawn putting it. A piece that goes on more than
+  0.25 m from where its rover put it is logged (`FitDrift`: `went on N m from where rover K put it`).
 - **The build order** (`BuildOrder`): Keel pieces first, then what lies wholly under the lowest deck, then deck by deck (structure, then
   fittings); a step never goes before its parent's rank. With nothing fitted for 30 s the next rank may go (`StallTicks`).
 - **Zero Day Works**: every station keeps its Core's Small rover; the yard has two Large Dock Expansions between and east of its pick
