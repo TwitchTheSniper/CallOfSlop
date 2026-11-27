@@ -65,6 +65,13 @@ public static partial class DesignScene
         var ca = new double[HullBody.MaxLoft + 2];
         var cb = new double[HullBody.MaxLoft + 2];
         var rings = h.Ring;
+        // The ends, where the body meets its front and back (Karl, 2026-11-27: rows of small plates there, busy): the first and last
+        // bands and any run of short bands next to them (a rounded end's rings) are always laid smooth, as Smooth busy areas does.
+        int firstLong = 0, lastLong = rings.Count - 2;
+        while (firstLong < rings.Count - 1 && rings[firstLong + 1].Z - rings[firstLong].Z < 1.5 * size)
+            firstLong++;
+        while (lastLong > 0 && rings[lastLong + 1].Z - rings[lastLong].Z < 1.5 * size)
+            lastLong--;
         for (var i = 0; i < rings.Count - 1; i++)
         {
             var n = h.Pair(i, ah, ay, bh, by);
@@ -89,7 +96,8 @@ public static partial class DesignScene
             var terminus = i == 0 || i == rings.Count - 2 || ratio > 1.4;
             // Smooth busy areas (Karl, 2026-11-27: a tapering end was a clutter of small plates at many heights): a terminus, or a band
             // too short for a plate's length, is laid in plates twice the size, all at one low height, merged as far as they go, no greebles.
-            var smooth = h.CladSmooth && (terminus || len < 1.5 * size);
+            var endZone = i == 0 || i == rings.Count - 2 || i < firstLong || i > lastLong;
+            var smooth = endZone || h.CladSmooth && (terminus || len < 1.5 * size);
             var tsize = smooth ? size * 2 : size;
             var tnv = smooth ? Math.Clamp((int)Math.Round(len / tsize), 1, 64) : nv;
             var yMid = (Math.Min(ay[0], by[0]) + Math.Max(ay[n - 1], by[n - 1])) / 2;
@@ -198,94 +206,78 @@ public static partial class DesignScene
     }
 
     /// <summary>
-    /// Plated cladding on a flat end cap (the user, 2026-11-24: the stern round the drive bells was bare): rows of plates in rings round
-    /// the cap's middle, each ring scaled in from the station's outline, its own count round by its own length, seams staggered ring to
-    /// ring. A cell any point of which <paramref name="open"/> says is in an opening (a drive bell, a mouth) or another body stays bare.
+    /// Plated cladding on a flat end cap (the user, 2026-11-24: the stern round the drive bells was bare), laid simply (Karl, 2026-11-27:
+    /// rings of small plates round the middle read as a busy spiral): a straight grid of cells across the cap, half the panel size, kept
+    /// where it lies wholly inside the outline, merged into big flush plates at one height. A cell any point of which
+    /// <paramref name="open"/> says is in an opening (a drive bell, a mouth) or another body stays bare.
     /// </summary>
-    private static double CapSq(double v) => v * v;
-
     private static void CladCap(DesignMesh m, double cx, HullBody h, Station s, bool aft, Func<double, double, double, bool> open, double size)
     {
         var heavy = h.Clad == "Heavy";
         var col = DesignMesh.Hex(h.Skin);
-        if (h.CladSmooth) // (smooth busy areas: an end cap's rings in plates twice the size, flush and even)
-            size *= 2;
-        // The outline as a closed ring (world), round the +x side and back down the -x; the fore cap the other way, so plates face out.
+        if (h.CladSmooth)
+            size *= 1.5;
+        // The outline as a closed ring, round the +x side and back down the -x.
         var ring = new List<(double X, double Y)>();
         foreach (var (hh, y) in s.P)
             ring.Add((hh, y));
         for (var k = s.P.Count - 1; k >= 0; k--)
             ring.Add((-s.P[k].H, s.P[k].Y));
-        if (!aft)
-            ring.Reverse();
-        var nr = ring.Count;
-        if (nr < 3)
+        if (ring.Count < 3)
             return;
-        double my = (s.P[0].Y + s.P[^1].Y) / 2, z = h.Z + s.Z, nz = aft ? 1 : -1;
-        var cum = new double[nr + 1];
-        for (var k = 0; k < nr; k++)
-        {
-            var (p, q) = (ring[k], ring[(k + 1) % nr]);
-            cum[k + 1] = cum[k] + Math.Sqrt(CapSq(q.X - p.X) + CapSq(q.Y - p.Y));
-        }
-        var arc = cum[nr];
-        // The reach from the middle to the outline (its widest), for the number of rings.
-        var reach = ring.Max(q => Math.Sqrt(q.X * q.X + CapSq(q.Y - my)));
-        if (arc < 0.5 || reach < 0.3)
+        double x1 = ring.Max(q => q.X) - CapInset, x0 = -x1, y0 = ring.Min(q => q.Y) + CapInset, y1 = ring.Max(q => q.Y) - CapInset;
+        double w = x1 - x0, ht = y1 - y0, z = h.Z + s.Z, nz = aft ? 1 : -1;
+        if (w < 0.5 || ht < 0.5)
             return;
-        (double X, double Y) Out(double u)
+        bool Inside(double x, double y) // (even-odd, and CapInset clear of every edge)
         {
-            var l = (u - Math.Floor(u)) * arc;
-            var k = 0;
-            while (k < nr - 1 && cum[k + 1] < l)
-                k++;
-            var f = cum[k + 1] - cum[k] < 1e-9 ? 0 : (l - cum[k]) / (cum[k + 1] - cum[k]);
-            var (p, q) = (ring[k], ring[(k + 1) % nr]);
-            return (p.X + (q.X - p.X) * f, p.Y + (q.Y - p.Y) * f);
+            var c = false;
+            for (int a = 0, b = ring.Count - 1; a < ring.Count; b = a++)
+            {
+                var (p, q) = (ring[a], ring[b]);
+                if ((p.Y > y) != (q.Y > y) && x < (q.X - p.X) * (y - p.Y) / (q.Y - p.Y) + p.X)
+                    c = !c;
+                var (ex, ey) = (q.X - p.X, q.Y - p.Y);
+                var l2 = ex * ex + ey * ey;
+                var t = l2 < 1e-12 ? 0 : Math.Clamp(((x - p.X) * ex + (y - p.Y) * ey) / l2, 0, 1);
+                if (CapSq(x - p.X - ex * t) + CapSq(y - p.Y - ey * t) < CapInset * CapInset)
+                    return false;
+            }
+            return c;
         }
-        // Rings from the outline in to a fifth of the way from the middle (the hub is left as the cap's own plate).
-        const double inner = 0.2;
-        var rows = Math.Clamp((int)Math.Round(reach * (1 - inner) / size), 1, 24);
-        var rng = new Random(unchecked(h.CladSeed * 1000003 + (aft ? 31337 : 4241)));
-        for (var r = 0; r < rows; r++)
+        // Cells half the panel size, so the rim left bare round the outline is narrow; merged four by four into plates twice the size.
+        int nu = Math.Clamp((int)Math.Round(2 * w / size), 1, 64), nv = Math.Clamp((int)Math.Round(2 * ht / size), 1, 64);
+        // The fore cap runs the other way across, so its plates face out.
+        (double X, double Y, double Z) P(double u, double v) => (aft ? x0 + w * u : x1 - w * u, y0 + ht * v, s.Z);
+        (double X, double Y, double Z) N(double u, double v) => (0, 0, nz);
+        (double, double, double) W(double u, double v, double off)
         {
-            // Outer edge first: v runs out to in, f is the share of the outline's size.
-            double f0 = 1 - (1 - inner) * r / rows, f1 = 1 - (1 - inner) * (r + 1) / rows;
-            var rowArc = arc * (f0 + f1) / 2;
-            var cells = Math.Clamp((int)Math.Round(rowArc / size), 3, 64);
-            var shift = (r & 1) == 1 ? 0.5 / cells : 0;
-            (double X, double Y, double Z) P(double u, double v)
-            {
-                var o = Out(u + shift);
-                var f = f0 + (f1 - f0) * v;
-                return (o.X * f, my + (o.Y - my) * f, s.Z);
-            }
-            (double X, double Y, double Z) N(double u, double v) => (0, 0, nz);
-            (double, double, double) W(double u, double v, double off)
-            {
-                var p = P(u, v);
-                return (cx + p.X, h.Y + p.Y, z + nz * off);
-            }
-            var taken = new bool[cells, 1];
-            for (var a = 0; a < cells; a++)
-            {
-                double u0 = (double)a / cells, u1 = (double)(a + 1) / cells;
-                for (var i = 0; i <= 2 && !taken[a, 0]; i++)
+            var p = P(u, v);
+            return (cx + p.X, h.Y + p.Y, z + nz * off);
+        }
+        var taken = new bool[nu, nv];
+        for (var a = 0; a < nu; a++)
+            for (var b = 0; b < nv; b++)
+                for (var i = 0; i <= 2 && !taken[a, b]; i++)
                     for (var j = 0; j <= 2; j++)
                     {
-                        var q = W(u0 + (u1 - u0) * i / 2, j / 2.0, 0);
-                        if (open(q.Item1, q.Item2, q.Item3))
+                        var p = P((a + i / 2.0) / nu, (b + j / 2.0) / nv);
+                        var q = W((a + i / 2.0) / nu, (b + j / 2.0) / nv, 0);
+                        if (!Inside(p.X, p.Y) || open(q.Item1, q.Item2, q.Item3))
                         {
-                            taken[a, 0] = true;
+                            taken[a, b] = true;
                             break;
                         }
                     }
-            }
-            var ringLen = reach * (f0 - f1);
-            LayPlates(m, cells, 1, rowArc, Math.Max(0.05, ringLen), rng, heavy, h.CladDepth, col, P, N, W, taken,
-                (u, v, cell) => h.Paint(s.Z, u, rowArc, (aft ? 50000 : 60000) + r * 97 + cell), 0, h.Clad == "Hex", h.Damage, h.DamageSeed, smooth: h.CladSmooth);
-        }
+        var rng = new Random(unchecked(h.CladSeed * 1000003 + (aft ? 31337 : 4241)));
+        LayPlates(m, nu, nv, w, ht, rng, heavy, h.CladDepth, col, P, N, W, taken,
+            (u, v, cell) => h.Paint(s.Z, u, w, (aft ? 50000 : 60000) + cell), 0, h.Clad == "Hex", h.Damage, h.DamageSeed, smooth: true);
     }
+
+    /// <summary>How far an end cap's plates keep in from its outline (m).</summary>
+    private const double CapInset = 0.05;
+
+    private static double CapSq(double v) => v * v;
 
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
