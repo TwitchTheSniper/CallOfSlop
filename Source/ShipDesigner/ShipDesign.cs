@@ -12,6 +12,7 @@ namespace CallOfSlop.ShipDesigner;
 public sealed class ShipDesign
 {
     public const int Version = 1;
+    public const int MaxWrapWindows = 12;
     public const int MaxHulls = 12, MaxStations = 24, MaxPieces = 200, MaxRooms = 120, MaxDecks = 24, MaxJoins = 40, MaxRisers = 40, MaxPassages = 40;
 
     public string Name = "New ship";
@@ -70,6 +71,7 @@ public sealed class ShipDesign
     public List<Riser> Risers = [];
     public List<RoomDoor> Doors = [];
     public List<HullWindow> Windows = [];
+    public List<WrapWindow> WrapWindows = []; // wraparound windows (DesignWrapWindows.cs)
     public List<Passage> Passages = [];
     private int _next = 1;
 
@@ -125,6 +127,7 @@ public sealed class ShipDesign
             ["pieces"] = new JsonArray([.. Pieces.Select(p => { var j = p.ToJson(); j["hull"] = HullIndex(p.Hull); j["id"] = p.Id; return (JsonNode)j; })]),
             ["doors"] = new JsonArray([.. Doors.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["t"] = R(k.T), ["kind"] = k.Kind, ["shape"] = k.Shape, ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape })]),
             ["windows"] = new JsonArray([.. Windows.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["room"] = Rooms.FindIndex(r => r.Id == k.Room), ["side"] = k.Side, ["t"] = R(k.T), ["w"] = R(k.W), ["h"] = R(k.H), ["sill"] = R(k.Sill), ["shape"] = k.Shape, ["gap"] = R(k.Gap), ["hole"] = R(k.Hole), ["depth"] = R(k.Depth), ["double"] = k.Double, ["frameOut"] = k.FrameOut, ["frameIn"] = k.FrameIn })]),
+            ["wrapWindows"] = new JsonArray([.. WrapWindows.Select(k => (JsonNode)k.ToJson(this))]),
             ["risers"] = new JsonArray([.. Risers.Select(k => (JsonNode)k.ToJson())]),
             ["joins"] = new JsonArray([.. Joins.Select(k => { var j = k.ToJson(this); j["id"] = k.Id; return (JsonNode)j; })]),
             ["passages"] = new JsonArray([.. Passages.Select(k => (JsonNode)new JsonObject { ["id"] = k.Id, ["a"] = Rooms.FindIndex(r => r.Id == k.A), ["b"] = Rooms.FindIndex(r => r.Id == k.B), ["join"] = Joins.FindIndex(j => j.Id == k.Join), ["kind"] = k.Kind })]),
@@ -181,6 +184,13 @@ public sealed class ShipDesign
                     T = Math.Clamp(F(wo["t"], 0.5), 0, 1), W = Math.Clamp(F(wo["w"], 1.5), 0.3, 40), H = Math.Clamp(F(wo["h"], 1), 0.3, 6), Sill = Math.Clamp(F(wo["sill"], 0.9), 0, 6), Shape = HullWindow.Shapes.Contains((string?)wo["shape"]) ? (string)wo["shape"]! : "Rect",
                     Gap = Math.Clamp(F(wo["gap"], -1), -1, 2), Hole = Math.Clamp(F(wo["hole"], 1), 0.5, 2.5), Depth = Math.Clamp(F(wo["depth"], 0.2), 0.05, 1), Double = (bool?)wo["double"] ?? true,
                     FrameOut = (bool?)wo["frameOut"] ?? true, FrameIn = (bool?)wo["frameIn"] ?? true });
+        foreach (var j in o["wrapWindows"]?.AsArray() ?? [])
+            if (j is JsonObject wo && d.WrapWindows.Count < MaxWrapWindows && (int?)wo["hull"] is int hi && hi >= 0 && hi < d.Hulls.Count)
+            {
+                var ww = new WrapWindow { Id = d.Take(wo), Hull = d.Hulls[hi].Id };
+                ww.Set(wo);
+                d.WrapWindows.Add(ww);
+            }
         // Doors name their rooms by place in the list (room ids are made fresh on reading).
         foreach (var j in o["doors"]?.AsArray() ?? [])
             if (j is JsonObject dob && d.Doors.Count < MaxRooms * 2)
@@ -208,7 +218,7 @@ public sealed class ShipDesign
     private int Take(JsonObject o)
     {
         var id = (int?)o["id"] ?? 0;
-        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id) || Doors.Any(k => k.Id == id) || Windows.Any(k => k.Id == id) || Passages.Any(k => k.Id == id))
+        if (id <= 0 || Hulls.Any(h => h.Id == id) || Rooms.Any(r => r.Id == id) || Pieces.Any(p => p.Id == id) || Joins.Any(j => j.Id == id) || Risers.Any(k => k.Id == id) || Doors.Any(k => k.Id == id) || Windows.Any(k => k.Id == id) || WrapWindows.Any(k => k.Id == id) || Passages.Any(k => k.Id == id))
             return NewId();
         _next = Math.Max(_next, id + 1);
         return id;

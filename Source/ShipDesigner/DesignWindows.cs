@@ -70,6 +70,7 @@ public static partial class DesignScene
                 if (PieceWindow(d, cs, inward).Q is { } q)
                     o.Add(q);
         }
+        o.AddRange(WrapWays(d)); // (the wraparound windows': DesignWrapWindows.cs)
         return o;
 
         static (List<double[]>, double[]) Mirrored((List<double[]> C, double[] In) a, double cx) =>

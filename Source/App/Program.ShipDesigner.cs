@@ -31,7 +31,7 @@ public static unsafe partial class Program
                 _sdSteps.Enqueue(step);
     }
 
-    // --sd-do "wait N; mv X Y; dn; up; rdn; rup; mdn; mup; wheel N; key NAME; ctrl NAME; shot NAME; quit": the headless mouse and keys, a step a frame.
+    // --sd-do "wait N; mv X Y; dn; up; rdn; rup; mdn; mup; wheel N; key NAME; ctrl NAME; cam X Y Z X Y Z; shot NAME; quit": the headless mouse and keys, a step a frame.
     private static readonly Queue<string> _sdSteps = new();
     private static int _sdWait;
     private static string? _sdRelease;
@@ -80,6 +80,7 @@ public static unsafe partial class Program
                 break;
             case "cmd": Ui.ShipDesignerTestCmd(step[4..]); break; // a designer command's JSON (no ';' in it)
             case "room": Ui.ShipDesignerTestRoom(w.Length > 1 ? (int)F(1) : 0); break; // Room view on that room id (0: out)
+            case "cam": Ui.ShipDesignerTestCam(new(F(1), F(2), F(3)), new(F(4), F(5), F(6))); break; // the view from X Y Z at X Y Z
             case "quit": _quit = true; break;
         }
     }

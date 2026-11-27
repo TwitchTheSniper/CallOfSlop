@@ -46,6 +46,8 @@ public sealed class DesignSession
             id = _ed.Design.Joins.Count == 0 ? 0 : _ed.Design.Joins[^1].Id;
         else if (err.Length == 0 && op == "addHullWindow")
             id = _ed.Design.Windows.Count == 0 ? 0 : _ed.Design.Windows[^1].Id;
+        else if (err.Length == 0 && op == "addWrapWindow")
+            id = _ed.Design.WrapWindows.Count == 0 ? 0 : _ed.Design.WrapWindows[^1].Id;
         else if (err.Length == 0 && op == "addDoor")
             id = _ed.Design.Doors.Count == 0 ? 0 : _ed.Design.Doors.Max(k => k.Id);
         else if (err.Length == 0 && op == "addPassage")

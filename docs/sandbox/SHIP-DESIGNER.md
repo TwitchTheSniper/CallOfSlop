@@ -23,6 +23,12 @@ centreline), y up, z along the ship with the bow at the smallest z, metres.
 - `PieceKinds`: drives (on a body's end face), RCS, guns, systems, and the sockets: Airlock, Docking collar, Cargo hatch and
   Boarding hatch (the boarding shaft kit's belly hatch). Each draws itself in its own frame (X across, Y out of the skin, Z
   towards the bow). A piece sits at a station position and a place round the profile, or on an end face.
+- `WrapWindow` (`DesignWrapWindows.cs`, Karl 2026-11-27): cockpit glass that wraps round a body from a ring on its skin
+  (Hull mode, a body's "+ Wraparound window"). Turn and Wrap set where it sits round the body's axis and how far, Tilt back how
+  far the glass leans from upright, then panes, beading, frame and a bow (the middle standing forward, curving from "Curve
+  starts"). The frame fits itself to the skin: a sill straight in under the glass's foot, a header back along the body from its
+  top (a roof over upright glass), cheeks at the ends; the skin between is cut away and the rooms' walls behind open (`WrapWays`).
+  In the game it is one element (`DesignParts.WrapWindows.cs`) with thin hulls, so the cockpit stays open.
 - `RoomKinds`: what a room is for. A Hold is a cargo hold; a Shaft joins the decks it overlaps.
 - `DesignScene`: the checks and the page's scene. Rooms must sit 6 cm inside the skin (MustFit's margin) and apart; rooms
   that share 0.9 m of wall get a door (with the Interior panel's door placement on Manual, only the doors the player places); each socket must be within its reach of a room of the kind it needs (a cargo hatch a

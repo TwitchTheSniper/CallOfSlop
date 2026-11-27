@@ -111,6 +111,7 @@ public sealed class DesignEditor
                     d.Hulls.Remove(oldH);
                     d.Pieces.RemoveAll(p => p.Hull == oldH.Id);
                     d.Joins.RemoveAll(j => j.A.Hull == oldH.Id || j.B.Hull == oldH.Id);
+                    d.WrapWindows.RemoveAll(w => w.Hull == oldH.Id);
                 }
                 if (d.Joins.Count >= ShipDesign.MaxJoins)
                     return $"at most {ShipDesign.MaxJoins} connections";
@@ -249,6 +250,7 @@ public sealed class DesignEditor
                 d.Hulls.Remove(h);
                 d.Pieces.RemoveAll(p => p.Hull == h.Id);
                 d.Joins.RemoveAll(j => j.A.Hull == h.Id || j.B.Hull == h.Id);
+                d.WrapWindows.RemoveAll(w => w.Hull == h.Id);
                 foreach (var o2 in d.Hulls)
                     if (o2.CladFrom == h.Id)
                         o2.CladFrom = 0;
@@ -845,6 +847,40 @@ public sealed class DesignEditor
             case "delHullWindow":
             {
                 d.Windows.RemoveAll(q => q.Id == I(o, "id"));
+                return "";
+            }
+            // ---- wraparound windows round a body's skin (Karl, 2026-11-27: cockpits): DesignWrapWindows.cs
+            case "addWrapWindow":
+            {
+                var h = d.Hull(I(o, "hull")) ?? throw new InvalidOperationException("no such body");
+                if (d.WrapWindows.Count >= ShipDesign.MaxWrapWindows)
+                    return $"a design holds at most {ShipDesign.MaxWrapWindows} wraparound windows";
+                var w = new WrapWindow { Id = d.NewId(), Hull = h.Id };
+                // Near the bow, at the first place along it where it lies on the skin.
+                var len = h.Back - h.Front;
+                foreach (var f in new[] { 0.15, 0.1, 0.2, 0.3, 0.05, 0.4, 0.5 })
+                {
+                    w.Z = Math.Round(h.Front + len * f, 2);
+                    if (DesignScene.LayWrap(d, w).Ok)
+                        break;
+                }
+                w.Set(o); // (settings given with it, as a pasted one's)
+                w.Z = Math.Clamp(w.Z, h.Front, h.Back);
+                d.WrapWindows.Add(w);
+                o["id"] = w.Id;
+                return "";
+            }
+            case "setWrapWindow":
+            {
+                var w = d.WrapWindows.Find(q => q.Id == I(o, "id")) ?? throw new InvalidOperationException("no such window");
+                w.Set(o);
+                if (d.Hull(w.Hull) is { } h)
+                    w.Z = Math.Clamp(w.Z, h.Front, h.Back);
+                return "";
+            }
+            case "delWrapWindow":
+            {
+                d.WrapWindows.RemoveAll(q => q.Id == I(o, "id"));
                 return "";
             }
             case "delRiser":

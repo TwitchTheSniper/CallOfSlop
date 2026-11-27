@@ -492,6 +492,12 @@ public sealed partial class Ui
                 Select("join", j.O.Pick!.Id);
                 return;
             }
+            var ww = By("wrapwin");
+            if (ww is { } wv && (hh == null || wv.T <= hh.Value.T + 0.05f))
+            {
+                Select("wrapwin", wv.O.Pick!.Id);
+                return;
+            }
             if (hh is { } hs)
                 Select("hull", hs.O.Pick!.Hull);
             return;
@@ -1199,6 +1205,7 @@ public sealed partial class Ui
                 "passage" => new JsonObject { ["op"] = "delPassage", ["id"] = _selId },
                 "door" => new JsonObject { ["op"] = "delDoor", ["id"] = _selId },
                 "hullwin" => new JsonObject { ["op"] = "delHullWindow", ["id"] = _selId },
+                "wrapwin" => new JsonObject { ["op"] = "delWrapWindow", ["id"] = _selId },
                 "hull" => new JsonObject { ["op"] = "delHull", ["hull"] = _selId },
                 _ => null,
             };

@@ -261,6 +261,9 @@ public sealed partial class Ui
             Cmd(JsonNode.Parse(json)!.AsObject());
     }
 
+    /// <summary>--sd-do's cam: the view from a point at a point (a dev's check of one spot).</summary>
+    public void ShipDesignerTestCam(Vector3 from, Vector3 at) => (_camPos, _camTarget) = (from, at);
+
     /// <summary>--sd-do's room: Room view on a room (0: back to the ship).</summary>
     public void ShipDesignerTestRoom(int id)
     {

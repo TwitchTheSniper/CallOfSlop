@@ -235,6 +235,7 @@ public sealed partial class Ui
             ImGui.Separator();
             ConnectSection();
             var sel = _selKind == "hull" ? ById(hulls, _selId) : default;
+            WrapList(Found(sel) ? I(sel, "id") : _selKind == "wrapwin" ? I(ById(Arr(S, "wrapWindows"), _selId), "hull") : 0);
             if (Found(sel))
             {
                 ImGui.Separator();
@@ -1240,6 +1241,11 @@ public sealed partial class Ui
                 Cmd(C("delHullWindow", ("id", wid)));
                 Select(null, 0);
             }
+            return;
+        }
+        if (_selKind == "wrapwin")
+        {
+            WrapInspector();
             return;
         }
         if (_selKind == "door")

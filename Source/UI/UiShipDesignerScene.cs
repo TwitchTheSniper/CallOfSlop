@@ -308,6 +308,19 @@ public sealed partial class Ui
                 mat = mat with { Emissive = 0x1d4f86 };
             Add(GeoOf(mesh), mat, new DesignPick("join", I(j, "id")), true, default, true);
         }
+        // Wraparound windows (DesignWrapWindows.cs): the frame, sill and header solid, the glass see-through.
+        foreach (var w in Arr(S, "wrapWindows"))
+        {
+            if (hideHull)
+                break;
+            var wid = I(w, "id");
+            var picked = _selKind == "wrapwin" && _selId == wid;
+            var fm = new Mat(0xffffff, Metal: 0.35f, Emissive: picked ? 0x1d4f86u : (!B(w, "ok", true) ? 0x5a1408u : 0));
+            if (ghost)
+                fm = fm with { Alpha = ghostMat.Alpha, Transparent = true, DepthWrite = false };
+            Add(GeoOf(Get(w, "mesh")), fm, new DesignPick("wrapwin", wid), true, default, true);
+            Add(GeoOf(Get(w, "glass")), new Mat(0xffffff, Alpha: 0.5f, Transparent: true, DepthWrite: false, Metal: 0.3f, Emissive: picked ? 0x1d4f86u : 0x0b2236u, Order: 5), new DesignPick("wrapwin", wid), true, default, true);
+        }
         foreach (var p in Arr(S, "pieces"))
         {
             if (!_vParts && _sdMode != "pieces")
