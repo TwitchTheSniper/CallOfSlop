@@ -127,6 +127,7 @@ public sealed class CStore
     public byte[]? SlabLanes; // ...each column's stacks: how many high, MaxLanes a column
     public int SlabN, SlabSum; // ...columns, and the pieces in them (not ItemCount: the places are worked out again)
     public int PackedFor; // ...the hold size they were packed for (ConstructRackPack.Shape; 0: unknown, as a client reads them)
+    public int PadFullVer = -1, PadFullN, PadFullShape; public ushort PadFullDef; // ...a Pad Tile pad found no room for this kind at this version (ConstructRackPack.PadPlace: its search isn't run again every look)
 
     public void Reset(int slots)
     {

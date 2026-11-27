@@ -255,6 +255,8 @@ public static class ConstructRackPack
     {
         slab = lane = -1;
         made = default;
+        if (st.PadFullVer == st.Version && st.PadFullDef == d.Id && st.PadFullN == st.SlabN && st.PadFullShape == Shape(rd))
+            return 4; // (no room at this version: lifters, logistics and the station ask a full pad again and again)
         Hold(rd, out var lo, out var hi);
         int holdW = (int)((hi.X - lo.X) * 1000 + 0.5f), holdL = (int)((hi.Z - lo.Z) * 1000 + 0.5f);
         var pw = (int)MathF.Ceiling((Hi(rd, d).X - Lo(rd, d).X) * 1000 - 0.01f);
@@ -274,7 +276,7 @@ public static class ConstructRackPack
             // No spot as they lie: all again, largest footprint first (the new one with them), each in its first free spot. Only for a
             // pad of a few columns (big pieces): the layout costs columns to the fourth, and a pad of small pieces has room by its gaps.
             if (n > MaxRelay)
-                return 4;
+                return Full(rd, st, d);
             var order = _order ??= new int[MaxSlabs + 1];
             for (var s = 0; s <= n; s++)
                 order[s] = s;
@@ -299,7 +301,7 @@ public static class ConstructRackPack
                     laid[k] = new Foot { X0 = fx, Z0 = fz, W = f.W, L = f.L };
                 }
                 if (!ok)
-                    return 4;
+                    return Full(rd, st, d);
             }
             if (!dryRun)
                 for (var k = 0; k <= n; k++)
@@ -334,6 +336,12 @@ public static class ConstructRackPack
         slab = i;
         lane = 0;
         return 0;
+
+        static int Full(ConstructPartDef rd, CStore st, ConstructPartDef d)
+        {
+            (st.PadFullVer, st.PadFullDef, st.PadFullN, st.PadFullShape) = (st.Version, d.Id, st.SlabN, Shape(rd));
+            return 4;
+        }
 
         static long Area(int s, Foot[] feet, int n, long newArea) => s == n ? newArea : (long)feet[s].W * feet[s].L;
     }
