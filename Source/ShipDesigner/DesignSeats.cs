@@ -94,30 +94,50 @@ public static class DesignSeats
     /// </summary>
     public static DesignScene.Place? PlaceOf(ShipDesign d, Piece p)
     {
-        if (!IsSeat(p.Kind) || d.Hull(p.Hull) is not { } h || RoomOf(d, p) is not { } r)
+        var fur = DesignFurnishings.Of(p.Kind);
+        if (!IsSeat(p.Kind) && fur is null || d.Hull(p.Hull) is not { } h || RoomOf(d, p) is not { } r)
             return null;
         var at = DesignScene.Where(h, p).O;
         var b = d.Box(r);
-        double In(double v, double lo, double hi) => hi - lo <= 2 * Inset ? (lo + hi) / 2 : Math.Clamp(v, lo + Inset, hi - Inset);
-        double[] o, up, face;
-        if (d.Stacked)
+        // An interior piece (DesignFurnishings) keeps its own half sizes in from the walls; a wall one backs onto the nearest wall.
+        var s = Math.Max(0.25, p.Size);
+        // (and stands on its shell's floor, clear of its walls: DesignScene.FloorTop, ShellDepth)
+        var wall = fur is null ? 0 : DesignScene.ShellDepth(r);
+        double inX = fur is null ? Inset : fur.Hx * s + 0.02 + wall, inZ = fur is null ? Inset : fur.Hz * s + 0.02 + wall;
+        double In(double v, double lo, double hi, double inset) => hi - lo <= 2 * inset ? (lo + hi) / 2 : Math.Clamp(v, lo + inset, hi - inset);
+        // Plan axes a (across) and l (along), the floor's up axis; stacked decks have up as -z (a floor is the deck's aft face).
+        int ax = 0, al = d.Stacked ? 1 : 2, upA = d.Stacked ? 2 : 1;
+        var o = new double[3];
+        double[] up = d.Stacked ? [0, 0, -1] : [0, 1, 0];
+        double[] face = d.Stacked ? [0, 1, 0] : [0, 0, -1]; // (a seat faces the bow; stacked: the dorsal side)
+        var lift = fur is null ? 0 : DesignScene.FloorTop(r) + 0.004;
+        o[upA] = d.Stacked ? b[5] - lift : b[2] + lift;
+        if (fur is { Wall: true })
         {
-            // Stacked decks: up is -z (a floor is the deck's aft face), the sitter faces the dorsal side.
-            o = [In(at[0], b[0], b[1]), In(at[1], b[2], b[3]), b[5]];
-            (up, face) = ([0, 0, -1], [0, 1, 0]);
+            // The wall nearest the drop: its back against it, facing into the room, its width along the wall.
+            double a0 = b[2 * ax], a1 = b[2 * ax + 1], l0 = b[2 * al], l1 = b[2 * al + 1];
+            var walls = new (double Dist, int Axis, int Sign)[] { (at[ax] - a0, ax, 1), (a1 - at[ax], ax, -1), (at[al] - l0, al, 1), (l1 - at[al], al, -1) };
+            var w = walls.MinBy(x => x.Dist);
+            face = [0, 0, 0];
+            face[w.Axis] = w.Sign;
+            var other = w.Axis == ax ? al : ax;
+            o[w.Axis] = w.Sign > 0 ? b[2 * w.Axis] + inZ : b[2 * w.Axis + 1] - inZ;
+            if (b[2 * w.Axis + 1] - b[2 * w.Axis] <= 2 * inZ)
+                o[w.Axis] = (b[2 * w.Axis] + b[2 * w.Axis + 1]) / 2;
+            o[other] = In(at[other], b[2 * other], b[2 * other + 1], inX);
         }
         else
         {
-            o = [In(at[0], b[0], b[1]), b[2], In(at[2], b[4], b[5])];
-            (up, face) = ([0, 1, 0], [0, 0, -1]);
+            o[ax] = In(at[ax], b[2 * ax], b[2 * ax + 1], fur is null ? Inset : Math.Max(inX, inZ));
+            o[al] = In(at[al], b[2 * al], b[2 * al + 1], fur is null ? Inset : Math.Max(inX, inZ));
         }
         if (p.Turn != 0)
         {
             // Turned about the floor's normal (positive: to the right, seen from above).
             var a = -p.Turn * Math.PI / 180;
             var side = Cross(face, up);
-            double c = Math.Cos(a), s = Math.Sin(a);
-            face = [face[0] * c + side[0] * s, face[1] * c + side[1] * s, face[2] * c + side[2] * s];
+            double c = Math.Cos(a), sn = Math.Sin(a);
+            face = [face[0] * c + side[0] * sn, face[1] * c + side[1] * sn, face[2] * c + side[2] * sn];
         }
         var x = Cross(up, face);
         return new DesignScene.Place(o, x, up, face);

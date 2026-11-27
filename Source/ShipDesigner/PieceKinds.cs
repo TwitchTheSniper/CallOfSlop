@@ -180,6 +180,8 @@ public static class PieceKinds
         ..DesignSeats.Kinds,
         // Light bars on the hull and in rooms (Karl, 2026-11-27): DesignLightBars.
         ..DesignLightBars.Kinds,
+        // Interior equipment that stands on a room's floor (Karl, 2026-11-27): DesignFurnishings.
+        ..DesignFurnishings.Kinds,
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>

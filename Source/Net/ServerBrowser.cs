@@ -812,7 +812,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      (DesignParts*.cs), so a design key builds different elements on an older peer; no message changed.
     // 480: CfgKey LineSplit in the retired RackSize's slot (the enum is full), a Building Station's "Line split" setting (a new config slot): how its extrusion orders are shared
     //      over its lines (ConstructCrafting.SplitAsk).
-    public const ushort ProtocolVersion = 480;
+    // 481: design interior pieces (DesignFurnishings.cs: reactors, tanks, bunks, consoles and the rest) stand on room floors as piece
+    //      elements, so a design holding one builds different elements on an older peer; no message changed.
+    public const ushort ProtocolVersion = 481;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

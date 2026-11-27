@@ -62,6 +62,12 @@ is in `DesignParts.cs` (the bill of materials):
   across on a ceiling). Its strip is a lit run of its mesh (`DesignMesh.Glowing`): the designer and the page draw it unlit,
   and the game's design shader draws a vertex whose colour has alpha 0 unlit with bloom (a lit room's ceiling strips too). In
   the game its element has no collider and holds lamps along the strip, one every 1.8 m (at most 14), always on.
+- **Interior pieces** (`DesignFurnishings.cs`, 2026-11-27): reactors, batteries, life support, tanks, containers, bunks,
+  lockers, consoles, galley, heads, med bay, workshop, armoury and the jump drive, each drawn fresh after the game part named in
+  its description. They share the seat's socket and placing (`DesignSeats.PlaceOf`): a free-standing one stands on its room's
+  floor at the point nearest the drop, a wall one backs onto the nearest wall, facing in. In the game each is solid structure
+  for now (no function yet). The checks warn when one is taller than its room or won't fit its floor. The Pieces palette is a
+  gallery: Outside / Inside and per-category filters, a search, picture cards under category headings.
 - **Thrusters:** a drive pushes along its face's normal (`ThrustExhaust`, any direction, not only an axis), 3 MN for a Main
   drive and 0.8 MN for a Small one at size 1, by size squared. An RCS quad is four nozzle elements (two across, two along), 5 MN
   each at size 1 (Heavy RCS 1.6 times its size). **Unfed for now:** `EngineFuel.None`, no tank, no power drawn, in Creative and

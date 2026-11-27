@@ -1156,6 +1156,7 @@ public static partial class DesignScene
         }
         PieceWeapons.Check(d, c); // weapons' reserved volumes (Karl, 2026-11-26)
         DesignSeats.Check(d, c); // a helm to fly it (Karl, 2026-11-26)
+        DesignFurnishings.Check(d, c); // interior pieces that fit their rooms (Karl, 2026-11-27)
 
         // Every room reachable from a way aboard.
         var queue = new Queue<int>(entries.Distinct());
