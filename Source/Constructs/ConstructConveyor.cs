@@ -311,7 +311,9 @@ public static class ConstructConveyor
     }
 
     public const int DropMost = 40; // the most pieces one held F drops loose (each is a body)
-    public const float RackDrawNear = 30f; // nearer than this a rack draws every piece; further, one box a column
+    public const float RackDrawNear = 50f; // nearer than this a rack draws every piece whole (30 m before 2026-11-27, Sean: "a little aggressive")
+    public const float RackDrawMid = 130f; // nearer than this every piece, less its boxes too small to see (RackDetailPerMetre); further, one box a column
+    public const float RackDetailPerMetre = 1f / 350f; // between the two: a box under this many metres a metre away isn't drawn (2.9 px on a 1080p view; 14 cm at 50 m, 37 cm at 130 m)
 
     /// <summary>With the caches: a body's Piece Racks (they are special parts: they have stores).</summary>
     public static void BuildRacks(Construct c)
