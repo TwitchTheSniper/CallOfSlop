@@ -162,7 +162,7 @@ public static partial class DesignScene
                     (double X, double Y, double Z) Nc(double t, double v) => Nrm(Gc(t), v);
                     (double, double, double) Wc(double t, double v, double off) => W(Gc(t), v, off);
                     LayGrid(m, hex ? nu : cols, nv, arc, len, rng, heavy, h.CladDepth, col, hex ? P : Pc, hex ? Nrm : Nc, hex ? W : Wc, blocked,
-                        (u, v, cell) => h.Paint(za + (zb - za) * v, hex ? u : Gc(u), arc, i * 4096 + cell + 777, panel), 0, hex, h.Damage, h.DamageSeed, panel, hex ? null : brk);
+                        (u, v, cell) => h.Paint(za + (zb - za) * v, hex ? u : Gc(u), arc, i * 4096 + cell + 777, panel), 0, hex, h.Damage, h.DamageSeed, panel, hex ? null : brk, Gc, knot);
                     continue;
                 }
                 for (var r = 0; r < nv; r++)
@@ -190,7 +190,7 @@ public static partial class DesignScene
                     (double X, double Y, double Z) Nr(double u, double v) => Nrm(G(u), r0 + (r1 - r0) * v);
                     (double, double, double) Wr(double u, double v, double off) => W(G(u), r0 + (r1 - r0) * v, off);
                     LayGrid(m, cells, 1, rowArc, len / nv, rng, heavy, h.CladDepth, col, Pr, Nr, Wr, blocked,
-                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777, panel), cap ? 1 : 0, hex, h.Damage, h.DamageSeed, panel);
+                        (u, v, cell) => h.Paint(za + (zb - za) * (r0 + (r1 - r0) * v), G(u), arc, i * 4096 + rr * 97 + cell + 777, panel), cap ? 1 : 0, hex, h.Damage, h.DamageSeed, panel, null, G, knot);
                 }
             }
         }
@@ -287,7 +287,7 @@ public static partial class DesignScene
     /// <summary>One grid of cells over P, its cells an opening may reach left bare, then laid with <see cref="LayPlates"/>.</summary>
     private static void LayGrid(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W,
-        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false, bool[]? brk = null)
+        CladMask mask, Func<double, double, int, (byte, byte, byte)> paint, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null)
     {
         var taken = new bool[nu, nv];
         var trim = new bool[nu, nv];
@@ -308,7 +308,7 @@ public static partial class DesignScene
             }
         // The trimmed cells' plate heights are drawn from their own seed, so the rest of the grid lays as before.
         var trng = new Random(rng.Next());
-        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed, panel, brk);
+        LayPlates(m, nu, nv, arc, len, rng, heavy, depth, col, P, Nrm, W, taken, paint, maxAcross, hex, damage, dseed, panel, brk, toU, knots);
         if (!any)
             return;
         for (var a = 0; a < nu; a++)
@@ -406,7 +406,7 @@ public static partial class DesignScene
     /// </summary>
     internal static void LayPlates(DesignMesh m, int nu, int nv, double arc, double len, Random rng, bool heavy, double depth, (byte, byte, byte) col,
         Func<double, double, (double X, double Y, double Z)> P, Func<double, double, (double X, double Y, double Z)> Nrm, Func<double, double, double, (double, double, double)> W, bool[,] taken,
-        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false, bool[]? brk = null)
+        Func<double, double, int, (byte, byte, byte)>? paint = null, int maxAcross = 0, bool hex = false, double damage = 0, int dseed = 0, bool panel = false, bool[]? brk = null, Func<double, double>? toU = null, double[]? knots = null)
     {
         if (hex)
         {
@@ -471,24 +471,27 @@ public static partial class DesignScene
                         e -= fx.Dent * Math.Sin(Math.PI * Math.Clamp(su, 0, 1)) * Math.Sin(Math.PI * Math.Clamp((v - pv0) / (pv1 - pv0), 0, 1));
                     return Math.Max(e, 0.006);
                 }
+                // Where the top bends with the skin across: at even steps, and at every profile point inside the plate (Karl, 2026-11-27: a
+                // plate laid flat over a point of the profile let the skin poke through its middle, worst on a tapering bow).
+                var us = Stops(pu0, pu1, cu * (fx.Dent > 0 ? 2 : 1), toU, knots);
                 if (panel)
                 {
-                    PanelSlab(m, W, pu0, pu1, pv0, pv1, arc, len, cu, cv, fx.Dent > 0 ? 2 : 1, (u, v) => -CladSink, H, 0.07, top, side);
+                    PanelSlab(m, W, pu0, pu1, pv0, pv1, arc, len, us, cv, fx.Dent > 0 ? 2 : 1, (u, v) => -CladSink, H, 0.07, top, side);
                     // A stepped plate: a second, smaller slab on its face (the Zero Day's), 2 to 4 cm higher, a shade lighter.
                     double pw = (pu1 - pu0) * arc, pl = (pv1 - pv0) * len;
                     if (stepped && pw > 0.7 && pl > 0.7)
                     {
                         double su0 = pu0 + (pu1 - pu0) * 0.2, su1 = pu1 - (pu1 - pu0) * 0.14, sv0 = pv0 + (pv1 - pv0) * 0.16, sv1 = pv1 - (pv1 - pv0) * 0.2;
                         var up = (0.02 + 0.02 * gr.Item1) * depth;
-                        PanelSlab(m, W, su0, su1, sv0, sv1, arc, len, 1, 1, 1, (u, v) => H(u, v) - 0.01, (u, v) => H(u, v) + up, 0.04,
+                        PanelSlab(m, W, su0, su1, sv0, sv1, arc, len, Stops(su0, su1, 1, toU, knots), 1, 1, (u, v) => H(u, v) - 0.01, (u, v) => H(u, v) + up, 0.04,
                             DesignMesh.Tone(top, 1.08), DesignMesh.Tone(side, 1.08));
                     }
                     continue; // (no abrasion or greebles: the armour's look is clean panels)
                 }
                 // The top follows the skin's curve: one quad a cell (a dented plate four).
                 var sub = fx.Dent > 0 ? 2 : 1;
-                int tu = cu * sub, tv = cv * sub;
-                double U(int k) => pu0 + (pu1 - pu0) * k / tu;
+                int tu = us.Length - 1, tv = cv * sub;
+                double U(int k) => us[k];
                 double V(int k) => pv0 + (pv1 - pv0) * k / tv;
                 (double, double, double) T(double u, double v) => W(u, v, H(u, v));
                 for (var x = 0; x < tu; x++)
@@ -558,17 +561,17 @@ public static partial class DesignScene
     /// that follows the skin, cu by cv quads (times sub). The bevel catches the light, as the Zero Day's armour does.
     /// </summary>
     private static void PanelSlab(DesignMesh m, Func<double, double, double, (double, double, double)> W, double u0, double u1, double v0, double v1,
-        double arc, double len, int cu, int cv, int sub, Func<double, double, double> foot, Func<double, double, double> head, double bevel,
+        double arc, double len, double[] us, int cv, int sub, Func<double, double, double> foot, Func<double, double, double> head, double bevel,
         (byte, byte, byte) top, (byte, byte, byte) side)
     {
         double pw = (u1 - u0) * arc, pl = (v1 - v0) * len;
         var bv = Math.Min(bevel, Math.Min(pw, pl) / 4);
         double bu = bv / arc, bvv = bv / len;
         var lit = DesignMesh.Tone(top, 1.12);
-        int tu = cu * sub, tv = cv * sub;
-        double U(int k) => u0 + (u1 - u0) * k / tu;
+        int tu = us.Length - 1, tv = cv * sub;
+        double U(int k) => us[k];
         double V(int k) => v0 + (v1 - v0) * k / tv;
-        double Ui(int k) => u0 + bu + (u1 - u0 - 2 * bu) * k / tu;
+        double Ui(int k) => u0 + bu + (us[k] - u0) * (u1 - u0 - 2 * bu) / (u1 - u0);
         double Vi(int k) => v0 + bvv + (v1 - v0 - 2 * bvv) * k / tv;
         double Mid(double u, double v) // (the bevel starts half way up what stands clear of the skin, or of the plate under it)
         {
@@ -595,6 +598,39 @@ public static partial class DesignScene
             m.Quad(F(u1, V(y)), F(u1, V(y + 1)), B(u1, V(y + 1)), B(u1, V(y)), side, false);
             m.Quad(B(u1, V(y)), B(u1, V(y + 1)), T(u1 - bu, Vi(y + 1)), T(u1 - bu, Vi(y)), lit, false);
         }
+    }
+
+    /// <summary>
+    /// The steps across a plate from a to b (grid shares): n even pieces, and the share of every profile point inside it, found through
+    /// <paramref name="toU"/> (grid share to the profile's share, rising) against <paramref name="knots"/> (the profile points' shares), so
+    /// a plate's top and skirts bend where the skin does. Without them, the n pieces.
+    /// </summary>
+    private static double[] Stops(double a, double b, int n, Func<double, double>? toU, double[]? knots)
+    {
+        n = Math.Max(1, n);
+        var list = new List<double>(n + 4);
+        for (var k = 0; k <= n; k++)
+            list.Add(a + (b - a) * k / n);
+        if (toU is not null && knots is not null && b > a)
+        {
+            double ua = toU(a), ub = toU(b);
+            foreach (var kn in knots)
+            {
+                if (kn <= ua + 1e-6 || kn >= ub - 1e-6)
+                    continue;
+                double lo = a, hi = b;
+                for (var it = 0; it < 40; it++)
+                {
+                    var mid = (lo + hi) / 2;
+                    if (toU(mid) < kn) lo = mid; else hi = mid;
+                }
+                var t = (lo + hi) / 2;
+                if (list.TrueForAll(q => Math.Abs(q - t) > (b - a) * 1e-3))
+                    list.Add(t);
+            }
+            list.Sort();
+        }
+        return [.. list];
     }
 
     /// <summary>The primer under a missing plate (Karl, 2026-11-25): dark and matte, no paint pattern.</summary>
