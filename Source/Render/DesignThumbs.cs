@@ -122,7 +122,8 @@ public static unsafe class DesignThumbs
             var d = _yard ??= DesignTemplates.Start("Blank hull");
             var h = d.Hulls[0];
             d.Pieces.Clear();
-            var p = new Piece { Id = d.NewId(), Kind = kind.Name, Hull = h.Id, Pair = false, Surface = kind.Where == "skin" ? "skin" : "fore" };
+            // (a room's light bar is drawn as the hull's: the yard's blank hull has no room for it to go in, and the two look alike)
+            var p = new Piece { Id = d.NewId(), Kind = kind.Name == DesignLightBars.Room ? DesignLightBars.Hull : kind.Name, Hull = h.Id, Pair = false, Surface = kind.Where == "skin" ? "skin" : "fore" };
             d.Pieces.Add(p);
             DesignHangar.Init(d, p);
             DesignSeats.Init(d, p);
