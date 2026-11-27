@@ -77,7 +77,7 @@ public static partial class DesignParts
                 for (var tr = 0; tr < solid.Tris; tr++)
                     look.AddTri(solid, tr, Vector3.One, new Vector3(float.NaN));
                 for (var tr = 0; tr < glow.Tris; tr++)
-                    look.AddTri(glow, tr, Vector3.One, new Vector3(float.NaN));
+                    look.AddTri(glow, tr, Vector3.One, new Vector3(float.NaN), r.Lights); // (lit strips glow as lamps; a dark room's stay plain)
             }
             // Its colliders: the shell's boxes (merged), those the clip bent as hulls, and the hull shell's strips.
             var solids = new List<ElementBox>();

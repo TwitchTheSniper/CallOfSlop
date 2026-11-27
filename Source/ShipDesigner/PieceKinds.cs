@@ -29,7 +29,7 @@ public sealed record PieceKind(string Name, string Group, string Where, string? 
     /// clearance and hole size sliders (Karl, 2026-11-25).</summary>
     public (double Hx, double Hz, bool Round)? Footprint => Opening ?? Name switch
     {
-        "Main drive" => (1.35, 1.35, true), "Small drive" => (0.7, 0.7, true), "RCS quad" => (0.35, 0.35, false), _ => PieceDocking.Footprint(Name) ?? DesignFittings.Footprint(Name),
+        "Main drive" => (1.35, 1.35, true), "Small drive" => (0.7, 0.7, true), "RCS quad" => (0.35, 0.35, false), _ => PieceDocking.Footprint(Name) ?? DesignFittings.Footprint(Name) ?? DesignLightBars.Footprint(Name),
     };
 }
 
@@ -195,6 +195,8 @@ public static class PieceKinds
         ..DesignFittings.Kinds,
         // The crew seat with its role (Karl, 2026-11-26): DesignSeats.
         ..DesignSeats.Kinds,
+        // Light bars on the hull and in rooms (Karl, 2026-11-27): DesignLightBars.
+        ..DesignLightBars.Kinds,
     ];
 
     /// <summary>The boarding ramp's frame on the skin and its well in to the room's floor (depth metres).</summary>

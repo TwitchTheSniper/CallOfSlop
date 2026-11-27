@@ -318,6 +318,9 @@ public sealed partial class Ui
             if (!B(p, "ok", true))
                 mat = mat with { Emissive = 0x5a1408 };
             Add(GeoOf(Get(p, "mesh")), mat, new DesignPick("piece", I(p, "id")), true, default, true);
+            var pg = Get(p, "glow"); // (a light bar's strip: unlit, so it reads as a lamp)
+            if (Found(pg) && Get(pg, "p").GetArrayLength() > 0)
+                Add(GeoOf(pg), new Mat(Alpha: Inside ? 0.35f : 1, Transparent: Inside, DepthWrite: !Inside, Unlit: true), new DesignPick("piece", I(p, "id")), true, default, true);
         }
         if (_vRooms && (Inside || _vXray || _pickRoomFor != 0))
             DrawRooms();

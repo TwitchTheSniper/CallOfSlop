@@ -126,6 +126,34 @@ public static partial class DesignParts
         return lamps;
     }
 
+    /// <summary>The most lamps one light bar holds (a 24 m bar's, one every <see cref="ConstructLamps.StripSpacing"/>).</summary>
+    public const int MaxBarLamps = 14;
+
+    /// <summary>
+    /// A light bar's element (DesignLightBars, Karl 2026-11-27): its part holds lamps along its strip in its colour at its brightness, always on
+    /// as a room's are (the roomlights function), and it has no collider (a strip on a wall: nothing a person walks into). Its lamps are worked out
+    /// at the piece's own place <paramref name="w0"/> and moved to this copy's <paramref name="w"/> (a mirrored twin's, a pair's).
+    /// </summary>
+    private static void BarLamps(ShipDesign d, Piece p, DesignScene.Place w0, DesignScene.Place w, Element e)
+    {
+        e.Hulls = [];
+        e.NoCollider = true;
+        var lamps = DesignLightBars.Lamps(d, p, ConstructLamps.StripSpacing, MaxBarLamps);
+        if (lamps.Count == 0)
+            return;
+        var at = new Vector3[lamps.Count];
+        for (var i = 0; i < lamps.Count; i++)
+        {
+            var q = lamps[i];
+            double[] r = [q[0] - w0.O[0], q[1] - w0.O[1], q[2] - w0.O[2]];
+            double lx = r[0] * w0.X[0] + r[1] * w0.X[1] + r[2] * w0.X[2], ly = r[0] * w0.Y[0] + r[1] * w0.Y[1] + r[2] * w0.Y[2], lz = r[0] * w0.Z[0] + r[1] * w0.Z[1] + r[2] * w0.Z[2];
+            at[i] = new Vector3((float)(w.O[0] + w.X[0] * lx + w.Y[0] * ly + w.Z[0] * lz), (float)(w.O[1] + w.X[1] * lx + w.Y[1] * ly + w.Z[1] * lz), (float)(w.O[2] + w.X[2] * lx + w.Y[2] * ly + w.Z[2] * lz));
+        }
+        var c = DesignMesh.Hex(p.Beam);
+        e.Fn = "roomlights";
+        LampsOf.AddOrUpdate(e, new RoomLamps(at, new Vector3(c.R, c.G, c.B) / 255f * (float)p.Bright));
+    }
+
     private static void RegisterLights(KindTable k) => k.Fn("roomlights", _ => Template.ShallowCopy(), LightsFinish);
 
     /// <summary>A lights element's part: its lamps, in the part's frame (moved by its origin: a structure element stands unturned).</summary>
@@ -191,7 +219,7 @@ public static partial class DesignParts
             if (!IsDesign(di))
                 continue;
             ref var p = ref c.Parts[i];
-            var usable = di.Role == PartRole.Seat || di.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.KeySwitch || KeepsUse(di) && ElementOf(di) is not { Kind: "lights" };
+            var usable = di.Role == PartRole.Seat || di.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.KeySwitch || KeepsUse(di) && ElementOf(di) is not ({ Kind: "lights" } or { Fn: "roomlights" });
             var room = !usable && ElementOf(di) is { Kind: "floor" };
             if (!usable && !room)
                 continue;

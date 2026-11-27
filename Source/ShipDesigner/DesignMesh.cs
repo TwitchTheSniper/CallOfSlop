@@ -28,6 +28,45 @@ public sealed class DesignMesh
             (Leaves ??= []).Add((from, Tris, leaf));
     }
 
+    /// <summary>
+    /// Its lit runs (light bars, Karl 2026-11-27): triangles From to To that are a lamp's face, drawn unlit and bright (the page and the
+    /// designer as an unlit mesh, the game's design shader unlit with bloom). Null: none.
+    /// </summary>
+    public List<(int From, int To)>? Glows;
+
+    /// <summary>Draws <paramref name="draw"/>'s triangles as a lit run.</summary>
+    public void Glowing(Action draw)
+    {
+        var from = Tris;
+        draw();
+        if (Tris > from)
+            (Glows ??= []).Add((from, Tris));
+    }
+
+    /// <summary>Whether triangle t is in a lit run.</summary>
+    public bool IsGlow(int t)
+    {
+        if (Glows is not { } gs)
+            return false;
+        foreach (var g in gs)
+            if (t >= g.From && t < g.To)
+                return true;
+        return false;
+    }
+
+    /// <summary>Its triangles split into the plain and the lit (the page's piece mesh and its "glow").</summary>
+    public (DesignMesh Solid, DesignMesh Glow) SplitGlow()
+    {
+        var (a, b) = (new DesignMesh(), new DesignMesh());
+        for (var t = 0; t < Tris; t++)
+        {
+            var o = IsGlow(t) ? b : a;
+            o.P.AddRange(P.GetRange(t * 9, 9));
+            o.C.AddRange(C.GetRange(t * 9, 9));
+        }
+        return (a, b);
+    }
+
     // The frame: origin and the three axes.
     private double _ox, _oy, _oz;
     private double[] _x = [1, 0, 0], _y = [0, 1, 0], _z = [0, 0, 1];
@@ -134,6 +173,10 @@ public sealed class DesignMesh
     public void MirrorFrom(int fromTri, double cx)
     {
         var end = Tris;
+        if (Glows is { } gs)
+            foreach (var g in gs.ToArray())
+                if (g.From >= fromTri && g.To <= end)
+                    gs.Add((g.From - fromTri + end, g.To - fromTri + end)); // (a lit run's copy is lit too)
         for (var t = fromTri; t < end; t++)
             for (var v = 2; v >= 0; v--)
             {

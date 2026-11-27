@@ -516,7 +516,7 @@ public static partial class DesignParts
 
     private static DesignMesh Mirror(DesignMesh m, double cx)
     {
-        var o = new DesignMesh { Leaves = m.Leaves }; // (its triangles in the same order: its door leaves too)
+        var o = new DesignMesh { Leaves = m.Leaves, Glows = m.Glows }; // (its triangles in the same order: its door leaves and lit runs too)
         for (var t = 0; t < m.Tris; t++)
             for (var v = 2; v >= 0; v--)
             {
@@ -980,7 +980,8 @@ public static partial class DesignParts
         public List<float> Pos => _p; // (its corners so far, x y z a corner: what a collider is cut from)
 
         /// <param name="middle">What a normal faces away from: a point, or (NaN z) a line along z through x, y; all NaN: the triangle's own side (as drawn).</param>
-        public void AddTri(DesignMesh m, int t, Vector3 tint, Vector3 middle)
+        /// <param name="glow">Drawn unlit and bright (a lamp's face: its colour's alpha 0, which the design shader reads as glow).</param>
+        public void AddTri(DesignMesh m, int t, Vector3 tint, Vector3 middle, bool glow = false)
         {
             var i = t * 9;
             var a = new Vector3((float)m.P[i], (float)m.P[i + 1], (float)m.P[i + 2]);
@@ -1006,7 +1007,7 @@ public static partial class DesignParts
                 _n.Add(n.X); _n.Add(n.Y); _n.Add(n.Z);
                 var ci = (t * 3 + k) * 3;
                 var col = ci + 2 < m.C.Count ? new Vector3(m.C[ci], m.C[ci + 1], m.C[ci + 2]) / 255f * tint : tint;
-                _c.Add(Pack(col));
+                _c.Add(glow ? Pack(col) & 0x00ffffffu : Pack(col));
             }
         }
 

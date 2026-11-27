@@ -22,7 +22,7 @@ public static partial class DesignParts
             var one = DesignScene.PieceMesh(d, p, copies: false, shut: true); // (its doors shut, each leaf its own element: DesignParts.Doors.cs)
             if (one.Tris == 0)
                 continue;
-            var w0 = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? DesignScene.Where(h, p);
+            var w0 = DesignSeats.PlaceOf(d, p) ?? DesignLightBars.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? DesignScene.Where(h, p);
             var rampFloor = p.Kind == DesignRamp.Kind ? DesignScene.RampDepth(d, p, w0) ?? 0 : 0; // (one drawing for every copy: its mirrors are of it)
             var sets = new List<(DesignMesh M, int Copy, DesignScene.Place W)> { (one, p.Copy, w0) };
             if (p.Mirror)
@@ -39,7 +39,7 @@ public static partial class DesignParts
                 var e = new Element { Id = sets.Count > 1 ? $"p{pi}.{k}" : $"p{pi}", Kind = "piece", Name = p.Kind, Mesh = new LookBuilder() };
                 for (var tr = 0; tr < m.Tris; tr++)
                     if (!InLeaf(m, tr))
-                        e.Mesh.AddTri(m, tr, Vector3.One, new Vector3(float.NaN));
+                        e.Mesh.AddTri(m, tr, Vector3.One, new Vector3(float.NaN), m.IsGlow(tr));
                 e.Area = e.Mesh.Area;
                 e.Kg = e.Area * PieceKgPerM2;
                 HullOf(e, Unleaved(m));
@@ -48,6 +48,8 @@ public static partial class DesignParts
                 if (st.BandAt(p.Hull, sets[k].Copy, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f) is var b and >= 0)
                     Weld(els, b, at);
                 Works(new PieceAt(p, e, at, sets[k].W, els));
+                if (DesignLightBars.IsBar(p.Kind))
+                    BarLamps(d, p, w0, sets[k].W, e); // (its lamps along its strip, moved to this copy's place)
                 if (p.Kind == "Landing leg")
                     Leg(new PieceAt(p, e, at, sets[k].W, els), m); // (its leg is landing gear, not a door F works)
                 else if (p.Kind == DesignRamp.Kind)

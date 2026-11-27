@@ -108,6 +108,8 @@ public sealed class DesignSession
             ["seat"] = DesignSeats.Defaults(),
             // A boarding ramp's extension (DesignRamp).
             ["ramp"] = DesignRamp.Defaults(),
+            // A light bar's length, brightness, height and colour (DesignLightBars).
+            ["bar"] = DesignLightBars.Defaults(),
         };
         return c.ToJsonString();
     }
