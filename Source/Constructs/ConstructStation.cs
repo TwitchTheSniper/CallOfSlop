@@ -117,7 +117,8 @@ public sealed partial class StationJob
     // ---- Client only: the effects it has shown.
     public byte SeenFit, SeenLink;
     public readonly byte[] ArmSeen = new byte[ConstructStation.MaxArms];
-    public readonly double[] ArmStart = new double[ConstructStation.MaxArms]; // when each rover's trip began, on this peer's clock
+    public readonly double[] ArmStart = new double[ConstructStation.MaxArms]; // when each rover's trip began, on this peer's clock (eased onto the ticked trip: DrawnPace)
+    public readonly double[] ArmSetOut = new double[ConstructStation.MaxArms]; // when each trip began as first heard, never eased: the rovers' order off a pad (Rank)
     public byte HeardFit, HeardLink;
     public double FitAt, LinkAt2;
 }
@@ -133,8 +134,6 @@ public sealed partial class StationJob
 public static partial class ConstructStation
 {
     public const float FitSeconds = 2f; // the core fits one part this often by itself...
-    public const float FitSecondsPerKg = 0.02f; // ...plus this for its mass...
-    public const float FitSecondsMax = 10f; // ...at most
     public const float LinkSeconds = 1f; // a wire or a link laid
     public const double CostBudgetMs = 1.0; // a tick's slice of the scratch build
     public const int OrderEvery = 30; // ticks between looks at what to order (2 Hz)
@@ -1413,9 +1412,6 @@ public static partial class ConstructStation
         var world = j.Pos + Vector3.Transform(plan.Centre[k], j.Rot) + Vector3.UnitY * up;
         return Vector3.Transform(world - floor, Quaternion.Conjugate(rot));
     }
-
-    private static int FitTicksFor(ConstructPartDef d) =>
-        (int)(MathF.Min(FitSecondsMax, FitSeconds + d.Mass * FitSecondsPerKg) * World.TickRate);
 
     /// <summary>The next wire or link: laid when the steps it names are fitted and its stock is in a linked bin. True when the job moved on.</summary>
     private static bool NextLink(ConstructWorld world, Construct c, int t, StationJob j, Construct b)
