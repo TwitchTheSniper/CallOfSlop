@@ -474,7 +474,7 @@ public sealed partial class Ui
             Hint($"Follows {Str(src, "name")}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.");
         else
         {
-            foreach (var k in new[] { "Off", "Plates", "Heavy", "Hex" })
+            foreach (var k in ShipDesigner.HullBody.CladKinds)
             {
                 if (OnButton($"{k}##sdhc{k}", ck == k))
                     Hs(("clad", k));
@@ -499,7 +499,7 @@ public sealed partial class Ui
                 SeedRow("hcseed", I(clad, "seed", 1), v => Hs(("cladSeed", v)));
             }
         }
-        Hint("Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare.");
+        Hint("Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across; Panelled: bevelled graphite armour, 6-16 cm, on light trim seams of the hull's skin); the depth slider scales that. Windows and sockets stay bare.");
 
         // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
         H3("Damage");
@@ -1000,7 +1000,7 @@ public sealed partial class Ui
         string dfltKind = "join")
     {
         var kind = Str(clad, "kind", "Off");
-        foreach (var k in new[] { "Off", "Plates", "Heavy", "Hex" })
+        foreach (var k in ShipDesigner.HullBody.CladKinds)
         {
             if (OnButton($"{k}##sdcl{id}{k}", kind == k))
                 set(new JsonObject { [kindKey] = k });
@@ -1316,6 +1316,12 @@ public sealed partial class Ui
                 Row();
                 MatCombo("seatrole" + pid, Str(p, "role", ShipDesigner.DesignSeats.DefRole), ShipDesigner.DesignSeats.Roles, v => Cmd(C("setPiece", ("id", pid), ("role", v))));
                 Hint(Str(p, "role") == "Helm" ? "The helm flies the ship: its drives and RCS answer this seat, with nothing to wire." : "It stands on its room's floor, facing the bow (turn it with Turn left and right).");
+            }
+            if (Str(p, "fit").Length > 0 && Arr(CAT, "weapons").FirstOrDefault(w => Str(w, "name") == Str(p, "fit")) is var wk && Found(wk))
+            {
+                // A weapon socket's or mount's weapon (Karl, 2026-11-27: the PDC and the railgun go in sockets of their own).
+                H3("Weapon");
+                Hint($"{Str(p, "fit")}. {Str(wk, "desc")} It reserves its {Str(wk, "reserve")} (the hologram box){(Arr(p, "reserve").Any(r => r.GetArrayLength() > 12 && r[12].GetDouble() > 0) ? ": a room or the skin clips it" : "")}.");
             }
             if (Str(p, "kind") == ShipDesigner.DesignRamp.Kind)
             {

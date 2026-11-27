@@ -75,7 +75,7 @@ public sealed class DesignSession
         var r = new Room();
         // Weapon mounts' fittings and the pieces that feed them (Karl, 2026-11-26; DesignWeaponMounts.cs).
         c["roles"] = new JsonArray([.. DesignSeats.Roles.Select(r => (JsonNode)r)]); // a seat's roles (DesignSeats)
-        c["weapons"] = new JsonArray([.. PieceWeapons.Weapons.Select(w => (JsonNode)new JsonObject { ["name"] = w.Name, ["class"] = w.Class, ["desc"] = w.Desc, ["reserve"] = w.Reserve })]);
+        c["weapons"] = new JsonArray([.. PieceWeapons.Weapons.Select(w => (JsonNode)new JsonObject { ["name"] = w.Name, ["class"] = w.Class, ["desc"] = w.Desc, ["reserve"] = w.Reserve, ["socket"] = PieceWeapons.SocketOf(w.Name) })]);
         c["feeders"] = new JsonArray([.. PieceWeapons.Feeders.Select(f => (JsonNode)f)]);
         c["legacy"] = new JsonArray([.. PieceWeapons.Legacy.Select(f => (JsonNode)f)]);
         c["defaults"] = new JsonObject

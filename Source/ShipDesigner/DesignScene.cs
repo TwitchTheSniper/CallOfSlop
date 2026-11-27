@@ -312,7 +312,7 @@ public static partial class DesignScene
         var hc = CladView(d, h);
         // Each opening's clearance from the plates' height (Karl, 2026-11-25: a default that keeps plates off the frame).
         foreach (var k in cutouts)
-            k.Resolve((hc.Clad == "Heavy" ? 0.20 : 0.08) * hc.CladDepth);
+            k.Resolve(HullBody.CladRise(hc.Clad) * hc.CladDepth);
         if (hc.Clad != "Off")
             cladSize = CladBody(skinClad, hc, cx, (p, q) =>
             {
@@ -379,7 +379,7 @@ public static partial class DesignScene
     private static double AutoGap(ShipDesign d, HullBody h, double band)
     {
         var c = CladView(d, h);
-        return c.Clad == "Off" ? band + 0.03 : band + 0.5 * (c.Clad == "Heavy" ? 0.20 : 0.08) * c.CladDepth + 0.03;
+        return c.Clad == "Off" ? band + 0.03 : band + 0.5 * HullBody.CladRise(c.Clad) * c.CladDepth + 0.03;
     }
 
     /// <summary>The body as its cladding is laid: itself, or (matched) a copy with the other body's cladding and damage, its own paint and shape.</summary>
@@ -1668,7 +1668,7 @@ public static partial class DesignScene
               .Append(",\"gap\":").Append(ShipDesign.S(p.Gap)).Append(",\"hole\":").Append(ShipDesign.S(p.Hole)).Append(",\"depth\":").Append(ShipDesign.S(p.Depth)).Append(",\"double\":").Append(p.Double ? "true" : "false")
               .Append(",\"airW\":").Append(ShipDesign.S(p.AirW)).Append(",\"airH\":").Append(ShipDesign.S(p.AirH)).Append(",\"airD\":").Append(ShipDesign.S(p.AirD)).Append(",\"doorW\":").Append(ShipDesign.S(p.DoorW)).Append(",\"door\":").Append(Q(p.Door))
               .Append(",\"feed\":").Append(p.Feed).Append(",\"feeds\":").Append(PieceWeapons.IsFeeder(p.Kind) && PieceDocking.FeedOf(d, p) is { } fg ? fg.Id : 0)
-              .Append(",\"fit\":").Append(Q(p.Fit)).Append(",\"mountClass\":").Append(PieceWeapons.MountOf(p.Kind)?.Class ?? 0).Append(",\"reserve\":").Append(PieceWeapons.Json(d, p))
+              .Append(",\"fit\":").Append(Q(p.Fit)).Append(",\"mountClass\":").Append(PieceWeapons.MountOf(p.Kind)?.Class ?? 0).Append(",\"mountOnly\":").Append(PieceWeapons.MountOf(p.Kind)?.Only is { } mo ? Q(mo) : "null").Append(",\"reserve\":").Append(PieceWeapons.Json(d, p))
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
