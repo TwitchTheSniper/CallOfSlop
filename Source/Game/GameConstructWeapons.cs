@@ -382,6 +382,9 @@ public sealed partial class Game : IConstructTargets
         Tracers.Add(new Tracer { From = muzzle, To = e.At, Color = colour, Width = width, Born = now, Speed = speed, Life = g.Fx == GunFx.Beam ? BeamLife : MathF.Min(life, bow > 0 ? 4f : 1.5f), Bow = bow,
             Carry = carry, CarryEnd = (e.Hit & (CFireHit.World | CFireHit.Part | CFireHit.Target)) == 0 });
         ConstructRender.AddFlash(muzzle, fwd, now, g.Fx, carry);
+        // A round that ended on a design's window cracks it there, to the round's size (DesignGlassCracks.cs).
+        if ((e.Hit & CFireHit.Part) != 0 && g.Fx != GunFx.Flame)
+            Constructs.AddGlassCrack(muzzle, e.At, (float)def.Damage, def.Caliber, now);
         // One report a pull (the first pellet's event), not one per pellet.
         if (_cwLastReport.Body != e.Body || _cwLastReport.Part != e.Part || now - _cwLastReport.At > 0.03)
         {
@@ -408,4 +411,13 @@ public sealed partial class Game : IConstructTargets
 
     /// <summary>The largest gunner's recoil shake this peer has felt (the self-test).</summary>
     public float ConstructGunnerShake;
+
+    /// <summary>A hand gun's rounds that ended on a design's window crack it there, to the gun's size (DesignGlassCracks.cs): on every PC.</summary>
+    private void ShotCracks(ReadOnlySpan<Vector3> ends, Vector3 from, WeaponDef def, double now)
+    {
+        if (Mode != GameMode.Sandbox)
+            return;
+        foreach (var end in ends)
+            Constructs.AddGlassCrack(from, end, def.Damage, def.Caliber, now);
+    }
 }

@@ -2304,6 +2304,7 @@ public static unsafe partial class Program
         pass = Perf.Pass(PerfArea.ConstructDraw, PerfGpuPass.Constructs); // (the next two draw nothing in Sandbox)
         DrawSandbox(now); // Sandbox: the constructs (Program.Sandbox.cs); nothing in other modes
         DrawBoreScars(now); // the holes bores left in constructs (Program.SandboxBores.cs); nothing until a bore
+        DrawGlassCracks(now); // the cracks rounds left in design windows (Program.SandboxCracks.cs); nothing until one
         DrawAmmoFx(now); // special ammo flashes, in any mode (Program.Zombies.cs)
         DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op
         _worldView = view;
