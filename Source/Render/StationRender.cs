@@ -74,9 +74,9 @@ public static class StationRender
         float h, up = 0;
         Vector3 hook;
         ushort carried = ushort.MaxValue;
-        var wrist = 0f;
         var moving = false;
-        var turn = Quaternion.Identity;
+        var piece = Matrix4x4.Identity;
+        float headYaw = 0, headPitch = 0, headE = 0, weld = 0;
         if (j != null && j.ArmTicks[a] > 0)
         {
             var p = j.Rov[a];
@@ -86,11 +86,33 @@ public static class StationRender
             hook = p.HookAt(u);
             up = p.Up;
             moving = u < p.Total;
-            if (j.ArmDef[a] != ushort.MaxValue && !p.Home && u >= p.GripT && u < p.FitT)
+            if (j.ArmDef[a] != ushort.MaxValue && !p.Home && ConstructParts.Get(j.ArmDef[a]) is { } pd)
             {
-                carried = j.ArmDef[a];
-                turn = p.Turn;
-                wrist = Math.Clamp((u - p.GripT) / MathF.Max(0.5f, (p.FitT - p.GripT) * 0.7f), 0f, 1f);
+                // The wrist (the lab's): the piece turns on the way towards its turn where it goes, and swings round (yaw) with its
+                // leading end lifted (pitch) between leaving its pad and coming over its place, square again before it is set down; a
+                // plate is carried tilted, edge first. The gripper's head turns and tilts with it, and turns back once it lets go.
+                p.CarryTimes(out var lift, out var over, out var place);
+                var hv = pd.BoundsMax - pd.BoundsMin;
+                var lng = MathF.Max(hv.X, hv.Z);
+                var flat = hv.Y < 0.6f && lng > 1.5f;
+                var sgn = (j.ArmSeq[a] & 1) != 0 ? 1f : -1f;
+                var sw = over > lift + 0.05f ? MathF.Sin(MathF.PI * StationRovers.Ease((u - lift) / (over - lift))) : 0f;
+                if (u < lift || u > over)
+                    sw = 0;
+                var pitch = sw * (flat ? 0.55f : lng > 3 ? 0.3f : 0.15f) * sgn;
+                var yaw = sw * (lng > 3 ? 1.1f : 0.7f) * -sgn;
+                var wrist = Math.Clamp((u - p.GripT) / MathF.Max(0.5f, (p.FitT - p.GripT) * 0.7f), 0f, 1f);
+                var turned = u < p.GripT ? Quaternion.Identity : Quaternion.Slerp(Quaternion.Identity, p.Turn, StationRovers.Ease(wrist));
+                piece = Matrix4x4.CreateFromQuaternion(turned) * Matrix4x4.CreateRotationY(yaw); // (its pitch goes on in Rover, about the turret's side)
+                headYaw = JawsYaw(piece);
+                headPitch = pitch;
+                headE = u < p.GripT ? StationRovers.Ease(1f - (p.GripT - u)) : u < p.FitT ? 1f : StationRovers.Ease(1f - (u - p.FitT) / 1.5f);
+                if (u >= p.GripT && u < p.FitT)
+                {
+                    carried = j.ArmDef[a];
+                    if (u >= place && p.FitT > place)
+                        weld = MathF.Sin((float)(now * 40.0)) > -0.2f ? 1f : 0f; // (the weld's flicker round the piece while it is held in its place)
+                }
             }
         }
         else if (j != null && j.RovSet[a])
@@ -105,12 +127,20 @@ public static class StationRender
         var hookAt = new Vector3(at.X, 0, at.Y) + hook;
         if (up <= 0)
             up = hookAt.Y;
-        Rover(gfx, bay, rc, dk.Cls, at, h, hookAt, up, fold, carried, turn, wrist, moving, now);
+        Rover(gfx, bay, rc, dk.Cls, at, h, hookAt, up, fold, carried, piece, headYaw, headPitch, headE, weld, moving, now);
+    }
+
+    /// <summary>The heading (in the bay's frame, as the turret's yaw) that lines the jaws up across a piece turned by <paramref name="r"/>.</summary>
+    private static float JawsYaw(in Matrix4x4 r)
+    {
+        var xa = new Vector3(r.M11, r.M12, r.M13);
+        var za = new Vector3(r.M31, r.M32, r.M33);
+        return xa.X * xa.X + xa.Z * xa.Z >= za.X * za.X + za.Z * za.Z ? MathF.Atan2(-xa.Z, xa.X) : MathF.Atan2(za.X, za.Z);
     }
 
     /// <summary>One rover: its chassis at (<paramref name="at"/>, heading <paramref name="h"/>), its mast, turret and arm to the hook, the piece under the jaws.</summary>
     private static void Rover(Renderer gfx, Matrix4x4 bay, in RoverClass rc, int cls, Vector2 at, float h, Vector3 hook, float up, float fold, ushort carried,
-        Quaternion turn, float wrist, bool moving, double now)
+        Matrix4x4 piece, float headYaw, float headPitch, float headE, float weld, bool moving, double now)
     {
         var body = Matrix4x4.CreateRotationY(h) * Matrix4x4.CreateTranslation(at.X, 0, at.Y) * bay;
         Chassis(gfx, body, cls, moving, now);
@@ -131,7 +161,8 @@ public static class StationRender
         var wristPt = hook + new Vector3(0, 1f, 0);
         var flat = new Vector2(wristPt.X - shoulder.X, wristPt.Z - shoulder.Z);
         var yaw = flat.LengthSquared() > 0.0025f ? MathF.Atan2(flat.X, flat.Y) : h;
-        var tf = Matrix4x4.CreateRotationY(yaw) * Matrix4x4.CreateTranslation(shoulder) * bay; // (the turret's frame: +z towards the hook, y up)
+        var tfL = Matrix4x4.CreateRotationY(yaw) * Matrix4x4.CreateTranslation(shoulder); // (the turret's frame in the bay's)
+        var tf = tfL * bay; // (+z towards the hook, y up)
         float a1 = rc.Reach * 0.52f, a2 = rc.Reach * 0.48f;
         var d = MathF.Max(0.3f, flat.Length());
         var wy = wristPt.Y - shoulder.Y;
@@ -208,30 +239,42 @@ public static class StationRender
             headTop = W - new Vector3(0, 0.35f * k, 0);
             Beam(gfx, tf, W, headTop, 0.3f * k, 0.3f * k, Steel);
         }
-        var hookL = W - new Vector3(0, 1f, 0); // (the jaws' line, a metre under the wrist; folded: wherever the wrist is)
-        Cyl(gfx, tf, 0, headTop, 0.36f, 0.5f, Dark);
-        Beam(gfx, tf, headTop, hookL + new Vector3(0, 0.22f, 0), 0.18f, 0.18f, Steel);
-        Box(gfx, tf, hookL + new Vector3(0, 0.22f, 0), new Vector3(0.9f * k, 0.08f, 0.2f * k), Dark);
+        // The head turns about its knuckle with the piece it holds (the jaws across it), and tilts with it; plumb otherwise.
+        var rel = StationRovers.Wrap(headYaw - yaw);
+        if (rel > MathF.PI / 2)
+            rel -= MathF.PI; // (the jaws are alike either way round: the shorter turn)
+        else if (rel < -MathF.PI / 2)
+            rel += MathF.PI;
+        var hfL = Matrix4x4.CreateRotationY(rel * headE) * Matrix4x4.CreateRotationX(headPitch * headE) * Matrix4x4.CreateTranslation(headTop) * tfL; // (tilted about the turret's side, as the piece)
+        var hf = hfL * bay;
+        var drop = headTop.Y - (W.Y - 1f); // (the jaws' line, a metre under the wrist; folded: wherever the wrist is)
+        var hookL = new Vector3(0, -drop, 0);
+        Cyl(gfx, hf, 0, Vector3.Zero, 0.36f, 0.5f, Dark);
+        Beam(gfx, hf, Vector3.Zero, hookL + new Vector3(0, 0.22f, 0), 0.18f, 0.18f, Steel);
+        Box(gfx, hf, hookL + new Vector3(0, 0.22f, 0), new Vector3(0.9f * k, 0.08f, 0.2f * k), Dark);
         var grip = carried == ushort.MaxValue ? 0.42f : 0.3f;
         for (var s = -1; s <= 1; s += 2)
-            Box(gfx, tf, hookL + new Vector3(s * grip * k, 0.05f, 0), new Vector3(0.06f, 0.26f * k, 0.16f * k), Out);
+            Box(gfx, hf, hookL + new Vector3(s * grip * k, 0.05f, 0), new Vector3(0.06f, 0.26f * k, 0.16f * k), Out);
         if (carried == ushort.MaxValue || ConstructParts.Get(carried) is not { } pd)
             return;
-        // The piece: its top at the jaws, turned by the wrist from how it lay towards its turn where it goes.
-        var q = Quaternion.Slerp(Quaternion.Identity, turn, StationRovers.Ease(wrist));
+        // The piece: its top at the jaws, turned (in the bay's frame) by the wrist.
         var hv = (pd.BoundsMax - pd.BoundsMin) * 0.5f;
-        var topY = MathF.Abs(Vector3.Transform(Vector3.UnitX, q).Y) * hv.X + MathF.Abs(Vector3.Transform(Vector3.UnitY, q).Y) * hv.Y + MathF.Abs(Vector3.Transform(Vector3.UnitZ, q).Y) * hv.Z;
         if (hv.Y > 20f)
             return;
-        var jaws = Vector3.Transform(hookL, tf);
-        var m = Matrix4x4.CreateTranslation(-(pd.BoundsMin + pd.BoundsMax) * 0.5f) * Matrix4x4.CreateFromQuaternion(q)
-            * Matrix4x4.CreateTranslation(0, -topY - 0.004f, 0) * Matrix4x4.CreateTranslation(jaws);
+        if (headPitch != 0) // (the piece's tilt about the turret's side, as the head's: the leading end up whichever way the arm faces)
+            piece *= Matrix4x4.CreateRotationY(-yaw) * Matrix4x4.CreateRotationX(headPitch) * Matrix4x4.CreateRotationY(yaw);
+        var topY = MathF.Abs(piece.M12) * hv.X + MathF.Abs(piece.M22) * hv.Y + MathF.Abs(piece.M32) * hv.Z;
+        var jaws = Vector3.Transform(hookL, hfL); // (in the bay's frame)
+        var mid = (pd.BoundsMin + pd.BoundsMax) * 0.5f;
+        var m = Matrix4x4.CreateTranslation(-mid) * piece * Matrix4x4.CreateTranslation(jaws.X, jaws.Y - topY - 0.004f, jaws.Z) * bay;
         for (var bx = 0; bx < pd.Boxes.Length; bx++)
         {
             ref readonly var box = ref pd.Boxes[bx];
             if (!box.Hidden)
                 gfx.Draw(box.Model(0, box.Center) * m, box.Color, shape: box.Shape);
         }
+        if (weld > 0) // (lab: a pale blue shell flickering round the piece through the weld's hold)
+            gfx.Draw(Matrix4x4.CreateScale(pd.BoundsMax - pd.BoundsMin + new Vector3(0.12f)) * Matrix4x4.CreateTranslation(mid) * m, new Vector3(0.75f, 0.91f, 1f), 0.35f);
     }
 
     /// <summary>The chassis in its own frame (+z forward): body, hazard deck, wheels, a lamp at the nose, a beacon that turns while it moves.</summary>

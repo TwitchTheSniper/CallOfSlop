@@ -117,7 +117,8 @@ public sealed partial class StationJob
     // ---- Client only: the effects it has shown.
     public byte SeenFit, SeenLink;
     public readonly byte[] ArmSeen = new byte[ConstructStation.MaxArms];
-    public readonly double[] ArmStart = new double[ConstructStation.MaxArms]; // when each rover's trip began, on this peer's clock
+    public readonly double[] ArmStart = new double[ConstructStation.MaxArms]; // when each rover's trip began, on this peer's clock (eased onto the ticked trip: DrawnPace)
+    public readonly double[] ArmSetOut = new double[ConstructStation.MaxArms]; // when each trip began as first heard, never eased: the rovers' order off a pad (Rank)
     public byte HeardFit, HeardLink;
     public double FitAt, LinkAt2;
 }
@@ -133,8 +134,6 @@ public sealed partial class StationJob
 public static partial class ConstructStation
 {
     public const float FitSeconds = 2f; // the core fits one part this often by itself...
-    public const float FitSecondsPerKg = 0.02f; // ...plus this for its mass...
-    public const float FitSecondsMax = 10f; // ...at most
     public const float LinkSeconds = 1f; // a wire or a link laid
     public const double CostBudgetMs = 1.0; // a tick's slice of the scratch build
     public const int OrderEvery = 30; // ticks between looks at what to order (2 Hz)
@@ -666,7 +665,7 @@ public static partial class ConstructStation
             j.BayLooks = BayEvery;
             j.Batched = HasHoldingBay(world, c, t);
             // (a station with no hold, the rover docks, batches too: Sean, 2026-11-26, "have the other lines start production as well ... can
-            // be run in batches". Its pick pads take only what a step can fit now, PadEarly; the rest waits upstream, on its runs and beds.)
+            // be run in batches". Its pick pads queue pieces ahead while they have room, PadEarly; the rest waits upstream, on its runs and beds.)
             j.PadBatched = HasPickPads(world, c, t, j);
         }
         if (j.ParkFail > 0)
@@ -1026,7 +1025,7 @@ public static partial class ConstructStation
         return null;
     }
 
-    /// <summary>Is step <paramref name="k"/>'s parent in place (and the steps its "also" links name)?</summary>
+    /// <summary>May step <paramref name="k"/> go on now: its parent in place (and the steps its "also" links name), or an early fit's rule (<see cref="EarlyReady"/>)?</summary>
     private static bool Ready(StationJob j, int k)
     {
         var bp = j.Bp!;
@@ -1034,14 +1033,7 @@ public static partial class ConstructStation
             return false; // (another station builds it: it comes with its use's body)
         if (k == 0)
             return true;
-        var on = bp.Steps[k].On;
-        if (on < 0 || on >= j.PartOf.Length || j.PartOf[on] < 0)
-            return false;
-        if (k < bp.StepAlso.Count && bp.StepAlso[k] is { } also)
-            foreach (var a in also)
-                if (a.On < 0 || a.On >= j.PartOf.Length || j.PartOf[a.On] < 0)
-                    return false;
-        return true;
+        return ParentsOn(j, k) || EarlyReady(j, k); // (or ahead of its parent, standing on what is on: ConstructStationEarlyFit.cs)
     }
 
     /// <summary>The first unfitted step whose parent is in place and whose kind the hold has (<paramref name="only"/>: that kind, held or not). -1: none.</summary>
@@ -1095,7 +1087,7 @@ public static partial class ConstructStation
         string? why;
         try
         {
-            why = ConstructBuild.FitStep(world, b, bp, k, j.PartOf);
+            why = FitEither(world, b, j, k); // (by its socket, or early where the costing had it)
         }
         finally
         {
@@ -1413,9 +1405,6 @@ public static partial class ConstructStation
         var world = j.Pos + Vector3.Transform(plan.Centre[k], j.Rot) + Vector3.UnitY * up;
         return Vector3.Transform(world - floor, Quaternion.Conjugate(rot));
     }
-
-    private static int FitTicksFor(ConstructPartDef d) =>
-        (int)(MathF.Min(FitSecondsMax, FitSeconds + d.Mass * FitSecondsPerKg) * World.TickRate);
 
     /// <summary>The next wire or link: laid when the steps it names are fitted and its stock is in a linked bin. True when the job moved on.</summary>
     private static bool NextLink(ConstructWorld world, Construct c, int t, StationJob j, Construct b)
@@ -1845,10 +1834,16 @@ public static partial class ConstructStation
     /// Server: should a piece of kind <paramref name="d"/> stay off pad <paramref name="pad"/> for now? True when the pad is a pick pad of a
     /// rover station (no hold) building in batches, the build needs the kind, and no step that can be fitted now is left for it once what
     /// its pick pads hold is counted (Sean, 2026-11-26: the lines make the next pieces in batches and they wait in part storage until the
-    /// station needs them). Only pieces a step can take land on its pads, so a pad never fills with parts whose parents can't come: the
-    /// rest wait where they are (on their run, on the machine's bed, in a rack). False for anything else. Allocates nothing.
+    /// station needs them). Pieces no step can take yet queue on its pads too, ahead of the build, while they cover at most half the pad's
+    /// floor (<see cref="EarlyRoom"/>; Sean, 2026-11-27: "they should allow queuing ... so they can make multiple pieces ahead of time"):
+    /// before, only the next pieces a step could take came in and the lines stood behind the rest. The other half keeps room for pieces a
+    /// step can take now; past it the rest wait where they are (on their run, on the machine's bed, in a rack). Allocates nothing.
     /// </summary>
-    public static bool PadEarly(ConstructWorld world, Construct c, int pad, ConstructPartDef d)
+    public static bool PadEarly(ConstructWorld world, Construct c, int pad, ConstructPartDef d) =>
+        EarlyFor(world, c, pad, d) && !EarlyRoom(world, c, pad, d); // (the pads queue pieces ahead while they have room: Sean, 2026-11-27)
+
+    /// <summary>Is a piece of kind <paramref name="d"/> one no step on pad <paramref name="pad"/>'s rover station can fit yet (room aside)?</summary>
+    private static bool EarlyFor(ConstructWorld world, Construct c, int pad, ConstructPartDef d)
     {
         pad = ConstructPads.Owner(c, pad);
         if (pad >= c.PartCount || !c.DefOf(pad).IsLayDownPad)
@@ -1876,7 +1871,7 @@ public static partial class ConstructStation
         var room = MathF.Max(0, hold.RackHoldMax.X - hold.RackHoldMin.X) * MathF.Max(0, hold.RackHoldMax.Z - hold.RackHoldMin.Z) * 0.5f;
         var early = Face(d.BoundsMax - d.BoundsMin);
         for (var k = 0; k < st.KindN && early <= room; k++)
-            if (ConstructParts.Def(st.KindDef![k]) is { } kd && PadEarly(world, c, pad, kd))
+            if (ConstructParts.Def(st.KindDef![k]) is { } kd && EarlyFor(world, c, pad, kd))
                 early += st.KindCount![k] * Face(kd.BoundsMax - kd.BoundsMin);
         return early <= room;
         // (by floor, never stacked, each piece by its largest face: a long plate takes a lane however thin, and a flat pad's hold is near 0 m high)
@@ -2201,6 +2196,7 @@ public static partial class ConstructStation
                 j.Started = Stopwatch.GetTimestamp();
                 j.State = StationState.Building;
                 (j.GateRank, j.GateStall, j.BuiltTop) = (0, 0, 0f);
+                j.HeldStale = true;
                 ResetArms(world, c, j);
                 j.Note = "";
                 world.StationChanged(c);

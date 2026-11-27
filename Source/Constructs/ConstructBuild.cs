@@ -979,6 +979,85 @@ public static class ConstructBuild
     public static string? FitStep(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf) => FitStep(world, c, bp, k, partOf, false);
 
     /// <summary>
+    /// A Building Station's step put on ahead of its parent (Sean, 2026-11-27: "the outermost lower layer should be built first and build
+    /// up over time"): the part stands at <paramref name="pos"/>, turned <paramref name="rot"/>, where the costing's build had it, and is
+    /// welded by whatever it meets now; its own links to steps not yet on are made when they come (<see cref="LinkLate"/>). Only a plain
+    /// socket step on the body itself goes this way (ConstructStation.EarlyFit decides). The reason it refuses, or null.
+    /// </summary>
+    public static string? FitAt(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf, Vector3 pos, byte rot)
+    {
+        if (ConstructParts.Find(bp.Steps[k].Part) is not { } def)
+            return $"step {k}: no part named \"{bp.Steps[k].Part}\"";
+        partOf[k] = world.AddPart(c, def, pos, rot);
+        if (partOf[k] < 0)
+            return $"step {k}: too many parts";
+        if (!Exact(bp, k))
+            AutoLink(world, c, partOf[k]);
+        SetSetting(c, partOf[k], def, bp.StepSettings[k]);
+        SetConfig(world, c, partOf[k], def, bp, k);
+        if (bp.Map != null)
+            SubBlueprints.TagPart(c, bp.Map, k, partOf[k]);
+        return null;
+    }
+
+    /// <summary>
+    /// After step <paramref name="k"/> went on: the links its blueprint names between it and steps that are on that the body lacks: those
+    /// of steps that name it as their parent or "also" and went on before it (<see cref="FitAt"/>), and, when it went on early itself
+    /// (<paramref name="early"/>), its own to the steps it names that are on. A plain fit's own links are made by its step. Allocates nothing.
+    /// </summary>
+    public static void LinkLate(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf, bool early)
+    {
+        if (partOf[k] < 0)
+            return;
+        if (early)
+            Ensure(k);
+        for (var s = k + 1; s < bp.Steps.Count && s < partOf.Length; s++)
+            if (partOf[s] >= 0 && (bp.Steps[s].On == k || Names(s)))
+                Ensure(s);
+
+        bool Names(int s)
+        {
+            if (s >= bp.StepAlso.Count || bp.StepAlso[s] is not { } al)
+                return false;
+            foreach (var a in al)
+                if (a.On == k)
+                    return true;
+            return false;
+        }
+
+        void Ensure(int s)
+        {
+            var (_, on, sock, own, _) = bp.Steps[s];
+            if (s > 0 && on >= 0 && on < partOf.Length && partOf[on] >= 0 && sock.Length > 0)
+                One(partOf[on], sock, partOf[s], own);
+            if (s < bp.StepAlso.Count && bp.StepAlso[s] is { } also)
+                foreach (var (ao, asock, aown) in also)
+                    if (ao >= 0 && ao < partOf.Length && partOf[ao] >= 0)
+                        One(partOf[ao], asock, partOf[s], aown);
+        }
+
+        void One(int a, string sa, int b, string sb)
+        {
+            var ia = ConstructMerge.SocketIndex(c, a, sa);
+            var socks = c.DefOf(b).Sockets;
+            var ib = -1;
+            for (var x = 0; x < socks.Length && ib < 0; x++)
+                if (socks[x].Name == sb)
+                    ib = x;
+            if (ia < 0 || ib < 0)
+                return;
+            for (var l = 0; l < c.LinkCount; l++)
+            {
+                ref readonly var ln = ref c.Links[l];
+                if ((ln.A == a && ln.SA == ia && ln.B == b && ln.SB == ib) || (ln.A == b && ln.SA == ib && ln.B == a && ln.SB == ia))
+                    return;
+            }
+            if (world.AddLink(c, a, ia, b, ib))
+                Console.WriteLine($"[station] {bp.Name}: step {Array.IndexOf(partOf, b)} linked to step {Array.IndexOf(partOf, a)} as it came (\"{sb}\" to \"{sa}\"): one went on early");
+        }
+    }
+
+    /// <summary>
     /// <see cref="FitStep"/>; <paramref name="deferWeld"/>: a freeform weld step leaves its rebuild to the caller, who does it before the
     /// next step that goes on a jointed or welded segment (<see cref="BuildSteps"/>: a works with 92 welds rebuilt its 6,000 parts 92 times).
     /// </summary>

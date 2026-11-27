@@ -29,7 +29,7 @@ public static partial class ConstructStation
     /// <summary>
     /// Each step's rank (the lab's rule, Sean 2026-11-24): every Keel piece 0; what lies wholly under the lowest deck's top 1; then 2 + its
     /// deck's level x 2, + 1 for a fitting (not frame or panel), a piece's deck being the highest deck top at or under its foot. A step
-    /// goes no earlier than its parent's rank. Also the build's footprint in the bay (the rovers' keep-out ring).
+    /// goes no earlier than its parent's rank, unless it may go on before its parent (an early fit: ConstructStationEarlyFit.cs). Also the build's footprint in the bay (the rovers' keep-out ring).
     /// </summary>
     private static void BuildOrder(Construct c, int t, StationJob j)
     {
@@ -38,6 +38,7 @@ public static partial class ConstructStation
         j.StepRank = new int[n];
         j.RankOrder = new int[n];
         (j.GateRank, j.GateStall, j.BuiltTop) = (0, 0, 0f);
+        j.HeldStale = true;
         if (j.Plan is not { } plan || plan.Centre.Length != n)
         {
             for (var k = 0; k < n; k++)
@@ -91,6 +92,14 @@ public static partial class ConstructStation
                 r = 2 + lvl * 2 + (d.Role is PartRole.Frame or PartRole.Panel ? 0 : 1);
             }
             var on = bp.Steps[k].On;
+            if (plan.Free.Length == n && plan.Free[k])
+            {
+                // (it may go on before its parent, standing on what is under it: its height alone ranks it, Sean 2026-11-27, "build
+                // lowest up": the Zero Day's Keel 3 and 4 hang on the Lower Deck Aft in its blueprint and so waited for that deck)
+                j.StepRank[k] = r;
+                j.RankOrder[k] = k;
+                continue;
+            }
             if (k > 0 && on >= 0 && on < k)
                 r = Math.Max(r, j.StepRank[on]); // (never before its parent: it is welded to it)
             if (k < bp.StepAlso.Count && bp.StepAlso[k] is { } also)
@@ -109,6 +118,7 @@ public static partial class ConstructStation
     private static void Fitted(Construct c, int t, StationJob j, int k, ConstructPartDef? d)
     {
         j.GateStall = 0;
+        HeldOn(j, k); // (what it holds up may go on early)
         if (d != null && j.Plan is { } plan && k < plan.Centre.Length)
             j.BuiltTop = MathF.Max(j.BuiltTop, ArmTarget(c, t, j, k, d).Y);
     }
@@ -246,6 +256,44 @@ public static partial class ConstructStation
         return -1;
     }
 
+    /// <summary>
+    /// The drawn trip kept on the ticked one: a rover is drawn by this peer's clock from its trip's start (<c>ArmStart</c>), and its piece
+    /// goes on after the trip's ticks. When the world ticks slower than the clock (a big works' tick over its budget), the drawn rover got
+    /// ahead: it stood over its place with nothing happening, and the piece went on seconds later while it was drawn elsewhere (Sean
+    /// 2026-11-27). The start is eased towards the ticked time each tick, by less than a tick's time a tick when the drawn rover is ahead
+    /// (it slows, almost to a stop, never going back along its way: after a pause, an unpowered spell or a big fit it waits for the ticks)
+    /// and by at most a tick when it is behind. A joined client hears the server only at station events: its start is set again from a
+    /// message more than 0.25 s out (ReadArms), so between messages it can still run ahead on a slow server.
+    /// </summary>
+    private static void DrawnPace(StationJob j, int a, int el)
+    {
+        var ticked = el / (double)World.TickRate;
+        var ahead = ConstructConveyor.Clock - j.ArmStart[a] - ticked;
+        if (Math.Abs(ahead) > 0.02)
+            j.ArmStart[a] += Math.Clamp(ahead * 0.2, -1.0 / World.TickRate, 0.9 / World.TickRate);
+    }
+
+    /// <summary>A fitted part's top middle against where its rover put it (bay frame): logged when they are apart, since the two must agree.</summary>
+    private static void FitDrift(ConstructWorld world, Construct c, int t, StationJob j, int k, ConstructPartDef d, Vector3 aim, int a)
+    {
+        if (k >= j.PartOf.Length || j.PartOf[k] < 0 || world.Get(j.Body) is not { } b || j.PartOf[k] >= b.PartCount)
+            return;
+        var i = j.PartOf[k];
+        ref readonly var p = ref b.Parts[i];
+        if (p.Seg != 0)
+            return; // (a freeform weld's part sits in its own segment's frame: not measured here)
+        var pd = b.DefOf(i);
+        var q = b.Rot * Rot24.Quat(p.Rot);
+        var mid = b.Pos + Vector3.Transform(p.Pos + Vector3.Transform((pd.BoundsMin + pd.BoundsMax) * 0.5f, Rot24.Quat(p.Rot)), b.Rot);
+        var h = (pd.BoundsMax - pd.BoundsMin) * 0.5f;
+        var up = MathF.Abs(Vector3.Transform(Vector3.UnitX, q).Y) * h.X + MathF.Abs(Vector3.Transform(Vector3.UnitY, q).Y) * h.Y + MathF.Abs(Vector3.Transform(Vector3.UnitZ, q).Y) * h.Z;
+        Bay(c, t, out var floor, out var rot, out _);
+        var got = Vector3.Transform(mid + Vector3.UnitY * up - floor, Quaternion.Conjugate(rot));
+        var off = Vector3.Distance(got, aim);
+        if (off > 0.25f)
+            Console.WriteLine($"[station] body {c.Id} part {t}: step {k} ({d.Name}) went on {off:0.0} m from where rover {a + 1} put it (aim {aim.X:0.0},{aim.Y:0.0},{aim.Z:0.0}; fitted {got.X:0.0},{got.Y:0.0},{got.Z:0.0})");
+    }
+
     /// <summary>Start rover <paramref name="a"/> on the trip in <c>j.Try</c>.</summary>
     private static void Begin(ConstructWorld world, Construct c, StationJob j, int a, int step, ushort def, ushort pad)
     {
@@ -259,6 +307,7 @@ public static partial class ConstructStation
         j.RovIdle[a] = 0;
         j.ArmSeq[a]++;
         (j.ArmSeen[a], j.ArmStart[a]) = (j.ArmSeq[a], ConstructConveyor.Clock); // (the host draws from the same job)
+        j.ArmSetOut[a] = j.ArmStart[a];
         world.StationChanged(c);
     }
 
@@ -300,6 +349,7 @@ public static partial class ConstructStation
             var plan = j.Rov[a];
             var el = j.ArmTicks[a] - j.ArmLeft[a];
             var k = j.ArmStep[a];
+            DrawnPace(j, a, el);
             if (k >= 0 && el >= (int)(plan.FitT * World.TickRate))
             {
                 if (!fit || world.FitThisTick)
@@ -325,7 +375,9 @@ public static partial class ConstructStation
                         if (pad != None)
                             Console.WriteLine($"[station] body {c.Id} part {t}: {StationRovers.Classes[a < n ? docks[a].Cls : 1].Name} {a + 1} fitted a {d.Name} ({d.Mass / 1000f:0.#} t) off its pick pad (part {pad})");
                         world.CraftChanged(c);
+                        var aim = ArmTarget(c, t, j, k, d);
                         FitOne(world, c, t, j, k);
+                        FitDrift(world, c, t, j, k, d, aim, a);
                         j.ArmWait = 0;
                         if (j.State != StationState.Building)
                             return true;
@@ -401,20 +453,29 @@ public static partial class ConstructStation
     /// <summary>One new trip: the first ready step (build order) whose best rover is idle. True when one began.</summary>
     private static bool Assign(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, ReadOnlySpan<StationDock> docks, int n)
     {
+        var order = j.RankOrder.Length == j.PartOf.Length ? j.RankOrder : null;
+        // First the build order's open ranks; then, when none of those can go now, any later step whose piece is at hand and that has
+        // something under it (Sean, 2026-11-27: the station sat waiting for a deck piece while it could have fitted others): lowest first.
+        return AssignPass(world, c, t, j, tray, docks, n, order, false) || order != null && AssignPass(world, c, t, j, tray, docks, n, order, true);
+    }
+
+    private static bool AssignPass(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, ReadOnlySpan<StationDock> docks, int n, int[]? order, bool ahead)
+    {
         var g = GroundOf(c, t, j);
         var looks = 0;
-        var order = j.RankOrder.Length == j.PartOf.Length ? j.RankOrder : null;
         for (var i = 0; i < j.PartOf.Length && looks < AssignLooks; i++)
         {
             var k = order != null ? order[i] : i;
             if (j.PartOf[k] != -1 || j.StepKind[k] is not (var kind and >= 0) || Array.IndexOf(j.ArmStep, k) >= 0 || !Ready(j, k))
                 continue;
-            if (!Gated(j, k))
+            if (Gated(j, k) == ahead)
             {
-                if (order != null)
-                    break; // (in rank order: every later step waits too)
+                if (order != null && !ahead)
+                    break; // (in rank order: every later step waits for the second pass)
                 continue;
             }
+            if (ahead && j.KindLaid[kind])
+                continue; // (laid fittings keep the order)
             if (ConstructParts.Get(j.KindDef[kind]) is not { } d)
                 continue;
             looks++;
@@ -489,7 +550,7 @@ public static partial class ConstructStation
         var s2 = StationRovers.SpotFor(g, rc, place);
         var cap = MathF.Min(StationRovers.MaxUp(rc, Vector2.Distance(s1, new Vector2(src.X, src.Z))), StationRovers.MaxUp(rc, Vector2.Distance(s2, new Vector2(place.X, place.Z))));
         var up = MathF.Max(MathF.Min(j.BuiltTop + size.Y + 0.6f, cap), MathF.Max(src.Y, place.Y) + 0.3f);
-        var weld = FitTicksFor(d) / (float)World.TickRate;
+        var weld = StationRovers.DropSeconds; // (once over its place a rover sets the piece down at once: the drive there is the time)
         var keep = j.ArmTicks[a];
         j.ArmTicks[a] = 0; // (its own trip home is no obstacle to itself)
         try
@@ -657,10 +718,13 @@ public static partial class ConstructStation
                 continue;
             j!.ArmTicks[a] = ticks;
             j.ArmDef[a] = def;
-            if (j.ArmSeen[a] != seq || j.ArmStart[a] == 0)
+            var start = ConstructConveyor.Clock - age / (double)World.TickRate;
+            if (j.ArmSeen[a] != seq || j.ArmStart[a] == 0 || Math.Abs(j.ArmStart[a] - start) > 0.25)
             {
+                if (j.ArmSeen[a] != seq || j.ArmStart[a] == 0)
+                    j.ArmSetOut[a] = start; // (the order off a pad: set once a trip)
                 j.ArmSeen[a] = seq;
-                j.ArmStart[a] = ConstructConveyor.Clock - age / (double)World.TickRate;
+                j.ArmStart[a] = start; // (and again, from any message, when the server's tick has fallen behind this clock: DrawnPace)
             }
             j.ArmSeq[a] = seq;
         }

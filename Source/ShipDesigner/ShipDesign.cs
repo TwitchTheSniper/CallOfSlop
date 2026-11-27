@@ -377,6 +377,7 @@ public sealed class Piece
     public string Beam = DesignFittings.DefBeam;
     public string Role = DesignSeats.DefRole; // a seat's (DesignSeats, Karl 2026-11-26): Helm, Captain, Gunner and the rest
     public double Extend = DesignRamp.DefExtend; // a boarding ramp's extension's run, metres (DesignRamp, Karl 2026-11-27)
+    public double RampW = DesignRamp.DefWidth, RampL = DesignRamp.DefLength; // a boarding ramp's hatch across and along, metres (DesignRamp)
 
     public JsonObject ToJson() => DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {
@@ -392,6 +393,7 @@ public sealed class Piece
         var p = DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id)))));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
+        PieceWeapons.Init(p);
         return p;
     }
 

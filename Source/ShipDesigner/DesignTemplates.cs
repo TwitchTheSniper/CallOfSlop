@@ -178,11 +178,11 @@ public static class DesignTemplates
 
         Aft("Main drive", -3.6, 3.3); Aft("Main drive", 0, 3.3); Aft("Main drive", 3.6, 3.3);
         Aft("Small drive", -2.0, 0.6); Aft("Small drive", 2.0, 0.6);
-        Top("Railgun", 22);
+        Top("Railgun socket", 22);
         Top("Sensor mast", 37);
         At("Torpedo sponson", 24, 1, 3.3, mirror: true);
-        At("PDC turret", 11, 1, 6.0, mirror: true);
-        At("PDC turret", 39, 1, -0.6, mirror: true);
+        At("PDC socket", 11, 1, 6.0, mirror: true);
+        At("PDC socket", 39, 1, -0.6, mirror: true);
         At("Radiator", 40, 1, 5.0, mirror: true);
         At("RCS quad", 4, 1, 4.5, mirror: true);
         At("RCS quad", 44.5, 1, 6.0, mirror: true);
@@ -192,7 +192,7 @@ public static class DesignTemplates
         At("Cargo hatch", 21, -1, 1.5);
         Keel("Docking collar", 29);
         Keel("Boarding hatch", 14);
-        PieceWeapons.Migrate(d); // its guns on mounts (Karl, 2026-11-26)
+        PieceWeapons.Migrate(d); // its guns on mounts and in their sockets (Karl, 2026-11-26, 2026-11-27)
         // The bridge's seats (Karl, 2026-11-26: step 3, a design flies from its helm): the helm forward, the captain behind it.
         var bridge = d.Rooms.First(r => r.Kind == "Bridge").Id;
         void Seat(double z, string role) => d.Pieces.Add(new Piece { Id = d.NewId(), Kind = DesignSeats.Kind, Hull = hull.Id, Z = z, T = 1, Room = bridge, Role = role });

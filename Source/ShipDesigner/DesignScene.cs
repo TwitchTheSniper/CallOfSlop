@@ -312,7 +312,7 @@ public static partial class DesignScene
         var hc = CladView(d, h);
         // Each opening's clearance from the plates' height (Karl, 2026-11-25: a default that keeps plates off the frame).
         foreach (var k in cutouts)
-            k.Resolve((hc.Clad == "Heavy" ? 0.20 : 0.08) * hc.CladDepth);
+            k.Resolve(HullBody.CladRise(hc.Clad) * hc.CladDepth);
         if (hc.Clad != "Off")
             cladSize = CladBody(skinClad, hc, cx, (p, q) =>
             {
@@ -379,7 +379,7 @@ public static partial class DesignScene
     private static double AutoGap(ShipDesign d, HullBody h, double band)
     {
         var c = CladView(d, h);
-        return c.Clad == "Off" ? band + 0.03 : band + 0.5 * (c.Clad == "Heavy" ? 0.20 : 0.08) * c.CladDepth + 0.03;
+        return c.Clad == "Off" ? band + 0.03 : band + 0.5 * HullBody.CladRise(c.Clad) * c.CladDepth + 0.03;
     }
 
     /// <summary>The body as its cladding is laid: itself, or (matched) a copy with the other body's cladding and damage, its own paint and shape.</summary>
@@ -1124,7 +1124,7 @@ public static partial class DesignScene
                 // inside of the wall the thruster is on, like every other (Karl, 2026-11-24); it needs a room within reach of it.
                 if (kind.Service && !straight)
                     bestPt = [at[0] - n[0] * 0.15, at[1] - n[1] * 0.15, at[2] - n[2] * 0.15];
-                var shaft = best is not null && p.Room != 0 && bestD > kind.Reach && bestD <= MaxConnector ? (kind.Opening is { } op ? Math.Max(0.8, 2 * Math.Min(op.Hx, op.Hz)) : 1.1) * p.Size : 0;
+                var shaft = best is not null && p.Room != 0 && bestD > kind.Reach && bestD <= MaxConnector ? ((p.Kind == DesignRamp.Kind ? DesignRamp.OpeningOf(p) : kind.Opening) is { } op ? Math.Max(0.8, 2 * Math.Min(op.Hx, op.Hz)) : 1.1) * p.Size : 0;
                 var linked = best is not null && (bestD <= kind.Reach || shaft > 0);
                 if (linked)
                 {
@@ -1192,7 +1192,7 @@ public static partial class DesignScene
         double[] lo = [bx[0], bx[2], bx[4]], hi = [bx[1], bx[3], bx[5]];
         if (hi[ax] - lo[ax] < 0.2 || hi[al] - lo[al] < 0.2)
             return null;
-        var op = kind.Opening;
+        var op = p.Kind == DesignRamp.Kind ? DesignRamp.OpeningOf(p) : kind.Opening; // (a ramp: its own width and length)
         var size = Math.Max(0.2, p.Size);
         var q = new double[3];
         for (var k = 0; k < 3; k++)
@@ -1498,7 +1498,8 @@ public static partial class DesignScene
             // A boarding ramp starts flush with the floor of the room it opens into (Karl, 2026-11-24): its well runs in from the
             // skin to that floor, and its ramp lies in that floor, lowered out of the hatch and run out (Karl, 2026-11-27: DesignRamp).
             var t = RampDepth(d, p, w);
-            PieceKinds.RampFrame(m, t ?? 1.0);
+            var rop = DesignRamp.OpeningOf(p);
+            PieceKinds.RampFrame(m, (t ?? 1.0) / p.Size, rop.Hx, rop.Hz);
             DesignRamp.Draw(m, p, w, t ?? 0, shut);
             m.Frame(w.O[0] - w.Y[0] * p.Recess, w.O[1] - w.Y[1] * p.Recess, w.O[2] - w.Y[2] * p.Recess, w.X, w.Y, w.Z, p.Size, across); // (its cladding on the skin)
         }
@@ -1507,6 +1508,7 @@ public static partial class DesignScene
             // Glazed as the piece asks (Karl, 2026-11-25): double or single, the inner pane its depth in.
             PieceKinds.WindowFrame(m);
             PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
+            WindowSleeve(d, h, p, kind, m); // (lined on in to the wall of the room it looks out of: DesignWindows.cs)
         }
         else if (kind.Socket == "airlock")
             PieceDocking.Airlock(m, p, shut); // a chamber sized by the piece (Karl, 2026-11-26); shut: both its doors shut (the game's, DesignParts.Doors.cs)
@@ -1556,7 +1558,7 @@ public static partial class DesignScene
     private static string Json(ShipDesign d, string shapes, string plans)
     {
         var c = Checks(d);
-        var doorKey = Doors(c.Doors);
+        var doorKey = Doors(c.Doors) + "~" + Doors(WindowWays(d)); // (a room's walls open behind its windows too)
         HashSet<int>? shown = null;
         if (RoomView is { } rv && d.RoomById(rv.Room) is not null)
         {
@@ -1655,7 +1657,7 @@ public static partial class DesignScene
             var kind = PieceKinds.Find(p.Kind)!;
             var w = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
-            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" ? plans : "") + DesignHangar.Key(d, p), () =>
+            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" or "window" ? plans : "") + DesignHangar.Key(d, p), () =>
             {
                 var text = new StringBuilder();
                 PieceMesh(d, p).Write(text, Made("p" + p.Id));
@@ -1667,7 +1669,7 @@ public static partial class DesignScene
               .Append(",\"gap\":").Append(ShipDesign.S(p.Gap)).Append(",\"hole\":").Append(ShipDesign.S(p.Hole)).Append(",\"depth\":").Append(ShipDesign.S(p.Depth)).Append(",\"double\":").Append(p.Double ? "true" : "false")
               .Append(",\"airW\":").Append(ShipDesign.S(p.AirW)).Append(",\"airH\":").Append(ShipDesign.S(p.AirH)).Append(",\"airD\":").Append(ShipDesign.S(p.AirD)).Append(",\"doorW\":").Append(ShipDesign.S(p.DoorW)).Append(",\"door\":").Append(Q(p.Door))
               .Append(",\"feed\":").Append(p.Feed).Append(",\"feeds\":").Append(PieceWeapons.IsFeeder(p.Kind) && PieceDocking.FeedOf(d, p) is { } fg ? fg.Id : 0)
-              .Append(",\"fit\":").Append(Q(p.Fit)).Append(",\"mountClass\":").Append(PieceWeapons.MountOf(p.Kind)?.Class ?? 0).Append(",\"reserve\":").Append(PieceWeapons.Json(d, p))
+              .Append(",\"fit\":").Append(Q(p.Fit)).Append(",\"mountClass\":").Append(PieceWeapons.MountOf(p.Kind)?.Class ?? 0).Append(",\"mountOnly\":").Append(PieceWeapons.MountOf(p.Kind)?.Only is { } mo ? Q(mo) : "null").Append(",\"reserve\":").Append(PieceWeapons.Json(d, p))
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))

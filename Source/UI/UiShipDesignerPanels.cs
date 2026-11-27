@@ -443,8 +443,9 @@ public sealed partial class Ui
         var gap = D(o, "gap", -1);
         Slider(gap < 0 ? "Cladding clearance (auto)" : "Cladding clearance", gap < 0 ? auto : Math.Round(gap * 100), 0, 100, 1, " cm", v => send([("gap", v / 100)]), kind + "gap",
             auto, _ => send([("gap", D(dk, "gap", -1))]));
-        Slider("Hole size", Math.Round(D(o, "hole", 1) * 100), 50, 250, 5, "%", v => send([("hole", v / 100)]), kind + "hole", Math.Round(D(dk, "hole", 1) * 100),
-            _ => send([("hole", D(dk, "hole", 1))]));
+        if (!(kind == "piece" && Str(o, "socket") == "ramp")) // (a ramp's hole is its own width and length: its Ramp section)
+            Slider("Hole size", Math.Round(D(o, "hole", 1) * 100), 50, 250, 5, "%", v => send([("hole", v / 100)]), kind + "hole", Math.Round(D(dk, "hole", 1) * 100),
+                _ => send([("hole", D(dk, "hole", 1))]));
         if (!glass)
             return;
         Slider("Depth", Math.Round(D(o, "depth", 0.2) * 100), 5, 100, 1, " cm", v => send([("depth", v / 100)]), kind + "gdepth", Math.Round(D(dk, "depth", 0.2) * 100),
@@ -530,7 +531,7 @@ public sealed partial class Ui
             Hint($"Follows {Str(src, "name")}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.");
         else
         {
-            foreach (var k in new[] { "Off", "Plates", "Heavy", "Hex" })
+            foreach (var k in ShipDesigner.HullBody.CladKinds)
             {
                 if (OnButton($"{k}##sdhc{k}", ck == k))
                     Hs(("clad", k));
@@ -555,7 +556,7 @@ public sealed partial class Ui
                 SeedRow("hcseed", I(clad, "seed", 1), v => Hs(("cladSeed", v)));
             }
         }
-        Hint("Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare.");
+        Hint("Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across; Panelled: bevelled graphite armour, 6-16 cm, on light trim seams of the hull's skin); the depth slider scales that. Windows and sockets stay bare.");
 
         // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
         H3("Damage");
@@ -1056,7 +1057,7 @@ public sealed partial class Ui
         string dfltKind = "join")
     {
         var kind = Str(clad, "kind", "Off");
-        foreach (var k in new[] { "Off", "Plates", "Heavy", "Hex" })
+        foreach (var k in ShipDesigner.HullBody.CladKinds)
         {
             if (OnButton($"{k}##sdcl{id}{k}", kind == k))
                 set(new JsonObject { [kindKey] = k });
@@ -1373,10 +1374,21 @@ public sealed partial class Ui
                 MatCombo("seatrole" + pid, Str(p, "role", ShipDesigner.DesignSeats.DefRole), ShipDesigner.DesignSeats.Roles, v => Cmd(C("setPiece", ("id", pid), ("role", v))));
                 Hint(Str(p, "role") == "Helm" ? "The helm flies the ship: its drives and RCS answer this seat, with nothing to wire." : "It stands on its room's floor, facing the bow (turn it with Turn left and right).");
             }
+            if (Str(p, "fit").Length > 0 && Arr(CAT, "weapons").FirstOrDefault(w => Str(w, "name") == Str(p, "fit")) is var wk && Found(wk))
+            {
+                // A weapon socket's or mount's weapon (Karl, 2026-11-27: the PDC and the railgun go in sockets of their own).
+                H3("Weapon");
+                Hint($"{Str(p, "fit")}. {Str(wk, "desc")} It reserves its {Str(wk, "reserve")} (the hologram box){(Arr(p, "reserve").Any(r => r.GetArrayLength() > 12 && r[12].GetDouble() > 0) ? ": a room or the skin clips it" : "")}.");
+            }
             if (Str(p, "kind") == ShipDesigner.DesignRamp.Kind)
             {
                 // A boarding ramp's extension (DesignRamp, Karl 2026-11-27): how far its second section runs out once it is down.
                 H3("Ramp");
+                // The hatch's own size (Karl, 2026-11-27): across and along, each apart; the ramp, its extension and the holes follow.
+                Slider("Hatch width", Math.Round(D(p, "rampW", ShipDesigner.DesignRamp.DefWidth) * 100), Math.Round(ShipDesigner.DesignRamp.MinWidth * 100), Math.Round(ShipDesigner.DesignRamp.MaxWidth * 100), 5, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("rampW", v / 100))), "pcrw", Dflt("ramp", "rampW", 100));
+                Slider("Hatch length", Math.Round(D(p, "rampL", ShipDesigner.DesignRamp.DefLength) * 100), Math.Round(ShipDesigner.DesignRamp.MinLength * 100), Math.Round(ShipDesigner.DesignRamp.MaxLength * 100), 5, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("rampL", v / 100))), "pcrl", Dflt("ramp", "rampL", 100));
                 Slider("Extension", Math.Round(D(p, "extend") * 100), 0, Math.Round(D(p, "extendMax", ShipDesigner.DesignRamp.MaxExtend) * 100), 5, " cm",
                     v => Cmd(C("setPiece", ("id", pid), ("extend", v / 100))), "pcext", Dflt("ramp", "extend", 100));
                 Hint("F lowers the ramp out of the hatch, then runs its extension out this far (shown lowered here); F again brings it in and up into the floor.");

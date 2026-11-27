@@ -57,9 +57,10 @@ public static partial class DesignCheck
         // Each socket's opening: how far the middle of its hole is from the skin's plates (open: past a person's radius), and from any piece's collider.
         foreach (var p in d.Pieces)
         {
-            if (PieceKinds.Find(p.Kind)?.Opening is not { } op || d.Hull(p.Hull) is not { } h)
+            if (PieceKinds.Find(p.Kind)?.Opening is not { } op0 || d.Hull(p.Hull) is not { } h)
                 continue;
             var w = DesignScene.Where(h, p);
+            var op = DesignHangar.OpeningOf(p, w) ?? op0; // (a ramp or a bay: its own size)
             var o = new Vector3((float)w.O[0], (float)w.O[1], (float)w.O[2]);
             float Clear(bool bands)
             {

@@ -423,10 +423,12 @@ public static partial class DesignParts
         {
             var over = total - MaxHulls;
             _hc.Dropped = over;
+            // (the rooms' and walkways' shells last: past the cap a person keeps the floors they stand on, Karl 2026-11-27)
+            for (var pass = 0; pass < 2; pass++)
             for (var k = els.Count - 1; k >= 0 && over > 0; k--)
             {
                 var e = els[k];
-                if (Colliders(e) == 0)
+                if (Colliders(e) == 0 || pass == 0 && e.Kind == "floor")
                     continue;
                 if (e.Runs is { Count: > 0 } runs) // (a room's bent boxes and strips, hulls once IntoFrames makes them)
                 {
@@ -452,7 +454,7 @@ public static partial class DesignParts
                     e.NoCollider = true;
                 }
             }
-            Console.WriteLine($"[design] \"{d.Name}\" makes {total} colliders, past the {MaxHulls} a design may: the last {total - MaxHulls} (from the end of its elements) are left out");
+            Console.WriteLine($"[design] \"{d.Name}\" makes {total} colliders, past the {MaxHulls} a design may: the last {total - MaxHulls} (from the end of its elements, the rooms' shells last of all) are left out");
         }
         if (_hc.Refused > 0)
             Console.WriteLine($"[design] \"{d.Name}\": {_hc.Refused} hull plates came out flat and are left out (holes in its collider)");

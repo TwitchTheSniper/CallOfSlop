@@ -3,7 +3,9 @@ namespace CallOfSlop.ShipDesigner;
 public static partial class DesignScene
 {
     /// <summary>The most triangles one room's interior cladding may add (solid and glow together); past it the rest is left bare.</summary>
-    public const int MaxInteriorTris = 9000;
+    private const double HullSideOff = 0.012; // how much further off its skin's line a side out to the hull is clad (Side)
+
+    public const int MaxInteriorTris = 20000; // (9000 ran out on a long room out to the hull, its later posts and trim left bare: Karl, 2026-11-27)
 
     /// <summary>
     /// A room's interior cladding (the user's corridor references, 2026-11-24): framed wall panels with seams, ribs ringing the room every
@@ -21,6 +23,7 @@ public static partial class DesignScene
         var g = new DesignMesh();
         if (r.Interior == "Off")
             return (m, g);
+        doors = [.. doors, .. RoomWindows(d, r)]; // (its panels open behind its windows: DesignWindows.cs)
         m.World();
         g.World();
         var ind = r.Interior == "Industrial";
@@ -86,17 +89,48 @@ public static partial class DesignScene
         (double, double, double) T(double[] v) => (v[0], v[1], v[2]);
         bool InBox(double[] p, double[] o) => p[0] > o[0] && p[0] < o[1] && p[1] > o[2] && p[1] < o[3] && p[2] > o[4] && p[2] < o[5];
         bool InHull(double[] p) => d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) > 0.01);
+        // Its own openings (Karl, 2026-11-27: cladding ran across holes in the wall), each as the room-local box (a across, l along, u up) it
+        // keeps clear, at its own size: a door in a wall from over the floor's dressing to its head, its half along the wall, reaching in from
+        // the wall (out to the hull, on in to the skin's line); a hole through the floor (a well, a hatch, a collar) only what lies on the
+        // floor over it; one through the ceiling (a well from the deck over) only what hangs under the ceiling.
+        var own = DoorsOf(d, r, doors);
+        var open = new List<(double A0, double A1, double L0, double L1, double U0, double U1, bool Hole)>();
+        foreach (var q in own)
+        {
+            var half = DoorHalf(q);
+            var uq = sg * (q[up] - floor);
+            if (IsHole(q))
+            {
+                var atFloor = Math.Abs(uq) < DoorLevel;
+                open.Add((q[ax] - half, q[ax] + half, q[al] - half, q[al] + half, atFloor ? -0.3 : uq - 0.9, atFloor ? FloorTop(r) + 0.15 : uq + 0.3, true));
+                continue;
+            }
+            var reach = hull ? 1.5 : 0.6;
+            double u0 = FloorTop(r) + 0.04, u1 = uq + DoorTop(q);
+            double dA0 = Math.Abs(q[ax] - lo[ax]), dA1 = Math.Abs(q[ax] - hi[ax]), dL0 = Math.Abs(q[al] - lo[al]), dL1 = Math.Abs(q[al] - hi[al]);
+            if (Math.Min(dA0, dA1) <= Math.Min(dL0, dL1))
+                open.Add((dA0 < dA1 ? q[ax] - 0.6 : q[ax] - reach, dA0 < dA1 ? q[ax] + reach : q[ax] + 0.6, q[al] - half, q[al] + half, u0, u1, false));
+            else
+                open.Add((q[ax] - half, q[ax] + half, dL0 < dL1 ? q[al] - 0.6 : q[al] - reach, dL0 < dL1 ? q[al] + reach : q[al] + 0.6, u0, u1, false));
+        }
         bool Clear(double[] c0, double[] c1)
         {
-            foreach (var q in doors)
-            {
-                double ul = d.Stacked ? q[up] - 2.2 : q[up] - 0.3, uh = d.Stacked ? q[up] + 0.3 : q[up] + 2.2;
-                if (Math.Min(c0[ax], c1[ax]) < q[ax] + 0.6 && Math.Max(c0[ax], c1[ax]) > q[ax] - 0.6 &&
-                    Math.Min(c0[al], c1[al]) < q[al] + 0.6 && Math.Max(c0[al], c1[al]) > q[al] - 0.6 &&
-                    Math.Min(c0[up], c1[up]) < uh && Math.Max(c0[up], c1[up]) > ul)
+            double a0 = Math.Min(c0[ax], c1[ax]), a1 = Math.Max(c0[ax], c1[ax]), l0 = Math.Min(c0[al], c1[al]), l1 = Math.Max(c0[al], c1[al]);
+            double u0 = sg * (c0[up] - floor), u1 = sg * (c1[up] - floor);
+            if (u1 < u0) (u0, u1) = (u1, u0);
+            foreach (var o in open)
+                if (a0 < o.A1 && a1 > o.A0 && l0 < o.L1 && l1 > o.L0 && u0 < o.U1 && u1 > o.U0)
                     return false;
-            }
             return true;
+        }
+        // The holes through the floor or the ceiling that reach heights u0..u1, as openings in (l along, a across) for AroundHoles.
+        List<(double S0, double S1, double H0, double H1)> FlatHoles(double u0, double u1)
+        {
+            var o = new List<(double, double, double, double)>();
+            foreach (var h in open)
+                if (h.Hole && u0 < h.U1 && u1 > h.U0)
+                    o.Add((h.L0, h.L1, h.A0, h.A1));
+            return o;
         }
         // A box in the local frame; probe is a point just beyond the face it is on (open to a group-mate, or past the skin: left out).
         bool Box(DesignMesh into, double a0, double a1, double l0, double l1, double u0, double u1, string col, double[]? probe = null, bool cut = false)
@@ -173,10 +207,10 @@ public static partial class DesignScene
         }
         // A flat band from a0(l) to a1(l) across, l0..l1 along, u0..u1 up: a box in a box room; out to the hull a solid a slice at a time
         // (split at the shell's slices so its sides keep to the skin's line, or one piece where it stands well clear of it).
-        bool Band(DesignMesh into, Func<double, double> a0, Func<double, double> a1, double l0, double l1, double u0, double u1, string col, bool split = true)
+        bool Band(DesignMesh into, Func<double, double> a0, Func<double, double> a1, double l0, double l1, double u0, double u1, string col, bool split = true, bool cut = false)
         {
             if (!hull)
-                return Box(into, a0(l0), a1(l0), l0, l1, u0, u1, col);
+                return Box(into, a0(l0), a1(l0), l0, l1, u0, u1, col, null, cut);
             var any = false;
             void Run(List<double> ls, bool whole)
             {
@@ -186,7 +220,7 @@ public static partial class DesignScene
                     double xa0 = a0(la), xa1 = a1(la), xb0 = a0(lb), xb1 = a1(lb);
                     if (budget < 12 || xa1 - xa0 < 1e-3 || xb1 - xb0 < 1e-3 || lb - la < 1e-4)
                         continue;
-                    if (!Clear(W(Math.Min(xa0, xb0), la, u0), W(Math.Max(xa1, xb1), lb, u1)) || !InHull(W((xa0 + xa1 + xb0 + xb1) / 4, (la + lb) / 2, (u0 + u1) / 2)))
+                    if (!cut && !Clear(W(Math.Min(xa0, xb0), la, u0), W(Math.Max(xa1, xb1), lb, u1)) || !InHull(W((xa0 + xa1 + xb0 + xb1) / 4, (la + lb) / 2, (u0 + u1) / 2)))
                     {
                         // A long piece a door's clearance reaches: its slices one by one, so only those by the door are left out.
                         if (!whole && split)
@@ -199,6 +233,14 @@ public static partial class DesignScene
             }
             // (its two sides' lines side by side, so a bend in either splits it)
             Run(split ? Cuts(l0, l1, gv, l => [.. W(a0(l), l, u0), .. W(a1(l), l, u0)]) : [l0, l1], false);
+            return any;
+        }
+        // A flat band on the floor or under the ceiling cut round the holes through it (as a wall's panels are round its doors), not dropped.
+        bool Flat(DesignMesh into, Func<double, double> a0, Func<double, double> a1, double l0, double l1, double u0, double u1, string col, bool split = true)
+        {
+            var any = false;
+            AroundHoles(l0, l1, -1e4, 1e4, FlatHoles(u0, u1), 0, (la, lb, c0, c1) =>
+                any |= Band(into, l => Math.Max(a0(l), c0), l => Math.Min(a1(l), c1), la, lb, u0, u1, col, split, true));
             return any;
         }
         // A plate on a surface F(s, u, off) (world; off along its normal into the room): s0..s1 by u0..u1, from o0 to o1 off it, its face
@@ -245,12 +287,15 @@ public static partial class DesignScene
             var sk = k == 0 ? 1.0 : -1.0;
             double na = sk, nl = -sk * dl, nu = -sk * du;
             var len = Math.Sqrt(na * na + nl * nl + nu * nu);
+            // (a centimetre more off the skin's line than the shell's face, as what lies against a side does: the shell's flat quads cut
+            // the curved line between its samples, and showed through the panels in jagged patches; Karl, 2026-11-27)
+            off += HullSideOff;
             return W(E(s, u) + na / len * off, s + nl / len * off, u + nu / len * off);
         }
         void Strip(Func<double, double> a0, Func<double, double> a1, double l0, double l1, double u0, double u1)
         {
-            if (lit) Band(g, a0, a1, l0, l1, u0, u1, glowCol);
-            else Band(m, a0, a1, l0, l1, u0, u1, offCol);
+            if (lit) Flat(g, a0, a1, l0, l1, u0, u1, glowCol);
+            else Flat(m, a0, a1, l0, l1, u0, u1, offCol);
         }
 
         const double P = 0.003; // proud of the inside faces
@@ -279,7 +324,7 @@ public static partial class DesignScene
                     arc = Math.Max(arc, FA1(Math.Clamp(l, fl0, fl1)) - FA0(Math.Clamp(l, fl0, fl1)));
             var len = fl1 - fl0;
             if (r.Floor is "Plates" or "Hex") // the other floors are the shell's dressing
-                Band(m, FA0, FA1, fl0, fl1, FL, FL + 0.004, groove);
+                Flat(m, FA0, FA1, fl0, fl1, FL, FL + 0.004, groove);
             int nu = Math.Clamp((int)Math.Round(arc / 0.6), 1, 40), nv = Math.Clamp((int)Math.Round(len / 0.6), 1, 60);
             // A point of the floor: u across (0..1 of its width there), v along.
             double FA(double u, double v)
@@ -335,7 +380,7 @@ public static partial class DesignScene
                 for (var x = 0; x < na; x++)
                 {
                     var (fx0, fx1) = ((double)x / na, (double)(x + 1) / na);
-                    Band(m, l => CL(l) + (CR(l) - CL(l)) * fx0 + 0.015, l => CL(l) + (CR(l) - CL(l)) * fx1 - 0.015, l0, l1, H - P - 0.012, H - P, (x + y) % 2 == 0 ? pHex : pFrame, false);
+                    Flat(m, l => CL(l) + (CR(l) - CL(l)) * fx0 + 0.015, l => CL(l) + (CR(l) - CL(l)) * fx1 - 0.015, l0, l1, H - P - 0.012, H - P, (x + y) % 2 == 0 ? pHex : pFrame, false);
                 }
             }
             var wMid = CR((L0 + L1) / 2) - CL((L0 + L1) / 2);
@@ -343,7 +388,7 @@ public static partial class DesignScene
             foreach (var f in strips)
             {
                 double C(double l) => CL(l) + (CR(l) - CL(l)) * f;
-                Band(m, l => C(l) - 0.1, l => C(l) + 0.1, L0 + 0.15, L1 - 0.15, H - P - 0.03, H - P - 0.008, pDark);
+                Flat(m, l => C(l) - 0.1, l => C(l) + 0.1, L0 + 0.15, L1 - 0.15, H - P - 0.03, H - P - 0.008, pDark);
                 Strip(l => C(l) - 0.06, l => C(l) + 0.06, L0 + 0.2, L1 - 0.2, H - P - 0.04, H - P - 0.026);
             }
         }
@@ -364,13 +409,14 @@ public static partial class DesignScene
         // ---- walls: framed panels between the ribs, a kick plate, Industrial vents. surf: the wall's face (s, u, off) where it is not a
         // plane of the box (a side out to the hull); clip: how far across it reaches between two heights (an end out to the hull).
         void Wall(bool across, double at, double inward, double s0, double s1, List<(double S0, double S1, double H0, double H1)> extra,
-            Func<double, double, double, double[]>? surf = null, Func<double, double, (double, double)>? clip = null)
+            Func<double, double, double, double[]>? surf = null, Func<double, double, (double, double)>? clip = null, double? plane = null)
         {
             // across: the wall's plane is at a = at (a side wall, running along l); else at l = at (an end wall, running across a).
             double[] Pt(double s, double off, double u) => surf is not null ? surf(s, u, off) : across ? W(at + inward * off, s, u) : W(s, at + inward * off, u);
             // The doors through this wall, as openings (Karl, 2026-11-25): the panels are cut round them, not dropped.
             var wt = sd > 0 ? sd - ShellGap : 0;
-            var holes = DoorHoles(d, doors, across ? ax : al, at - inward * wt / 2, across ? al : ax, floor, sg);
+            // (a side out to the hull is clad on the skin's line, but its doors are cut where its box's wall is: plane)
+            var holes = DoorHoles(d, own, across ? ax : al, plane ?? at - inward * wt / 2, across ? al : ax, floor, sg);
             holes.AddRange(extra);
             bool WBox1(DesignMesh into, double sa, double sb, double o0, double o1, double u0, double u1, string col)
             {
@@ -465,8 +511,8 @@ public static partial class DesignScene
         {
             // Its sides on the skin's surface, and its ends (a run-on end too: the shell closes it where it stops) as wide as the
             // skin there, each row of panels as wide as the skin is at that row's heights.
-            Wall(true, Lft(lm0, 1), 1, L0, L1, [], (s, u, o) => Side(0, s, u, o));
-            Wall(true, Rgt(lm0, 1), -1, L0, L1, [], (s, u, o) => Side(1, s, u, o));
+            Wall(true, Lft(lm0, 1), 1, L0, L1, [], (s, u, o) => Side(0, s, u, o), null, lo[ax]);
+            Wall(true, Rgt(lm0, 1), -1, L0, L1, [], (s, u, o) => Side(1, s, u, o), null, hi[ax]);
             foreach (var (l, inw) in new[] { (L0, 1.0), (L1, -1.0) })
             {
                 (double, double) Reach(double u0, double u1)
@@ -512,6 +558,9 @@ public static partial class DesignScene
                     continue; // (the wall is open there to an extension)
                 if (hull)
                 {
+                    // (no post across a door in that side, nor over its frame's architrave)
+                    if (DoorHoles(d, own, ax, s == 0 ? lo[ax] : hi[ax], al, floor, sg).Any(o => l1 > o.S0 - 0.09 && l0 < o.S1 + 0.09))
+                        continue;
                     var k = s;
                     double[] F(double sv, double u, double o) => Side(k, sv, u, o);
                     var probe = Side(k, l, H / 2, -0.3);
