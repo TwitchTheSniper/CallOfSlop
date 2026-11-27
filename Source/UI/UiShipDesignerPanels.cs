@@ -998,12 +998,18 @@ public sealed partial class Ui
             M("Door height", "bayDoorH", ShipDesigner.DesignHangar.DoorMinH, Math.Min(ShipDesigner.DesignHangar.DoorMaxH, size.Length > 1 ? size[1] : 32), 0.5);
             ImGui.Text("Type");
             Row();
-            MatCombo("hgdoor" + pid, Str(p, "bayDoor", "Sliding"), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
+            MatCombo("hgdoor" + pid, Str(p, "bayDoor", ShipDesigner.DesignHangar.DefDoor), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
             if (ResetAll("hgdoor" + pid, "Door back to its defaults"))
                 Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayDoorW", "bayDoorH", "bayDoor")]));
             var n = I(p, "fittings");
             if (size.Length == 3)
-                Hint($"The bay is {Fmt(size[0])} m across, {Fmt(size[1])} m tall and {Fmt(size[2])} m deep. {(Str(p, "bayDoor") == "Hinged" ? "The door swings out on motor hinges." : "The door slides aside on a piston.")} {n} docking fitting{(n == 1 ? "" : "s")} linked.");
+                Hint($"The bay is {Fmt(size[0])} m across, {Fmt(size[1])} m tall and {Fmt(size[2])} m deep. {Str(p, "bayDoor") switch
+                {
+                    "Rolling" => "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.",
+                    "Iris" => "Four blades inside the mouth swing out to the sides like a shutter.",
+                    "Hinged" => "The door swings out on motor hinges.",
+                    _ => "The door slides aside inside the well on a piston.",
+                }} {n} docking fitting{(n == 1 ? "" : "s")} linked.");
             return;
         }
         if (Has(p, "travel"))

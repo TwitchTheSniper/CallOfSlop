@@ -28,7 +28,15 @@ public static class DesignHangar
     /// width, height and depth are then its own, from a 5 m shed to the Large's 96 m.</summary>
     public const double BayMinW = 5, BayMaxW = 96, BayMinH = 3, BayMaxH = 48, BayMinD = 5, BayMaxD = 96;
     public const double DeckMin = 2, DeckMax = 48, TravelMin = 0.5, TravelMax = 30;
-    public static readonly string[] DoorTypes = ["Sliding", "Hinged"];
+    /// <summary>A bay door's kinds (Karl, 2026-11-27): Rolling runs out along the outside of the hull on rails twice the opening's length
+    /// (half the door's run, half where it parks); Iris is four blades inside the mouth that swing out about the rim; Sliding runs aside
+    /// inside the well on a piston; Hinged swings out on motor hinges.</summary>
+    public static readonly string[] DoorTypes = ["Rolling", "Iris", "Sliding", "Hinged"];
+    public const string DefDoor = "Rolling";
+    public const int IrisBlades = 4;
+
+    /// <summary>A door type from text, the default when it is none of them.</summary>
+    public static string DoorType(string? s) => s is not null && Array.IndexOf(DoorTypes, s) >= 0 ? s : DefDoor;
 
     public static BaySize? Bay(string kind) => Array.Find(Bays, b => b.Name == kind);
 
@@ -115,7 +123,7 @@ public static class DesignHangar
         p.BayD = Math.Clamp(ShipDesign.F(o["bayD"], p.BayD), BayMinD, BayMaxD);
         p.BayDoorW = Math.Clamp(ShipDesign.F(o["bayDoorW"], p.BayDoorW), DoorMinW, DoorMaxW);
         p.BayDoorH = Math.Clamp(ShipDesign.F(o["bayDoorH"], p.BayDoorH), DoorMinH, DoorMaxH);
-        p.BayDoorType = (string?)o["bayDoor"] == "Hinged" ? "Hinged" : "Sliding";
+        p.BayDoorType = DoorType((string?)o["bayDoor"]);
         p.W = Math.Clamp(ShipDesign.F(o["w"], p.W), DeckMin, DeckMax);
         p.L = Math.Clamp(ShipDesign.F(o["l"], p.L), DeckMin, DeckMax);
         p.Travel = Math.Clamp(ShipDesign.F(o["travel"], p.Travel), TravelMin, TravelMax);
@@ -140,7 +148,7 @@ public static class DesignHangar
             p.BayDoorW = Math.Clamp(Math.Min(p.BayDoorW, p.BayW), DoorMinW, DoorMaxW);
             p.BayDoorH = Math.Clamp(Math.Min(p.BayDoorH, p.BayH), DoorMinH, DoorMaxH);
         }
-        if (o["bayDoor"] is not null) p.BayDoorType = (string?)o["bayDoor"] == "Hinged" ? "Hinged" : "Sliding";
+        if (o["bayDoor"] is not null) p.BayDoorType = DoorType((string?)o["bayDoor"]);
         if (o["w"] is not null) p.W = Math.Clamp(Sn((double)o["w"]!, 0.5), DeckMin, DeckMax);
         if (o["l"] is not null) p.L = Math.Clamp(Sn((double)o["l"]!, 0.5), DeckMin, DeckMax);
         if (o["travel"] is not null) p.Travel = Math.Clamp(Sn((double)o["travel"]!, 0.1), TravelMin, TravelMax);
@@ -355,8 +363,19 @@ public static class DesignHangar
         Ring(m, hx + band, hz + band, 0.12, 0.25, 0.3, PieceKinds.Amber);
         // The door's well, from the skin to the bay's mouth.
         Ring(m, hx, hz, 0.08, -1.2, 0.02, PieceKinds.Gun);
-        // The door, open: a sliding door run aside on its piston, a hinged one swung out 70 degrees on its lower (aft) edge (shut: over its hole).
+        // The door, open: a rolling door run out along the hull on its rails, an iris's blades swung out about the rim, a sliding door run
+        // aside on its piston, a hinged one swung out 70 degrees on its lower (aft) edge (shut: over its hole).
         var th = Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2);
+        if (p.BayDoorType == "Rolling")
+        {
+            DrawRolling(m, p, hx, hz, band, th, shut);
+            goto bay;
+        }
+        if (p.BayDoorType == "Iris")
+        {
+            DrawIris(m, hx, hz, th, shut);
+            goto bay;
+        }
         if (p.BayDoorType == "Sliding")
         {
             var along = hz >= hx; // it slides along its long side
@@ -444,6 +463,82 @@ public static class DesignHangar
         else
             for (var i = -1; i <= 1; i++)
                 m.Box(i * x * 0.5 - 0.4, y1 + 0.13, -0.15, i * x * 0.5 + 0.4, y1 + 0.2, 0.15, PieceKinds.Glow);
+    }
+
+    /// <summary>
+    /// A rolling door (Karl, 2026-11-27): it lies on the outside of the hull over the mouth and runs out along its long side on two rails
+    /// twice the opening's length, half of them the door's run and half where it parks, on rollers at its corners. Its leaf (leaf 0) is the
+    /// door and its rollers; the rails and their end stops are the frame.
+    /// </summary>
+    private static void DrawRolling(DesignMesh m, Piece p, double hx, double hz, double band, double th, bool shut)
+    {
+        var along = hz >= hx; // it runs along its long side, to +z (or +x), as the game slides it
+        double ha = along ? hz : hx, hc = along ? hx : hz; // half its run's length, half across
+        var lift = 0.3 + p.Clad; // its underside, over the ring and any cladding round the hole
+        var rail = Math.Clamp(th * 0.8, 0.12, 0.6);
+        var open = shut ? 0 : 2 * ha + 0.04;
+        // (u along the run, c across it, into the frame's x and z)
+        void B(double u0, double y0, double c0, double u1, double y1, double c1, string col)
+        {
+            if (along) m.Box(c0, y0, u0, c1, y1, u1, col); else m.Box(u0, y0, c0, u1, y1, c1, col);
+        }
+        // The rails, either side of the mouth, from its back edge out over the parking half, and the stops at each end.
+        foreach (var s in new[] { -1, 1 })
+        {
+            var c = s * (hc + band * 0.5);
+            B(-ha - band, 0, c - rail / 2, 3 * ha + band, lift, c + rail / 2, PieceKinds.Gun);
+            B(-ha - band, lift - 0.02, c - rail * 0.7, 3 * ha + band, lift + 0.04, c + rail * 0.7, PieceKinds.Pale);
+            B(-ha - band - rail, 0, c - rail, -ha - band, lift + rail, c + rail, PieceKinds.Amber);
+            B(3 * ha + band, 0, c - rail, 3 * ha + band + rail, lift + rail, c + rail, PieceKinds.Amber);
+        }
+        m.Leaf(0, () =>
+        {
+            // The door: a slab over the mouth and its band, ribbed across, with a roller at each corner on its rail.
+            B(-ha - band * 0.5 + open, lift + 0.05, -hc - band, ha + band * 0.5 + open, lift + 0.05 + th, hc + band, PieceKinds.Gun);
+            for (var k = -2; k <= 2; k++)
+                B(k * ha * 0.4 - 0.1 + open, lift + 0.05 + th, -hc - band * 0.5, k * ha * 0.4 + 0.1 + open, lift + 0.1 + th, hc + band * 0.5, PieceKinds.Amber);
+            foreach (var s in new[] { -1, 1 })
+                foreach (var e in new[] { -1, 1 })
+                {
+                    var c = s * (hc + band * 0.5);
+                    var u = e * (ha - rail) + open;
+                    B(u - rail, lift + 0.04, c - rail * 0.6, u + rail, lift + 0.05 + th * 0.8, c + rail * 0.6, PieceKinds.Pale);
+                }
+        });
+    }
+
+    /// <summary>
+    /// An iris door (Karl, 2026-11-27): four blades just inside the mouth, each a quarter of the opening, which swing out sideways (in the
+    /// skin's plane, a quarter turn about the mouth's outer corner) into the well round the mouth, one to each side like a camera's shutter.
+    /// Leaves 0 to 3 are the blades (each a door of its own in the game, welded, so F on any opens them all), each a little deeper than the
+    /// last so they pass over each other.
+    /// </summary>
+    private static void DrawIris(DesignMesh m, double hx, double hz, double th, bool shut)
+    {
+        var a = shut ? 0 : Math.PI / 2;
+        double ca = Math.Cos(a), sa = Math.Sin(a);
+        (double, double) Turn(double x, double z) => (x * ca + z * sa, -x * sa + z * ca);
+        var k = 0;
+        foreach (var (sx, sz) in new[] { (1, 1), (-1, 1), (-1, -1), (1, -1) })
+        {
+            var y = -1.0 - k * (th + 0.04);
+            double px = sx * hx, pz = sz * hz; // its pivot: the mouth's outer corner of its quarter
+            var (cx, cz) = Turn(-sx * hx / 2, -sz * hz / 2);
+            var (ax, az) = Turn(hx / 2, 0);
+            var (ex, ez) = Turn(0, hz / 2);
+            var leaf = k;
+            m.Leaf(leaf, () =>
+            {
+                Slab(m, (px + cx, y - th / 2, pz + cz), (ax, 0, az), (0, th / 2, 0), (ex, 0, ez), PieceKinds.Gun);
+                // A hazard stripe along its inner edge (towards the middle when shut).
+                var (ix, iz) = Turn(-sx * hx * 0.95, -sz * hz / 2);
+                var (bx, bz) = Turn(-sx * 0.05 * hx, 0);
+                Slab(m, (px + ix, y + 0.02, pz + iz), (bx, 0, bz), (0, 0.03, 0), (ex * 0.9, 0, ez * 0.9), PieceKinds.Amber);
+            });
+            // Its pivot pin, in the frame.
+            m.Box(px - th, y - th, pz - th, px + th, -0.9, pz + th, PieceKinds.Pale);
+            k++;
+        }
     }
 
     /// <summary>A lift platform's deck lies this far into its well when up (shut), its outer face flush with the skin.</summary>

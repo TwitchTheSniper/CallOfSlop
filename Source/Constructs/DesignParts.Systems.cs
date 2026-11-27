@@ -426,6 +426,11 @@ public static partial class DesignParts
         if (DesignHangar.Of(p) is { } b)
         {
             Bay(a, b);
+            if (p.BayDoorType == "Iris")
+            {
+                IrisBlades(a, m);
+                return;
+            }
             if (leaf.To <= leaf.From)
                 return;
             var door = Leaf($"{e.Id}.d0", $"{p.Kind} door", m, leaf.From, leaf.To, a.X, a.Y, a.Z);
@@ -437,6 +442,11 @@ public static partial class DesignParts
                 Slide(door, dz >= dx ? a.Z : a.X, seconds); // (along its long side, as the page draws it run aside)
                 var along = ConstructParts.DirVector(door.Door!.Axis);
                 door.Door.Travel = MathF.Min(MathF.Abs(Vector3.Dot(door.BoxMax - door.BoxMin, along)) + LeafGap, BayDoorMaxTravel);
+            }
+            else if (p.BayDoorType == "Rolling")
+            {
+                Slide(door, dz >= dx ? a.Z : a.X, seconds); // (out along the hull on its rails, its long side, as the page draws it parked)
+                door.Door!.Travel = MathF.Min((float)Math.Max(dx, dz) * (float)p.Hole + LeafGap, BayDoorMaxTravel); // (the opening's length: to the rails' parking half)
             }
             else if (Upright(a) == 0)
                 Swing(door, m, leaf.From, leaf.To, a.X * (a.X.Y >= 0 ? -1 : 1), a.Z, a.Y, seconds); // (a side bay's drawbridge, on its lower edge)
@@ -593,6 +603,42 @@ public static partial class DesignParts
             Weld(els, els.Count - 2, els.Count - 1);
             (prev, prevAt) = (ext, els.Count - 1);
         }
+    }
+
+    /// <summary>
+    /// An iris bay door's four blades (DesignHangar.DrawIris: leaves 0 to 3), each an event door that swings a quarter turn in the skin's
+    /// plane about its pivot at the mouth's outer corner of its quarter, out of the mouth into the well round it; welded to the bay and to
+    /// the first blade, so F on any blade opens them all.
+    /// </summary>
+    private static void IrisBlades(in PieceAt a, DesignMesh m)
+    {
+        var (p, e, els) = (a.P, a.E, a.Els);
+        var (dx, dz) = DesignHangar.DoorExtent(p, a.W);
+        float hx = (float)(dx / 2 * p.Hole), hz = (float)(dz / 2 * p.Hole);
+        var seconds = MathF.Max(HatchSeconds, MathF.Max(hx, hz) * 2 * BayDoorSecondsPerM);
+        var (x, z) = (Vector3.Normalize(a.X), Vector3.Normalize(a.Z));
+        var dir = NearestDir(a.Y);
+        var first = -1;
+        var k = 0;
+        foreach (var (sx, sz) in new[] { (1, 1), (-1, 1), (-1, -1), (1, -1) })
+        {
+            var blade = k++;
+            var leaf = m.Leaves?.Find(l => l.Leaf == blade) ?? default;
+            if (leaf.To <= leaf.From)
+                continue;
+            var door = Leaf($"{e.Id}.d{blade}", $"{p.Kind} iris blade", m, leaf.From, leaf.To, a.X, a.Y, a.Z);
+            var pivot = a.O + x * (sx * hx) + z * (sz * hz);
+            // A quarter turn, the four the same way (either way takes a blade clear of the mouth, out over the side its corner is on).
+            door.Door = new CDoorDef { Slide = false, Axis = dir, Pivot = pivot, Angle = MathF.PI / 2, Seconds = seconds, Hang = 0 };
+            els.Add(door);
+            Weld(els, a.At, els.Count - 1);
+            if (first < 0)
+                first = els.Count - 1;
+            else
+                Weld(els, first, els.Count - 1);
+        }
+        if (k > 0 && first < 0)
+            Console.WriteLine($"[design] the {p.Kind} {e.Id}'s iris draws no blades: its mouth is open");
     }
 
     /// <summary>Which of a place's axes is nearest the ship's up (0 X, 1 Y, 2 Z), as DesignHangar reads a bay's.</summary>
