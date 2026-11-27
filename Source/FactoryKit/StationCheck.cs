@@ -774,7 +774,7 @@ public static class StationCheck
         Console.WriteLine(made >= 0 ? $"  the {d.Name} baked after {made / (float)World.TickRate:0.0} s" : $"  after {seconds} s the order is still open: {c.Parts[oven].Orders?.Note}");
         // (each line machine's queue and what it made: how a station's Line split shared the kit's pieces over its lines, 2026-11-27)
         for (var m = 0; m < c.PartCount; m++)
-            if (c.DefOf(m).IsExtruder && c.Parts[m].Orders is { Bill: false } mq && (mq.Count > 0 || made >= 0))
+            if (c.DefOf(m).IsExtruder && c.Parts[m].Orders is { Bill: false, Count: > 0 } mq)
                 Console.WriteLine($"  {c.DefOf(m).Name} {m} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}: {mq.Count} order(s), {mq.PiecesLeft} piece(s) left" +
                                   string.Concat(Enumerable.Range(0, mq.Count).Select(k => $"; {ConstructCrafting.NameOf(mq.Items[k])} {mq.Items[k].Made}/{mq.Items[k].Count}")));
         for (var s = 0; s < c.PartCount; s++)

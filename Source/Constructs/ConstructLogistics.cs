@@ -549,7 +549,7 @@ public static class ConstructLogistics
                 continue;
             if (o.Asked - Riding(c, tray.Handle, o.Id, LogiFlags.None, LogiFlags.Storage | LogiFlags.Fetched) <= 0)
                 continue;
-            if (maker < 0 || o.Where == maker)
+            if (maker < 0 || ConstructCrafting.AskedAt(c, o, maker))
                 return o.Id;
             if (any == 0)
                 any = o.Id;
@@ -596,7 +596,7 @@ public static class ConstructLogistics
             for (var k = 0; k < q.Count; k++)
             {
                 ref var o = ref q.Items[k];
-                if (o.Asked > 0 && o.Where == machine && o.Stamp < stamp && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref o) == d.Id)
+                if (o.Asked > 0 && ConstructCrafting.AskedAt(c, o, machine) && o.Stamp < stamp && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref o) == d.Id)
                     return true;
             }
         }
