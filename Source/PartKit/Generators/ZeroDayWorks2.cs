@@ -95,7 +95,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 Group = "Factories",
             };
             using var doc = JsonDocument.Parse(layoutText);
-            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(MovedOut).Select(NarrowOut).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(Restocked).Select(MovedOut).Select(NarrowOut).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
             items.AddRange(DeepPads(items));
             items.AddRange(NarrowStrip(items));
             s.Lay(items);
@@ -221,6 +221,22 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                     return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
                 }
             return e.Clone();
+        }
+
+        /// <summary>
+        /// The front refinery's metal and steel bunkers (the row at the layout's z -58, either side), Sean 2026-11-27: "very metal and steel
+        /// starved... needs much larger metal and steel bunkers". Each Ore Bunker 4 m (11,938 units) becomes an Ore Silo 4 m on the same 4 m
+        /// floor and spot (57,971 units, nearly five times as much; ConstructStorage.MaxBulk caps any one bin at 60,000), so nothing Sean laid moves.
+        /// </summary>
+        public const float StockRowZ = 58f;
+
+        private static JsonElement Restocked(JsonElement e)
+        {
+            if (Str(e, "name") != "Ore Bunker 4 m" || MathF.Abs(Num(e, "z") + StockRowZ) > 0.01f)
+                return e;
+            var node = System.Text.Json.Nodes.JsonNode.Parse(e.GetRawText())!.AsObject();
+            node["name"] = "Ore Silo 4 m";
+            return JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
         }
 
         private static string Str(JsonElement e, string k) => e.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : "";
