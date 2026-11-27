@@ -1573,7 +1573,13 @@ public sealed partial class Ui
                 if (Str(p, "armClad") != "Off")
                     Slider("Panel size", D(p, "armCladSize"), ShipDesigner.HullBody.CladSizeMin, ShipDesigner.HullBody.CladSizeMax, 0.05, " m",
                         v => Cmd(C("setPiece", ("id", pid), ("armCladSize", v))), "pcas", Dflt("armour", "armCladSize"));
-                Hint("It follows the hull's shape at its stand-off, held off the skin on struts. Its outer face takes a hull cladding style; its inner face is plain panels. Solid in the game.");
+                // The plate screen (Karl, 2026-11-27): how it shapes round the hull, and its outline seen flat, sculpted by its edges.
+                H3("Plate shape");
+                Slider("Follow the hull", Math.Round(D(p, "armFollow", 1) * 100), 0, 100, 5, "%", v => Cmd(C("setPiece", ("id", pid), ("armFollow", v / 100))), "pcaf", 100);
+                ArmourOutline(p, pid);
+                if (ImGui.Button("Reset shape##sdarmreset"u8))
+                    Cmd(C("setPiece", ("id", pid), ("armReset", true)));
+                Hint("Follow 100%: it bends with the hull at its stand-off; 0%: flat. Drag the outline's points up or down to grow or cut its edges; Reset squares it again. F in the game: its rams push it out slowly, F again lets it go.");
             }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))
