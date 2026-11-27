@@ -1254,7 +1254,7 @@ public sealed partial class ConstructEdits
         if (Reachable(eye, ReachPoint(c, part, eye), reach) is { } far)
             return far;
         if (DesignParts.IsArmour(d))
-            return world.DetachPart(c, part); // (a design's stand-off armour plate: let go of its struts, it drifts on as the ship moved, or falls)
+            return DesignParts.ArmourUse(world, c, part); // (a design's stand-off armour plate: its rams push it out, then it is let go: DesignParts.Armour.cs)
         if (DesignParts.BoardFrom(c, part, eye) is var board and >= 0)
         {
             // F on a ship design's plain hull from outside sits the player at its helm, or its first free seat, as if they had walked in;

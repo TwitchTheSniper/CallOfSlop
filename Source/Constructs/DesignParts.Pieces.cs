@@ -50,7 +50,7 @@ public static partial class DesignParts
                 e.Kg = e.Area * PieceKgPerM2;
                 HullOf(e, Unleaved(m));
                 if (armour is not null)
-                    ArmourHulls(e, armour, flips[k]); // (a curved plate's one hull would fill the space to the skin: a hull a cell and a strut)
+                    ArmourHulls(e, armour, flips[k]); // (its sockets' hulls: one over them all would fill the space under the plate)
                 var at = els.Count;
                 els.Add(e);
                 if (st.BandAt(p.Hull, sets[k].Copy, (e.BoxMin.Z + e.BoxMax.Z) * 0.5f) is var b and >= 0)
@@ -62,6 +62,8 @@ public static partial class DesignParts
                     Leg(new PieceAt(p, e, at, sets[k].W, els), m); // (its leg is landing gear, not a door F works)
                 else if (p.Kind == DesignRamp.Kind)
                     RampLeaves(new PieceAt(p, e, at, sets[k].W, els), m, rampFloor); // (its ramp and extension on their joints, F lowers them)
+                else if (armour is not null)
+                    ArmourLeaf(new PieceAt(p, e, at, sets[k].W, els), m); // (its plate on its rams: DesignParts.Armour.cs)
                 else
                     PieceDoors(new PieceAt(p, e, at, sets[k].W, els), m); // (its door leaves, each a door of its own)
                 if (p.Kind == "Boarding hatch" && k == 0)
@@ -72,7 +74,7 @@ public static partial class DesignParts
         Flight(els);
     }
 
-    /// <summary>A stand-off armour plate's solid (DesignArmour.Solids): one convex hull a cell of its plate and one a strut, in this copy's place.</summary>
+    /// <summary>A stand-off armour plate's rams' sockets (DesignArmour.Solids): one convex hull each, in this copy's place (the plate is its own element: ArmourLeaf).</summary>
     private static void ArmourHulls(Element e, List<List<double[]>> solids, (float S, float O) flip)
     {
         var hulls = new List<ConvexHull>();

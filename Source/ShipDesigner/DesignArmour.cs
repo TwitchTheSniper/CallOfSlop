@@ -9,7 +9,7 @@ namespace CallOfSlop.ShipDesigner;
 /// where it was dropped, its width runs along the body (z) and its height round the profile (metres of arc at its middle), and every point
 /// of it lies on the skin's normal there, its stand-off out, so it bends with the hull as the skin does. Its outer face takes the hull
 /// cladding styles (the same <see cref="DesignScene.LayPlates"/> the bodies and connections clad with); its inner, ship-facing face is
-/// plain panels. In the game it is solid: one convex hull a cell of its plate and one a strut (DesignParts.Pieces.cs, ArmourHulls).
+/// plain panels. In the game the plate and its rams' rods ride a slow piston (its leaf, DesignParts.Armour.cs) and the rams' sockets are one convex hull each (ArmourHulls).
 /// All its geometry, JSON and page fields are here, so the rest of the designer only calls in.
 /// </summary>
 public static class DesignArmour
@@ -27,9 +27,6 @@ public static class DesignArmour
     /// <summary>The inner face's panels: about this size (m), the seam between them, and how far they stand off the plate's back (no shared plane).</summary>
     private const double PanelSize = 1.25, PanelSeam = 0.03, PanelRise = 0.006;
     private const string Back = "#3b3f44", Panel = "#62676d";
-    /// <summary>The collider cells: about this size (m), at most this many in all.</summary>
-    private const double CellSize = 2.5;
-    private const int MaxCells = 32;
 
     public static readonly PieceKind[] Kinds =
     [
@@ -217,6 +214,10 @@ public static class DesignArmour
         var rim = DesignMesh.Tone(skin, 0.75);
         var back = DesignMesh.Hex(Back);
         int nz = g.Nz, nt = g.Nt;
+        // The plate and its rams' rods (the arms) are leaf 0, which the game pushes out on the rams and lets go (DesignParts.Pieces.cs,
+        // ArmourLeaf); the rams' sockets (bases and barrels) stay on the hull.
+        m.Leaf(PlateLeaf, () =>
+        {
         for (var i = 0; i < nz; i++)
             for (var j = 0; j < nt; j++)
             {
@@ -238,7 +239,9 @@ public static class DesignArmour
         InnerPanels(m, g, off);
         if (p.ArmClad != "Off")
             Clad(m, p, g, top, skin);
-        Struts(m, g, p, off);
+        Arms(m, g, p, off);
+        });
+        Sockets(m, g, p, off);
         return true;
     }
 
@@ -299,33 +302,57 @@ public static class DesignArmour
     /// have tiny travel"). Its chrome shows this much plus a little, so the stroke reads.</summary>
     public const double RamTravel = 0.25;
 
+    /// <summary>The plate's leaf in its mesh (the plate and the rams' rods).</summary>
+    public const int PlateLeaf = 0;
+
+    /// <summary>Seconds the rams take over their stroke: slow and heavy.</summary>
+    public const double RamSeconds = 6;
+
+    /// <summary>A ram's heights over the skin at its spot: its base's top, its barrel's top (the socket the rod runs out of) and the head plate's foot.</summary>
+    private static (double BaseTop, double BarrelTop, double Head0) RamHeights(double hw, double off)
+    {
+        double baseTop = 0.08 + hw * 0.15, head0 = off - 0.12, rod = Math.Min(RamTravel + 0.1, Math.Max(0.05, (head0 - baseTop) * 0.35));
+        return (baseTop, Math.Max(baseTop + 0.05, head0 - rod), head0);
+    }
+
     /// <summary>
-    /// Its struts as hydraulic rams (Karl, 2026-11-27): a heavy base on the skin with clevis lugs, a thick barrel, a gland ring, a short chrome
-    /// rod (its stroke, <see cref="RamTravel"/>) and a head plate under the armour. An arm's barrel is braced fore and aft by gussets at its foot.
+    /// The rams' sockets on the hull (Karl, 2026-11-27: thick, powerful, slow arms with tiny travel): a heavy base on the skin with clevis
+    /// lugs, a thick barrel and a gland ring, which the arm's rod runs out of; an arm's barrel braced fore and aft by gussets at its foot.
     /// </summary>
-    private static void Struts(DesignMesh m, Grid g, Piece p, double off)
+    private static void Sockets(DesignMesh m, Grid g, Piece p, double off)
     {
         foreach (var (u, v, hw) in StrutSpots(g, p))
         {
             var (s, n, along, x) = StrutFrame(g, u, v);
             m.Frame(s[0], s[1], s[2], x, n, along);
-            double baseTop = 0.08 + hw * 0.15, head0 = off - 0.12, rod = Math.Min(RamTravel + 0.1, Math.Max(0.05, (head0 - baseTop) * 0.35));
-            double barrelTop = Math.Max(baseTop + 0.05, head0 - rod);
+            var (baseTop, barrelTop, _) = RamHeights(hw, off);
             m.Box(-hw * 1.9, -0.05, -hw * 1.9, hw * 1.9, baseTop, hw * 1.9, PieceKinds.Armour); // (its base, sunk 5 cm into the skin)
             m.Box(-hw * 1.25, baseTop - 0.004, -hw * 0.35, -hw * 0.9, baseTop + hw * 0.9, hw * 0.35, PieceKinds.Gun); // (clevis lugs either side)
             m.Box(hw * 0.9, baseTop - 0.004, -hw * 0.35, hw * 1.25, baseTop + hw * 0.9, hw * 0.35, PieceKinds.Gun);
             m.Frustum(baseTop - 0.01, hw * 0.85, barrelTop, hw * 0.85, 16, PieceKinds.Gun); // (the barrel)
             m.Frustum(barrelTop - 0.08, hw * 0.95, barrelTop + 0.01, hw * 0.92, 16, PieceKinds.Armour); // (its gland ring)
-            m.Frustum(barrelTop, hw * 0.45, head0 + 0.01, hw * 0.45, 12, PieceKinds.Pale, cap0: false); // (the chrome rod)
             m.Frustum(baseTop + 0.15, hw * 0.88, baseTop + 0.2, hw * 0.88, 16, PieceKinds.Amber, cap0: false, cap1: false); // (a warning band)
-            m.Box(-hw * 1.4, head0, -hw * 1.4, hw * 1.4, off - 0.002 - PanelRise, hw * 1.4, PieceKinds.Armour); // (its head, under the panels)
             if (p.ArmStruts == "Arm")
             {
-                // Gussets fore and aft of the barrel at its foot.
                 var gh = Math.Min((barrelTop - baseTop) * 0.6, hw * 2);
                 m.Box(-hw * 0.2, baseTop - 0.004, hw * 0.8, hw * 0.2, baseTop + gh, hw * 1.85, PieceKinds.Gun);
                 m.Box(-hw * 0.2, baseTop - 0.004, -hw * 1.85, hw * 0.2, baseTop + gh, -hw * 0.8, PieceKinds.Gun);
             }
+        }
+        m.World();
+    }
+
+    /// <summary>The arms that go with the plate: each ram's chrome rod, from a stroke's length down in its barrel up to the head plate under the
+    /// armour (so pushed out by <see cref="RamTravel"/> it still sits in its gland), and the head.</summary>
+    private static void Arms(DesignMesh m, Grid g, Piece p, double off)
+    {
+        foreach (var (u, v, hw) in StrutSpots(g, p))
+        {
+            var (s, n, along, x) = StrutFrame(g, u, v);
+            m.Frame(s[0], s[1], s[2], x, n, along);
+            var (baseTop, barrelTop, head0) = RamHeights(hw, off);
+            m.Frustum(Math.Max(baseTop + 0.02, barrelTop - RamTravel - 0.05), hw * 0.45, head0 + 0.01, hw * 0.45, 12, PieceKinds.Pale, cap0: false); // (the chrome rod)
+            m.Box(-hw * 1.4, head0, -hw * 1.4, hw * 1.4, off - 0.002 - PanelRise, hw * 1.4, PieceKinds.Armour); // (its head, under the panels)
         }
         m.World();
     }
@@ -341,39 +368,21 @@ public static class DesignArmour
 
     // ---- solid in the game
 
-    /// <summary>
-    /// The plate's solid as point sets in the ship's frame, each one convex hull: a cell of the plate (its inner and outer points, about
-    /// <see cref="CellSize"/> each way, at most <see cref="MaxCells"/>) and each strut's post.
-    /// </summary>
+    /// <summary>The rams' sockets' solids as point sets in the ship's frame, each one convex hull (base to barrel top); the plate's own
+    /// solid is its leaf's (DesignParts.Pieces.cs, ArmourLeaf).</summary>
     public static List<List<double[]>> Solids(ShipDesign d, Piece p)
     {
         var o = new List<List<double[]>>();
         if (GridOf(d, p) is not { } g)
             return o;
-        double off = p.ArmOff, top = p.ArmOff + p.ArmT;
-        int cu = Math.Clamp((int)Math.Round(g.Arc / CellSize), 1, g.Nt), cv = Math.Clamp((int)Math.Round(g.Len / CellSize), 1, g.Nz);
-        while (cu * cv > MaxCells)
-            if (cu >= cv) cu--; else cv--;
-        for (var a = 0; a < cu; a++)
-            for (var b = 0; b < cv; b++)
-            {
-                int j0 = g.Nt * a / cu, j1 = g.Nt * (a + 1) / cu, i0 = g.Nz * b / cv, i1 = g.Nz * (b + 1) / cv;
-                var pts = new List<double[]>();
-                for (var i = i0; i <= i1; i++)
-                    for (var j = j0; j <= j1; j++)
-                    {
-                        pts.Add(g.At(i, j, off));
-                        pts.Add(g.At(i, j, top));
-                    }
-                o.Add(pts);
-            }
         foreach (var (u, v, hw) in StrutSpots(g, p))
         {
             var (s, n, along, x) = StrutFrame(g, u, v);
+            var (_, barrelTop, _) = RamHeights(hw, p.ArmOff);
             var pts = new List<double[]>();
             foreach (var sx in new[] { -hw, hw })
                 foreach (var sz in new[] { -hw, hw })
-                    foreach (var sy in new[] { 0.05, off })
+                    foreach (var sy in new[] { 0.05, barrelTop })
                         pts.Add([s[0] + x[0] * sx + n[0] * sy + along[0] * sz, s[1] + x[1] * sx + n[1] * sy + along[1] * sz, s[2] + x[2] * sx + n[2] * sy + along[2] * sz]);
             o.Add(pts);
         }
