@@ -57,6 +57,8 @@ public static class DesignArmour
     private const double ArmHalf = 0.6, PostHalf = 0.32;
     /// <summary>The inner face's panels: about this size (m), the seam between them, and how far they stand off the plate's back (no shared plane).</summary>
     private const double PanelSize = 1.25, PanelSeam = 0.03, PanelRise = 0.006;
+    /// <summary>How much of a cladding cell or inner panel must lie inside a sculpted plate's outline to be laid (cut to the edge).</summary>
+    private const double MinInside = 0.4;
     private const string Back = "#3b3f44", Panel = "#62676d";
 
     public static readonly PieceKind[] Kinds =
@@ -170,8 +172,37 @@ public static class DesignArmour
     /// A plate's grid in the ship's frame: (Nz + 1) x (Nt + 1) points on the skin (S) with the way out of it (N, smoothed over the profile's
     /// corners so the plate rounds them at its stand-off), row i along z, column j round the profile; and its length and arc in metres.
     /// </summary>
-    public sealed record Grid(int Nz, int Nt, double[][] S, double[][] N, double Len, double Arc, double[][] K)
+    public sealed record Grid(int Nz, int Nt, double[][] S, double[][] N, double Len, double Arc, double[][] K, double[] A0, double[] A1, double[] ArcTab)
     {
+        /// <summary>The outline's lowest and highest edge round the profile, in metres of arc (rows reach between their own A0 and A1).</summary>
+        public double Amin { get; } = A0.Min();
+        public double Amax { get; } = A1.Max();
+
+        /// <summary>A row's own share u for a point at share <paramref name="w"/> of the whole outline's span (Amin..Amax, so it keeps metres
+        /// whatever the row's height) at share v along; clamped to the row's own edges, so what lies past a sculpted edge is cut to it.</summary>
+        public double LocalU(double w, double v)
+        {
+            var (lo, hi) = RowAt(v);
+            double t0 = TOf(ArcTab, lo), t1 = TOf(ArcTab, hi);
+            if (t1 - t0 < 1e-9)
+                return 0.5;
+            return (TOf(ArcTab, Math.Clamp(Amin + (Amax - Amin) * w, lo, hi)) - t0) / (t1 - t0);
+        }
+
+        /// <summary>The share of the span w0..w1 (shares of Amin..Amax) inside the outline at share v along.</summary>
+        public double Inside(double w0, double w1, double v)
+        {
+            var (lo, hi) = RowAt(v);
+            double a0 = Amin + (Amax - Amin) * w0, a1 = Amin + (Amax - Amin) * w1;
+            return a1 - a0 < 1e-9 ? 0 : Math.Max(0, Math.Min(a1, hi) - Math.Max(a0, lo)) / (a1 - a0);
+        }
+
+        private (double Lo, double Hi) RowAt(double v)
+        {
+            var (i, fv) = Cell(v, Nz);
+            return (A0[i] + (A0[i + 1] - A0[i]) * fv, A1[i] + (A1[i + 1] - A1[i]) * fv);
+        }
+
         /// <summary>The skin itself under a point at shares (u, v): where a ram stands (S is the plate's base, off the skin when it doesn't follow the hull).</summary>
         public double[] LerpK(double u, double v)
         {
@@ -239,14 +270,7 @@ public static class DesignArmour
         var total = arc[K];
         if (total < 0.2)
             return null;
-        double TAt(double a)
-        {
-            a = Math.Clamp(a, 0, total);
-            var k = 1;
-            while (k < K && arc[k] < a) k++;
-            var f = arc[k] - arc[k - 1] < 1e-9 ? 0 : (a - arc[k - 1]) / (arc[k] - arc[k - 1]);
-            return (k - 1 + f) / K;
-        }
+        double TAt(double a) => TOf(arc, a);
         var mid = arc[(int)Math.Round(Math.Clamp(p.T, 0, 1) * K)];
         // Its outline (Karl, 2026-11-27: sculpted in the plate screen): each row along it runs round from its own bottom edge to its own top
         // edge, the plate's height grown (or cut) there by the edges' control points.
@@ -304,7 +328,18 @@ public static class DesignArmour
                 }
             }
         }
-        return new Grid(nz, nt, S, N, z1 - z0, sumH / (nz + 1), Ks);
+        return new Grid(nz, nt, S, N, z1 - z0, sumH / (nz + 1), Ks, ra0, ra1, arc);
+    }
+
+    /// <summary>The profile's share t at <paramref name="a"/> metres of arc round it (<paramref name="arc"/>: the arc at K + 1 even steps of t).</summary>
+    private static double TOf(double[] arc, double a)
+    {
+        var K = arc.Length - 1;
+        a = Math.Clamp(a, 0, arc[K]);
+        var k = 1;
+        while (k < K && arc[k] < a) k++;
+        var f = arc[k] - arc[k - 1] < 1e-9 ? 0 : (a - arc[k - 1]) / (arc[k] - arc[k - 1]);
+        return (k - 1 + f) / K;
     }
 
     /// <summary>What a plate's mesh depends on beyond its own fields and the bodies' shapes: its body's skin colour and cladding material.</summary>
@@ -372,13 +407,18 @@ public static class DesignArmour
     /// about <see cref="PanelSize"/> each, seamed, standing <see cref="PanelRise"/> in off the plate's back, each bent with the plate.</summary>
     private static void InnerPanels(DesignMesh m, Grid g, double off)
     {
-        int pu = Math.Max(1, (int)Math.Round(g.Arc / PanelSize)), pv = Math.Max(1, (int)Math.Round(g.Len / PanelSize));
-        double su = PanelSeam / 2 / g.Arc, sv = PanelSeam / 2 / g.Len;
+        // Laid at their real size over the whole outline's span and cut at its edges (Karl, 2026-11-27: cladding shouldn't stretch with a
+        // sculpted plate); one mostly past an edge is left off.
+        var span = g.Amax - g.Amin;
+        int pu = Math.Max(1, (int)Math.Round(span / PanelSize)), pv = Math.Max(1, (int)Math.Round(g.Len / PanelSize));
+        double su = PanelSeam / 2 / span, sv = PanelSeam / 2 / g.Len;
         var col = DesignMesh.Hex(Panel);
         for (var a = 0; a < pu; a++)
             for (var b = 0; b < pv; b++)
             {
                 double u0 = (double)a / pu + su, u1 = (double)(a + 1) / pu - su, v0 = (double)b / pv + sv, v1 = (double)(b + 1) / pv - sv;
+                if (g.Inside(u0, u1, (v0 + v1) / 2) < MinInside)
+                    continue;
                 // Each panel in steps no longer than the grid's, so it follows the plate's curve.
                 int ku = Math.Max(1, (int)Math.Ceiling((u1 - u0) * g.Nt)), kv = Math.Max(1, (int)Math.Ceiling((v1 - v0) * g.Nz));
                 var tone = DesignMesh.Tone(col, 0.92 + 0.08 * ((a * 7 + b * 3) % 3) / 2.0);
@@ -386,9 +426,9 @@ public static class DesignArmour
                     for (var y = 0; y < kv; y++)
                     {
                         double ua = u0 + (u1 - u0) * x / ku, ub = u0 + (u1 - u0) * (x + 1) / ku, va = v0 + (v1 - v0) * y / kv, vb = v0 + (v1 - v0) * (y + 1) / kv;
-                        var n = g.LerpN((ua + ub) / 2, (va + vb) / 2);
-                        var o = off - PanelRise;
-                        Face(m, g.Lerp(ua, va, o), g.Lerp(ub, va, o), g.Lerp(ub, vb, o), g.Lerp(ua, vb, o), [-n[0], -n[1], -n[2]], tone);
+                        double[] Q(double u, double v) => g.Lerp(g.LocalU(u, v), v, off - PanelRise);
+                        var n = g.LerpN(g.LocalU((ua + ub) / 2, (va + vb) / 2), (va + vb) / 2);
+                        Face(m, Q(ua, va), Q(ub, va), Q(ub, vb), Q(ua, vb), [-n[0], -n[1], -n[2]], tone);
                     }
             }
     }
@@ -397,11 +437,18 @@ public static class DesignArmour
     private static void Clad(DesignMesh m, Piece p, Grid g, double top, (byte, byte, byte) skin)
     {
         var size = Math.Clamp(p.ArmCladSize, HullBody.CladSizeMin, HullBody.CladSizeMax);
-        int nu = Math.Clamp((int)Math.Round(g.Arc / size), 1, 64), nv = Math.Clamp((int)Math.Round(g.Len / size), 1, 64);
-        (double X, double Y, double Z) P(double u, double v) { var q = g.Lerp(u, v, top); return (q[0], q[1], q[2]); }
-        (double X, double Y, double Z) Nrm(double u, double v) { var q = g.LerpN(u, v); return (q[0], q[1], q[2]); }
-        (double, double, double) W(double u, double v, double o) { var q = g.Lerp(u, v, top); var n = g.LerpN(u, v); return (q[0] + n[0] * o, q[1] + n[1] * o, q[2] + n[2] * o); }
-        DesignScene.LayPlates(m, nu, nv, g.Arc, g.Len, new Random(unchecked(p.Id * 7919 + 4111)), p.ArmClad == "Heavy", 1, skin, P, Nrm, W, new bool[nu, nv], hex: p.ArmClad == "Hex");
+        // Laid at its real size over the whole outline's span (u is a share of Amin..Amax, not of each row's own height) and cut at the
+        // sculpted edges (Karl, 2026-11-27: "armour cladding shouldn't stretch"); a cell mostly past an edge is left bare.
+        var span = g.Amax - g.Amin;
+        int nu = Math.Clamp((int)Math.Round(span / size), 1, 64), nv = Math.Clamp((int)Math.Round(g.Len / size), 1, 64);
+        var taken = new bool[nu, nv];
+        for (var a = 0; a < nu; a++)
+            for (var b = 0; b < nv; b++)
+                taken[a, b] = g.Inside((double)a / nu, (double)(a + 1) / nu, (b + 0.5) / nv) < MinInside;
+        (double X, double Y, double Z) P(double u, double v) { var q = g.Lerp(g.LocalU(u, v), v, top); return (q[0], q[1], q[2]); }
+        (double X, double Y, double Z) Nrm(double u, double v) { var q = g.LerpN(g.LocalU(u, v), v); return (q[0], q[1], q[2]); }
+        (double, double, double) W(double u, double v, double o) { var lu = g.LocalU(u, v); var q = g.Lerp(lu, v, top); var n = g.LerpN(lu, v); return (q[0] + n[0] * o, q[1] + n[1] * o, q[2] + n[2] * o); }
+        DesignScene.LayPlates(m, nu, nv, span, g.Len, new Random(unchecked(p.Id * 7919 + 4111)), p.ArmClad == "Heavy", 1, skin, P, Nrm, W, taken, hex: p.ArmClad == "Hex");
     }
 
     /// <summary>Where its struts stand: shares (u round, v along) of the grid and each one's half width. An arm: one at its middle; a row:
