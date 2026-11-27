@@ -987,8 +987,12 @@ public static partial class DesignScene
             }
             return false;
         }
+        var voids = PieceVoids(d); // (an open hangar or airlock is seen and passed through: no shell across it)
         bool Keep(double[] p, double[]? probe, bool hull, bool flat)
         {
+            foreach (var v in voids)
+                if (v.Holds(p))
+                    return false;
             if (hull && !d.Hulls.Any(h => h.Depth(p[0], p[1], p[2]) > 0.01))
                 return false;
             if (probe is not null && InMate(probe))
