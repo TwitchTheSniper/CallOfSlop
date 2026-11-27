@@ -374,6 +374,35 @@ public sealed class DesignEditor
                 h.Tidy();
                 return "";
             }
+            case "pasteShape":
+            {
+                // Another station's cross-section onto this one (Karl, 2026-11-27): its points, this station keeps its place.
+                var h = H();
+                var i = I(o, "i");
+                if (i < 0 || i >= h.Stations.Count)
+                    return "no such station";
+                var src = d.Hull(I(o, "fromHull")) ?? throw new InvalidOperationException("no such hull to copy from");
+                var j = I(o, "from");
+                if (j < 0 || j >= src.Stations.Count)
+                    return "the copied station is gone";
+                h.Stations[i].P = [.. src.Stations[j].P];
+                h.Tidy();
+                return "";
+            }
+            case "shiftStation":
+            {
+                // The whole cross-section up or down (Karl, 2026-11-27).
+                var h = H();
+                var i = I(o, "i");
+                if (i < 0 || i >= h.Stations.Count)
+                    return "no such station";
+                var dy = D(o, "dy", 0);
+                var p = h.Stations[i].P;
+                for (var k = 0; k < p.Count; k++)
+                    p[k] = (p[k].H, p[k].Y + dy);
+                h.Tidy();
+                return "";
+            }
             case "addStation":
             {
                 var h = H();
