@@ -567,6 +567,9 @@ public sealed partial class ZeroDayWorks2
                 var sa = _at.GetValueOrDefault(station);
                 Note($"links: the Building Station at ({sa.X:0}, {sa.Y:0}) orders through the console of the Extruder at ({l[0].At.X:0}, {l[0].At.Y:0}), {l.Count} line(s)");
                 Cable(console, station, "Orders", 7.5f);
+                // (its lines' jobs shared: each order's pieces split so the lines either side of its bay finish together, Sean 2026-11-27;
+                // a player changes it on the station's Line split setting)
+                Config(station, ("lineSplit", "Share"));
                 for (var k = 0; k < l.Count; k++)
                 {
                     var (at, other) = l[k];

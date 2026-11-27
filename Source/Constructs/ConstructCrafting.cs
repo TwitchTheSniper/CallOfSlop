@@ -77,6 +77,9 @@ public sealed class CraftNet
     public int Consoles;
 }
 
+/// <summary>A Building Station's "Line split" (<see cref="CfgKey.LineSplit"/>): how its orders are shared over alike machines on its lines (ConstructCrafting.SplitAsk).</summary>
+public enum LineSplit : byte { Share, Whole, First }
+
 /// <summary>A row of a terminal's list: something its network holds or can make.</summary>
 public sealed class CraftRow
 {
@@ -1187,6 +1190,93 @@ public static class ConstructCrafting
         return best;
     }
 
+    /// <summary>A Building Station's "Line split" setting (<see cref="CfgKey.LineSplit"/>); any other terminal: <see cref="LineSplit.First"/>, as before.</summary>
+    public static LineSplit SplitOf(Construct c, int t) =>
+        c.DefOf(t).IsBuildStation ? (LineSplit)Math.Clamp((int)ConstructConfig.Get(c.Parts[t], c.DefOf(t), CfgKey.LineSplit, 0), 0, (int)LineSplit.First) : LineSplit.First;
+
+    /// <summary>
+    /// Which machines count as alike for a split: the extrusion lines' machines, an Extruder or a Former with its kind, a Panel Former with a
+    /// Panel Former (never with a Laser Cutter). 0: not split (a Press or an Assembler keeps its dies and recipes; ovens go by LeastOven).
+    /// </summary>
+    private static int SplitClass(ConstructPartDef d) =>
+        d.IsBakeOven || d.IsPress || d.IsAssembler ? 0 : d.IsLaserCutter ? 1 : d.IsPanelFormer ? 2 : d.IsExtruder ? 3 : 0;
+
+    /// <summary>An order's work, per piece: an extrusion by its length (whole metres or less count as 1 m), anything else as 1 m.</summary>
+    private static int SplitWeight(in WorkOrder o) => o.IsPiece ? Math.Max(100, (int)o.Key.L) : 100;
+
+    /// <summary>The work machine <paramref name="m"/> has queued (its orders' pieces still to make, by <see cref="SplitWeight"/>). Allocates nothing.</summary>
+    private static int SplitLoad(Construct c, int m)
+    {
+        if (c.Parts[m].Orders is not { Bill: false } q)
+            return 0;
+        var load = 0;
+        for (var k = 0; k < q.Count; k++)
+            load += q.Items[k].Left * SplitWeight(q.Items[k]);
+        return load;
+    }
+
+    /// <summary>
+    /// A station's order shared over its lines (Sean, 2026-11-27: a station with an Extruder line on each side of its pick pads sent every
+    /// extrusion job to one side). The machines of this pass (with a way to its pads or not) alike to <paramref name="first"/> that take it
+    /// share <paramref name="ask"/>: <see cref="LineSplit.Share"/> gives each piece to the one whose queued work would end soonest, so the
+    /// lines finish together; <see cref="LineSplit.Whole"/> sends it whole to the least loaded one. A station whose Line Consoles feed its
+    /// Orders splits only over the machines they run (its own lines), and not at all when <paramref name="first"/> is none of them. Ties go by the order's id, so a station's
+    /// orders alternate sides. Each share is queued and its inputs chained as a whole ask is. Returns how many were asked. Allocates nothing.
+    /// </summary>
+    private static int SplitAsk(ConstructWorld world, Construct c, CraftNet net, int t, ref CraftOrder o, bool way, int first, int ask, LineSplit split)
+    {
+        Span<int> ms = stackalloc int[8];
+        Span<int> load = stackalloc int[8];
+        Span<int> share = stackalloc int[8];
+        // (a station with Line Consoles wired into its Orders splits over the machines those run, its own lines: on Zero Day Works II every
+        // line's runs meet, so the network holds other lines' Extruders, whose pieces go through their own formers to other stations)
+        Span<int> own = stackalloc int[64];
+        var on = ConstructBakeOven.LineMachines(c, t, own);
+        if (on > 0 && own[..on].IndexOf(first) < 0)
+            return 0;
+        var cls = SplitClass(c.DefOf(first));
+        var what = o.What with { Count = (ushort)ask, Made = 0 };
+        var n = 0;
+        for (var i = 0; i < net.MachineN && n < ms.Length; i++)
+        {
+            var m = net.Machines[i];
+            if (m != first && (on > 0 && own[..on].IndexOf(m) < 0 || net.MachineWay[i] != way || SplitClass(c.DefOf(m)) != cls || LooseRefusal(world, c, m) != null || WorkOrders.Refusal(world, c, m, what) != null))
+                continue;
+            (ms[n], load[n], share[n]) = (m, SplitLoad(c, m), 0);
+            n++;
+        }
+        var w = SplitWeight(o.What);
+        var turn = o.Id % Math.Max(1, n); // (where a tie starts: each order one on)
+        int Least(Span<int> load, Span<int> share)
+        {
+            var best = -1;
+            for (var j = 0; j < n; j++)
+            {
+                var at = (turn + j) % n;
+                if (best < 0 || load[at] + share[at] * w < load[best] + share[best] * w)
+                    best = at;
+            }
+            return best;
+        }
+        if (split == LineSplit.Whole || n == 1)
+            share[Least(load, share)] = ask;
+        else
+            for (var k = 0; k < ask; k++)
+                share[Least(load, share)]++;
+        var asked = 0;
+        for (var j = 0; j < n; j++)
+        {
+            var at = (turn + j) % n;
+            if (share[at] == 0 || WorkOrders.Queue(world, c, ms[at], o.What with { Count = (ushort)share[at], Made = 0 }, blanks: false) != null)
+                continue;
+            ConstructLogisticsPlan.Ranked(world, c, ms[at], (byte)(StockTargets.FeedClass(c, t) + 2));
+            ConstructLogisticsPlan.Asked(world, c, net, t, o, ms[at], share[at]);
+            o.Asked += (ushort)share[at];
+            asked += share[at];
+        }
+        return asked;
+    }
+
     private static void StepTerminal(ConstructWorld world, Construct c, int t, CStore tray, CraftList q)
     {
         var net = NetOf(world, c, t);
@@ -1349,6 +1439,7 @@ public static class ConstructCrafting
                 // (A maker whose conveyor feeds another machine, a sheet Extruder's into a Panel Former, took a station's chassis bar it
                 // could never deliver while the Extruder with a way waited: the Factory Showcase, 2026-11-14. Chains rank the same way.)
                 var ovenPass = -1; // (the pass whose ovens were asked: each pass asks only its least queued oven, once)
+                var split = SplitOf(c, t);
                 for (var i = 0; i < net.MachineN * 2 && ask > 0; i++)
                 {
                     var m = net.Machines[i % net.MachineN]; // (its way cached with the net: MachineWay)
@@ -1362,6 +1453,18 @@ public static class ConstructCrafting
                         ovenPass = pass;
                         if (LeastOven(world, c, net, pass == 0, o.What with { Count = (ushort)ask, Made = 0 }) is var lo and >= 0)
                             m = lo; // (of the ovens alike, the shortest queue: the yard's 31 frigate walls shared by lines A and B)
+                    }
+                    else if (split != LineSplit.First && SplitClass(c.DefOf(m)) != 0 && (LooseRefusal(world, c, m) ?? WorkOrders.Refusal(world, c, m, o.What with { Count = (ushort)ask, Made = 0 })) == null)
+                    {
+                        // (a station with a line each side of its bay: the order is shared over the alike machines of this pass, Sean 2026-11-27)
+                        var got = SplitAsk(world, c, net, t, ref o, i < net.MachineN, m, ask, split);
+                        if (got > 0)
+                        {
+                            ask -= got;
+                            if (state == CraftState.Waiting)
+                                where = (ushort)m;
+                            continue;
+                        }
                     }
                     var why = LooseRefusal(world, c, m) ?? WorkOrders.Queue(world, c, m, o.What with { Count = (ushort)ask, Made = 0 }, blanks: false); // (its inputs are chained just below: Asked; never asked of a machine that drops it loose)
                     if (why == null)

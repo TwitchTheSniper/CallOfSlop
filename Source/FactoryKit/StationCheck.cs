@@ -86,7 +86,11 @@ public static class StationCheck
                     keep.Add((bin, RecyclingTable.Current.IdOf(fm), pn));
                 Console.WriteLine($"  fill: {put} {fm} into the {(bin < 0 ? "nothing" : c.DefOf(bin).Name)} at {px}, {pz}");
             }
-        if (args.Contains("--dies")) // (--dies: every Die Wall stocked with a die of each family, as a creative site start does: PressDieArm.cs)
+        if (Arg("--line-split") is { } ls && Enum.TryParse<LineSplit>(ls, true, out var lsv)) // (--line-split share|whole|first: every station's Line split, to compare)
+            for (var i = 0; i < c.PartCount; i++)
+                if (c.DefOf(i).IsBuildStation && c.DefOf(i).CfgSlot[(int)CfgKey.LineSplit] is var lslot and >= 0)
+                    ConstructConfig.Set(ref c.Parts[i], c.DefOf(i), lslot, (int)lsv);
+        if (args.Contains("--dies")) //(--dies: every Die Wall stocked with a die of each family, as a creative site start does: PressDieArm.cs)
             Console.WriteLine($"  dies: {ConstructLifters.StockDieWalls(w, c)} set on the Die Walls");
         // Every Line Console started, as a player starting the works would (Zero Day Works II's consoles are laid stopped): a stopped
         // console holds its machines (a Bake Oven never starts its kit).
@@ -768,6 +772,11 @@ public static class StationCheck
                     made = k;
             }
         Console.WriteLine(made >= 0 ? $"  the {d.Name} baked after {made / (float)World.TickRate:0.0} s" : $"  after {seconds} s the order is still open: {c.Parts[oven].Orders?.Note}");
+        // (each line machine's queue and what it made: how a station's Line split shared the kit's pieces over its lines, 2026-11-27)
+        for (var m = 0; m < c.PartCount; m++)
+            if (c.DefOf(m).IsExtruder && c.Parts[m].Orders is { Bill: false } mq && (mq.Count > 0 || made >= 0))
+                Console.WriteLine($"  {c.DefOf(m).Name} {m} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}: {mq.Count} order(s), {mq.PiecesLeft} piece(s) left" +
+                                  string.Concat(Enumerable.Range(0, mq.Count).Select(k => $"; {ConstructCrafting.NameOf(mq.Items[k])} {mq.Items[k].Made}/{mq.Items[k].Count}")));
         for (var s = 0; s < c.PartCount; s++)
             if (c.Parts[s].Station is { } sj && sj.Name.EndsWith(BakeKits.KitSuffix, StringComparison.Ordinal))
             {
