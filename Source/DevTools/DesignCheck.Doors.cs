@@ -45,7 +45,7 @@ public static partial class DesignCheck
             }
             return worst;
         }
-        int Ticks(int part) => c.DefOf(part).Door!.Ticks + 20;
+        int Ticks(int part) => ConstructDoors.GroupTicks(c, part) + 20; // (a boarding hatch's ladder waits for its lid, and its lid for it: one F moves both in turn)
         // All shut to start with (the walk, before, opened the doors between rooms).
         var wasOpen = doors.Where(i => ConstructDoors.TargetOpen(c, i)).ToList();
         foreach (var i in wasOpen)
@@ -187,7 +187,7 @@ public static partial class DesignCheck
                 Console.WriteLine($"[design] walk: F on {e.Id} ({e.Name}) refused: {refused}");
             else
                 opened++;
-            ticks = Math.Max(ticks, c.DefOf(i).Door!.Ticks + 20);
+            ticks = Math.Max(ticks, ConstructDoors.GroupTicks(c, i) + 20);
         }
         for (var t = 0; t < ticks; t++)
             w.Step(World.Query, World.TickDt);
