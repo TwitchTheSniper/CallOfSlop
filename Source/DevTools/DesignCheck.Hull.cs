@@ -165,9 +165,7 @@ public static partial class DesignCheck
             var meet = MathF.Abs(box.Vel.Y);
             for (var k = 0; k < 4 * World.TickRate; k++)
             {
-                var s = Stopwatch.GetTimestamp();
-                world.Step(World.Query, World.TickDt);
-                worst = Math.Max(worst, Ms(s));
+                worst = Math.Max(worst, TimedStep(world));
             }
             // Inside the ship: a collider of it straight above the chest's middle (the skin it came through).
             var above = RayHulls(ship, box.WorldCom, Vector3.UnitY, 30);
@@ -183,7 +181,7 @@ public static partial class DesignCheck
     /// <summary>The ship dropped rolled over on the ground (its side on the ground, many plates at once): the step's cost, and it resting.</summary>
     private static void Rolled(Run r)
     {
-        var rolls = new[] { 25f, 90f, 25f }; // (25 again: the first ran the contacts' JIT, so its worst step is not held to the budget)
+        var rolls = new[] { 25f, 90f }; // (each held to the budget: TimedStep leaves the contacts' first JIT out)
         for (var ri = 0; ri < rolls.Length; ri++)
         {
             var roll = rolls[ri];
@@ -203,9 +201,7 @@ public static partial class DesignCheck
             var n = 8 * World.TickRate;
             for (var k = 0; k < n; k++)
             {
-                var s = Stopwatch.GetTimestamp();
-                world.Step(World.Query, World.TickDt);
-                var ms = Ms(s);
+                var ms = TimedStep(world);
                 if (k > 10)
                     (worst, sum, worstAt) = (Math.Max(worst, ms), sum + ms, ms > worst ? k / (float)World.TickRate : worstAt);
             }
@@ -217,7 +213,7 @@ public static partial class DesignCheck
             Console.WriteLine($"[design] hollow: dropped rolled {roll:0} deg from 12 m: {world.Bodies.Count} bodies, lowest collider {low - r.Ground.Y:+0.00;-0.00} m off the ground, speed {ship.Vel.Length():0.00} m/s, asleep {ship.Asleep}; step mean {sum / (n - 11):0.000} ms, worst {worst:0.00} ms at {worstAt:0.00} s");
             if (low < r.Ground.Y - 0.5f)
                 r.Fail($"rolled {roll:0} deg it sank {r.Ground.Y - low:0.00} m into the ground");
-            if (worst > 8 && ri > 0)
+            if (worst > 8)
                 r.Fail($"rolled {roll:0} deg a step took {worst:0.0} ms");
         }
     }

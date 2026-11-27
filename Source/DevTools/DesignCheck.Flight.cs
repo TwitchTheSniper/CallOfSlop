@@ -23,7 +23,7 @@ public static partial class DesignCheck
         Seats(c);
         if (c.StabCount > 0 && c.DriveSeat >= 0 && !r.Has("--no-fly"))
         {
-            if ((Sortie(world, c) is not null ? Sortie(world, c) : null) is { } bad) // (a second sortie when the first fails: the first touchdown runs the JIT on the contact paths)
+            if (Sortie(world, c) is { } bad)
                 r.Fail("from its helm: " + bad);
             if (r.Has("--cones") && Cones(world, c) is { } stuck)
                 r.Fail("on the cones: " + stuck);
@@ -172,6 +172,7 @@ public static partial class DesignCheck
         var worstAt = "";
         var slow = 0;
         var bytes0 = GC.GetAllocatedBytesForCurrentThread();
+        var jit0 = _stepJitMs;
         var n = 0;
         var sank = 0f;
         float Leg(string name, Buttons keys, float seconds)
@@ -184,14 +185,12 @@ public static partial class DesignCheck
             {
                 c.Parts[seat].Keys = (ushort)((ushort)keys | CPart.Occupied);
                 ConstructEdits.DriveInput(c, keys, World.TickDt);
-                var s = Stopwatch.GetTimestamp();
-                world.Step(World.Query, World.TickDt);
-                var ms = Ms(s);
+                var ms = TimedStep(world); // (less the JIT's compiles in it: the first touchdown's contact loops are compiled there, TimedStep)
                 if (ms > 4)
                     slow++;
-                if (n > 120 && ms > worst)
+                if (ms > worst)
                     (worst, worstAt) = (ms, $"{name} {t / (float)World.TickRate:0.00} s");
-                (sum, n) = (sum + ms, n + 1); // (the worst past its first two seconds: the JIT's first calls)
+                (sum, n) = (sum + ms, n + 1);
                 tilt = MathF.Max(tilt, Tilt());
                 low = MathF.Min(low, c.WorldCom.Y);
             }
@@ -216,7 +215,7 @@ public static partial class DesignCheck
         Leg("land", Buttons.Crouch, 12);
         var rest = Leg("rest", 0, 3);
         Console.WriteLine($"[design] sortie: straight ahead it sank {sank:0.00} m at the most");
-        Console.WriteLine($"[design] sortie: a world step with it flying: mean {sum / Math.Max(1, n):0.000} ms, worst {worst:0.00} ms after its first two seconds ({worstAt}), {slow} over 4 ms, {(GC.GetAllocatedBytesForCurrentThread() - bytes0) / Math.Max(1, n)} bytes allocated a step");
+        Console.WriteLine($"[design] sortie: a world step with it flying ({SelfTest.ThreadCpu.Kind}): mean {sum / Math.Max(1, n):0.000} ms, worst {worst:0.00} ms ({worstAt}), {slow} over 4 ms, {_stepJitMs - jit0:0.0} ms of JIT left out, {(GC.GetAllocatedBytesForCurrentThread() - bytes0) / Math.Max(1, n)} bytes allocated a step");
         c.Parts[seat].SitterPlus1 = 0;
         c.Driver = 255;
         c.DriverSeat = -1;

@@ -314,8 +314,8 @@ internal static class ConstructNarrow
     internal sealed class Shape
     {
         public readonly Vector3[] V = new Vector3[ConvexHull.MaxCorners];
-        public readonly Vector3[] N = new Vector3[ConvexHull.MaxCorners + 2];
-        public readonly Vector3[] Dirs = new Vector3[ConvexHull.MaxCorners * 2];
+        public readonly Vector3[] N = new Vector3[ConvexHull.MaxFaces];
+        public readonly Vector3[] Dirs = new Vector3[ConvexHull.MaxDirs];
         public int[] FaceStart = [], FaceIdx = [];
         public int VCount, FCount, DCount;
         public Vector3 Centre;

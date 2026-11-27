@@ -250,4 +250,26 @@ public static partial class DesignCheck
     }
 
     private static double Ms(long from) => (Stopwatch.GetTimestamp() - from) * 1000.0 / Stopwatch.Frequency;
+
+    /// <summary>The JIT's compile time on this thread inside the steps <see cref="TimedStep"/> timed (ms), reported beside their worst.</summary>
+    private static double _stepJitMs;
+
+    /// <summary>
+    /// One world step's CPU time on this thread (<see cref="SelfTest.ThreadCpu"/>, as GensetRun and FactoryCheck time a tick: another
+    /// build on the box mustn't count), less what the JIT compiled on it while it ran (<see cref="System.Runtime.JitInfo"/>): the
+    /// budget is for a tick's own work, one-off JIT excluded (CLAUDE.md). Found 2026-11-27: the sortie's 9.4-10.6 ms landing step
+    /// was all JIT (10.6 of 10.6 ms, one method): the first ground contacts run ShapesAgainst's loops hot in its tier-0 code, and
+    /// the runtime compiles an on-stack-replacement version of it there and then, on the stepping thread, once per loop entry.
+    /// A headless check steps thousands of ticks in a second, so its code is still tier 0 where a game's has long gone to tier 1.
+    /// </summary>
+    private static double TimedStep(ConstructWorld w)
+    {
+        var j0 = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
+        var c0 = SelfTest.ThreadCpu.NowMs();
+        w.Step(World.Query, World.TickDt);
+        var ms = SelfTest.ThreadCpu.NowMs() - c0;
+        var jit = (System.Runtime.JitInfo.GetCompilationTime(currentThread: true) - j0).TotalMilliseconds;
+        _stepJitMs += jit;
+        return Math.Max(0, ms - jit);
+    }
 }
