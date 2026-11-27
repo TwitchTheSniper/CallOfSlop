@@ -736,6 +736,50 @@ public static class DesignHangar
         }
     }
 
+    /// <summary>
+    /// A lift platform's well through the floor of the room it rises into (Karl, 2026-11-27: the floor stayed solid over the deck, so the
+    /// lift went "on to the next deck" into a ceiling): squares (a hole is square) that tile the deck's plan and a gap round it, at the
+    /// room's floor, kept inside the room's plan.
+    /// </summary>
+    public static void LiftHoles(ShipDesign d, Piece p, Room r, List<double[]> doors)
+    {
+        if (p.Kind != "Lift platform" || d.Hull(p.Hull) is not { } h)
+            return;
+        var w = DesignScene.Where(h, p);
+        var bx = d.Box(r);
+        int ax = 0, al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
+        double hx = p.W / 2 * p.Hole + LiftGap, hz = p.L / 2 * p.Hole + LiftGap;
+        // The deck's plan (its corners on the room's floor plane), clipped to the room's.
+        double a0 = double.MaxValue, a1 = double.MinValue, l0 = double.MaxValue, l1 = double.MinValue;
+        foreach (var sx in new[] { -1.0, 1 })
+            foreach (var sz in new[] { -1.0, 1 })
+            {
+                double ca = w.O[ax] + w.X[ax] * sx * hx + w.Z[ax] * sz * hz, cl = w.O[al] + w.X[al] * sx * hx + w.Z[al] * sz * hz;
+                (a0, a1, l0, l1) = (Math.Min(a0, ca), Math.Max(a1, ca), Math.Min(l0, cl), Math.Max(l1, cl));
+            }
+        (a0, a1) = (Math.Max(a0, bx[2 * ax]), Math.Min(a1, bx[2 * ax + 1]));
+        (l0, l1) = (Math.Max(l0, bx[2 * al]), Math.Min(l1, bx[2 * al + 1]));
+        if (a1 - a0 < 0.2 || l1 - l0 < 0.2)
+            return; // (not under the room's plan)
+        var fl = d.Stacked ? bx[2 * up + 1] : bx[2 * up];
+        var half = Math.Min(a1 - a0, l1 - l0) / 2;
+        var alongA = a1 - a0 > l1 - l0;
+        var (s0, s1) = alongA ? (a0, a1) : (l0, l1);
+        var n = Math.Max(1, (int)Math.Ceiling((s1 - s0) / (2 * half) - 1e-6));
+        for (var t = 0; t < n; t++)
+        {
+            var mid = n == 1 ? (s0 + s1) / 2 : s0 + half + (s1 - s0 - 2 * half) * t / (n - 1);
+            var q = new double[3];
+            q[ax] = alongA ? mid : (a0 + a1) / 2;
+            q[al] = alongA ? (l0 + l1) / 2 : mid;
+            q[up] = fl;
+            doors.Add(DesignScene.DoorAt(q, half, DesignScene.DoorTopDefault, hole: true));
+        }
+    }
+
+    /// <summary>The clearance round a lift platform's deck in its well through a floor (m).</summary>
+    public const double LiftGap = 0.1;
+
     /// <summary>A lift platform's deck lies this far into its well when up (shut), its outer face flush with the skin.</summary>
     public const double LiftDeck = 0.2;
 

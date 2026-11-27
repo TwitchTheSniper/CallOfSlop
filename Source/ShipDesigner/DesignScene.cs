@@ -1152,6 +1152,7 @@ public static partial class DesignScene
                             c.Doors.Add(way);
                             c.SocketWays[way] = p;
                         } // (its way into the room, cut in the room's shell as a door between rooms is)
+                        DesignHangar.LiftHoles(d, p, best!, c.Doors); // (a lift platform's well through the room's floor)
                     }
                 }
                 else if (kind.Service)
