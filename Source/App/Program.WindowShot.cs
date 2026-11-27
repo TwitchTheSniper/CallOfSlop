@@ -6,11 +6,13 @@ using Brutal.OpenGlApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--window-shot OUT.png|bmp [--map NAME] [--creative] [--blueprint NAME] [--at X,Y,Z] [--look-at X,Y,Z | --yaw D --pitch D] [--calm] [--frames N] [--every N] [--do "a; b; ..."] [--size WxH]</c>:
+/// <c>--window-shot OUT.png|bmp [--map NAME] [--creative] [--blueprint NAME | --design NAME|FILE] [--at X,Y,Z] [--look-at X,Y,Z | --yaw D --pitch D] [--calm] [--frames N] [--every N] [--do "a; b; ..."] [--size WxH]</c>:
 /// pictures of the real game in its real window, for an agent's own checking (README.md "Testing without playing"). It starts an offline creative
 /// Sandbox world (default map Proving Ground: a big blueprint fits inside its arena) on a throwaway copy of the saves, optionally spawns a blueprint in front of the player through the
 /// parts menu's own call (CActKind.Blueprint), flies the player (noclip) to the camera, runs a short script of actions through the real input
-/// paths, waits <c>--frames</c> frames and saves the frame (with <c>--every N</c> a numbered series over those frames), prints the paths and quits.
+/// paths, waits <c>--frames</c> frames (<c>--design</c>: a ship design, shipped or saved by name or a design file, read and asked for as a
+/// blueprint of its body as DesignCheck does, set down in front of the host's player through the spawner's queue; its elements answer the
+/// verbs by element id, name, kind or role: <see cref="DesignByName.NamesOf"/>) and saves the frame (with <c>--every N</c> a numbered series over those frames), prints the paths and quits.
 /// Exit code: 0, or 1 when the window, the world or an action failed (the reason is printed).
 /// Actions (<see cref="WsActions"/>): aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, gang NAME SIDE,UP,OUT, period NAME, incident GANG KIND, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m].
 /// </summary>
@@ -19,7 +21,7 @@ public static unsafe partial class Program
     private static bool _windowShot, _wsCalm;
     private static float _wsDusk; // --dusk F: 0 day to 1 dark, on any map (Program.Storm.cs)
     private static int _wsExit;
-    private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
+    private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "", _wsDesign = ""; // (--design: _wsBlueprint holds its name once picked)
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
     private static float? _wsSpawnYaw;
     private static bool _wsNoHands; // (--no-hands: nothing drawn in the first-person hands and no legs, so a picture from the flying camera shows the scene)
@@ -75,6 +77,9 @@ public static unsafe partial class Program
         _wsOut = i + 1 < args.Length && !args[i + 1].StartsWith("--", StringComparison.Ordinal) ? Path.GetFullPath(args[i + 1]) : AppFolders.LogPath("window_shot.png");
         _wsMap = Val("--map") ?? _wsMap;
         _wsBlueprint = Val("--blueprint") ?? "";
+        _wsDesign = Val("--design") ?? "";
+        if (_wsDesign.Length > 0)
+            _wsBlueprint = _wsDesign; // (spawned and found as a blueprint is; its name is the design's once read)
         _wsAt = Val("--at") is { } at ? WsVec(at) : null;
         _wsCalm = args.Any(a => a.Equals("--calm", StringComparison.OrdinalIgnoreCase)); // (no cold storm: a site is seen whole)
         _wsNoHands = args.Any(a => a.Equals("--no-hands", StringComparison.OrdinalIgnoreCase));
@@ -85,7 +90,7 @@ public static unsafe partial class Program
         _wsSpawnYaw = Val("--spawn-yaw") is { } sy && float.TryParse(sy, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var syd) ? syd : null;
         _wsNet = Val("--net") ?? "";
         if (_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase))
-            _wsBlueprint = ""; // (a client finds the host's constructs by their parts' names)
+            _wsBlueprint = _wsDesign = ""; // (a client finds the host's constructs by their parts' names)
         _wsYaw = float.TryParse(Val("--yaw"), System.Globalization.CultureInfo.InvariantCulture, out var y) ? y * MathF.PI / 180 : null;
         _wsPitch = float.TryParse(Val("--pitch"), System.Globalization.CultureInfo.InvariantCulture, out var p) ? p * MathF.PI / 180 : null;
         _wsFrames = int.TryParse(Val("--frames"), out var f) ? Math.Max(1, f) : _wsFrames;
@@ -222,7 +227,12 @@ public static unsafe partial class Program
                     }
                     if (_wsBlueprint.Length == 0 && _wsSpawnAt is { } sp0)
                         me.Teleport(new Vector3(sp0.X, World.Map.GroundHeight(sp0.X, sp0.Z), sp0.Z)); // (no blueprint: the player stands there, for the actions)
-                    if (_wsBlueprint.Length > 0)
+                    if (_wsDesign.Length > 0)
+                    {
+                        if (!WsSpawnDesign(g, me))
+                            return;
+                    }
+                    else if (_wsBlueprint.Length > 0)
                     {
                         var all = ConstructBuild.Blueprints;
                         var index = -1;
@@ -392,6 +402,39 @@ public static unsafe partial class Program
 
     private static Construct? WsSpawned(Game g) => _wsBlueprint.Length > 0 ? g.Constructs.Get(_wsBody) : null;
 
+    /// <summary>
+    /// <c>--design NAME|FILE</c> (the host): the design read and registered as DesignCheck does (DesignByName), kept in the world so its body's
+    /// elements reach every peer first, and asked for as a blueprint of its body, set down in front of the player (--spawn-at, --spawn-yaw).
+    /// </summary>
+    private static bool WsSpawnDesign(Game g, Player me)
+    {
+        if (!g.IsServer)
+        {
+            WsFail("--design: the host spawns it (a joined client finds it by its elements' names)");
+            return false;
+        }
+        if (DesignByName.Find(_wsDesign, out var why) is not { } f)
+        {
+            WsFail($"--design: {why}");
+            return false;
+        }
+        if (_wsSpawnAt is { } sp)
+            me.Teleport(new Vector3(sp.X, World.Map.GroundHeight(sp.X, sp.Z), sp.Z));
+        if (_wsSpawnYaw is { } sy)
+            me.Yaw = g.LookYaw = sy * MathF.PI / 180f;
+        _wsBlueprint = f.Name;
+        _wsBody = (ushort)(g.Constructs.Bodies.Count > 0 ? g.Constructs.Bodies.Max(b => b.Id) : 0);
+        g.Constructs.KeepShipDesign(f.Hash);
+        var ground = ConstructWorld.Ground(World.Query, me.Position + GravityFrames.FlatForward(me.Position, me.Yaw) * 6f); // (as the Designs tab's spawn: GameSandboxDesigns.cs)
+        if (g.VehicleSpawn.RequestBlueprint(DesignParts.BlueprintOf(f.Hash, f.Name), ground, me.Yaw, me.Id, me.Id) is { } busy)
+        {
+            WsFail($"--design: the spawner refused the {f.Name}: {busy}");
+            return false;
+        }
+        WsSay($"--design: {f.Name} ({f.Hash}, {f.Text.Length} bytes) asked for at {ground:0.0}");
+        return true;
+    }
+
     /// <summary>The player's eye to a place (noclip holds them there).</summary>
     private static void WsEyeTo(Game g, Player p, Vector3 eye)
     {
@@ -543,8 +586,19 @@ public static unsafe partial class Program
     private static bool WsNamed(Construct c, int i, string name)
     {
         var d = c.DefOf(i);
-        return d.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || HullHoles.IsHoled(d) && HullHoles.BaseOf(d).Name.Equals(name, StringComparison.OrdinalIgnoreCase);
+        if (d.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || HullHoles.IsHoled(d) && HullHoles.BaseOf(d).Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (!DesignParts.IsDesign(d))
+            return false;
+        if (!WsDesignNames.TryGetValue(d, out var names))
+            WsDesignNames[d] = names = DesignByName.NamesOf(d) ?? [];
+        foreach (var n in names)
+            if (n.Length > 0 && n.Equals(name, StringComparison.OrdinalIgnoreCase))
+                return true; // (a design's element by its id, name, kind or role: "near p3", "sit Helm seat", "panel seat")
+        return false;
     }
+
+    private static readonly Dictionary<ConstructPartDef, string[]> WsDesignNames = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>Where a part is looked at: the middle of its first screen, else the middle of the part.</summary>
     private static Vector3 WsPartSpot(Construct c, int part, out Vector3 normal)

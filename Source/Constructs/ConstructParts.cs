@@ -563,6 +563,14 @@ public sealed partial class ConstructPartDef
     public bool Legacy; // replaced by a routed link (the Fuel Line, plain drive shafts): still loads and works, but isn't offered in the parts menu or on a rack
     public float BurnRate; // engine: litres a second at full throttle
     public Vector3 SeatAt; // seat: where the sitter's feet go (part frame)
+    /// <summary>A seat's turn past its part's Rot24 (identity for a part file's seat; a ship design's seat faces the designer's free yaw by it, DesignParts.Seat).</summary>
+    public Quaternion SeatTurn = Quaternion.Identity;
+
+    /// <summary>Which way a sitter in this seat faces, in its segment's frame, for a part turned by <paramref name="rot"/>: its -Z is ahead, its +Y up.</summary>
+    public Quaternion SeatRot(byte rot) => Rot24.Quat(rot) * SeatTurn;
+
+    /// <summary>The way a sitter in this seat looks (its segment's frame) for a part turned by <paramref name="rot"/>.</summary>
+    public Vector3 SeatAhead(byte rot) => Vector3.Transform(-Vector3.UnitZ, SeatRot(rot));
     public byte JointAxis; // hinge: the axis it turns about (0..5)
     public Vector3 JointPivot; // hinge: a point on the axis (part frame)
     public float JointMin, JointMax; // hinge: limits (radians)

@@ -211,7 +211,7 @@ public static partial class ConstructLaserCutter
         else if (ConstructConveyor.OutPad(c, part) is >= 0 and var pad)
         {
             // Onto the pick pad its Out Table butts (Zero Day Works II's big lines, 2026-11-26): it waits on the bed while the pad is full.
-            if (!world.RackPut(c, pad, made, true))
+            if (ConstructStation.PadEarly(world, c, pad, made) || !world.RackPut(c, pad, made, true))
             {
                 Idle(world, st, ExtrudeStall.ConveyorFull);
                 return;

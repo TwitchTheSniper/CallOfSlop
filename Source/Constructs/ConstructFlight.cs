@@ -1358,12 +1358,19 @@ public static partial class ConstructFlight
             }
             else
             {
-            if (!letGo)
+            // Level held on the keys in a sky (no mouse steering): W and the side keys go along the flat, whatever the nose does, and the height is held
+            // until Shift or Ctrl moves it (a ship flown straight ahead sank 7 m in 5 s when only its vertical speed was pushed at, with nothing to bring
+            // it back: 2026-11-26). Steered by the mouse, or not levelled, the keys go along its own axes; the height is still held while what they ask
+            // hardly climbs or dives (within about 6 degrees), else it is let go and held again from wherever it gets to.
+            var levelKeys = level && !mouse && g > 0.3f;
+            var (front, right) = levelKeys ? (a.FlatFront, a.FlatRight) : (a.Front, a.Right);
+            var holdsHeight = ask.Lift == 0 && (levelKeys || MathF.Abs(Vector3.Dot(front, up) * ask.Forward) + MathF.Abs(Vector3.Dot(right, up) * ask.Side) < 0.1f);
+            if (!holdsHeight)
             {
                 s.HoldAlt = height + (climb > 0 ? climb * climb / (2 * stopping) : 0);
                 s.AltHeld = true;
             }
-            var wantVel = a.Front * (ask.Forward * maxSpeed) + a.Right * (ask.Side * maxSpeed) + a.Up * (ask.Lift * (ask.Lift > 0 ? maxClimb : maxDescent)) + (letGo ? up * climbWant : Vector3.Zero);
+            var wantVel = front * (ask.Forward * maxSpeed) + right * (ask.Side * maxSpeed) + a.Up * (ask.Lift * (ask.Lift > 0 ? maxClimb : maxDescent)) + (holdsHeight ? up * climbWant : Vector3.Zero);
             if (letGo && holdPos)
                 wantVel += a.FlatFront * wantFront + a.FlatRight * wantSide;
             var push = c.Mass * 3 * ground * (wantVel - c.Vel) + up * MathF.Max(0, weight - c.LiftNow);

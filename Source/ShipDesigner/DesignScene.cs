@@ -953,6 +953,8 @@ public static partial class DesignScene
                     {
                         double lo = w0 + dw / 2, hi = w1 - dw / 2;
                         door = At(lo + (hi - lo) * t, 0);
+                        if (placed is not null) // (its own width and height: the clearance is 10 cm either side of the leaf)
+                            door = DoorAt(door, placed.W / 2 + 0.1, placed.H);
                         (s0, s1) = (At(lo, 0), At(hi, 0));
                     }
                     var segments = a.Group != 0 && a.Group == b.Group && (ox >= -0.02 && oz > 0.01 || oz >= -0.02 && ox > 0.01);
@@ -971,7 +973,7 @@ public static partial class DesignScene
                     joins[b.Id].Add(a.Id);
                     var s = a.Kind == "Shaft" ? a : b;
                     var hi = d.Decks[a.Deck].Floor > d.Decks[b.Deck].Floor != d.Stacked ? d.Decks[a.Deck] : d.Decks[b.Deck];
-                    c.Doors.Add(d.World(hi, (s.X0 + s.X1) / 2, (s.Z0 + s.Z1) / 2, 0));
+                    c.Doors.Add(DoorAt(d.World(hi, (s.X0 + s.X1) / 2, (s.Z0 + s.Z1) / 2, 0), hole: true)); // (through the upper floor and the ceiling under it)
                 }
             }
 
@@ -1123,7 +1125,11 @@ public static partial class DesignScene
                 if (linked)
                 {
                     if (kind.Socket is not null && kind.Socket is not ("window" or "seat"))
+                    {
                         entries.Add(best!.Id); // a window looks out and a seat sits inside: neither is a way aboard
+                        if (SocketDoor(d, p, kind, best, at) is { } way)
+                            c.Doors.Add(way); // (its way into the room, cut in the room's shell as a door between rooms is)
+                    }
                 }
                 else if (kind.Service)
                 {
@@ -1161,6 +1167,49 @@ public static partial class DesignScene
         if (!d.Rooms.Any(r => r.Kind == "Bridge"))
             c.Issues.Add(new("warn", "No bridge", ""));
         return c;
+    }
+
+    /// <summary>
+    /// Where a socket's way aboard opens into its room (walkable rooms, step 4), as a doorway (<see cref="DoorAt"/>): from the skin point at,
+    /// through the room's wall nearest it as a door at its floor, or (the socket under or over the room's plan) as a hole through its floor or
+    /// ceiling; as wide as the socket's opening (an airlock: its inner door), at least a person's door. Null for a hangar's, which is
+    /// laid apart (DesignHangar), or a room with no box.
+    /// </summary>
+    public static double[]? SocketDoor(ShipDesign d, Piece p, PieceKind kind, Room r, double[] at)
+    {
+        if (kind.Socket is null or "window" or "seat" or "hangar" or "lift" or "rampdeck")
+            return null;
+        var bx = d.Box(r);
+        int ax = 0, al = d.Stacked ? 1 : 2, up = d.Stacked ? 2 : 1;
+        double[] lo = [bx[0], bx[2], bx[4]], hi = [bx[1], bx[3], bx[5]];
+        if (hi[ax] - lo[ax] < 0.2 || hi[al] - lo[al] < 0.2)
+            return null;
+        var op = kind.Opening;
+        var size = Math.Max(0.2, p.Size);
+        var q = new double[3];
+        for (var k = 0; k < 3; k++)
+            q[k] = Math.Clamp(at[k], lo[k], hi[k]);
+        var inPlan = at[ax] > lo[ax] + 0.05 && at[ax] < hi[ax] - 0.05 && at[al] > lo[al] + 0.05 && at[al] < hi[al] - 0.05;
+        double fl = d.Stacked ? hi[up] : lo[up], ce = d.Stacked ? lo[up] : hi[up];
+        if (inPlan || kind.Socket == "shaft") // (a boarding hatch is always under its room: DesignScene.Run)
+        {
+            // A hatch through the floor (or the ceiling), kept a little in from the walls so the hole is in the room.
+            var half = op is { } o ? Math.Max(DoorHalfDefault, Math.Max(o.Hx, o.Hz) * size) : DoorHalfDefault;
+            var below = d.Stacked ? at[up] > fl : at[up] < fl;
+            q[ax] = Math.Clamp(at[ax], Math.Min(lo[ax] + half, (lo[ax] + hi[ax]) / 2), Math.Max(hi[ax] - half, (lo[ax] + hi[ax]) / 2));
+            q[al] = Math.Clamp(at[al], Math.Min(lo[al] + half, (lo[al] + hi[al]) / 2), Math.Max(hi[al] - half, (lo[al] + hi[al]) / 2));
+            q[up] = below || kind.Socket == "shaft" ? fl : ce;
+            return DoorAt(q, half, DoorTopDefault, hole: true);
+        }
+        // A door in the wall: on the face nearest the socket, at the floor.
+        var w = kind.Socket == "airlock" ? p.DoorW / 2 + 0.1 : op is { } o2 ? Math.Max(DoorHalfDefault, o2.Hx * size) : DoorHalfDefault;
+        var wallLen = Math.Abs(q[ax] - lo[ax]) < 1e-6 || Math.Abs(q[ax] - hi[ax]) < 1e-6 ? hi[al] - lo[al] : hi[ax] - lo[ax];
+        w = Math.Min(w, Math.Max(0.3, wallLen / 2 - 0.05));
+        var along = Math.Abs(q[ax] - lo[ax]) < 1e-6 || Math.Abs(q[ax] - hi[ax]) < 1e-6 ? al : ax;
+        q[along] = Math.Clamp(q[along], lo[along] + w, hi[along] - w);
+        q[up] = fl;
+        var top = Math.Min(kind.Socket == "airlock" ? Math.Max(DoorTopDefault, p.AirH) : DoorTopDefault, hi[up] - lo[up] - 0.05);
+        return DoorAt(q, w, top);
     }
 
     /// <summary>How far in from the skin the floor of the room a ramp opens into is, straight in from it (null: no room there).</summary>

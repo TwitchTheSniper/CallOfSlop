@@ -42,6 +42,13 @@ public static unsafe partial class Program
                 _wsWait = 2;
                 return true;
             }
+            case "blank" when g.IsServer: // "cutter blank PANEL": the blank a panel asks for (BlankFor), fed as "feed" feeds it
+                if (ConstructParts.Find(rest) is not { } formed || Extrusion.Def(ConstructPanelFormer.BlankFor(formed)) is not { } blankDef)
+                {
+                    WsFail($"cutter blank: no panel \"{rest}\" or no blank for it");
+                    return true;
+                }
+                return WsCutterVerb(g, verb, "feed " + blankDef.Name);
             case "feed" when g.IsServer:
             {
                 if (ConstructParts.Find(rest) is not { } piece)

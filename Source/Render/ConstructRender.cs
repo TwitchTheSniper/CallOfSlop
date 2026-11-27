@@ -1230,7 +1230,7 @@ public static partial class ConstructRender
         var st = Vector3.Zero;
         if (p.Seg > 0 && p.Seg <= c.JointCount)
             SegPoseBlended(c, p.Seg, blendTicks ? alpha : 1f, out sq, out st);
-        rot = Quaternion.Normalize(body * sq * Rot24.Quat(p.Rot));
+        rot = Quaternion.Normalize(body * sq * p.D.SeatRot(p.Rot)); // (a design seat's free turn too: ConstructPartDef.SeatTurn)
         rel = Vector3.Transform(st + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, p.D.SeatAt), sq), body);
     }
 

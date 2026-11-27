@@ -1112,7 +1112,7 @@ public static class ConstructWeapons
         if (TurretCamGun(c, seat) is var k and >= 0 && TurretEye(c, k, 1f, false, out var cam, out _))
             return cam; // (a gunner's station working a turret: its camera, Program.TurretCamera)
         c.WorldFrame(c.Parts[seat].Seg, out var q, out _);
-        var up = Vector3.Transform(Vector3.UnitY, q * Rot24.Quat(c.Parts[seat].Rot));
+        var up = Vector3.Transform(Vector3.UnitY, q * c.Parts[seat].D.SeatRot(c.Parts[seat].Rot));
         return ConstructEdits.SeatFeet(c, seat) + up * World.EyeHeight;
     }
 

@@ -370,8 +370,8 @@ public static partial class ConstructLifters
             ref readonly var pt = ref l.Points![k];
             if (k == skip || !asNew || pt.Kind != LiftPointKind.Rack || RefusedNow(world, l, pt) || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st)
                 continue;
-            if (ConstructConveyor.RackCheck(b, pt.Part, st, d) != 0 || !StockTargets.Accepts(world, b, pt.Part, st, d))
-                continue;
+            if (ConstructConveyor.RackCheck(b, pt.Part, st, d) != 0 || !StockTargets.Accepts(world, b, pt.Part, st, d) || ConstructStation.PadEarly(world, b, pt.Part, d))
+                continue; // (never a rover station's pick pad as storage for a piece no step can fit yet: ConstructStation.PadEarly)
             if (!PutSpot(b, pt.Part, st, d, ld, shoulder, lr, lift, out var p))
                 continue;
             var dist = Vector3.DistanceSquared(p, shoulder) - StockTargets.Priority(b, pt.Part) * 1e4f;
