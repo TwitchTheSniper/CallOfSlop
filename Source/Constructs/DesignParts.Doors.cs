@@ -77,7 +77,7 @@ public static partial class DesignParts
                 if (Shell(r) is var s and >= 0)
                     Weld(els, s, els.Count - 1);
         }
-        // A docking collar's way in through a room's floor: its hole, which the walk would fall down, gets a cover.
+        // A docking collar's way in through a room's floor: its own hole (not a riser's well or another socket's beside it), which the walk would fall down, gets a cover.
         var n = 0;
         foreach (var p in d.Pieces)
         {
@@ -86,7 +86,7 @@ public static partial class DesignParts
             var o = DesignScene.Where(h, p).O;
             foreach (var q in check.Doors)
             {
-                if (!DesignScene.IsHole(q) || Math.Abs(q[0] - o[0]) > 1.5 || Math.Abs(q[2] - o[2]) > 1.5)
+                if (!DesignScene.IsHole(q) || !check.SocketWays.TryGetValue(q, out var cut) || cut != p || Math.Abs(q[0] - o[0]) > 1.5 || Math.Abs(q[2] - o[2]) > 1.5)
                     continue;
                 foreach (var r in d.Rooms)
                     if (DesignScene.HoleCover(d, r, q) is { } cover)

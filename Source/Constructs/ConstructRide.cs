@@ -611,11 +611,16 @@ public static partial class ConstructRide
                 continue;
             c.WorldFrame(p.Seg, out var q, out var t);
             var lp = Vector3.Transform(mid - t, Quaternion.Conjugate(q));
+            var hullsTried = false;
             for (var b = 0; b < p.D.SolidBoxes; b++)
             {
                 if (p.D.HullCovers is { } covers && b < covers.Length && covers[b] && p.D.Hulls is { Length: > 0 } hulls)
                 {
-                    // (a box its hulls stand for, a ship design's: the body meets the hulls, never the box round them, which fills the ship)
+                    // (a box its hulls stand for, a ship design's: the body meets the hulls, never the box round them, which fills the ship;
+                    // the test is the part's whole hull set, so it is made once a part, at its first covered box)
+                    if (hullsTried)
+                        continue;
+                    hullsTried = true;
                     if (InHulls(hulls, Vector3.Transform(lp - p.Pos, Quaternion.Conjugate(Rot24.Quat(p.Rot))), Rot24.Apply(Rot24.Inverse(p.Rot), Vector3.UnitY), height))
                         return i;
                     continue;

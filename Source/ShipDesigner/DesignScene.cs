@@ -28,6 +28,8 @@ public static partial class DesignScene
         public readonly Dictionary<int, bool> PieceOk = [];
         public readonly List<(double[] A, double[] B, bool Ok, double Shaft, bool Service, double[] N, string Sock)> Links = [];
         public readonly List<double[]> Doors = [];
+        /// <summary>The ways aboard a socket piece cut (each one an entry of <see cref="Doors"/>, by reference): the piece that cut it.</summary>
+        public readonly Dictionary<double[], Piece> SocketWays = new(ReferenceEqualityComparer.Instance);
         public readonly Dictionary<int, bool> RiserOk = [];
         public readonly List<(int Id, double[] At, double[] S0, double[] S1)> Placed = [];
         public readonly HashSet<int> Reached = [];
@@ -1130,7 +1132,10 @@ public static partial class DesignScene
                     {
                         entries.Add(best!.Id); // a window looks out and a seat sits inside: neither is a way aboard
                         if (SocketDoor(d, p, kind, best, at) is { } way)
-                            c.Doors.Add(way); // (its way into the room, cut in the room's shell as a door between rooms is)
+                        {
+                            c.Doors.Add(way);
+                            c.SocketWays[way] = p;
+                        } // (its way into the room, cut in the room's shell as a door between rooms is)
                     }
                 }
                 else if (kind.Service)

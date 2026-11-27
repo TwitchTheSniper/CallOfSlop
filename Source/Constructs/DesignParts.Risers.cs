@@ -126,6 +126,15 @@ public static partial class DesignParts
             e.Name = "Boarding ladder";
             e.Kg += (e.LadderTop - e.LadderFoot) * LadderKgPerM * 0.5f;
         }
+        // A Shaft room joins a room over it and one under it (or two of the deck above): one ladder each, all with the shaft's id. The first
+        // keeps "shaft{id}" (a saved body's name), the others are named by the other room, since MakeSteps' ById takes the last of a repeat.
+        if (els.Exists(x => x.Id == e.Id))
+        {
+            var other = l.Rooms.FirstOrDefault(r => r.Id != l.Id) ?? l.Rooms[^1];
+            e.Id = $"{e.Id}.r{other.Id}";
+            for (var n = 2; els.Exists(x => x.Id == e.Id); n++)
+                e.Id = $"shaft{l.Id}.r{other.Id}.{n}";
+        }
         var at = els.Count;
         els.Add(e);
         if (l.Hatch != null && els.FindIndex(x => x.Id == $"p{l.HatchIndex}") is var pe and >= 0)

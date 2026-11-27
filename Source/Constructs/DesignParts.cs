@@ -83,6 +83,12 @@ public static partial class DesignParts
     private static readonly Dictionary<ConstructPartDef, (Entry E, Element El)> Info = new(ReferenceEqualityComparer.Instance);
     private static readonly HashSet<string> Unknown = new(StringComparer.Ordinal);
 
+    /// <summary>Designs read from a save written before protocol 476 (no <see cref="SplitMarker"/>), whose pieces' door leaves and guns were part of the piece.</summary>
+    private static readonly HashSet<string> OldSplit = new(StringComparer.Ordinal);
+
+    /// <summary>The first word of a design section from protocol 476 on (an old one starts with its count, never negative).</summary>
+    private const int SplitMarker = -476;
+
     [ThreadStatic] public static string? LastRefusal;
 
     /// <summary>The last design made into its elements: how long it took and what it came to (a check reads these).</summary>
@@ -672,7 +678,10 @@ public static partial class DesignParts
                 ? $"\"{id}\" is a room's floor slab from before walkable rooms (protocol 475), whose shells are elements \"room<n>\" now: an old body keeps its other parts and loses that floor (spawn the design again for its rooms)"
                 : $"no element \"{id}\" in its design";
         else
+        {
             def = PartOf(made, made.Elements[k], name);
+            OldSplitNote(hash, id, made);
+        }
         lock (Interned)
         {
             if (Interned.TryGetValue(name, out var raced))
@@ -698,6 +707,26 @@ public static partial class DesignParts
     /// reader skips the part) rather than loaded as the new shell at the slab's origin.
     /// </summary>
     private static bool OldRoom(string id) => id.Length > 1 && id[0] == 'r' && id.AsSpan(1).IndexOfAnyExceptInRange('0', '9') < 0;
+
+    /// <summary>
+    /// A piece "p{n}" of a design saved before protocol 476: its door leaves, lids and gun are elements of their own now ("p{n}.d0", ".lid",
+    /// ".gun"), which the old body doesn't hold, so the piece loads without them (an open airlock, an empty mount). Logged once a piece.
+    /// </summary>
+    private static void OldSplitNote(string hash, string id, Made made)
+    {
+        lock (Interned)
+            if (!OldSplit.Contains(hash))
+                return;
+        if (id.Length < 2 || id[0] != 'p' || id.AsSpan(1).IndexOfAnyExceptInRange('0', '9') >= 0)
+            return;
+        var lost = new List<string>();
+        foreach (var e in made.Elements)
+            if (e.Id.Length > id.Length + 1 && e.Id.StartsWith(id, StringComparison.Ordinal) && e.Id[id.Length] == '.')
+                lost.Add(e.Id);
+        if (lost.Count > 0)
+            Console.WriteLine($"[design] a body saved before protocol 476 holds piece \"{id}\" of design #{hash} without its own elements now ({string.Join(", ", lost)}): its door leaves or gun are missing (spawn the design again)");
+    }
+
 
     private static ConstructPartDef PartOf(Made made, Element e, string name)
     {
@@ -1019,6 +1048,7 @@ public static partial class DesignParts
 
     public static void WriteSave(SaveWriter w, IReadOnlyList<string> texts)
     {
+        w.I32(SplitMarker);
         w.I32(texts.Count);
         foreach (var t in texts)
             w.Str(t);
@@ -1026,12 +1056,23 @@ public static partial class DesignParts
 
     public static void ReadSave(SaveReader r, ConstructWorld world)
     {
-        var n = r.Count(16);
+        var first = r.I32();
+        var split = first == SplitMarker;
+        var n = split ? r.Count(16) : first;
+        if (n < 0 || !r.Has((int)Math.Min(n * 16L, int.MaxValue)))
+            throw new WorldFileException($"a list of {n} doesn't fit");
         for (var k = 0; k < n; k++)
         {
             var text = r.Str();
             if (Register(text) is { } hash)
+            {
                 world.KeepShipDesign(hash);
+                lock (Interned)
+                    if (split)
+                        OldSplit.Remove(hash);
+                    else
+                        OldSplit.Add(hash);
+            }
             else
                 Console.WriteLine($"[design] REFUSED a saved design: {LastRefusal}");
         }
