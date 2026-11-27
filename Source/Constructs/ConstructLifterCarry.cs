@@ -81,9 +81,10 @@ public static partial class ConstructLifters
     {
         at = default;
         part = ConstructPads.Owner(b, part);
-        if (!ConstructRackPack.NextOrigin(ConstructPads.RackDef(b, part), st, d, out var o))
+        var rd = ConstructPads.RackDef(b, part);
+        if (!ConstructRackPack.NextOrigin(rd, st, d, out var o))
             return false;
-        at = PartPoint(b, part, o + (d.BoundsMin + d.BoundsMax) * 0.5f);
+        at = PartPoint(b, part, o + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, ConstructRackPack.Turn(rd, d))); // (a piece lying turned: ConstructRackPack.Turned)
         return true;
     }
 

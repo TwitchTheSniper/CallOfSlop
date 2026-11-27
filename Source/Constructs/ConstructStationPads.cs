@@ -25,7 +25,7 @@ public sealed partial class Construct
 public static partial class ConstructStation
 {
     public const float PadReach = 20f; // m past the bay's end a pick pad's deck may lie and the runway reaches on over it
-    public const int MaxOwnPads = 4; // pick pads one station takes (the nearest first)
+    public const int MaxOwnPads = 8; // pick pads one station takes (the nearest first; 8 since a big station's sides took the small lines' oven pads too, 2026-11-27)
     private const int MaxPadPairs = 64;
 
     /// <summary>The pick pads of station <paramref name="t"/> into <paramref name="pads"/> (owner parts, nearest the bay first): how many.</summary>
@@ -115,6 +115,8 @@ public static partial class ConstructStation
                     // a roller run from the line sets a piece down). The runway or the bridges reach on over it (StationRender.cs).
                     if (MathF.Abs(mid.Y) > 3f || (SideOff(mid, half, hx, hz) ?? ButtOff(mid, half, outside[..outN])) is not { } off)
                         continue;
+                    if (NearerStation(c, t, p, off))
+                        continue; // (another station's bay lies nearer it: Zero Day Works II's small-line oven pads lie against the main station's side and past the line station's end, 2026-11-27)
                     if (off < bestOff)
                         (best, bestOff) = (p, off);
                 }
@@ -130,6 +132,39 @@ public static partial class ConstructStation
             if (taken > 0)
                 Console.WriteLine($"[station] body {c.Id} part {t}: {taken} pick pad{(taken == 1 ? "" : "s")} for its rovers");
         }
+    }
+
+    /// <summary>
+    /// Does pad <paramref name="p"/> lie nearer another station's bay than <paramref name="off"/> (how far past station <paramref name="t"/>'s
+    /// side it lies)? A pad two stations could reach is the nearer one's (the first in PieceRacks order on a tie), not the first one's that
+    /// looked: a small line's oven pad lay against the Works II main station's side and 10 m past its own line station's end, and the line
+    /// station took it, so the main station's rovers never picked the walls rolled onto it (Sean, 2026-11-27). Runs only when the body's
+    /// parts change; allocates nothing.
+    /// </summary>
+    private static bool NearerStation(Construct c, int t, int p, float off)
+    {
+        Span<Vector2> outside = stackalloc Vector2[MaxOutsideBlocks];
+        for (var a = 0; a < c.PieceRackCount; a++)
+        {
+            int s = c.PieceRacks[a];
+            if (s == t || s >= c.PartCount || !c.DefOf(s).IsBuildStation || c.DefOf(s).StationLiftKg <= 0 || BaySize(c, s) is not { X: > 0 } bay
+                || !PadInBay(c, s, p, out var mid, out var half) || MathF.Abs(mid.Y) > 3f)
+                continue;
+            float hx = bay.X * 0.5f, hz = bay.Z * 0.5f;
+            // (a butt is always past every side, PadReach on: its blocks, a walk over the body's parts, are found only when this pad is a butt too)
+            if ((SideOff(mid, half, hx, hz) ?? (off >= PadReach ? ButtOff(mid, half, outside[..OutsideBlocks(c, s, hx, hz, outside)]) : null)) is { } o
+                && (o < off - 0.01f || o <= off + 0.01f && a < IndexOfRack(c, t)))
+                return true;
+        }
+        return false;
+    }
+
+    private static int IndexOfRack(Construct c, int t)
+    {
+        for (var a = 0; a < c.PieceRackCount; a++)
+            if (c.PieceRacks[a] == t)
+                return a;
+        return int.MaxValue;
     }
 
     /// <summary>
@@ -317,7 +352,7 @@ public static partial class ConstructStation
             && !ConstructRackPack.NthLast(st, (ushort)d.Id, 0, out slab, out lane, out layer))
             return null;
         var o = ConstructRackPack.Origin(rd, st.Slabs![slab], d, lane, layer);
-        var top = o + new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f);
+        var top = o + Vector3.Transform(new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f), ConstructRackPack.Turn(rd, d)); // (a piece lying turned: ConstructRackPack.Turned)
         Bay(c, t, out var floor, out var rot, out _);
         Freeform.PartWorld(c, pad, out var pos, out var prot);
         return Vector3.Transform(pos + Vector3.Transform(top, prot) - floor, Quaternion.Conjugate(rot));

@@ -320,6 +320,8 @@ public static class ConstructRollOut
         var half = MathF.Abs(Vector3.Dot(hi - lo, dir)) * 0.5f;
         var at0 = Vector3.Dot((lo + hi) * 0.5f - s, dir);
         var at1 = MathF.Max(half + 0.3f, len - half);
+        if (OntoPad(c, k, s, dir, half) is { } onPad)
+            at1 = MathF.Max(at1, onPad); // (a run that ends butted on a pad: on over its deck, where the pad takes it in, Sean 2026-11-27)
         if (at1 <= at0 + 0.05f)
             return;
         // It is lifted onto the run's line first if it lies lower (settled on the bed's platen between the rollers).
@@ -380,6 +382,34 @@ public static class ConstructRollOut
         world.BodyRolls.Add(r);
         Console.WriteLine($"[rollout] body {b.Id} ({b.PartCount} parts) rolls out of the {c.DefOf(part).Name} {part}'s tunnel on construct {c.Id}: {(at1 - at0) / ConstructConveyor.Speed:0.0} s"
             + (blocker >= 0 ? $", stopping short of the {c.DefOf(blocker).Name} {blocker}" : ""));
+    }
+
+    /// <summary>
+    /// Run <paramref name="k"/> ends butted on a pad (a Lay-down Pad, or a tile of a Pad Tile pad): how far along the run (from
+    /// <paramref name="s"/>, along <paramref name="dir"/>) a body <paramref name="half"/> long each way has its middle when it lies wholly
+    /// on the pad's hold from its near edge (its middle over the hold's middle when it is longer than the hold), so the pad takes it in
+    /// (ConstructLifters.PadsTakeIn: a piece at rest over its hold). Null when the run ends on no pad. The small lines' ovens on Zero Day Works II rolled
+    /// their walls out onto a one-tile run and left them at its end, short of the pad, for good (Sean, 2026-11-27).
+    /// </summary>
+    private static float? OntoPad(Construct c, int k, Vector3 s, Vector3 dir, float half)
+    {
+        if (c.Routes[k].To >= c.PartCount)
+            return null;
+        var pad = ConstructPads.Owner(c, c.Routes[k].To);
+        if (pad >= c.PartCount || !c.DefOf(pad).IsLayDownPad)
+            return null;
+        // (the hold's extent along the run: the whole pad's, over all its tiles, as RackDef gives it from the owner)
+        var d = ConstructPads.RackDef(c, pad);
+        ref readonly var p = ref c.Parts[pad];
+        if (p.Seg != 0)
+            return null;
+        var b0 = p.Pos + Rot24.Apply(p.Rot, d.RackHoldMin);
+        var b1 = p.Pos + Rot24.Apply(p.Rot, d.RackHoldMax);
+        float a0 = Vector3.Dot(b0 - s, dir), a1 = Vector3.Dot(b1 - s, dir);
+        (a0, a1) = (MathF.Min(a0, a1), MathF.Max(a0, a1));
+        // (wholly on it from its near edge; a piece longer than the hold along the run, which the pad may take turned across it
+        // (ConstructRackPack.Turned), with its middle over the hold's, as the take-in asks)
+        return a1 - a0 >= 2f * half ? MathF.Min(a0 + half + 0.25f, a1 - half) : (a0 + a1) * 0.5f;
     }
 
     // ---- The step ----------------------------------------------------------------------------------------------------------
