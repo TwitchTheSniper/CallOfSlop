@@ -805,6 +805,7 @@ public static partial class DesignParts
         def.ColliderBoxes = false;
         def.Sockets = [t.Sockets[0] with { Name = "s0", At = Vector3.Zero }]; // (one socket the welds between elements hang on)
         def.Lamps = [];
+        def.LampLines = [];
         if (e.Door != null)
         {
             def.Door = e.Door; // (an event door's leaf: DesignParts.Doors.cs)

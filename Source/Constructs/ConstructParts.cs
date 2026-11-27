@@ -689,6 +689,12 @@ public sealed partial class ConstructPartDef
     public bool HasRig; // boxes that move with the wheel (a suspension's arm, strut or damper; the renderer skips the rest)
     /// <summary>Phase 7b (docs/vehiclekit/BODY-STYLES.md, section 14): lamps a run-time part draws that light the room round them (a lined bay's), in the part's frame, with their colour; drawn by ConstructLamps.</summary>
     public (Vector3 At, Vector3 Colour)[] Lamps = [];
+
+    /// <summary>
+    /// When as long as <see cref="Lamps"/>: each lamp is a light strip (a design room's ceiling strips, a light bar), lit by
+    /// <see cref="ConstructLamps"/> as a line from At - Half to At + Half that lights only towards Face (unit), in the part's frame. Empty: point lamps.
+    /// </summary>
+    public (Vector3 Half, Vector3 Face)[] LampLines = [];
     /// <summary>
     /// A lamp's light (part file "light", Sean 2026-11-23: high-bay pendants 14 m up lit nothing, every lamp being a 4.5 m bulb): how far it
     /// reaches (m; 0: <see cref="ConstructLamps.Range"/>), its strength (1: <see cref="ConstructLamps.Strength"/>), and for a spot its
