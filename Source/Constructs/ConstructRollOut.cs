@@ -336,6 +336,8 @@ public static class ConstructRollOut
         {
             if (other == c || other == b || other.PartCount == 0)
                 continue;
+            if (other.HeldBy == c.Id && Of(world, other.Id) == null)
+                continue; // (a build a station of the site holds in its bay, not a piece on the run: the Works II frigate's sphere, tens of metres across, reached the small lines' oven runs and held their Torpedo Bays in the tunnel for good, 2026-11-27)
             var at = Vector3.Transform(other.WorldCom - o, inv);
             var along = Vector3.Dot(at - s, dir);
             if (along > at0 + half && along < at1 + half + other.Radius && MathF.Abs(Vector3.Dot(at, side) - mid) < wide + other.Radius && MathF.Abs(at.Y - lo.Y) < 4f)
