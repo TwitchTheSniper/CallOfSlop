@@ -899,6 +899,9 @@ public static partial class DesignScene
         return t < 0.005 ? 0 : ShellGap + t;
     }
 
+    /// <summary>A room shell's colour in the game when its wall colour is its kind's and it has no interior cladding: bare steel.</summary>
+    public const string SteelWall = "#6c7176";
+
     /// <summary>The top of what lies on a room's floor (the page's 8 cm marker, or its shell's floor), from the box's floor.</summary>
     public static double FloorTop(Room r) => Math.Max(0.08, ShellDepth(r));
 
@@ -914,7 +917,9 @@ public static partial class DesignScene
     /// game's walkable room (DesignParts.Rooms.cs) collides as the very boxes the designer draws.</param>
     /// <param name="strips">When given, a room out to the hull adds each strip of its <see cref="HullShell"/> as its 8 corners (24 numbers: the inner
     /// face's four, then the outer's), a thin convex piece each.</param>
-    public static DesignMesh RoomShell(ShipDesign d, Room r, List<double[]> allDoors, List<(double[] Lo, double[] Hi)>? boxes = null, List<double[]>? strips = null)
+    /// <param name="neutral">The game's copy (Karl, 2026-11-27: the designer's room tint showed in game through the cladding's seams): a room
+    /// whose wall colour is its kind's (none picked) is walled in steel, a dark tone of its panels' colour behind interior cladding.</param>
+    public static DesignMesh RoomShell(ShipDesign d, Room r, List<double[]> allDoors, List<(double[] Lo, double[] Hi)>? boxes = null, List<double[]>? strips = null, bool neutral = false)
     {
         var m = new DesignMesh();
         m.World();
@@ -928,7 +933,9 @@ public static partial class DesignScene
         // clearance once cut a notch in both rooms' floors, and in the ceiling and walls of the room under it).
         var doors = DoorsOf(d, r, allDoors);
         doors.AddRange(RoomWindows(d, r)); // (its walls open behind its windows: DesignWindows.cs)
-        var colour = r.WallColour.Length == 7 ? DesignMesh.Hex(r.WallColour) : DesignMesh.Tone(DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour), 0.55);
+        var colour = r.WallColour.Length == 7 ? DesignMesh.Hex(r.WallColour) :
+            neutral ? (r.Interior != "Off" ? DesignMesh.Tone(DesignMesh.Hex(r.PanelColour), 0.42) : DesignMesh.Hex(SteelWall)) :
+            DesignMesh.Tone(DesignMesh.Hex(RoomKinds.Find(r.Kind)!.Colour), 0.55);
         var hex = $"#{colour.Item1:x2}{colour.Item2:x2}{colour.Item3:x2}";
         var mates = d.Rooms.Where(o => o != r && r.Group != 0 && o.Group == r.Group).Select(d.Box).ToList();
         bool InMate(double[] p) => mates.Any(o => p[0] > o[0] && p[0] < o[1] && p[1] > o[2] && p[1] < o[3] && p[2] > o[4] && p[2] < o[5]);
@@ -1343,7 +1350,8 @@ public static partial class DesignScene
 
         // ---- floor dressing (the interior's plate layer does Plates and Hex), on what lies on the floor, inside the walls.
         if (r.Floor is not ("Plates" or "Hex"))
-            FloorDress(d, r, m, V, Up, ia0 + 0.004, ia1 - 0.004, il0 + 0.004, il1 - 0.004, fTop, ax, al, rnd, ref budget);
+            FloorDress(d, r, m, V, Up, ia0 + 0.004, ia1 - 0.004, il0 + 0.004, il1 - 0.004, fTop, ax, al, rnd, ref budget,
+                [.. doors.Where(q => IsHole(q) && Math.Abs(q[up] - fl) < DoorLevel).Select(q => (q[al] - DoorHalf(q), q[al] + DoorHalf(q), q[ax] - DoorHalf(q), q[ax] + DoorHalf(q)))]);
         return m;
     }
 
@@ -1496,12 +1504,20 @@ public static partial class DesignScene
 
     /// <summary>A room's floor in one of the dressings (Karl, 2026-11-25): its pieces in plan a (across) and l (along), u up from what it lies on.</summary>
     private static void FloorDress(ShipDesign d, Room r, DesignMesh m, Func<double, double, double, double[]> V, Func<double, double> Up,
-        double a0, double a1, double l0, double l1, double fTop, int ax, int al, Random rnd, ref int budget)
+        double a0, double a1, double l0, double l1, double fTop, int ax, int al, Random rnd, ref int budget,
+        List<(double S0, double S1, double H0, double H1)> holes)
     {
         if (a1 - a0 < 0.05 || l1 - l0 < 0.05)
             return;
         var left = budget;
+        // Each piece cut round the holes through the floor (holes: along l, across a; Karl, 2026-11-27: the dressing ran over a ladder's well).
         bool Piece(double x0, double x1, double y0, double y1, double u0, double u1, string col)
+        {
+            var any = false;
+            AroundHoles(y0, y1, x0, x1, holes, 0, (b0, b1, c0, c1) => any |= Piece1(c0, c1, b0, b1, u0, u1, col));
+            return any;
+        }
+        bool Piece1(double x0, double x1, double y0, double y1, double u0, double u1, string col)
         {
             x0 = Math.Max(x0, a0); x1 = Math.Min(x1, a1); y0 = Math.Max(y0, l0); y1 = Math.Min(y1, l1);
             if (left < 12 || x1 - x0 < 1e-3 || y1 - y0 < 1e-3)
@@ -1545,7 +1561,7 @@ public static partial class DesignScene
                         double hx = turn ? 0.045 : 0.012, hy = turn ? 0.012 : 0.045;
                         (double, double, double) P(double px, double py) { var v = V(px, py, Up(fTop + 0.012)); return (v[0], v[1], v[2]); }
                         var mid = V(x, y, Up(fTop));
-                        if (!d.Hulls.Any(h => h.Depth(mid[0], mid[1], mid[2]) > 0.01))
+                        if (!d.Hulls.Any(h => h.Depth(mid[0], mid[1], mid[2]) > 0.01) || holes.Any(o => y + 0.05 > o.S0 && y - 0.05 < o.S1 && x + 0.05 > o.H0 && x - 0.05 < o.H1))
                             continue;
                         var q = (P(x - hx, y), P(x, y - hy), P(x + hx, y), P(x, y + hy));
                         m.Quad(q.Item1, q.Item2, q.Item3, q.Item4, c, false);
