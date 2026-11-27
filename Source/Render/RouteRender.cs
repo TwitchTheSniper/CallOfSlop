@@ -502,8 +502,8 @@ public static class RouteRender
 
     /// <summary>
     /// What a body's Piece Racks hold, where <see cref="ConstructRackPack"/> packed it, from the store as heard: near a rack
-    /// (<see cref="ConstructConveyor.RackDrawNear"/>) every piece at true size, further one box a column in its first box's
-    /// colour. Allocates nothing; an empty rack costs a look at its store.
+    /// (<see cref="ConstructConveyor.RackDrawNear"/>) every piece at true size, out to <see cref="ConstructConveyor.RackDrawMid"/> every
+    /// piece less its boxes too small to see, further one box a column in its first box's colour. Allocates nothing; an empty rack costs a look at its store.
     /// </summary>
     public static ushort BayBody; // the Building Station looked at or with its panel open: its bay is outlined (Program sets it each frame)
     public static int BayPart = -1;
@@ -681,8 +681,10 @@ public static class RouteRender
             var frame = Matrix4x4.CreateFromQuaternion(rackRot) * Matrix4x4.CreateTranslation(p.Pos) * segFrame;
             var sliding = rd.IsLayDownPad && PadLanding.Arrivals(c, part, st, ConstructConveyor.Clock); // (a piece just rolled off its run slides into its place: PadLanding.cs)
             var centre = Vector3.Transform((rd.BoundsMin + rd.BoundsMax) * 0.5f, frame);
-            var reach = ConstructConveyor.RackDrawNear + (rd.BoundsMax - rd.BoundsMin).Length() * 0.5f;
-            var near = Vector3.DistanceSquared(eye, centre) < reach * reach;
+            var spread = (rd.BoundsMax - rd.BoundsMin).Length() * 0.5f;
+            var away = Vector3.Distance(eye, centre) - spread; // (metres to the rack's nearest side, about)
+            var near = away < ConstructConveyor.RackDrawMid;
+            var smallest = away < ConstructConveyor.RackDrawNear ? 0f : away * ConstructConveyor.RackDetailPerMetre; // (past the near range, boxes this small are left out)
             var hide = rd.GantryTable && world.GantryJobCount > 0 ? ConstructGantry.CarriedOff(world, c.Id, part, ConstructConveyor.Clock) : -1; // (a module a gantry's arm carries: its copy here isn't drawn)
             Span<byte> held = stackalloc byte[ConstructRackPack.MaxLanes];
             Span<byte> ranks = stackalloc byte[ConstructStation.MaxArms];
@@ -730,13 +732,25 @@ public static class RouteRender
                         for (var bx = 0; bx < d.Boxes.Length; bx++)
                         {
                             ref readonly var box = ref d.Boxes[bx];
-                            if (!box.Hidden)
+                            if (!box.Hidden && (smallest <= 0 || BoxMeasure(in box) >= smallest))
                                 gfx.Draw(box.Model(0, box.Center) * m, box.Color, shape: box.Shape);
                         }
                     }
                 }
             }
         }
+    }
+
+    /// <summary>A box's size as seen: the square root of its two biggest sides (a long rod counts by its length as well as its width), as the merged far detail measures one.</summary>
+    private static float BoxMeasure(in CPartBox box)
+    {
+        var a = MathF.Abs(box.Half.X);
+        var b = MathF.Abs(box.Half.Y);
+        var c = MathF.Abs(box.Half.Z);
+        var big = MathF.Max(a, MathF.Max(b, c));
+        var mid = MathF.Max(MathF.Min(a, b), MathF.Min(MathF.Max(a, b), c));
+        var m = 2 * MathF.Sqrt(big * mid);
+        return box.Glow ? m * 4 : m; // (a glowing box reads from further, as a lamp does)
     }
 
     /// <summary>

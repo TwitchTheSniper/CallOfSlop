@@ -8,7 +8,7 @@ namespace CallOfSlop.ShipDesigner;
 /// colour and brightness set per piece. Two kinds:
 /// <list type="bullet">
 /// <item><b>Light bar</b>, on the hull's skin where it is dropped. Turned along the hull (Turn 0 or 180) it follows the skin's curve along its
-/// length; turned any other way it runs straight across the skin. How it meets the hull's cladding is its <see cref="Piece.BarClad"/>
+/// length; turned any other way it runs across the skin at that heading, following its curve and slope as a window beside it does. How it meets the hull's cladding is its <see cref="Piece.BarClad"/>
 /// (Karl, 2026-11-27: "option for light bars to interact with cladding"): Cut (the plates are cut round its whole line and it lies on the
 /// skin in the channel), Flush (cut tight, the bar raised on a housing so its face is level with the plates' tops) or Over (the plates run
 /// on under it and it sits on a housing over them): <see cref="Cuts"/>, <see cref="Lift"/>.</item>
@@ -215,27 +215,59 @@ public static class DesignLightBars
     {
         var w = DesignScene.Where(h, p);
         var len = p.BarLen;
-        var cx = h.CopyX(Math.Min(p.Copy, h.Copies - 1));
-        var follow = p.Surface == "skin" && Math.Abs(Math.IEEERemainder(p.Turn, 180)) < 1 && Math.Abs(w.Z[2]) > 0.99;
-        var n = follow ? Math.Clamp((int)Math.Ceiling(len / 0.5), 1, 64) : 1;
         var line = new Line([], []);
-        for (var k = 0; k <= n; k++)
+        if (p.Surface != "skin")
         {
-            var a = -len / 2 + len * k / n;
-            double[] at, nn;
-            if (follow)
+            // (fore or aft: a flat face, so a straight bar)
+            foreach (var a in (double[])[-len / 2, len / 2])
             {
-                // Along the hull: the skin at each station point (its frame's Z is the world's +z or -z there).
-                var z = Math.Clamp(p.Z + a * w.Z[2], h.Front + 0.02, h.Back - 0.02);
-                var s = h.OnSkin(z, p.T, p.Side);
-                (at, nn) = ([cx + s.X, h.Y + s.Y, h.Z + s.Z], [s.Nx, s.Ny, 0]);
+                line.P.Add(Add(Add(w.O, w.Z, a), w.Y, -p.Recess));
+                line.N.Add(Norm(w.Y));
             }
-            else
-                (at, nn) = (Add(w.O, w.Z, a), w.Y);
+            return line;
+        }
+        // On the skin it follows the skin at any turn (Karl, 2026-11-27: a bar turned across ran straight off the skin while a window beside
+        // it followed the hull's slope): walked out from its middle both ways in short steps, each step along the bar's heading in the skin's
+        // own frame there (its turn from the hull's length) and put back on the skin at the nearest point round the section.
+        var cx = h.CopyX(Math.Min(p.Copy, h.Copies - 1));
+        var half = Math.Clamp((int)Math.Ceiling(len), 1, 32); // (a run every half metre or so, as before)
+        var step = len / 2 / half;
+        var mid = h.OnSkin(p.Z, p.T, p.Side);
+        var along = Math.Abs(Math.IEEERemainder(p.Turn, 180)) < 1; // (along the hull: it keeps its line round the section, as it always has)
+        var back = new List<(double[] At, double[] N)>();
+        var fwd = new List<(double[] At, double[] N)>();
+        foreach (var dir in (int[])[-1, 1])
+        {
+            var into = dir < 0 ? back : fwd;
+            var s = mid;
+            for (var k = 0; k < half; k++)
+            {
+                var head = Heading(s.Nx, s.Ny, p.Turn);
+                double x = s.X + head[0] * step * dir, y = s.Y + head[1] * step * dir;
+                var z = Math.Clamp(s.Z + head[2] * step * dir, h.Front + 0.02, h.Back - 0.02);
+                s = h.OnSkin(z, along ? p.T : h.NearestT(x, y, z), p.Side);
+                into.Add(([cx + s.X, h.Y + s.Y, h.Z + s.Z], [s.Nx, s.Ny, 0]));
+            }
+        }
+        back.Reverse();
+        back.Add(([cx + mid.X, h.Y + mid.Y, h.Z + mid.Z], [mid.Nx, mid.Ny, 0]));
+        back.AddRange(fwd);
+        foreach (var (at, nn) in back)
+        {
             line.P.Add(Add(at, nn, -p.Recess));
             line.N.Add(Norm(nn));
         }
         return line;
+    }
+
+    /// <summary>The way a skin piece's Z points, turned <paramref name="turn"/> degrees, where the skin's normal is (nx, ny, 0) (as <see cref="DesignScene.Where"/>).</summary>
+    private static double[] Heading(double nx, double ny, double turn)
+    {
+        double[] y = [nx, ny, 0], z = [0, 0, -1];
+        var x = Cross(y, z);
+        var a = turn * Math.PI / 180;
+        double c = Math.Cos(a), sn = Math.Sin(a);
+        return [z[0] * c - x[0] * sn, z[1] * c - x[1] * sn, z[2] * c - x[2] * sn];
     }
 
     private static Line? RoomLine(ShipDesign d, HullBody h, Piece p)

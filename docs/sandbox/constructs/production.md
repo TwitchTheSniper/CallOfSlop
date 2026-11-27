@@ -1288,8 +1288,10 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   out where it lay and holds it. F on a riding piece takes it off its conveyor (the physics gun grabs it): the request names the
   conveyor and where the piece's front was, and the server takes the one nearest that (within 1.5 m); the pieces behind close up.
   A conveyor's look line, and its lead piece's, say why it waits ("jammed: rack full").
-- **The rack shows what it holds.** Every piece at its packed place at true size within 30 m (plus half the rack), one box a
-  column in its first box's colour further off (`RouteRender.DrawRacks`, the links' batch, from the store as heard).
+- **The rack shows what it holds.** Every piece at its packed place at true size within 50 m of the rack's near side, out to 130 m
+  every piece less the boxes under 1/350 of the distance (14 cm at 50 m, 37 cm at 130 m), one box a column in its first box's
+  colour further off (`RouteRender.DrawRacks`, the links' batch, from the store as heard; 30 m and no middle range before
+  2026-11-27, Sean: the pads' pieces went to plain boxes too near).
 - **Collisions.** The conveyor is a drawn link: shots and blasts hit its segments (health 120); players and bodies pass through it
   as through every routed link, and through riding pieces.
 - **Network (protocol 244, riders 245).** A conveyor's size is 4 bytes after its link in a Full. `CBodyKind.Riders` sends a body's
@@ -2225,7 +2227,7 @@ Piece Racks and Lay-down Pads aren't swapped for tiles, and the old rack parts s
 Roller Tile is a 2 m bed of powered rollers with its tops at the bed machines' work height (1 m, as an Out Table's), going its +z way.
 Tiles welded together are one **run** (`machineBlock` family `roller`, seeded as Pad Tiles are; all turned one way): the largest full
 rectangle holding the lowest-index tile. A run is one ordinary conveyor link along its middle, as wide as its tiles across (6 tiles,
-12 m, at most), from its -z end to its +z end, which the server lays and lays again after any rebuild that changes it
+12 m, at most) and 30 cm more, since a piece may overhang its rollers a little (`RollerRuns.OverhangCm`: a one-tile run carries 2.3 m), from its -z end to its +z end, which the server lays and lays again after any rebuild that changes it
 (`RollerRuns.Sync` on the conveyor step; `IsRun`: a link of two nodes, both on Roller Tiles), so riders, saves and the wire are a
 conveyor's and pieces ride at `ConstructConveyor.Speed`. It starts at what is butted on its in end (an Out Table gives its machine's
 out table, which the former or cutter hands its piece to; a Run-out Table gives its Extruder's Piece out, "Extrusion" above; a Turntable Tile; a Pad Tile's Piece out; any conveyor out port there) or at
@@ -2424,7 +2426,7 @@ so it can push pieces it's finished constructing out into the conveying system."
 - **An oven's way in.** A run whose line, run on 0.3 m past its last tile, meets a Bake Oven's bed is taken by that oven
   (`ConstructRollOut.OvenOf`). A body rolling along it waits at the run's end until the bed is empty with its doors open and no other kit is
   bound there, then goes on onto the bed's middle as a crane sets a kit (`ConstructBakeOven.Landing`, a quarter turn if that is what
-  fits the clear cells), turning as it goes, and is let go; the oven bakes it. A kit for an oven's order whose station's way out leads to
+  fits the clear cells; a kit too tall standing is laid on its side, as the Zero Day Stern's 9.3 m ring lies 4.5 m in a 6 m tunnel), turning as it goes, and is let go; the oven bakes it. A kit for an oven's order whose station's way out leads to
   that oven rolls (the oven's `Kits` leaves it to the station rather than calling a lifter), and the oven counts it as on its way
   (`OvenKits`) from the start of the roll. A piece riding a run the oven takes, waiting at its end while the bed is empty, comes off as
   a loose body and rolls onto the bed the same way (`RiderOnto`), so a baked part can be sent in to be un-baked.

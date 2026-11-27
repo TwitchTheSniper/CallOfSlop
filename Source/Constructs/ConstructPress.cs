@@ -493,6 +493,14 @@ public static partial class ConstructPress
     private static void SizedMakes(PanelCard card, int line, PressPattern pattern, ConstructPartDef? preset) =>
         card.Add(line, preset != null ? "Makes " : "Sized ").Add(line, preset?.Name ?? pattern.Label);
 
+    /// <summary>A sized stroke's work until the part is made (the lid shut): creative or not, never shorter than the lid's swing.</summary>
+    private static int StrokeFull(ConstructWorld world, Construct c, int part, PressDie die, in ExtrusionKey blank)
+    {
+        var work = WorkOf(c, part);
+        return world.CreativeRecycling ? CreativeStrokeSteps * work
+            : Math.Max(StrokeMinSteps * work, SizedTicks(die, blank) * Bites(c, part, blank) * Milli); // (a blank longer than the bed goes in bites)
+    }
+
     /// <summary>A step of a press with a sized die. True when parts came or went.</summary>
     private static bool WorkSized(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, PressDie die, bool held)
     {
@@ -514,7 +522,10 @@ public static partial class ConstructPress
         SetStall(world, st, why);
         if (st.LidCool > 0)
             st.LidCool--; // (the lid still opening on the last part: ConstructPressLid.cs)
-        if (why != PressStall.None || held || p.Broken || st.LidCool > 0 && st.JobTicks == 0)
+        // (a stroke already over, its lid opening on the made part: a stop, a power dip or a full tray no longer throws the part away;
+        // only the blank leaving its bay or the press breaking does)
+        var opening = bay >= 0 && st.JobTicks > 0 && HasLid(c, part) && !p.Broken && st.JobTicks >= StrokeFull(world, c, part, die, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
+        if (!opening && (why != PressStall.None || held || p.Broken || st.LidCool > 0 && st.JobTicks == 0))
         {
             st.JobTicks = 0;
             ConstructGatherer.SetBusy(world, st, false);
@@ -525,19 +536,28 @@ public static partial class ConstructPress
         // Every stroke takes time, in creative too (Sean, 2026-11-23: "the press frames were meant to close on the part to transform it"):
         // the lid swings shut on the blank, latches and squeezes, and the part is made at the stroke's end, while it is shut. A stroke is
         // never shorter than the lid's shutting and latching (StrokeMinSteps); a creative one takes CreativeStrokeSteps (it costs nothing).
-        // After it the lid opens before the next (LidCool).
+        // After it the lid opens and the ejector lifts the part, and only then does the part leave the press (Sean, 2026-11-27: on the
+        // Zero Day works the part came out while the lid was still shut). Busy falls at the stroke's end, so every peer draws the lid
+        // opening (LidAt), while the work runs on for LidOpenSteps; the blank stays on its bay until the part goes.
         var work = WorkOf(c, part);
-        var full = world.CreativeRecycling ? CreativeStrokeSteps * work
-            : Math.Max(StrokeMinSteps * work, SizedTicks(die, blank) * Bites(c, part, blank) * Milli); // (a blank longer than the bed goes in bites)
+        var full = StrokeFull(world, c, part, die, blank);
+        var open = HasLid(c, part) ? LidOpenSteps * work : 0;
         if (st.JobTicks == 0)
             MachineScreens.SetProgress(world, st, 0); // (a new stroke: sent at once, so every peer starts its shells' swing: StrokeAt)
-        ConstructGatherer.SetBusy(world, st, true);
         st.JobTicks += work;
         if (st.JobTicks < full)
         {
+            ConstructGatherer.SetBusy(world, st, true);
             MachineScreens.SetProgress(world, st, (int)((long)st.JobTicks * 100 / full));
             return false;
         }
+        if (st.JobTicks < full + open)
+        {
+            ConstructGatherer.SetBusy(world, st, false); // (the stroke is over: the lid unlatches, swings open and the ejector lifts)
+            MachineScreens.SetProgress(world, st, 100);
+            return false;
+        }
+        ConstructGatherer.SetBusy(world, st, false);
         st.JobTicks = 0;
         // The part: a preset is the catalogue part; anything else is made from its key (once a machine, then shared: Pressed.Parse).
         var output = preset ?? Pressed.Parse(Pressed.KeyOf(die, pattern!, blank));
@@ -547,9 +567,11 @@ public static partial class ConstructPress
             return false;
         }
         if (!PutOut(world, query, c, part, st, output, 1))
+        {
+            if (open > 0)
+                st.JobTicks = full + open - work; // (the lid stays open on the made part and it tries again next step, not a whole new stroke)
             return false;
-        if (HasLid(c, part))
-            st.LidCool = LidOpenSteps;
+        }
         if (need > 0 && pattern!.Bay2 is { } kit)
         {
             if (kit.Part != null)

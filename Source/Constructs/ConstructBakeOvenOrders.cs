@@ -384,7 +384,10 @@ public static partial class ConstructBakeOven
 
     /// <summary>
     /// Where a kit lands in the tunnel: its bounds' middle over the hearth's middle, its underside 2 cm over the rollers, turned as it stands
-    /// or a quarter turn about the bed's up, whichever lies on the hearth. Null, or why it fits neither way.
+    /// or a quarter turn about the bed's up, whichever lies on the hearth. A kit that fits neither way standing is laid on its side (a quarter
+    /// turn about the tunnel's across or along axis, then either way about its up): the Zero Day Stern's ring kit stood 9.3 m and was let go
+    /// at a 6 m tunnel's mouth (Sean, 2026-11-27: "build it flat so that it fits in the oven"); lying it is 4.5 m. The bake takes a kit at
+    /// any of the 24 grid turns (<see cref="BakeKits.Target"/>). Null, or why it fits no way.
     /// </summary>
     public static string? Landing(Construct c, int part, Construct kit, out Vector3 pos, out Quaternion rot)
     {
@@ -405,9 +408,17 @@ public static partial class ConstructBakeOven
         var mid = new Vector3(bed.Across * 0.5f, bed.Roll, bed.Along * 0.5f);
         var (inLo, inHi) = (bed.InMin, bed.InMax);
         string? why = null;
-        for (var turn = 0; turn < 2; turn++)
+        string? standing = null;
+        for (var turn = 0; turn < 6; turn++)
         {
-            var r = turn == 0 ? kit.Rot : Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.Transform(Vector3.UnitY, tunnelRot), MathF.PI / 2) * kit.Rot);
+            if (turn == 2)
+                standing = why; // (what keeps it from standing: said if it fits lying no way either)
+            // 0, 1: standing (as it is, a quarter turn about the bed's up); 2, 3: laid over about the tunnel's across axis; 4, 5: about its along.
+            var r = kit.Rot;
+            if (turn >= 2)
+                r = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.Transform(turn < 4 ? Vector3.UnitX : Vector3.UnitZ, tunnelRot), MathF.PI / 2) * r);
+            if ((turn & 1) == 1)
+                r = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(Vector3.Transform(Vector3.UnitY, tunnelRot), MathF.PI / 2) * r);
             // The kit's rest box in the tunnel's frame, turned so.
             var toKit = Quaternion.Normalize(Quaternion.Conjugate(tunnelRot) * r);
             Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
@@ -436,6 +447,6 @@ public static partial class ConstructBakeOven
             rot = r;
             return null;
         }
-        return why;
+        return standing ?? why;
     }
 }
