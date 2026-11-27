@@ -30,7 +30,7 @@ public static partial class DesignParts
     /// <summary>Each lights element's lamps, in the ship's frame (its part's frame once <see cref="IntoFrames"/> has set its origin).</summary>
     private static readonly ConditionalWeakTable<Element, RoomLamps> LampsOf = new();
 
-    private sealed record RoomLamps(Vector3[] At, Vector3 Colour);
+    private sealed record RoomLamps(Vector3[] At, (Vector3 Half, Vector3 Face)[] Lines, Vector3 Colour);
 
     /// <summary>The lit rooms' lamps: an element a room (a step each), welded to the room's first shell element.</summary>
     private static IEnumerable<int> AddLights(Steps st)
@@ -76,14 +76,14 @@ public static partial class DesignParts
             }
             Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
             foreach (var l in lamps)
-                (lo, hi) = (Vector3.Min(lo, l), Vector3.Max(hi, l));
+                (lo, hi) = (Vector3.Min(lo, l.At), Vector3.Max(hi, l.At));
             var mid = (lo + hi) * 0.5f;
             var e = new Element
             {
                 Id = $"room{ri}.lights", Kind = "lights", Name = $"{DesignScene.Name(r)} lights", Fn = "roomlights", Kg = RoomLampKg,
                 BoxMin = mid - new Vector3(0.005f), BoxMax = mid + new Vector3(0.005f), NoCollider = true, // (hidden: the room's strips are its look)
             };
-            LampsOf.AddOrUpdate(e, new RoomLamps([.. lamps], was == "Industrial" ? IndustrialLamp : CleanLamp));
+            LampsOf.AddOrUpdate(e, new RoomLamps([.. lamps.Select(l => l.At)], [.. lamps.Select(l => (l.Half, -up))], was == "Industrial" ? IndustrialLamp : CleanLamp));
             els.Add(e);
             if (shellOf.TryGetValue(ri, out var shell))
                 Weld(els, shell, els.Count - 1);
@@ -97,9 +97,9 @@ public static partial class DesignParts
     /// The lamps under a room's ceiling strips: the glow mesh's boxes (36 corners each, as DesignMesh.Box lays them) over the room's middle
     /// height, a lamp every <see cref="ConstructLamps.StripSpacing"/> along each, <see cref="ConstructLamps.StripDrop"/> under it.
     /// </summary>
-    private static List<Vector3> CeilingLamps(ShipDesign d, Room r, DesignMesh glow, Vector3 up)
+    private static List<(Vector3 At, Vector3 Half)> CeilingLamps(ShipDesign d, Room r, DesignMesh glow, Vector3 up)
     {
-        var lamps = new List<Vector3>();
+        var lamps = new List<(Vector3 At, Vector3 Half)>();
         var b = d.Box(r);
         var midUp = Vector3.Dot(new Vector3((float)(b[0] + b[1]) * 0.5f, (float)(b[2] + b[3]) * 0.5f, (float)(b[4] + b[5]) * 0.5f), up);
         const int Corners = 36;
@@ -121,7 +121,7 @@ public static partial class DesignParts
             var under = centre - up * (MathF.Abs(Vector3.Dot(size, up)) * 0.5f + ConstructLamps.StripDrop);
             var n = Math.Max(1, (int)MathF.Round(len / ConstructLamps.StripSpacing));
             for (var k = 0; k < n && lamps.Count < MaxRoomLamps; k++)
-                lamps.Add(under + along * (((k + 0.5f) / n - 0.5f) * len));
+                lamps.Add((under + along * (((k + 0.5f) / n - 0.5f) * len), along * (len / n * 0.5f))); // (each a line over its share of the strip)
         }
         return lamps;
     }
@@ -142,16 +142,24 @@ public static partial class DesignParts
         if (lamps.Count == 0)
             return;
         var at = new Vector3[lamps.Count];
+        var lines = new (Vector3 Half, Vector3 Face)[lamps.Count];
+        // (a direction moved from the piece's own place to this copy's: no origin)
+        Vector3 Turn(double[] v)
+        {
+            double lx = v[0] * w0.X[0] + v[1] * w0.X[1] + v[2] * w0.X[2], ly = v[0] * w0.Y[0] + v[1] * w0.Y[1] + v[2] * w0.Y[2], lz = v[0] * w0.Z[0] + v[1] * w0.Z[1] + v[2] * w0.Z[2];
+            return new Vector3((float)(w.X[0] * lx + w.Y[0] * ly + w.Z[0] * lz), (float)(w.X[1] * lx + w.Y[1] * ly + w.Z[1] * lz), (float)(w.X[2] * lx + w.Y[2] * ly + w.Z[2] * lz));
+        }
         for (var i = 0; i < lamps.Count; i++)
         {
-            var q = lamps[i];
+            var (q, half, face) = lamps[i];
+            lines[i] = (Turn(half), Vector3.Normalize(Turn(face)));
             double[] r = [q[0] - w0.O[0], q[1] - w0.O[1], q[2] - w0.O[2]];
             double lx = r[0] * w0.X[0] + r[1] * w0.X[1] + r[2] * w0.X[2], ly = r[0] * w0.Y[0] + r[1] * w0.Y[1] + r[2] * w0.Y[2], lz = r[0] * w0.Z[0] + r[1] * w0.Z[1] + r[2] * w0.Z[2];
             at[i] = new Vector3((float)(w.O[0] + w.X[0] * lx + w.Y[0] * ly + w.Z[0] * lz), (float)(w.O[1] + w.X[1] * lx + w.Y[1] * ly + w.Z[1] * lz), (float)(w.O[2] + w.X[2] * lx + w.Y[2] * ly + w.Z[2] * lz));
         }
         var c = DesignMesh.Hex(p.Beam);
         e.Fn = "roomlights";
-        LampsOf.AddOrUpdate(e, new RoomLamps(at, new Vector3(c.R, c.G, c.B) / 255f * (float)p.Bright));
+        LampsOf.AddOrUpdate(e, new RoomLamps(at, lines, new Vector3(c.R, c.G, c.B) / 255f * (float)p.Bright));
     }
 
     private static void RegisterLights(KindTable k) => k.Fn("roomlights", _ => Template.ShallowCopy(), LightsFinish);
@@ -160,7 +168,10 @@ public static partial class DesignParts
     private static void LightsFinish(Element e, ConstructPartDef d)
     {
         if (LampsOf.TryGetValue(e, out var l))
+        {
             d.Lamps = [.. l.At.Select(p => (p - e.Origin, l.Colour))];
+            d.LampLines = l.Lines; // (each a strip: lit along its share of the strip, on the side it faces: ConstructLamps)
+        }
     }
 
     // ---- What a player is told and given on aiming at a design -------------------------------------------------------------

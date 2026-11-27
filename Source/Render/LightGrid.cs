@@ -41,7 +41,7 @@ public static unsafe class LightGrid
     public const int MaxDynamic = 32;
 
     /// <summary>Is the shader's block the same size as <see cref="FrameBlock"/> (its arrays sized <see cref="MaxDynamic"/>)? Checked when the block is made.</summary>
-    public static bool ShaderAgrees => Lighting.Glsl.Contains($"uDynPos[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynCol[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynSpot[{MaxDynamic}]", StringComparison.Ordinal);
+    public static bool ShaderAgrees => Lighting.Glsl.Contains($"uDynPos[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynCol[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynSpot[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynLine[{MaxDynamic}]", StringComparison.Ordinal);
 
     /// <summary>The dark interiors' lookups (RoomShade.cs), one mat4 each, as the std140 array lays them out.</summary>
     [System.Runtime.CompilerServices.InlineArray(RoomShade.Layers)]
@@ -88,7 +88,8 @@ public static unsafe class LightGrid
         public Vector4 ProbeC;  // probe: sun, flicker phasor x, y, pace (as stored: LightFlicker)
         public DynArray Dyn;  // dynamic lights: position, range
         public DynArray DynC; // colour * intensity
-        public DynArray DynS; // a spot's direction (unit) and the cosine of its half angle; w under -1: all round (ConstructLamps' cones)
+        public DynArray DynS; // a spot's direction (unit) and the cosine of its half angle; w under -1: all round (ConstructLamps' cones); w over 1: a strip, xyz its face
+        public DynArray DynL; // a strip's half length along it (xyz; zero: a point)
         public Vector4 Surf;    // x: the materials setting (Surfaces.cs); z: edge bevels on; w: material contrast on
         public Matrix4x4 ShadowVP; // world (less ShadowC) to the sun shadow map's u, v and stored depth (SunShadows.cs)
         public Vector4 ShadowC;   // xyz: the map's centre; w: the normal offset (m)
@@ -120,7 +121,7 @@ public static unsafe class LightGrid
     private static bool _shadowSent, _roomSent, _lampSent;
 
     private static FrameBlock _block;
-    private static readonly Vector4[] DynPos = new Vector4[MaxDynamic], DynCol = new Vector4[MaxDynamic], DynSpot = new Vector4[MaxDynamic];
+    private static readonly Vector4[] DynPos = new Vector4[MaxDynamic], DynCol = new Vector4[MaxDynamic], DynSpot = new Vector4[MaxDynamic], DynLine = new Vector4[MaxDynamic];
 
     /// <summary>A light that shines all round (<see cref="FrameBlock.DynS"/>'s w).</summary>
     private static readonly Vector4 AllRound = new(0f, 0f, 0f, -2f);
@@ -258,6 +259,7 @@ public static unsafe class LightGrid
         DynPos[_dynCount] = new Vector4(pos, range);
         DynCol[_dynCount] = new Vector4(color, 0f);
         DynSpot[_dynCount] = AllRound;
+        DynLine[_dynCount] = default;
         _dynCount++;
     }
 
@@ -273,6 +275,24 @@ public static unsafe class LightGrid
         DynPos[_dynCount] = new Vector4(pos, range);
         DynCol[_dynCount] = new Vector4(color, 0f);
         DynSpot[_dynCount] = new Vector4(dir, cosHalf);
+        DynLine[_dynCount] = default;
+        _dynCount++;
+    }
+
+    /// <summary>
+    /// A light strip for this frame (Karl's Lighting Lab, 2026-11-27: ceiling strips lit as bare bulbs left hot spots on the ceiling they hang
+    /// from, and lost their reach along a long strip): a line from <paramref name="pos"/> - <paramref name="half"/> to <paramref name="pos"/> +
+    /// <paramref name="half"/>, lighting from its nearest point, and only on its <paramref name="face"/> (unit) side as a flat diffuser does
+    /// (by the cosine off its face), with a faint fill behind it for the light the room throws back (Lighting.Glsl's <c>DynLight</c>, <c>StripFill</c>).
+    /// </summary>
+    public static void AddStrip(Vector3 pos, Vector3 color, float range, Vector3 face, Vector3 half)
+    {
+        if (_dynCount >= MaxDynamic || range <= 0f)
+            return;
+        DynPos[_dynCount] = new Vector4(pos, range);
+        DynCol[_dynCount] = new Vector4(color, 0f);
+        DynSpot[_dynCount] = new Vector4(face, 2f);
+        DynLine[_dynCount] = new Vector4(half, 0f);
         _dynCount++;
     }
 
@@ -296,7 +316,7 @@ public static unsafe class LightGrid
             return;
         if (bake != null)
             Bind(bake);
-        Fill(ref _block, bake, time, DynamicEnabled ? _dynCount : 0, DynPos, DynCol, DynSpot);
+        Fill(ref _block, bake, time, DynamicEnabled ? _dynCount : 0, DynPos, DynCol, DynSpot, DynLine);
         if (DebugView > 0 && bake != null)
             _block.Mode.X = DebugView;
         _dynCount = 0;
@@ -399,7 +419,7 @@ public static unsafe class LightGrid
     public static float NormalOffsetY(LightBake bake) => bake.CellY * LightBake.NormalNudge;
 
     /// <summary>Fills the world pass's block (no GL: the self-test runs it; no allocation).</summary>
-    public static void Fill(ref FrameBlock b, LightBake? bake, double time, int dynamic, Vector4[] dynPos, Vector4[] dynCol, Vector4[]? dynSpot = null)
+    public static void Fill(ref FrameBlock b, LightBake? bake, double time, int dynamic, Vector4[] dynPos, Vector4[] dynCol, Vector4[]? dynSpot = null, Vector4[]? dynLine = null)
     {
         var n = Math.Min(dynamic, MaxDynamic);
         if (bake == null)
@@ -420,6 +440,7 @@ public static unsafe class LightGrid
             b.Dyn[i] = i < n ? dynPos[i] : default;
             b.DynC[i] = i < n ? dynCol[i] : default;
             b.DynS[i] = i < n && dynSpot != null ? dynSpot[i] : AllRound;
+            b.DynL[i] = i < n && dynLine != null ? dynLine[i] : default;
         }
     }
 
