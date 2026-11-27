@@ -24,6 +24,7 @@ public static partial class ConstructRender
         public int Stamp = int.MinValue, Seen;
         public ulong Key;
         public Renderer.DesignGpu? Gpu; // (the parts that stand still)
+        public Renderer.DesignGpu? GlassGpu; // (their glass: drawn blended after everything solid, DrawDesignGlass)
         public readonly List<DesignMover> Movers = [];
         public Renderer.DesignGpu? DoorGpu; // (the door parts on the body's frame that don't move now, merged)
         public int DoorStamp = int.MinValue;
@@ -75,6 +76,8 @@ public static partial class ConstructRender
             LastDesignTris += gpu.Count / 3;
             n++;
         }
+        if (set.GlassGpu is { Count: > 0 } glass && _designGlassCount < _designGlass.Length)
+            _designGlass[_designGlassCount++] = (glass, body); // (its windows: after everything solid, DrawGlass)
         if (set.AnyDoor)
         {
             var act = DoorActiveHash(c, set);
@@ -123,10 +126,49 @@ public static partial class ConstructRender
         return n == 0 ? 0 : 1;
     }
 
+    // The design bodies' glass this frame (their still parts' windows), drawn by DrawGlass once everything solid is down.
+    private static readonly (Renderer.DesignGpu Gpu, Matrix4x4 Body)[] _designGlass = new (Renderer.DesignGpu, Matrix4x4)[64];
+    private static int _designGlassCount;
+
+    /// <summary>
+    /// The design bodies' windows (Karl, 2026-11-27: they were drawn solid, a pale panel inside and out): blended over what is behind them,
+    /// with depth writes off, as DrawGlass leaves the state. Each body's glass is one mesh; the bodies go farthest first.
+    /// </summary>
+    private static void DrawDesignGlass(Renderer gfx, Vector3 eye)
+    {
+        var n = _designGlassCount;
+        _designGlassCount = 0;
+        if (n == 0)
+            return;
+        if (n > 1)
+            Array.Sort(_designGlass, 0, n, DesignGlassFar.Eye(eye));
+        for (var k = 0; k < n; k++)
+        {
+            gfx.DrawDesign(_designGlass[k].Gpu, _designGlass[k].Body);
+            _designGlass[k] = default;
+        }
+    }
+
+    private sealed class DesignGlassFar : IComparer<(Renderer.DesignGpu Gpu, Matrix4x4 Body)>
+    {
+        private static readonly DesignGlassFar One = new();
+        private Vector3 _eye;
+
+        public static DesignGlassFar Eye(Vector3 eye)
+        {
+            One._eye = eye;
+            return One;
+        }
+
+        public int Compare((Renderer.DesignGpu Gpu, Matrix4x4 Body) a, (Renderer.DesignGpu Gpu, Matrix4x4 Body) b) =>
+            Vector3.DistanceSquared(b.Body.Translation, _eye).CompareTo(Vector3.DistanceSquared(a.Body.Translation, _eye));
+    }
+
     /// <summary>Once a frame: buffers of bodies gone or long unseen go.</summary>
     private static void DesignFrame(Renderer gfx, ConstructWorld world)
     {
         _designFrame++;
+        _designGlassCount = 0;
         LastDesignTris = 0;
         if (_designs.Count == 0 || (_designFrame & 63) != 0)
             return;
@@ -138,6 +180,8 @@ public static partial class ConstructRender
             var set = _designs[c];
             if (set.Gpu is { } g)
                 gfx.FreeDesign(g);
+            if (set.GlassGpu is { } gg)
+                gfx.FreeDesign(gg);
             FreeMovers(gfx, set);
             _designs.Remove(c);
         }
@@ -219,13 +263,16 @@ public static partial class ConstructRender
     {
         DesignMerges++;
         FreeMovers(gfx, set);
-        var n = 0;
+        int n = 0, ng = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (DesignParts.LookOf(c.Parts[i].D) is { Vertices: > 0 } l)
             {
                 var g = DesignGroup(c, i);
                 if (g == -1)
-                    n += l.Vertices;
+                {
+                    n += l.Vertices - l.GlassVertices;
+                    ng += l.GlassVertices;
+                }
                 else if (g == -2)
                 {
                     set.Movers.Add(new DesignMover { Part = i, OnJoint = c.MoveSeg(c.Parts[i].Seg) != 0, Gpu = gfx.UploadDesign(null, l.Pos, l.Normal, l.Colour, l.Vertices) }); // (in its part's frame already)
@@ -234,7 +281,8 @@ public static partial class ConstructRender
                 else if (!set.Movers.Exists(m => m.Seg == g))
                     set.Movers.Add(new DesignMover { Seg = g });
             }
-        set.Gpu = Upload(gfx, c, set.Gpu, -1, n);
+        set.Gpu = Upload(gfx, c, set.Gpu, -1, n, Glass.Solid);
+        set.GlassGpu = ng > 0 || set.GlassGpu != null ? Upload(gfx, c, set.GlassGpu, -1, ng, Glass.Only) : null; // (its windows, drawn blended)
         foreach (var m in set.Movers)
             if (m.Part < 0)
             {
@@ -246,8 +294,11 @@ public static partial class ConstructRender
             }
     }
 
+    /// <summary>Which of a look's vertices a mesh takes: all (a moving part's glass is drawn with it, solid), the solid ones, or the glass.</summary>
+    private enum Glass : byte { All, Solid, Only }
+
     /// <summary>The looks of the parts in group <paramref name="group"/> (<see cref="DesignGroup"/>) as one mesh in the body's rest frame.</summary>
-    private static Renderer.DesignGpu? Upload(Renderer gfx, Construct c, Renderer.DesignGpu? into, int group, int n)
+    private static Renderer.DesignGpu? Upload(Renderer gfx, Construct c, Renderer.DesignGpu? into, int group, int n, Glass which = Glass.All)
     {
         var pos = new float[n * 3];
         var nor = new float[n * 3];
@@ -257,25 +308,28 @@ public static partial class ConstructRender
         {
             if (DesignParts.LookOf(c.Parts[i].D) is not { } l || DesignGroup(c, i) != group)
                 continue;
-            at = AddLook(c, i, l, pos, nor, col, at, n);
+            at = AddLook(c, i, l, pos, nor, col, at, n, which);
         }
         return gfx.UploadDesign(into, pos, nor, col, n);
     }
 
     /// <summary>Part <paramref name="i"/>'s look at its place in the body's rest frame, from vertex <paramref name="at"/> on (at most <paramref name="n"/>): the next free one.</summary>
-    private static int AddLook(Construct c, int i, DesignParts.Look l, float[] pos, float[] nor, uint[] col, int at, int n)
+    private static int AddLook(Construct c, int i, DesignParts.Look l, float[] pos, float[] nor, uint[] col, int at, int n, Glass which = Glass.All)
     {
         ref var p = ref c.Parts[i];
         c.RestPose(p.Seg, out var sq, out var st);
         var q = sq * Rot24.Quat(p.Rot);
         var t = st + Vector3.Transform(p.Pos, sq);
-        for (var v = 0; v < l.Vertices && at < n; v++, at++)
+        for (var v = 0; v < l.Vertices && at < n; v++)
         {
+            if (which != Glass.All && l.GlassVertices > 0 && DesignParts.IsGlass(l.Colour[v]) != (which == Glass.Only))
+                continue;
             var w = t + Vector3.Transform(new Vector3(l.Pos[v * 3], l.Pos[v * 3 + 1], l.Pos[v * 3 + 2]), q);
             var m = Vector3.Transform(new Vector3(l.Normal[v * 3], l.Normal[v * 3 + 1], l.Normal[v * 3 + 2]), q);
             (pos[at * 3], pos[at * 3 + 1], pos[at * 3 + 2]) = (w.X, w.Y, w.Z);
             (nor[at * 3], nor[at * 3 + 1], nor[at * 3 + 2]) = (m.X, m.Y, m.Z);
-            col[at] = l.Colour[v];
+            col[at] = which == Glass.All ? l.Colour[v] | 0xff000000u : l.Colour[v]; // (glass drawn with the solid parts is solid)
+            at++;
         }
         return at;
     }

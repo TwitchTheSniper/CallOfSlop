@@ -1507,6 +1507,7 @@ public static partial class DesignScene
             // Glazed as the piece asks (Karl, 2026-11-25): double or single, the inner pane its depth in.
             PieceKinds.WindowFrame(m);
             PieceKinds.Glazing(m, 0.55, 0.9, p.Depth / p.Size, p.Double);
+            WindowSleeve(d, h, p, kind, m); // (lined on in to the wall of the room it looks out of: DesignWindows.cs)
         }
         else if (kind.Socket == "airlock")
             PieceDocking.Airlock(m, p, shut); // a chamber sized by the piece (Karl, 2026-11-26); shut: both its doors shut (the game's, DesignParts.Doors.cs)
@@ -1556,7 +1557,7 @@ public static partial class DesignScene
     private static string Json(ShipDesign d, string shapes, string plans)
     {
         var c = Checks(d);
-        var doorKey = Doors(c.Doors);
+        var doorKey = Doors(c.Doors) + "~" + Doors(WindowWays(d)); // (a room's walls open behind its windows too)
         HashSet<int>? shown = null;
         if (RoomView is { } rv && d.RoomById(rv.Room) is not null)
         {
@@ -1655,7 +1656,7 @@ public static partial class DesignScene
             var kind = PieceKinds.Find(p.Kind)!;
             var w = DesignSeats.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
-            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" ? plans : "") + DesignHangar.Key(d, p), () =>
+            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" or "window" ? plans : "") + DesignHangar.Key(d, p), () =>
             {
                 var text = new StringBuilder();
                 PieceMesh(d, p).Write(text, Made("p" + p.Id));

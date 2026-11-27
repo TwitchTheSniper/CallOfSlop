@@ -258,9 +258,12 @@ public static class PieceKinds
         depth = Math.Max(depth, 0.05);
         Well(m, hx, hz, depth + 0.06);
         double gx = hx - 0.004, gz = hz - 0.004;
-        if (dbl)
-            m.Box(-gx, -0.03, -gz, gx, -0.012, gz, Glow);
-        m.Box(-gx, -depth - 0.018, -gz, gx, -depth, gz, Glow);
+        m.Pane(() =>
+        {
+            if (dbl)
+                m.Box(-gx, -0.03, -gz, gx, -0.012, gz, Glow);
+            m.Box(-gx, -depth - 0.018, -gz, gx, -depth, gz, Glow);
+        });
     }
 
     public static PieceKind? Find(string name) => Array.Find(All, k => k.Name == name);
