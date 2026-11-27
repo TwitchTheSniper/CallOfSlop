@@ -8,7 +8,10 @@ namespace CallOfSlop.ShipDesigner;
 /// colour and brightness set per piece. Two kinds:
 /// <list type="bullet">
 /// <item><b>Light bar</b>, on the hull's skin where it is dropped. Turned along the hull (Turn 0 or 180) it follows the skin's curve along its
-/// length; turned any other way it runs straight across the skin. The hull's cladding keeps clear of it (<see cref="FootprintOf"/>).</item>
+/// length; turned any other way it runs straight across the skin. How it meets the hull's cladding is its <see cref="Piece.BarClad"/>
+/// (Karl, 2026-11-27: "option for light bars to interact with cladding"): Cut (the plates are cut round its whole line and it lies on the
+/// skin in the channel), Flush (cut tight, the bar raised on a housing so its face is level with the plates' tops) or Over (the plates run
+/// on under it and it sits on a housing over them): <see cref="Cuts"/>, <see cref="Lift"/>.</item>
 /// <item><b>Light bar (room)</b>, inside a room: dropped on the skin by a room (or linked to one, as a seat is), it goes on that room's wall
 /// nearest where it was dropped, at <see cref="Piece.BarUp"/> over the floor, or on its ceiling or floor (<see cref="Piece.BarOn"/>). Turned
 /// 90 degrees it stands upright on a wall, or runs across the room on a ceiling or floor. A room out to the hull has it follow the skin.</item>
@@ -24,6 +27,11 @@ public static class DesignLightBars
     public const string DefColour = "#3fd2ff"; // (the cyan strip of Karl's reference)
     /// <summary>Where a room's bar goes: the wall nearest where it was dropped, the ceiling or the floor.</summary>
     public static readonly string[] Mounts = ["Wall", "Ceiling", "Floor"];
+    /// <summary>How a hull bar meets the hull's cladding (<see cref="Piece.BarClad"/>).</summary>
+    public static readonly string[] CladModes = ["Cut", "Flush", "Over"];
+    public const string DefClad = "Cut";
+    /// <summary>The clearance a Flush bar's cut keeps when its gap is auto: the plates come up to its housing.</summary>
+    private const double FlushGap = 0.01;
     // Its section at Size 1: the channel 8 cm across and 2.5 cm deep, the strip 70% of its width and 6 mm proud of it.
     private const double HalfW = 0.04, Depth = 0.025, StripRise = 0.006;
     private const string Channel = "#24272b";
@@ -49,7 +57,7 @@ public static class DesignLightBars
             p.Beam = DefColour;
     }
 
-    public static JsonObject Defaults() => new() { ["barLen"] = DefLen, ["bright"] = DefBright, ["barUp"] = DefUp, ["barOn"] = Mounts[0], ["beam"] = DefColour };
+    public static JsonObject Defaults() => new() { ["barLen"] = DefLen, ["bright"] = DefBright, ["barUp"] = DefUp, ["barOn"] = Mounts[0], ["beam"] = DefColour, ["barClad"] = DefClad };
 
     /// <summary>A bar's JSON fields (only a bar's: every other piece's JSON stays as it was, so its design's hash does).</summary>
     public static JsonObject Write(Piece p, JsonObject o)
@@ -64,6 +72,8 @@ public static class DesignLightBars
             o["barOn"] = p.BarOn;
             o["barUp"] = ShipDesign.R(p.BarUp);
         }
+        else
+            o["barClad"] = p.BarClad;
         return o;
     }
 
@@ -75,6 +85,7 @@ public static class DesignLightBars
         p.Bright = Math.Clamp(ShipDesign.F(o["bright"], DefBright), MinBright, 1);
         p.BarUp = Math.Clamp(ShipDesign.F(o["barUp"], DefUp), 0, 40);
         p.BarOn = Array.IndexOf(Mounts, (string?)o["barOn"]) >= 0 ? (string)o["barOn"]! : Mounts[0];
+        p.BarClad = Array.IndexOf(CladModes, (string?)o["barClad"]) >= 0 ? (string)o["barClad"]! : DefClad;
         if (o["beam"] is null)
             p.Beam = DefColour;
         return p;
@@ -94,6 +105,12 @@ public static class DesignLightBars
                 return $"a light bar goes on one of {string.Join(", ", Mounts)}";
             p.BarOn = on;
         }
+        if ((string?)o["barClad"] is { } bc)
+        {
+            if (Array.IndexOf(CladModes, bc) < 0)
+                return $"a light bar meets the cladding one of these ways: {string.Join(", ", CladModes)}";
+            p.BarClad = bc;
+        }
         return "";
     }
 
@@ -111,7 +128,62 @@ public static class DesignLightBars
             sb.Append(",\"barRoom\":").Append(r is null ? "null" : DesignScene.Q(DesignScene.Name(r) + $" on deck {r.Deck + 1}"));
             sb.Append(",\"barUpMax\":").Append(ShipDesign.S(r is null ? 3 : d.DeckOf(r).Height));
         }
+        else
+            sb.Append(",\"barClad\":").Append(DesignScene.Q(p.BarClad)).Append(",\"barCladOn\":").Append(d.Hull(p.Hull) is { } h && d.CladSource(h).Clad != "Off" ? "true" : "false");
         return sb.ToString();
+    }
+
+    // ---- the hull's cladding
+
+    /// <summary>
+    /// How far a hull bar stands off the skin for its <see cref="Piece.BarClad"/>: 0 for Cut (or a body with no cladding); Flush, so its
+    /// channel's top is 4 mm over the tallest plate; Over, so its channel sits 4 mm over the tallest plate (and a Heavy plate's box).
+    /// </summary>
+    public static double Lift(ShipDesign d, Piece p)
+    {
+        if (p.Kind != Hull || p.BarClad == "Cut" || d.Hull(p.Hull) is not { } h)
+            return 0;
+        var s = d.CladSource(h);
+        if (s.Clad == "Off")
+            return 0;
+        var top = HullBody.CladRise(s.Clad) * s.CladDepth;
+        return p.BarClad == "Flush" ? Math.Max(0, top - Depth * p.Size + 0.004) : top + (s.Clad == "Heavy" ? 0.04 * s.CladDepth : 0) + 0.004;
+    }
+
+    /// <summary>What a hull bar's mesh depends on beyond its own fields and the bodies' shapes: its body's cladding (for its lift).</summary>
+    public static string Key(ShipDesign d, Piece p) =>
+        p.Kind == Hull && p.BarClad != "Cut" && d.Hull(p.Hull) is { } h && d.CladSource(h) is var s ? $"|bc{s.Clad}/{ShipDesign.R(s.CladDepth)}" : "";
+
+    /// <summary>
+    /// The cuts a hull bar makes in its body's cladding (none for Over): one rectangle per run of its line, so a bar that follows the skin's
+    /// curve is cleared along its whole length (one flat cut left plates over the ends of a long bar on a curved hull). Each is its place
+    /// (X across the bar, Y out of the skin, Z along it), its half sizes, and the gap the plates keep (the piece's own, or auto: Cut's
+    /// worked out from the plates' height, Flush's <see cref="FlushGap"/>).
+    /// </summary>
+    public static List<(DesignScene.Place W, double Hx, double Hz, double Gap)> Cuts(ShipDesign d, Piece p)
+    {
+        var o = new List<(DesignScene.Place, double, double, double)>();
+        if (p.Kind != Hull || p.BarClad == "Over" || LineOf(d, p) is not { } l)
+            return o;
+        var gap = p.Gap >= 0 ? p.Gap : p.BarClad == "Flush" ? FlushGap : -1;
+        var hw = HalfW * p.Size + 0.01;
+        var cap = 0.012 * p.Size + 0.01;
+        for (var i = 0; i < l.P.Count - 1; i++)
+        {
+            var (a, b) = (l.P[i], l.P[i + 1]);
+            var len = Dist(a, b);
+            if (len < 1e-4)
+                continue;
+            var z = Norm(Sub(b, a));
+            var y = Norm(Add(l.N[i], l.N[i + 1], 1));
+            y = Norm(Add(y, z, -Dot(y, z)));
+            var x = Cross(y, z);
+            // Each run's cut reaches a little past its ends, so the cuts of a curved bar overlap at its bends; the first and last past its end caps.
+            double e0 = i == 0 ? cap : 0.01, e1 = i == l.P.Count - 2 ? cap : 0.01;
+            var mid = Add(Lerp(a, b, 0.5), z, (e1 - e0) / 2);
+            o.Add((new DesignScene.Place(mid, x, y, z), hw, len / 2 + (e0 + e1) / 2, gap));
+        }
+        return o;
     }
 
     // ---- where it lies
@@ -307,7 +379,7 @@ public static class DesignLightBars
         if (LineOf(d, p) is not { } l)
             return true; // (no room to stand in: nothing drawn; the checks say why)
         var s = p.Size;
-        double hw = HalfW * s, dp = Depth * s, rise = StripRise * s, cap = 0.012 * s;
+        double hw = HalfW * s, dp = Depth * s, rise = StripRise * s, cap = 0.012 * s, lift = Lift(d, p);
         var c = StripColour(p);
         var strip = $"#{c.R:x2}{c.G:x2}{c.B:x2}";
         var last = l.P.Count - 2;
@@ -323,8 +395,9 @@ public static class DesignLightBars
             var x = Cross(y, z);
             double e0 = i == 0 ? cap : 0, e1 = i == last ? cap : 0;
             m.Frame(a[0], a[1], a[2], x, y, z);
-            m.Box(-hw, 0, -e0, hw, dp, len + e1, Channel);
-            m.Glowing(() => m.Box(-hw * 0.7, dp - 0.004 * s, 0, hw * 0.7, dp + rise, len, strip));
+            // (Flush or Over the cladding: the channel on a housing down into the skin, its face level with the plates' tops or over them)
+            m.Box(-hw, lift > 0 ? -0.01 : 0, -e0, hw, lift + dp, len + e1, Channel);
+            m.Glowing(() => m.Box(-hw * 0.7, lift + dp - 0.004 * s, 0, hw * 0.7, lift + dp + rise, len, strip));
         }
         return true;
     }
@@ -335,6 +408,7 @@ public static class DesignLightBars
         var o = new List<double[]>();
         if (LineOf(d, p) is not { } l || l.P.Count < 2)
             return o;
+        var lift = Lift(d, p);
         var cum = new double[l.P.Count];
         for (var i = 1; i < l.P.Count; i++)
             cum[i] = cum[i - 1] + Dist(l.P[i - 1], l.P[i]);
@@ -348,7 +422,7 @@ public static class DesignLightBars
             var f = cum[i] - cum[i - 1] < 1e-9 ? 0 : (t - cum[i - 1]) / (cum[i] - cum[i - 1]);
             var at = Lerp(l.P[i - 1], l.P[i], f);
             var nn = Norm(Lerp(l.N[i - 1], l.N[i], f));
-            o.Add(Add(at, nn, Depth * p.Size + 0.12)); // (in front of the strip, so the bar's own channel never shades it)
+            o.Add(Add(at, nn, lift + Depth * p.Size + 0.12)); // (in front of the strip, so the bar's own channel never shades it)
         }
         return o;
     }

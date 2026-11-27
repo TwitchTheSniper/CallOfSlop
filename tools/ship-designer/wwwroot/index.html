@@ -1455,8 +1455,17 @@ function barControls(p) {
     slider("Length", p.barLen, 0.25, 24, 0.05, " m", () => {}, v => send({ barLen: v }), D.barLen),
     slider("Brightness", Math.round(p.bright * 100), 5, 100, 5, "%", () => {}, v => send({ bright: v / 100 }), Math.round(D.bright * 100)),
     el("div", { class: "row" }, el("span", {}, "Colour"), c, el("button", { class: "reset", title: `Reset colour to ${D.beam}`, onclick: () => send({ beam: D.beam }) }, "\u21ba"))];
-  if (p.barOn === undefined)
-    return [...out, el("p", { class: "hint" }, "Along the hull it follows the skin's curve; turned it runs straight across. In the game it lights what is round it, always on.")];
+  if (p.barOn === undefined) {
+    // How a hull bar meets the cladding (Karl, 2026-11-27): DesignLightBars.Lift and Cuts; the in-game panel's BarCladHint says the same.
+    const k = el("select", { "aria-label": "Light bar cladding", onchange: e => send({ barClad: e.target.value }) },
+      ...["Cut", "Flush", "Over"].map(r => el("option", { value: r, ...(p.barClad === r ? { selected: "" } : {}) }, r)));
+    const said = { Flush: "Flush: the plates are cut close round it and it stands on a housing, its face level with the plates' tops.",
+      Over: "Over: the plates run on under it and it sits on a housing over them." }[p.barClad]
+      ?? "Cut: the plates are cut round its whole length and it lies on the skin in the channel (Gap sets how wide).";
+    return [...out, el("div", { class: "row" }, el("span", {}, "Cladding"), k),
+      el("p", { class: "hint" }, said + (p.barCladOn ? "" : " This body has no cladding yet, so it lies on the skin.")),
+      el("p", { class: "hint" }, "Along the hull it follows the skin's curve; turned it runs straight across. In the game it lights what is round it, always on.")];
+  }
   const s = el("select", { "aria-label": "Light bar mount", onchange: e => send({ barOn: e.target.value }) },
     ...["Wall", "Ceiling", "Floor"].map(r => el("option", { value: r, ...(p.barOn === r ? { selected: "" } : {}) }, r)));
   out.push(el("div", { class: "row" }, el("span", {}, "On the"), s));

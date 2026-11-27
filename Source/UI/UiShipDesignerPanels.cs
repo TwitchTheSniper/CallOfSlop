@@ -1437,7 +1437,14 @@ public sealed partial class Ui
                         : "It has no room: drop it on the skin by a room, or pick its room below.");
                 }
                 else
+                {
+                    // How it meets the hull's cladding (Karl, 2026-11-27): cut round it, flush with the plates, or over them.
+                    ImGui.Text("Cladding"u8);
+                    Row();
+                    MatCombo("pcbk" + pid, Str(p, "barClad", ShipDesigner.DesignLightBars.DefClad), ShipDesigner.DesignLightBars.CladModes, v => Cmd(C("setPiece", ("id", pid), ("barClad", v))));
+                    Hint(BarCladHint(Str(p, "barClad", ShipDesigner.DesignLightBars.DefClad), B(p, "barCladOn")));
                     Hint("Along the hull it follows the skin's curve; turned it runs straight across. In the game it lights what is round it, always on.");
+                }
             }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))
@@ -1876,6 +1883,14 @@ public sealed partial class Ui
             ImGui.EndTable();
         }
     }
+
+    /// <summary>What a hull light bar's cladding setting does (DesignLightBars.Lift, Cuts); the page says the same.</summary>
+    private static string BarCladHint(string mode, bool clad) => (mode switch
+    {
+        "Flush" => "Flush: the plates are cut close round it and it stands on a housing, its face level with the plates' tops.",
+        "Over" => "Over: the plates run on under it and it sits on a housing over them.",
+        _ => "Cut: the plates are cut round its whole length and it lies on the skin in the channel (Gap sets how wide).",
+    }) + (clad ? "" : " This body has no cladding yet, so it lies on the skin.");
 }
 
 internal static class SdJsonExt

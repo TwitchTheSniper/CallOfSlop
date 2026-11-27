@@ -148,18 +148,29 @@ public static partial class DesignScene
             if (!own && !(p.Pair && h.Copies == 2))
                 continue;
             double[] F(double[] v) => [-v[0], v[1], v[2]];
+            void AddCut(Place pw, double hx, double hz, bool round, (double, double, bool) how)
+            {
+                if (!own)
+                    pw = new Place([-pw.O[0], pw.O[1], pw.O[2]], F(pw.X), F(pw.Y), F(pw.Z));
+                holes.Add((pw, hx, hz, round));
+                holeCut.Add(how);
+                if (p.Mirror)
+                {
+                    holes.Add((new Place([2 * cx - pw.O[0], pw.O[1], pw.O[2]], F(pw.X), F(pw.Y), F(pw.Z)), hx, hz, round));
+                    holeCut.Add(how);
+                }
+            }
+            // A hull light bar cuts the cladding along its whole line, run by run, or not at all (sat over it): DesignLightBars.Cuts.
+            if (p.Kind == DesignLightBars.Hull)
+            {
+                foreach (var bc in DesignLightBars.Cuts(d, p))
+                    AddCut(bc.W, bc.Hx, bc.Hz, false, (bc.Gap, 0, true));
+                continue;
+            }
             var w = Where(h, p);
             if (DesignHangar.OpeningOf(p, w) is { } sized)
                 op = sized;
-            if (!own)
-                w = new Place([-w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z));
-            holes.Add((w, op.Hx * hs, op.Hz * hs, op.Round));
-            holeCut.Add(cut);
-            if (p.Mirror)
-            {
-                holes.Add((new Place([2 * cx - w.O[0], w.O[1], w.O[2]], F(w.X), F(w.Y), F(w.Z)), op.Hx * hs, op.Hz * hs, op.Round));
-                holeCut.Add(cut);
-            }
+            AddCut(w, op.Hx * hs, op.Hz * hs, op.Round, cut);
         }
         // The mouths of the connections that reach this body: its skin opens into them (Karl, 2026-11-24: one mesh, seen through).
         var mouths = d.Joins.SelectMany(j => j.Mouths(d)).Where(m => m.Hull == h.Id).ToList();
@@ -1479,7 +1490,7 @@ public static partial class DesignScene
                 k.Append('|').Append(MeshJson(o));
         if (Holes)
             foreach (var p in d.Pieces)
-                if (p.Hull == h.Id && PieceKinds.Find(p.Kind)?.Opening is not null)
+                if (p.Hull == h.Id && (PieceKinds.Find(p.Kind)?.Opening is not null || p.Kind == DesignLightBars.Hull)) // (a hull bar cuts the cladding: DesignLightBars.Cuts)
                     k.Append('#').Append(p.ToJson().ToJsonString());
         // The connections' mouths (their shapes, not their cladding) and the windows' cuts.
         foreach (var j in d.Joins)
@@ -1666,7 +1677,7 @@ public static partial class DesignScene
             var kind = PieceKinds.Find(p.Kind)!;
             var w = DesignSeats.PlaceOf(d, p) ?? DesignLightBars.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
-            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" or "window" or "cargo" ? plans : "") + DesignHangar.Key(d, p), () =>
+            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" or "window" or "cargo" ? plans : "") + DesignHangar.Key(d, p) + DesignLightBars.Key(d, p), () =>
             {
                 var text = new StringBuilder();
                 var pm = PieceMesh(d, p);
