@@ -498,6 +498,8 @@ public static unsafe partial class Program
             ConstructRender.DormOn = false; // idle machine blocks walked every frame, not drawn from their chunk's idle mesh (ConstructRenderBatch.cs)
         if (args.Any(a => a.Equals("--no-eye-steady", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.OcclusionEyeMove = 0; // (throwaway: the branch's behaviour, for comparing)
+        if (args.Any(a => a.Equals("--no-sheets", StringComparison.OrdinalIgnoreCase)))
+            ConstructRender.SheetsOn = false; // floor tiles box by box, not as one textured box per rectangle (ConstructRenderSheets.cs)
         if (args.Any(a => a.Equals("--no-chunk-lod", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.ChunkLodOn = false; // every merged box drawn however far (the far detail level, ConstructRenderBatch.cs)
         if (FlagAfter(args, "--lod-px", 0) is var lodPx and > 0)

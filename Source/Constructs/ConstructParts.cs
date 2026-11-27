@@ -550,6 +550,7 @@ public sealed partial class ConstructPartDef
     public CSocket[] Sockets = [];
     public byte Class; // its size class ("sizeClass"; ConstructParts.Small and up): what its sockets are unless one says otherwise
     public bool CentreOptOut; // "centreSockets": false: no centre sockets are added to it (WithCentreSockets)
+    public bool Sheet; // "sheet": true: a floor tile drawn as part of one textured box per rectangle of like tiles (ConstructRenderSheets.cs)
     public Vector3 BoundsMin, BoundsMax; // round every box, in the part's frame
 
     // Role data (only what the role uses is set)
@@ -1524,7 +1525,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "capacitor", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "ladderFoot", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable", "light", "armPiece", "stationDock", "shipDock",
+        "sight", "ordnance", "mooring", "wear", "eva", "air", "physicsOnly", "hose", "ports", "centreSockets", "sheet", "explosive", "tier", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "breach", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "container", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink", "toolRack", "clampArm", "shellGantry", "shellPod", "moduleSocket", "modulePlug", "machineBlock", "seamSame", "turntable", "light", "armPiece", "stationDock", "shipDock",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1928,6 +1929,7 @@ public static partial class ConstructParts
         }
         d.Sockets = socks.ToArray();
         d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
+        d.Sheet = Opt(root, "sheet") is { ValueKind: JsonValueKind.True };
         MachineBlocks.Parse(d, root, file); // (after the sockets and bounds: a cell is checked against its lattice step)
         if (Opt(root, "runOut") is { } rout)
         {

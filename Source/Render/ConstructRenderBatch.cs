@@ -49,6 +49,10 @@ public static partial class ConstructRender
         public bool Ever; // built at least once (before that, Centre and Radius are a rough sphere round its parts' places: WaitUnbuilt)
         public bool DormDirty, DormWake;
         public byte[] SlotMask = []; // slot k's faces covered by another box of the chunk (bit 2 * axis + side, side 1 the + face: HideCovered)
+        public int SheetFrom; // its slots from here on are floor sheets (ConstructRenderSheets.cs), each standing for a rectangle of tiles
+        public float[] SheetCode = []; // each sheet's look code (its kind and welded edges)
+        public bool SheetTypes; // a member is of a sheet type: a look change that changes which tiles can be in sheets rebuilds it (SheetKey)
+        public long SheetKey;
         public bool Dirty = true, LookDue = true;
         public bool Lamps; // a member is a lamp: its looks are checked every check
         public Vector3 Centre; // a sphere round its boxes, in the segment's frame
@@ -594,6 +598,14 @@ public static partial class ConstructRender
         var lampGlow = Vector3.Zero;
         for (var s = 0; s < n; s++)
         {
+            if (s >= ch.SheetFrom)
+            {
+                // A floor sheet: its tiles' look is in the baked texture (they are at full health, their paint baked in); the code names its kind and welded edges.
+                var so = s * 4;
+                look[so] = look[so + 1] = look[so + 2] = 1f;
+                look[so + 3] = ch.SheetCode[s - ch.SheetFrom];
+                continue;
+            }
             var i = ch.Members[ch.SlotPart[s]];
             ref var p = ref c.Parts[i];
             var d = p.D;
@@ -779,9 +791,14 @@ public static partial class ConstructRender
         Grow(ref _bKind, n);
         var keys = _slotKey;
         var s = 0;
+        var rects = SheetRectangles(c, ch); // (floor tiles in rectangles: one slot each, after the rest)
+        ch.SheetTypes = false;
         for (var k = 0; k < ch.MemberCount; k++)
         {
             var i = ch.Members[k];
+            ch.SheetTypes |= c.Parts[i].D.Sheet;
+            if (_sheetMember[k])
+                continue;
             var boxes = c.Parts[i].D.Boxes;
             // (BuildChunk's slot key: shape from bit 40, size class 36-39, member 8-35, box 0-7)
             for (var b = 0; b < boxes.Length; b++)
@@ -841,6 +858,54 @@ public static partial class ConstructRender
             xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
             xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;
             xf[o + 8] = m.M31; xf[o + 9] = m.M32; xf[o + 10] = m.M33; xf[o + 11] = m.M43;
+        }
+        ch.SheetFrom = s;
+        ch.SheetKey = ch.SheetTypes ? SheetKey(c, ch) : 0;
+        if (rects > 0)
+        {
+            // The sheets: one group of their own (Renderer.SheetShape), drawn by the sheet shader in the main view and as plain
+            // boxes in the shadow passes; class 0, so the far detail level never leaves one out.
+            var all = s + rects;
+            Grow(ref _mergeXform, all * Renderer.MergeXformFloats);
+            xf = _mergeXform;
+            Grow(ref ch.SlotPart, all);
+            Grow(ref ch.SlotBox, all);
+            Grow(ref ch.SlotMask, all);
+            Grow(ref _bLo, all);
+            Grow(ref _bHi, all);
+            Grow(ref _bOcc, all);
+            Grow(ref _bKind, all);
+            Grow(ref ch.SheetCode, rects);
+            Grow(ref gl.GroupShape, gl.Groups + 1);
+            Grow(ref gl.GroupFirst, gl.Groups + 1);
+            Grow(ref gl.GroupCount, gl.Groups + 1);
+            Grow(ref gl.GroupClassEnd, (gl.Groups + 1) * LodClasses);
+            for (var q = 0; q < LodClasses; q++)
+                gl.GroupClassEnd[gl.Groups * LodClasses + q] = rects;
+            (gl.GroupShape[gl.Groups], gl.GroupFirst[gl.Groups], gl.GroupCount[gl.Groups]) = (Renderer.SheetShape, s, rects);
+            gl.Groups++;
+            for (var r = 0; r < rects; r++)
+            {
+                ref var sr = ref _sheetRects[r];
+                var k = s + r;
+                ch.SlotPart[k] = sr.Member;
+                ch.SlotBox[k] = 0;
+                ch.SlotMask[k] = 0;
+                ch.SheetCode[r] = sr.Code;
+                (_bLo[k], _bHi[k]) = (sr.Lo, sr.Hi);
+                _bKind[k] = 1; // (turned with its tiles: its faces are never dropped one by one, as a shape's aren't)
+                _bOcc[k] = true; // (it hides what lies inside it: a tile's own boxes would, and what stands on it puts its foot on the deck)
+                mn = Vector3.Min(mn, sr.Lo);
+                mx = Vector3.Max(mx, sr.Hi);
+                ref readonly var m = ref sr.Model;
+                var o = k * Renderer.MergeXformFloats;
+                xf[o] = m.M11; xf[o + 1] = m.M12; xf[o + 2] = m.M13; xf[o + 3] = m.M41;
+                xf[o + 4] = m.M21; xf[o + 5] = m.M22; xf[o + 6] = m.M23; xf[o + 7] = m.M42;
+                xf[o + 8] = m.M31; xf[o + 9] = m.M32; xf[o + 10] = m.M33; xf[o + 11] = m.M43;
+                SheetTiles += sr.Tiles;
+                SheetBoxes++;
+            }
+            s = all;
         }
         HideCovered(ch, s);
         gfx.UploadMergedXforms(gl, xf, s);
@@ -971,7 +1036,9 @@ public static partial class ConstructRender
             if (ch.LookDue || ch.Lamps && (check || previewed) || check && ((k + set.Draws / MergeCheckFrames) & 1) == 0) // (half the chunks each check: each every 8 draws; a chunk with lamps every check, so a row of lamps across chunks switches together)
             {
                 var look = ChunkLook(c, ch);
-                if (look != ch.Look || ch.LookDue)
+                if ((look != ch.Look || ch.LookDue) && ch.SheetTypes && SheetKey(c, ch) != ch.SheetKey)
+                    ch.Dirty = true; // (a tile damaged, painted or frosted leaves its sheet, or one mended joins one: built again next frame, its looks with it)
+                else if (look != ch.Look || ch.LookDue)
                 {
                     if (look != ch.Look && FillLooks(c, ch) is var looks)
                         gfx.UploadMergedLooks(ch.Gl, _mergeLook, looks);
@@ -1499,6 +1566,7 @@ public static partial class ConstructRender
     {
         if (_mergeQueued == 0)
             return;
+        var sheets = SheetBoxes > 0 && gfx.SheetsDrawable; // (before BeginMerged: the sheet program is made on first use and leaves the box program bound)
         gfx.BeginMerged();
         var rel = gfx.Relative;
         gfx.Relative = true; // (the frames are relative to the render origin already)
@@ -1508,13 +1576,25 @@ public static partial class ConstructRender
         for (var k = 0; k < _mergeQueued; k++)
             (_mergeOrderKey[k], _mergeOrder[k]) = (_mergeQueue[k].Away, k);
         Array.Sort(_mergeOrderKey, _mergeOrder, 0, _mergeQueued);
+        gfx.SheetsApart = sheets; // (the floor sheets go after, textured: DrawSheets)
         for (var o = 0; o < _mergeQueued; o++)
         {
             ref var q = ref _mergeQueue[_mergeOrder[o]];
             gfx.DrawMerged(q.Mesh, in q.Frame, q.Detail, q.Test && q.Use && _occlusionUse);
         }
-        gfx.Relative = rel;
+        gfx.SheetsApart = false;
         gfx.EndMerged();
+        if (sheets)
+        {
+            gfx.BeginSheets();
+            for (var o = 0; o < _mergeQueued; o++)
+            {
+                ref var q = ref _mergeQueue[_mergeOrder[o]];
+                gfx.DrawSheets(q.Mesh, in q.Frame, q.Test && q.Use && _occlusionUse);
+            }
+            gfx.EndSheets();
+        }
+        gfx.Relative = rel;
     }
 
     /// <summary>After a frame: the merged meshes of bodies not drawn for a while go (their GL objects with them).</summary>
