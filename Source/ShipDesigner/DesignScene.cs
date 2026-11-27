@@ -1359,7 +1359,7 @@ public static partial class DesignScene
                     if (h != home) continue; else
                     for (var c = 0; c < h.Copies && !any; c++)
                     {
-                        var half = h.SkinHalf(w[2] - h.Z, w[1] - h.Y);
+                        var half = EasedHalf(h, w[2] - h.Z, w[1] - h.Y); // as the walls are drawn (Edges), or the run-on end pinches
                         any = half > need + 0.05 && Math.Abs(h.CopyX(c) - mid) < half - need;
                     }
                 if (!any)
