@@ -71,7 +71,7 @@ public static partial class DesignScene
     /// A Window piece's glass's four corners (PieceKinds.Glazing: 0.55 x 0.9 in the piece's frame), round the ring (-x -z, +x -z, +x +z, -x +z),
     /// <paramref name="y"/> along its frame's +Y (out of the skin) in its frame's units, and its way in (-Y).
     /// </summary>
-    private static (List<double[]> C, double[] In) PieceGlass(HullBody h, Piece p, PieceKind kind, double y = 0)
+    private static (List<double[]> C, double[] In) PieceGlass(HullBody h, Piece p, PieceKind kind, double y = 0, double hx = 0.55, double hz = 0.9)
     {
         var w = Where(h, p);
         var across = kind.Footprint is not null ? p.Hole : 1;
@@ -80,7 +80,7 @@ public static partial class DesignScene
         {
             var c = new double[3];
             for (var k = 0; k < 3; k++)
-                c[k] = w.O[k] - w.Y[k] * p.Recess + ((w.X[k] * sx * 0.55 + w.Z[k] * sz * 0.9) * across + w.Y[k] * y) * p.Size;
+                c[k] = w.O[k] - w.Y[k] * p.Recess + ((w.X[k] * sx * hx + w.Z[k] * sz * hz) * across + w.Y[k] * y) * p.Size;
             corners.Add(c);
         }
         return (corners, [-w.Y[0], -w.Y[1], -w.Y[2]]);
@@ -94,8 +94,8 @@ public static partial class DesignScene
     public static void WindowSleeve(ShipDesign d, HullBody h, Piece p, PieceKind kind, DesignMesh m)
     {
         var (skin, inward) = PieceGlass(h, p, kind);
-        if (PieceWindow(d, skin, inward).Q is not { } q)
-            return;
+        if (PieceWindow(d, skin, inward) is not { Q: { } q, Room.ToHull: false })
+            return; // (a room lined out to the hull has its wall on the skin: no sleeve stands into it, Karl 2026-11-27)
         var inner = PieceGlass(h, p, kind, -(Math.Max(p.Depth / Math.Max(0.05, p.Size), 0.05) + 0.06)).C; // (where Glazing's well ends)
         int up = d.Stacked ? 2 : 1, n = (int)q[6], al = n == 0 ? (d.Stacked ? 1 : 2) : 0;
         double sm = 0, um = 0;
@@ -128,7 +128,7 @@ public static partial class DesignScene
     /// A Window piece's opening in the wall of the room it looks out of: the first room's side wall its glass's middle meets going in from
     /// the skin (within <see cref="HullWindow.MaxGap"/> past the piece's own depth), the glass's corners laid flat on that wall. Null: none.
     /// </summary>
-    private static (double[]? Q, double T) PieceWindow(ShipDesign d, List<double[]> corners, double[] inward)
+    private static (double[]? Q, double T, Room? Room) PieceWindow(ShipDesign d, List<double[]> corners, double[] inward)
     {
         int up = d.Stacked ? 2 : 1;
         var mid = new double[3];
@@ -137,6 +137,7 @@ public static partial class DesignScene
                 mid[k] += c[k] / corners.Count;
         double best = HullWindow.MaxGap + 1.5;
         double[]? hit = null;
+        Room? room = null;
         foreach (var r in d.Rooms)
         {
             var b = d.Box(r);
@@ -175,16 +176,35 @@ public static partial class DesignScene
             (u0, u1) = (Math.Max(u0 - WindowMargin, b[2 * up]), Math.Min(u1 + WindowMargin, b[2 * up + 1]));
             if (s1 - s0 < 0.1 || u1 - u0 < 0.1)
             {
-                hit = null;
+                (hit, room) = (null, null);
                 continue;
             }
             var foot = new double[3];
             foot[face] = plane;
             foot[al] = (s0 + s1) / 2;
             foot[up] = d.Stacked ? u1 : u0; // (a stacked plan's floor is its box's top)
-            hit = WindowAt(foot, (s1 - s0) / 2, u1 - u0, face, 0.6);
+            // Its reach: out to the skin (a room lined out to the hull has its lining there, past its box).
+            (hit, room) = (WindowAt(foot, (s1 - s0) / 2, u1 - u0, face, Math.Max(0.6, best + 0.3)), r);
         }
-        return (hit, hit is null ? 0 : best);
+        return (hit, hit is null ? 0 : best, room);
+    }
+
+    /// <summary>
+    /// How deep a cargo hatch's well runs in, in its frame's units (Karl, 2026-11-27: its 1.4 m well stood out into the hold as a box): on in
+    /// to the wall of the side room behind it, lining the gap, but never past it; a hand's depth in a room lined out to the hull (its wall is
+    /// the skin); 1.4 where no side wall is behind it (a hatch through a deck: the hole in the floor).
+    /// </summary>
+    public static double CargoWell(ShipDesign d, Piece p, PieceKind kind)
+    {
+        const double flush = 0.15, alone = 1.4;
+        if (d.Hull(p.Hull) is not { } h || kind.Opening is not { } op)
+            return alone;
+        var (cs, inward) = PieceGlass(h, p, kind, 0, op.Hx, op.Hz);
+        var (q, t, r) = PieceWindow(d, cs, inward);
+        if (q is null || r is null)
+            return alone;
+        var size = Math.Max(0.2, p.Size);
+        return r.ToHull ? flush : Math.Clamp(t / size, flush, Math.Max(flush, kind.Reach / size));
     }
 
     /// <summary>

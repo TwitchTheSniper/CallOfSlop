@@ -115,15 +115,7 @@ public static class PieceKinds
             m.Leaf(0, () => m.Frustum(0.8, 1.05, 0.88, 1.05, 16, Gun)); // its mating hatch (leaf 0: a docking hatch in the game, DesignParts.Doors.cs)
             m.Frustum(-1.4, 1.05, 0, 1.05, 16, Gun, cap0: false, cap1: false);
         }),
-        new("Cargo hatch", "Sockets", "skin", "cargo", "a cargo hold", "A 3 m cargo door. Opens into a cargo hold.", m =>
-        {
-            m.Box(-1.8, 0, -1.8, 1.8, 0.15, 1.8, Armour);
-            m.Leaf(0, () => m.Box(-1.5, -0.55, -1.5, -0.03, -0.48, 1.5, Gun)); // its two leaves (0 and 1: doors in the game, hinged at their outer edges)
-            m.Leaf(1, () => m.Box(0.03, -0.55, -1.5, 1.5, -0.48, 1.5, Gun));
-            m.Box(-1.8, 0.15, 1.6, 1.8, 0.2, 1.8, Amber);
-            m.Box(-1.8, 0.15, -1.8, 1.8, 0.2, -1.6, Amber);
-            Well(m, 1.5, 1.5, 1.4);
-        }),
+        new("Cargo hatch", "Sockets", "skin", "cargo", "a cargo hold", "A 3 m cargo door. Opens into a cargo hold.", m => CargoHatch(m, 1.4)),
         new("Boarding hatch", "Sockets", "skin", "shaft", "a room on the lowest deck", "A belly hatch over the boarding shaft's ladder (the boarding shaft kit).", m =>
         {
             m.Box(-0.65, 0, -0.65, 0.65, 0.1, -0.5, Armour); m.Box(-0.65, 0, 0.5, 0.65, 0.1, 0.65, Armour); m.Box(-0.65, 0, -0.5, -0.5, 0.1, 0.5, Armour); m.Box(0.5, 0, -0.5, 0.65, 0.1, 0.5, Armour);
@@ -195,6 +187,28 @@ public static class PieceKinds
     }
 
     /// <summary>A socket's well: four walls from the skin inward (its frame's -Y), so the cut opening shows a frame, not the void.</summary>
+    /// <summary>
+    /// A cargo hatch, its well <paramref name="well"/> deep (DesignScene.CargoWell: on in to its room's wall, never standing out into the
+    /// room, Karl 2026-11-27), its two leaves in the well's mouth, as deep as the well lets them (0 and 1: doors in the game, hinged at
+    /// their outer edges).
+    /// </summary>
+    public static void CargoHatch(DesignMesh m, double well)
+    {
+        well = Math.Max(well, 0.15);
+        var lf = Math.Min(0.48, well - 0.12);
+        // Its frame round the 3 m opening (Karl, 2026-11-27: this was one plate over the whole hatch, a dark panel shut across it in the game).
+        const double f = 1.504; // (4 mm back from the well's faces: no coplanar faces)
+        m.Box(-1.8, 0, -1.8, 1.8, 0.15, -f, Armour);
+        m.Box(-1.8, 0, f, 1.8, 0.15, 1.8, Armour);
+        m.Box(-1.8, 0, -f, -f, 0.15, f, Armour);
+        m.Box(f, 0, -f, 1.8, 0.15, f, Armour);
+        m.Leaf(0, () => m.Box(-1.5, -lf - 0.07, -1.5, -0.03, -lf, 1.5, Gun));
+        m.Leaf(1, () => m.Box(0.03, -lf - 0.07, -1.5, 1.5, -lf, 1.5, Gun));
+        m.Box(-1.8, 0.15, 1.6, 1.8, 0.2, 1.8, Amber);
+        m.Box(-1.8, 0.15, -1.8, 1.8, 0.2, -1.6, Amber);
+        Well(m, 1.5, 1.5, well);
+    }
+
     private static void Well(DesignMesh m, double hx, double hz, double depth)
     {
         m.Box(-hx - 0.06, -depth, -hz - 0.06, hx + 0.06, 0.02, -hz, Gun);
