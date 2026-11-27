@@ -65,9 +65,11 @@ public static partial class ConstructPress
 
     public static void Step(ConstructWorld world, IWorldQuery query)
     {
-        for (var k = 0; k < world.PressFeeds.Count; k++)
-            if (Deliver(world, query, world.PressFeeds[k]) is var (body, removed) && removed >= 0)
-                ShiftFeeds(world, k + 1, body, removed); // (a die swap took a part off: the later feeds' indices on that body move down)
+        if (world.PressFeeds.Count > 0)
+            using (Perf.Measure(PerfArea.PPressFeeds))
+                for (var k = 0; k < world.PressFeeds.Count; k++)
+                    if (Deliver(world, query, world.PressFeeds[k]) is var (body, removed) && removed >= 0)
+                        ShiftFeeds(world, k + 1, body, removed); // (a die swap took a part off: the later feeds' indices on that body move down)
         world.PressFeeds.Clear();
         if (++world.PressTicks < Every)
             return;
@@ -80,7 +82,8 @@ public static partial class ConstructPress
             if (!c.HasPress)
                 continue;
             if (c.Dirty)
-                c.Rebuild();
+                using (Perf.Measure(PerfArea.PPressRebuild))
+                    c.Rebuild();
             for (var i = 0; i < c.PartCount; i++)
                 if (c.Parts[i].D.IsPress && world.StoreOf(c, i) is { } st && Work(world, query, table, c, i, st))
                     break; // (parts went: the indices moved, and the rest wait for the next step)

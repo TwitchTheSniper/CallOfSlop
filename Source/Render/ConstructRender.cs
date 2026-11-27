@@ -270,7 +270,8 @@ public static partial class ConstructRender
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             var level = cull ? CullLevel(cam, c, pos, rot) : 1; // (out of view or far: nothing, or one box: ConstructRenderCull.cs)
             if (Fx.On && (c.ThrustShow > 0 || c.SmokeLevel > 0 || c.BurnerCount > 0 || c.WheelCount > 0 || c.FlameStamp != c.StructStamp || c.FlameCount > 0))
-                EmitFlames(c, Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos), pos, rot, cam, blendTicks ? alpha : 1f); // (seen or not: a flame behind the camera is in view next frame)
+                using (Perf.Measure(PerfArea.CBFlames)) // (the F9 window's rows under "Bodies: cull, chunks, parts"; off, a bool test)
+                    EmitFlames(c, Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos), pos, rot, cam, blendTicks ? alpha : 1f); // (seen or not: a flame behind the camera is in view next frame)
             if (level == 0)
             {
                 culled++;
@@ -287,13 +288,15 @@ public static partial class ConstructRender
             if (ModulePullLook.Count > 0 && ModulePullLook.OfBody(c, out var wiggle))
                 body = wiggle * body; // (a module sliding out of its socket under the physics gun's pull shakes: ModulePullLook.cs)
             if (c.ModActive >= 0)
-                EngineFx.Frame(c, origin == Vector3.Zero ? body : rotM * Matrix4x4.CreateTranslation(pos), Now, alpha); // (a modular engine: its crank turns, it shakes, it smokes; seen from afar too)
+                using (Perf.Measure(PerfArea.CBFlames))
+                    EngineFx.Frame(c, origin == Vector3.Zero ? body : rotM * Matrix4x4.CreateTranslation(pos), Now, alpha); // (a modular engine: its crank turns, it shakes, it smokes; seen from afar too)
             gfx.Relative = true;
             if (level == 1 && !CameraFeeds.InPass)
                 PostFx.OfferContact(c, body, Vector3.DistanceSquared(pos, cam)); // (its shadow on the ground under it, after the opaque world: PostFx.Contact.cs)
             if (c.HasDesign)
             {
-                n += DrawDesignBody(gfx, c, body, blendTicks ? alpha : 1f); // (a ship design's elements: one merged mesh, near or far: ConstructRenderDesign.cs)
+                using (Perf.Measure(PerfArea.CBDesign))
+                    n += DrawDesignBody(gfx, c, body, blendTicks ? alpha : 1f); // (a ship design's elements: one merged mesh, near or far: ConstructRenderDesign.cs)
                 if (level == 2)
                 {
                     gfx.Relative = false;
@@ -305,7 +308,8 @@ public static partial class ConstructRender
             }
             if (level == 2)
             {
-                n += DrawLod(gfx, c, body);
+                using (Perf.Measure(PerfArea.CBDesign))
+                    n += DrawLod(gfx, c, body);
                 gfx.Relative = false;
                 lod++;
                 if (bt != 0)
@@ -315,6 +319,8 @@ public static partial class ConstructRender
             AllocProfile.Mark("cr: body parts");
             _bodyCut = CutCodeOf(c); // (the surfaces its flush pods sink into open over their pockets: HostCut)
             if (!merge || !DrawMergedBody(gfx, world, c, body, blendTicks ? alpha : 1f, cull, ref n)) // (too few static boxes, or merging off: part by part)
+            {
+                using var unmerged = Perf.Measure(PerfArea.CBParts);
                 for (var i = 0; i < c.PartCount; i++)
                 {
                     HostCut(gfx, c, i);
@@ -322,8 +328,10 @@ public static partial class ConstructRender
                     if (c.Parts[i].Store != 0)
                         n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
                 }
+            }
             gfx.CutCode = _glassCut = _bodyCut = 0;
             AllocProfile.Mark("cr: panels, volumes, wheel");
+            var panels = Perf.Measure(PerfArea.CBPanels);
             if (c.PanelParts.Length > 0 && !CameraFeeds.InPass)
                 PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)
             if (c.HasLogic || c.HasVolumeStore)
@@ -346,6 +354,7 @@ public static partial class ConstructRender
             }
             gfx.Relative = false;
             n += DrawWheel(gfx, c, alpha, blendTicks); // (from the seat's world pose)
+            panels.Dispose();
             if (bt != 0)
                 PerfBodies.Draw(c, bt, n - n0);
         }
@@ -361,19 +370,30 @@ public static partial class ConstructRender
         LoopMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT0, loopT1).TotalMilliseconds;
         FlushMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT1).TotalMilliseconds;
         AllocProfile.Mark("cr: sweep, links, tracks, routes, panels");
+        var link = Perf.Measure(PerfArea.CLSweep); // (the F9 window's rows under "Links, tracks, legs, ropes, panels")
         BatchSweep(gfx, world);
         LastCulled = culled;
         LastLod = lod;
         LastStored = LastStoredCount;
         LastStoredCount = 0;
         n += DrawCouplings(gfx, world, alpha, blendTicks);
+        link.Dispose();
+        link = Perf.Measure(PerfArea.CLTracks);
         n += DrawTracks(gfx, world, alpha, blendTicks); // (tracks: links running round their wheels; instanced)
+        link.Dispose();
+        link = Perf.Measure(PerfArea.CLLegs);
         n += DrawLegs(gfx, world, alpha, blendTicks); // (walker legs, posed by IK: ConstructRenderLegs.cs)
+        link.Dispose();
+        link = Perf.Measure(PerfArea.CLRoutes);
         RouteRender.Draw(gfx, world, alpha, blendTicks); // (routed links: cables, pipes, shafts, chutes; instanced)
         n += RouteRender.LastSegments;
+        link.Dispose();
+        link = Perf.Measure(PerfArea.CLRopes);
         n += ConnectorRender.Draw(gfx, world, alpha, blendTicks); // (ropes and springs)
         n += DrawShells(gfx, world, alpha); // (artillery in the air and the gunner's marker)
         n += WorldLinkRender.Draw(gfx, world); // (world links across the ground, hoses off their reels: board item wl01)
+        link.Dispose();
+        link = Perf.Measure(PerfArea.CLPanels);
         if (!CameraFeeds.InPass)
             PanelRender.Flush(gfx); // (the display panels of everything above, one draw: PanelRender.cs)
         // Muzzle flashes (unlit, bright, a few frames).
@@ -388,6 +408,7 @@ public static partial class ConstructRender
             n++;
         }
         LastBoxes = n;
+        link.Dispose();
         perf.Dispose();
         AllocProfile.Stop();
     }

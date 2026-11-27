@@ -42,12 +42,30 @@ public enum PerfArea : byte
     PRaw, //             recyclers, gatherers, scoops, smelters, grow beds, bake ovens
     PAssembly, //             assemblers, crafting terminals, line consoles
     PExtruders, //             extruders, wheel formers, presses
+    PExtruder, //               ConstructExtruder.Step: extruders, wheel and grow formers, panel formers, laser cutters
+    PExtRebuild, //                 rebuilds of their bodies before the work (a cut or a hand-off last step left it changed)
+    PPress, //               ConstructPress.Step: presses and die lathes
+    PPressFeeds, //                 pieces delivered into presses' bays (the feeds queued this tick)
+    PPressRebuild, //                 rebuilds of their bodies before the work
     PConveyors, //             conveyors
+    PConvRebuild, //               rebuilds of bodies with riders before they move (a machine's cut or hand-off left the body changed)
+    PConvRollers, //               Roller Tile runs synced after a rebuild (RollerRuns.Sync)
+    PConvRiders, //               riders moved along their conveyors (StepBody)
+    PConvLogistics, //               Routers' piles and refreshes after a rider arrived (ConstructLogistics)
     PStations, //             building stations, loader arms and cranes (lifters)
     PLogistics, //             linked logistics, inventory beacons
     PSeals, //             seals and lift cells
     PCargo, //             bin loads, modules, breaches, cargo, loose bodies in frames
     SandboxWorld, //         the world's own: spawns, vehicles made at spawn, AI pilots, shots, debris, the flush
+    SwSpawns, //           the Spawn category: queued spawns, spawner parts (SandboxSpawnTick)
+    SwDock, //           ships rebuilt at Ship Docking Stations (SandboxDockTick)
+    SwVehicles, //           the vehicle spawner's build slice: faction vehicles, big blueprints (VehicleSpawner.Tick)
+    SwHeld, //           held spawns of the dead and gone (SpawnHeldTick)
+    SwPilots, //           AI aircraft pilots
+    SwShots, //           shots fired this tick (SandboxFireFlush)
+    SwDebris, //           debris
+    SwFlush, //           the flush: what changed this tick goes to the clients (SandboxFlush)
+    SwFlushBodies, //             changed bodies: rebuilt if dirty, written whole or as a patch, sent
     Colony, //         the colony and its duties: the opening, quarry, labourers, depot, objectives, lockdown, induction
     Story, //         StoryTick (GameStory.cs): the story's people, plays and factions
     Projectiles, //     grenades, rockets, grenade zones
@@ -73,11 +91,32 @@ public enum PerfArea : byte
     Entities, //   grenades, streaks, launchers, zombies, map logic, co-op soldiers
     ConstructDraw, //   Sandbox: the constructs, the physics gun's beams, part ambience and engine sounds (Program.Sandbox.cs DrawSandbox)
     CDrawSun, //     the constructs' sun shadow map (SunShadows)
+    CSunPick, //       the bodies in reach picked, still or moving
+    CSunCasters, //       caster lists made again for bodies whose shape changed (SunShadows.CasterOf)
+    CSunStill, //       the still bodies' map drawn again (its key changed: a still body moved or changed, the light's square moved)
+    CSunMoving, //       the moving bodies drawn over the still map
     CDrawRooms, //     dark interiors' maps (RoomShade)
     CDrawLamps, //     lamp shadows (LampShadows)
     CDrawBodies, //     each body: cull, flames, merged chunks queued or parts box by box, panels gathered (ConstructRender.Draw's loop)
+    CBFlames, //       flames, smoke, engine effects (EmitFlames, EngineFx)
+    CBDesign, //       ship design meshes and far bodies' one-box detail (DrawDesignBody, DrawLod)
+    CBPlan, //       merged plans made again (a body's structure or doors changed: ConstructRenderBatch.Plan)
+    CBChunks, //       merged chunks: cull, far detail, occlusion answers, looks, queued
+    CBChunkBuild, //         chunk meshes built (a changed chunk, under the frame's budget)
+    CBChunkWait, //         chunks waiting their build, drawn part by part
+    CBWalked, //       walked parts: moving, lit or burning parts drawn box by box
+    CBExtra, //       machine work boxes, panes and stored parts of merged parts
+    CBIdle, //       idle machine meshes made again (DormMap, DormBuild)
+    CBParts, //       bodies not merged (small or merging off), part by part
+    CBPanels, //       display panels gathered, cargo volumes, frost outlines, steering wheel
     CDrawFlush, //     the merged chunks' draws, the box batch, occlusion queries
     CDrawLinks, //     couplings, tracks, legs, routed links, ropes, shells, world links, display panels, flashes
+    CLSweep, //       the batch sweep and couplings
+    CLTracks, //       tracks round their wheels
+    CLLegs, //       walker legs (IK)
+    CLRoutes, //       routed links: cables, pipes, shafts, chutes, conveyors (RouteRender)
+    CLRopes, //       ropes and springs, shells in the air, world links and hoses
+    CLPanels, //       the display panels' draw (PanelRender.Flush) and muzzle flashes
     CDrawRigs, //     robot shells and crew stand-ins
     CDrawSounds, //     the physics gun's beams, horns, part ambience, engine and machine sounds
     Effects, //   tracers, blasts, smoke, objectives, sparks
@@ -128,7 +167,7 @@ public static class Perf
     // ---- The area tree ----------------------------------------------------------------------------------------
 
     /// <summary>Each area's parent (-1: a root; <see cref="PerfArea.Loading"/> is a root that can open anywhere).</summary>
-    public static readonly sbyte[] Parent = BuildParents();
+    public static readonly short[] Parent = BuildParents();
 
     public static readonly string[] Names =
     [
@@ -136,12 +175,12 @@ public static class Perf
         "Sandbox tick", "Constructs", "Links, power, logic", "Links, ropes, hoses", "Power", "Routed links", "Weapons", "Logic blocks", "Doors, launchers, release", "Construct physics",
         "List, rebuilds, colliders", "Bodies: forces, drive", "Wheels, feet, legs", "Lift, wings, rotors, thrust", "World contacts (ground, trees)",
         "Contacts between bodies", "Solver", "Integrate, frames, sleep", "Rails (falling round a planet)",
-        "Machines, production", "Recyclers, gatherers, smelters, ovens", "Assemblers, crafting, lines", "Extruders, presses", "Conveyors",
-        "Stations, arms, cranes", "Logistics, beacons", "Seals, lift cells", "Bin loads, modules, cargo, frames", "Spawns, pilots, debris", "Colony, duties", "Story",
+        "Machines, production", "Recyclers, gatherers, smelters, ovens", "Assemblers, crafting, lines", "Extruders, presses", "Extruders, formers, cutters", "Extruder body rebuilds", "Presses, die lathes", "Feeds into bays", "Press body rebuilds", "Conveyors", "Conveyor body rebuilds", "Roller runs synced", "Riders moved", "Routers, piles, refresh",
+        "Stations, arms, cranes", "Logistics, beacons", "Seals, lift cells", "Bin loads, modules, cargo, frames", "Spawns, pilots, debris", "Spawn queue, spawners", "Dock rebuilds", "Vehicle, blueprint builds", "Held spawns", "AI pilots", "Shots fired", "Debris", "Flush to clients", "Changed bodies sent", "Colony, duties", "Story",
         "Projectiles", "Props, logic, destruction", "Space, travel", "Terrain streaming", "Player moves", "Bots + nav", "Net send (snapshots)", "Client prediction",
         "Frame state, sounds", "Audio, voice", "Render (CPU)", "Buildings", "City", "Terrain", "Props", "Meshes", "Foliage",
         "Decals", "Sky", "Players", "Entities, zombies", "Constructs (draw)",
-        "Sun shadows", "Dark interiors", "Lamp shadows", "Bodies: cull, chunks, parts", "Flush: merged draws, batch", "Links, tracks, legs, ropes, panels",
+        "Sun shadows", "Pick, still or moving", "Caster lists made", "Still map redrawn", "Moving bodies", "Dark interiors", "Lamp shadows", "Bodies: cull, chunks, parts", "Flames, engine effects", "Designs, far detail", "Merged plans made", "Merged chunks: cull, queue", "Chunk meshes built", "Waiting chunks, part by part", "Walked parts (moving, lit)", "Machine work, panes, stored", "Idle machine meshes made", "Unmerged bodies, part by part", "Panels, volumes, frost", "Flush: merged draws, batch", "Links, tracks, legs, ropes, panels", "Sweep, couplings", "Tracks", "Walker legs", "Routed links drawn", "Ropes, shells, world links", "Display panels, flashes",
         "Shells, crew stand-ins", "Beams, sounds, ambience", "Effects", "Particles", "Post effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
         "ImGui new frame", "HUD windows", "Menus", "Dev windows", "Perf window (F9)", "ImGui draw (GL)",
         "Swap (vsync/GPU wait)", "Loading", "Frame limiter (Max FPS wait)",
@@ -150,14 +189,14 @@ public static class Perf
     /// <summary>Depth in the tree (0 for roots).</summary>
     public static readonly byte[] Depth = BuildDepths();
 
-    private static sbyte[] BuildParents()
+    private static short[] BuildParents()
     {
-        var p = new sbyte[Count];
-        Array.Fill(p, (sbyte)-1);
+        var p = new short[Count];
+        Array.Fill(p, (short)-1);
         void Under(PerfArea parent, params PerfArea[] kids)
         {
             foreach (var k in kids)
-                p[(int)k] = (sbyte)parent;
+                p[(int)k] = (short)parent;
         }
         Under(PerfArea.Game, PerfArea.NetReceive, PerfArea.ServerTick, PerfArea.ClientTick, PerfArea.Visuals);
         Under(PerfArea.ServerTick, PerfArea.Modes, PerfArea.Projectiles, PerfArea.Destruction, PerfArea.Space, PerfArea.TerrainStream, PerfArea.Players, PerfArea.Bots, PerfArea.NetSend);
@@ -167,6 +206,16 @@ public static class Perf
         Under(PerfArea.ConstructPhysics, PerfArea.CPhysList, PerfArea.CPhysBodies, PerfArea.CPhysContacts, PerfArea.CPhysSolve, PerfArea.CPhysIntegrate, PerfArea.CPhysRails);
         Under(PerfArea.CPhysBodies, PerfArea.CPhysWheels, PerfArea.CPhysFlight, PerfArea.CPhysWorld);
         Under(PerfArea.Production, PerfArea.PRaw, PerfArea.PAssembly, PerfArea.PExtruders, PerfArea.PConveyors, PerfArea.PStations, PerfArea.PLogistics, PerfArea.PSeals, PerfArea.PCargo);
+        Under(PerfArea.PExtruders, PerfArea.PExtruder, PerfArea.PPress);
+        Under(PerfArea.PExtruder, PerfArea.PExtRebuild);
+        Under(PerfArea.PPress, PerfArea.PPressFeeds, PerfArea.PPressRebuild);
+        Under(PerfArea.PConveyors, PerfArea.PConvRebuild, PerfArea.PConvRollers, PerfArea.PConvRiders, PerfArea.PConvLogistics);
+        Under(PerfArea.SandboxWorld, PerfArea.SwSpawns, PerfArea.SwDock, PerfArea.SwVehicles, PerfArea.SwHeld, PerfArea.SwPilots, PerfArea.SwShots, PerfArea.SwDebris, PerfArea.SwFlush);
+        Under(PerfArea.SwFlush, PerfArea.SwFlushBodies);
+        Under(PerfArea.CDrawSun, PerfArea.CSunPick, PerfArea.CSunCasters, PerfArea.CSunStill, PerfArea.CSunMoving);
+        Under(PerfArea.CDrawBodies, PerfArea.CBFlames, PerfArea.CBDesign, PerfArea.CBPlan, PerfArea.CBChunks, PerfArea.CBWalked, PerfArea.CBExtra, PerfArea.CBIdle, PerfArea.CBParts, PerfArea.CBPanels);
+        Under(PerfArea.CBChunks, PerfArea.CBChunkBuild, PerfArea.CBChunkWait);
+        Under(PerfArea.CDrawLinks, PerfArea.CLSweep, PerfArea.CLTracks, PerfArea.CLLegs, PerfArea.CLRoutes, PerfArea.CLRopes, PerfArea.CLPanels);
         Under(PerfArea.ConstructDraw, PerfArea.CDrawSun, PerfArea.CDrawRooms, PerfArea.CDrawLamps, PerfArea.CDrawBodies, PerfArea.CDrawFlush, PerfArea.CDrawLinks, PerfArea.CDrawRigs, PerfArea.CDrawSounds);
         Under(PerfArea.ConstructLogic, PerfArea.CLinks, PerfArea.CPower, PerfArea.CRoutes, PerfArea.CWeapons, PerfArea.CLogicBlocks, PerfArea.CDoors);
         Under(PerfArea.Zombies, PerfArea.Horde);
@@ -197,12 +246,12 @@ public static class Perf
     public static int Misnested;
 
     /// <summary>The parent each area was last seen opening under (-1 a root, -2 never seen): the self-test checks it against <see cref="Parent"/>.</summary>
-    public static readonly sbyte[] SeenParent = NewSeen();
+    public static readonly short[] SeenParent = NewSeen();
 
-    private static sbyte[] NewSeen()
+    private static short[] NewSeen()
     {
-        var s = new sbyte[Count];
-        Array.Fill(s, (sbyte)-2);
+        var s = new short[Count];
+        Array.Fill(s, (short)-2);
         return s;
     }
 
@@ -289,7 +338,7 @@ public static class Perf
             ChargeAllocs(_depth > 0 && _overflow == 0 ? (int)Stack[_depth - 1] : _depth == 0 ? Count : -1);
         if (_depth < MaxDepth)
         {
-            SeenParent[i] = _depth == 0 ? (sbyte)-1 : (sbyte)Stack[_depth - 1];
+            SeenParent[i] = _depth == 0 ? (short)-1 : (short)Stack[_depth - 1];
             Stack[_depth++] = area;
         }
         else
@@ -471,7 +520,7 @@ public static class Perf
         Array.Clear(TickWorstRing);
         Array.Clear(TicksRing);
         Array.Clear(MusicMsRing);
-        Array.Fill(SeenParent, (sbyte)-2);
+        Array.Fill(SeenParent, (short)-2);
         _head = _filled = _depth = _overflow = Misnested = 0;
         _lastFrame = 0;
         _lastMusicTicks = -1;

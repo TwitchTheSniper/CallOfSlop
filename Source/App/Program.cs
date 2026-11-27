@@ -699,6 +699,7 @@ public static unsafe partial class Program
         _window.MakeContextCurrent();
         _vsync = _settings.VSync;
         Glfw.SwapInterval(_vsync ? 1 : 0);
+        PerfLimit.VSync = _vsync; // (F9's "limited by" line: PerfLimit.cs)
 
         if (!Glad.Initialize(GlLoader))
             throw new Exception("Failed to load OpenGL functions (GLAD)");
@@ -904,6 +905,7 @@ public static unsafe partial class Program
             {
                 _vsync = _settings.VSync;
                 Glfw.SwapInterval(_vsync ? 1 : 0);
+                PerfLimit.VSync = _vsync;
             }
 
             if (_session is { } game)

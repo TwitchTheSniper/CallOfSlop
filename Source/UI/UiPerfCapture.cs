@@ -176,6 +176,7 @@ public sealed partial class Ui
         if (n == 0)
             return sb.Append("no frames were kept\n").ToString();
         sb.Append(c, $"frame time: mean {s.Mean:0.00} ms ({s.Fps:0} fps), median {s.P50:0.00}, 95th {s.P95:0.00}, 99th {s.P99:0.00}, worst {s.Max:0.00}; 1% low {s.Low1Fps:0} fps\n");
+        sb.Append(PerfLimit.Line((float)s.Mean, (float)s.AreaMean[(int)PerfArea.Swap], (float)s.AreaMean[(int)PerfArea.Limiter], s.GpuFrames > 0 ? (float)s.GpuTotal : -1f));
         var ticksPerSecond = seconds > 0 ? s.TicksPerFrame * s.Frames / seconds : 0;
         sb.Append(c, $"server ticks: {ticksPerSecond:0}/s, mean {s.TickMean:0.000} ms, worst {s.TickWorst:0.000} ms (budget 8 ms)\n");
         sb.Append(c, $"allocated per frame: {s.AllocBytes:0} B main thread, {s.AllocAllBytes:0} B all threads; GC: gen0 {s.Gc0}, gen1 {s.Gc1}, gen2 {s.Gc2} ({s.GcFrames} frames with one)\n");
