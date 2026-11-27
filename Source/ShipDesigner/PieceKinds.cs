@@ -60,23 +60,6 @@ public static class PieceKinds
             m.Box(0.35, 0.22, -0.08, 0.55, 0.38, 0.08, Gun);
             m.Box(-0.55, 0.22, -0.08, -0.35, 0.38, 0.08, Gun);
         }),
-        new("PDC turret", "Weapons", "skin", null, "", "A point defence cannon on a ring, its magazine inside.", m =>
-        {
-            m.Frustum(0, 0.95, 0.35, 0.85, 12, Armour);
-            m.Box(-0.6, 0.35, -0.7, 0.6, 0.95, 0.6, Gun);
-            m.Box(-0.45, 0.95, -0.55, 0.45, 1.1, 0.45, Armour);
-            m.Barrel(-0.18, 0.65, 0.6, 2.4, 0.07, 8, Black);
-            m.Barrel(0.18, 0.65, 0.6, 2.4, 0.07, 8, Black);
-        }),
-        new("Railgun", "Weapons", "skin", null, "", "A spinal railgun: its rails run 14 m towards the bow.", m =>
-        {
-            m.Box(-1.0, 0, -3.0, 1.0, 0.9, 1.5, Armour);
-            m.Box(-0.55, 0.9, -2.0, -0.25, 1.4, 14.0, Gun);
-            m.Box(0.25, 0.9, -2.0, 0.55, 1.4, 14.0, Gun);
-            for (var z = 0.0; z < 13; z += 2.5)
-                m.Box(-0.7, 0.85, z, 0.7, 1.55, z + 0.4, Armour);
-            m.Box(-0.2, 1.0, 13.6, 0.2, 1.3, 14.05, Blue);
-        }),
         new("Torpedo sponson", "Weapons", "skin", null, "", "Two torpedo tubes in an armoured sponson, 8 m long.", m =>
         {
             m.Box(-1.2, 0, -4.0, 1.2, 1.5, 3.2, Armour);

@@ -952,7 +952,7 @@
       "id": 25
     },
     {
-      "kind": "Hull mount L",
+      "kind": "Railgun socket",
       "surface": "skin",
       "z": 22,
       "t": 1,
@@ -1042,7 +1042,7 @@
       "id": 28
     },
     {
-      "kind": "Turret ring S",
+      "kind": "PDC socket",
       "surface": "skin",
       "z": 11,
       "t": 0.6857,
@@ -1072,7 +1072,7 @@
       "id": 29
     },
     {
-      "kind": "Turret ring S",
+      "kind": "PDC socket",
       "surface": "skin",
       "z": 39,
       "t": 0.2586,

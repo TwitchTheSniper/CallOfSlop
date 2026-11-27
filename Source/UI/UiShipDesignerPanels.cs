@@ -1317,6 +1317,12 @@ public sealed partial class Ui
                 MatCombo("seatrole" + pid, Str(p, "role", ShipDesigner.DesignSeats.DefRole), ShipDesigner.DesignSeats.Roles, v => Cmd(C("setPiece", ("id", pid), ("role", v))));
                 Hint(Str(p, "role") == "Helm" ? "The helm flies the ship: its drives and RCS answer this seat, with nothing to wire." : "It stands on its room's floor, facing the bow (turn it with Turn left and right).");
             }
+            if (Str(p, "fit").Length > 0 && Arr(CAT, "weapons").FirstOrDefault(w => Str(w, "name") == Str(p, "fit")) is var wk && Found(wk))
+            {
+                // A weapon socket's or mount's weapon (Karl, 2026-11-27: the PDC and the railgun go in sockets of their own).
+                H3("Weapon");
+                Hint($"{Str(p, "fit")}. {Str(wk, "desc")} It reserves its {Str(wk, "reserve")} (the hologram box){(Arr(p, "reserve").Any(r => r.GetArrayLength() > 12 && r[12].GetDouble() > 0) ? ": a room or the skin clips it" : "")}.");
+            }
             if (Str(p, "kind") == ShipDesigner.DesignRamp.Kind)
             {
                 // A boarding ramp's extension (DesignRamp, Karl 2026-11-27): how far its second section runs out once it is down.
