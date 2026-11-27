@@ -1399,6 +1399,15 @@ public sealed partial class Ui
             if (sock)
                 Slider("Cladding", Math.Round(D(p, "clad") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("clad", v / 100))), "pcc");
             Slider("Recess", Math.Round(D(p, "recess") * 100), 0, 200, 5, " cm", v => Cmd(C("setPiece", ("id", pid), ("recess", v / 100))), "pcr");
+            if (D(p, "recess") > 0)
+            {
+                // Its recess's walls clad (DesignRecess, Karl 2026-11-27), in its hull's cladding colour unless unticked.
+                Checkbox("Clad the recess walls##sdprc" + pid, B(p, "recessClad", false), v => Cmd(C("setPiece", ("id", pid), ("recessClad", v))));
+                if (B(p, "recessClad", false))
+                    Checkbox("Cladding from the hull##sdpch" + pid, B(p, "cladHull", true), v => Cmd(C("setPiece", ("id", pid), ("cladHull", v))));
+            }
+            if (Str(p, "socket") == "window")
+                Checkbox("Line the inner reveal (wall panel)##sdprv" + pid, B(p, "revealClad", false), v => Cmd(C("setPiece", ("id", pid), ("revealClad", v))));
             CutControls(p, kv => Cmd(C("setPiece", [("id", pid), .. kv])), "piece", Str(p, "socket") == "window");
             if (Str(p, "kind") == ShipDesigner.DesignSeats.Kind)
             {

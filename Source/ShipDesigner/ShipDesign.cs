@@ -354,6 +354,7 @@ public sealed class Piece
     public bool Mirror; // a twin across its own hull copy's centreline
     public bool Pair = true; // on a mirrored pair of bodies, the same piece on the other body too, mirrored across the ship (Karl, 2026-11-24)
     public double Recess; // metres the piece sits back into the wall, behind its hole (Karl, 2026-11-24)
+    public bool RecessClad, CladHull = true, RevealClad; // its recess's walls clad, in its hull's cladding colour; a window's reveal lined (DesignRecess, Karl 2026-11-27)
     public double Clad; // metres of cladding plate round a socket's frame on the skin (Karl, 2026-11-24: sized with the window)
     public double Size = 1; // its scale: a socket's opening and the piece drawn grow with it (Karl, 2026-11-24)
     public double Turn; // degrees about the skin's normal
@@ -385,18 +386,18 @@ public sealed class Piece
     public int Segments = DesignRamp.DefSegments; // a boarding ramp's telescoping sections (DesignRamp)
     public double RampAngle; // a boarding ramp's set angle, degrees; 0: the automatic one (DesignRamp.Angle)
 
-    public JsonObject ToJson() => DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
+    public JsonObject ToJson() => DesignRecess.Write(this, DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
         ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
         ["airW"] = ShipDesign.R(AirW), ["airH"] = ShipDesign.R(AirH), ["airD"] = ShipDesign.R(AirD), ["doorW"] = ShipDesign.R(DoorW), ["door"] = Door, ["feed"] = Feed, ["fit"] = Fit,
-    })))));
+    }))))));
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
     public static Piece FromJson(JsonObject o, int id)
     {
-        var p = DesignLightBars.Read(o, DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id))))));
+        var p = DesignRecess.Read(o, DesignLightBars.Read(o, DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id)))))));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
         PieceWeapons.Init(p);

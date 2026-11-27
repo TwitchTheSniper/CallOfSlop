@@ -111,7 +111,7 @@ public static partial class DesignScene
             v[up] = q[up] + (c[up] < um == (dir > 0) ? 0 : dir * DoorTop(q));
             wall.Add((v[0], v[1], v[2]));
         }
-        var col = DesignMesh.Hex(PieceKinds.Gun);
+        var col = DesignMesh.Hex(p.RevealClad ? DesignRecess.RevealColour(PieceWindow(d, skin, inward).Room) : PieceKinds.Gun); // (lined with a wall panel when asked: DesignRecess)
         for (var k = 0; k < 4; k++)
         {
             var (a, b) = (inner[k], inner[(k + 1) % 4]);
