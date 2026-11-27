@@ -232,7 +232,7 @@ public sealed class DesignEditor
             }
             case "pasteHullStyle":
             {
-                // Another body's settings onto this one (Karl, 2026-11-27): profile, cladding, beading, paint and the rest, not its place,
+                // Another body's settings onto this one (Karl, 2026-11-27): profile, cladding, paint and the rest, not its place,
                 // name or mirroring.
                 var h = H();
                 var from = d.Hull(I(o, "from")) ?? throw new InvalidOperationException("no such hull to copy from");
@@ -300,14 +300,7 @@ public sealed class DesignEditor
                 if (o["paintSeed"] is not null) h.PaintSeed = Math.Clamp(I(o, "paintSeed"), 0, 99999);
                 if (o["cladDepth"] is not null) h.CladDepth = Math.Clamp(Snap(D(o, "cladDepth"), 0.05), HullBody.CladDepthMin, HullBody.CladDepthMax);
                 if (o["cladFore"] is not null) h.CladFore = (bool?)o["cladFore"] ?? true;
-                if (o["bead"] is not null)
-                {
-                    if (!HullBody.BeadKinds.Contains(Str(o, "bead")))
-                        return "the beading is Off, Creases or All";
-                    h.Bead = Str(o, "bead");
-                }
-                if (o["beadSize"] is not null) h.BeadSize = Math.Clamp(Snap(D(o, "beadSize"), 0.005), HullBody.BeadSizeMin, HullBody.BeadSizeMax);
-                if (o["beadColour"] is not null) h.BeadColour = Str(o, "beadColour") is { Length: 7 } bc && bc[0] == '#' ? bc.ToLowerInvariant() : "";
+                if (o["cladSmooth"] is not null) h.CladSmooth = (bool?)o["cladSmooth"] ?? false;
                 if (o["cladAft"] is not null) h.CladAft = (bool?)o["cladAft"] ?? true;
                 if (o["material"] is not null)
                 {
@@ -371,6 +364,35 @@ public sealed class DesignEditor
                 var mid = (p[0].Y + p[^1].Y) / 2;
                 for (var k = 0; k < p.Count; k++)
                     p[k] = (p[k].H * sx, mid + (p[k].Y - mid) * sy);
+                h.Tidy();
+                return "";
+            }
+            case "pasteShape":
+            {
+                // Another station's cross-section onto this one (Karl, 2026-11-27): its points, this station keeps its place.
+                var h = H();
+                var i = I(o, "i");
+                if (i < 0 || i >= h.Stations.Count)
+                    return "no such station";
+                var src = d.Hull(I(o, "fromHull")) ?? throw new InvalidOperationException("no such hull to copy from");
+                var j = I(o, "from");
+                if (j < 0 || j >= src.Stations.Count)
+                    return "the copied station is gone";
+                h.Stations[i].P = [.. src.Stations[j].P];
+                h.Tidy();
+                return "";
+            }
+            case "shiftStation":
+            {
+                // The whole cross-section up or down (Karl, 2026-11-27).
+                var h = H();
+                var i = I(o, "i");
+                if (i < 0 || i >= h.Stations.Count)
+                    return "no such station";
+                var dy = D(o, "dy", 0);
+                var p = h.Stations[i].P;
+                for (var k = 0; k < p.Count; k++)
+                    p[k] = (p[k].H, p[k].Y + dy);
                 h.Tidy();
                 return "";
             }
@@ -519,6 +541,8 @@ public sealed class DesignEditor
                     return serr;
                 if (DesignLightBars.Set(p, o) is { Length: > 0 } lerr)
                     return lerr;
+                if (DesignArmour.Set(p, o) is { Length: > 0 } aerr)
+                    return aerr;
                 if (o["room"] is not null)
                 {
                     var rid = I(o, "room");
@@ -720,6 +744,43 @@ public sealed class DesignEditor
                     return "pick two different decks";
                 (k.From, k.To) = (f, t);
                 return "";
+            }
+            // ---- every room still unset takes the defaults (Karl, 2026-11-27): interior cladding Off becomes Clean, and each pair of
+            // rooms on one deck that share a door's width of wall (not segments of one room) without a placed door gets the default one.
+            // Rooms and doors already set are kept.
+            case "doorPlacement":
+            {
+                // Automatic or manual doors between rooms (Karl, 2026-11-27); the doors already placed stay either way.
+                var manual = (bool?)o["manual"] ?? !d.ManualDoors;
+                if (manual == d.ManualDoors)
+                    return "";
+                d.ManualDoors = manual;
+                return "";
+            }
+            case "fillUnset":
+            {
+                int clad = 0, doors = 0;
+                foreach (var r in d.Rooms)
+                    if (r.Interior == "Off" && r.Kind != "Shaft")
+                    {
+                        r.Interior = "Clean";
+                        clad++;
+                    }
+                foreach (var a in d.ManualDoors ? Enumerable.Empty<Room>() : d.Rooms) // (manual placement: the player places every door)
+                    foreach (var b in d.Rooms)
+                    {
+                        if (a.Id >= b.Id || a.Deck != b.Deck || a.Group != 0 && a.Group == b.Group || d.Doors.Any(q => q.Kind == "Door" && q.Joins(a, b)))
+                            continue;
+                        var oz = Math.Min(a.Z1, b.Z1) - Math.Max(a.Z0, b.Z0);
+                        var ox = Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0);
+                        var alongZ = oz >= 0.89 && (Math.Abs(a.X1 - b.X0) < 0.02 || Math.Abs(b.X1 - a.X0) < 0.02);
+                        var alongX = ox >= 0.89 && (Math.Abs(a.Z1 - b.Z0) < 0.02 || Math.Abs(b.Z1 - a.Z0) < 0.02);
+                        if (!alongZ && !alongX || d.Doors.Count >= ShipDesign.MaxRooms * 2)
+                            continue;
+                        d.Doors.Add(new RoomDoor { Id = d.NewId(), A = a.Id, B = b.Id, Kind = "Door", W = 0.9, H = 2.1 });
+                        doors++;
+                    }
+                return clad + doors == 0 ? (d.ManualDoors ? "every room already has its cladding" : "every room already has its cladding and doors") : "";
             }
             // ---- doors placed between rooms (Karl, 2026-11-24)
             case "addDoor":

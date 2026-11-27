@@ -402,10 +402,13 @@ public static class DesignLightBars
         return true;
     }
 
-    /// <summary>The game's lamps along a bar (the ship's frame) a little off its strip, about one every <paramref name="spacing"/> metres, at most <paramref name="max"/>.</summary>
-    public static List<double[]> Lamps(ShipDesign d, Piece p, double spacing, int max)
+    /// <summary>
+    /// The game's lamps along a bar (the ship's frame) a little off its strip, about one every <paramref name="spacing"/> metres, at most
+    /// <paramref name="max"/>: each its middle, half its share of the bar along it (the game lights it as a line) and the way the strip faces.
+    /// </summary>
+    public static List<(double[] At, double[] Half, double[] Face)> Lamps(ShipDesign d, Piece p, double spacing, int max)
     {
-        var o = new List<double[]>();
+        var o = new List<(double[] At, double[] Half, double[] Face)>();
         if (LineOf(d, p) is not { } l || l.P.Count < 2)
             return o;
         var lift = Lift(d, p);
@@ -422,7 +425,9 @@ public static class DesignLightBars
             var f = cum[i] - cum[i - 1] < 1e-9 ? 0 : (t - cum[i - 1]) / (cum[i] - cum[i - 1]);
             var at = Lerp(l.P[i - 1], l.P[i], f);
             var nn = Norm(Lerp(l.N[i - 1], l.N[i], f));
-            o.Add(Add(at, nn, lift + Depth * p.Size + 0.12)); // (in front of the strip, so the bar's own channel never shades it)
+            var along = Norm(Sub(l.P[i], l.P[i - 1]));
+            // (in front of the strip, so the bar's own channel never shades it; it lights only the side it faces, so it can sit close)
+            o.Add((Add(at, nn, lift + (Depth + StripRise) * p.Size + 0.04), Add([0, 0, 0], along, total / n * 0.5), nn));
         }
         return o;
     }

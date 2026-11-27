@@ -29,16 +29,21 @@ public static class DesignHangar
     public const double BayMinW = 5, BayMaxW = 96, BayMinH = 3, BayMaxH = 48, BayMinD = 5, BayMaxD = 96;
     public const double DeckMin = 2, DeckMax = 48, TravelMin = 0.5, TravelMax = 30;
     /// <summary>A bay door's kinds (Karl, 2026-11-27): Rolling runs out along the outside of the hull on rails twice the opening's length
-    /// (half the door's run, half where it parks); Iris is four blades inside the mouth that swing out about the rim; Sliding runs aside
+    /// (half the door's run, half where it parks); Shutter is a sectional garage door of slats in the well that run on tracks to a side
+    /// and on along the bay's ceiling there, all to the side it is set to or split in the middle to both, with no drum (Karl, 2026-11-27, in
+    /// place of an iris); Sliding runs aside
     /// inside the well on a piston; Hinged swings out on motor hinges.</summary>
-    public static readonly string[] DoorTypes = ["Rolling", "Iris", "Sliding", "Hinged"];
+    public static readonly string[] DoorTypes = ["Rolling", "Shutter", "Sliding", "Hinged"];
     public const string DefDoor = "Rolling";
-    public const int IrisBlades = 4;
+    /// <summary>A shutter's sides (in the bay's frame: Fore +z, Aft -z, Right +x, Left -x): the one its roller is at, or, split onto two
+    /// rollers, the axis it splits across. Its slats, each roller's, 1 to <see cref="ShutterMaxSlats"/>.</summary>
+    public static readonly string[] ShutterSides = ["Fore", "Aft", "Left", "Right"];
+    public const int ShutterMaxSlats = 8;
 
     /// <summary>A bay's floor (Karl, 2026-11-27): Fixed, or Lift-out, a platform the craft stands on that is pushed out through the mouth
     /// by the bay's depth (up out of a roof bay, down out of a belly bay, sideways out of a side bay). Drawn as leaf <see cref="FloorLeaf"/>.</summary>
     public static readonly string[] Floors = ["Fixed", "Lift-out"];
-    public const int FloorLeaf = 8;
+    public const int FloorLeaf = 64; // (past a shutter's slats, 0 to 15)
     public static bool LiftsOut(Piece p) => IsBay(p.Kind) && p.BayFloor == "Lift-out";
 
     /// <summary>A door type from text, the default when it is none of them.</summary>
@@ -47,8 +52,11 @@ public static class DesignHangar
     public static BaySize? Bay(string kind) => Array.Find(Bays, b => b.Name == kind);
 
     /// <summary>A bay piece's own size (its volume and door as set on it), or null for other pieces. Everything that draws, checks or
-    /// builds a bay reads this, never the kind's starting size.</summary>
-    public static BaySize? Of(Piece p) => Bay(p.Kind) is { } b ? b with { W = p.BayW, H = p.BayH, D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH } : null;
+    /// builds a bay reads this, never the kind's starting size.
+    /// With Match door on (Karl, 2026-11-27) its width and height are its door opening's, so the bay is a straight tunnel the door's size.</summary>
+    public static BaySize? Of(Piece p) => Bay(p.Kind) is not { } b ? null : p.BayMatch
+        ? b with { W = Math.Max(BayMinW, p.BayDoorW * p.Hole), H = Math.Max(BayMinH, p.BayDoorH * p.Hole), D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH }
+        : b with { W = p.BayW, H = p.BayH, D = p.BayD, DoorW = p.BayDoorW, DoorH = p.BayDoorH };
     public static bool IsBay(string kind) => Bay(kind) is not null;
     public static bool IsFitting(string kind) => kind is "Docking arm" or "Docking cradle";
     public static bool IsDeck(string kind) => kind is "Lift platform" or "Ramp deck";
@@ -96,7 +104,7 @@ public static class DesignHangar
         {
             var p = new Piece { Kind = k.Name };
             Init(new ShipDesign(), p);
-            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["bayFloor"] = p.BayFloor, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
+            o[k.Name] = new JsonObject { ["bayW"] = p.BayW, ["bayH"] = p.BayH, ["bayD"] = p.BayD, ["bayDoorW"] = p.BayDoorW, ["bayDoorH"] = p.BayDoorH, ["bayDoor"] = p.BayDoorType, ["bayFloor"] = p.BayFloor, ["bayMatch"] = p.BayMatch, ["shutterRollers"] = p.ShutterRollers, ["shutterSide"] = p.ShutterSide, ["shutterSlats"] = p.ShutterSlats, ["w"] = p.W, ["l"] = p.L, ["travel"] = p.Travel, ["along"] = p.Along, ["across"] = p.Across };
         }
         return o;
     }
@@ -108,7 +116,8 @@ public static class DesignHangar
         if (IsBay(p.Kind))
         {
             o["bayW"] = ShipDesign.R(p.BayW); o["bayH"] = ShipDesign.R(p.BayH); o["bayD"] = ShipDesign.R(p.BayD);
-            o["bayDoorW"] = ShipDesign.R(p.BayDoorW); o["bayDoorH"] = ShipDesign.R(p.BayDoorH); o["bayDoor"] = p.BayDoorType; o["bayFloor"] = p.BayFloor;
+            o["bayDoorW"] = ShipDesign.R(p.BayDoorW); o["bayDoorH"] = ShipDesign.R(p.BayDoorH); o["bayDoor"] = p.BayDoorType; o["bayFloor"] = p.BayFloor; o["bayMatch"] = p.BayMatch;
+            o["shutterRollers"] = p.ShutterRollers; o["shutterSide"] = p.ShutterSide; o["shutterSlats"] = p.ShutterSlats;
         }
         else if (IsDeck(p.Kind))
         {
@@ -131,6 +140,10 @@ public static class DesignHangar
         p.BayDoorH = Math.Clamp(ShipDesign.F(o["bayDoorH"], p.BayDoorH), DoorMinH, DoorMaxH);
         p.BayDoorType = DoorType((string?)o["bayDoor"]);
         p.BayFloor = (string?)o["bayFloor"] == "Lift-out" ? "Lift-out" : "Fixed";
+        p.BayMatch = (bool?)o["bayMatch"] ?? false;
+        p.ShutterRollers = Math.Clamp((int?)o["shutterRollers"] ?? 1, 1, 2);
+        p.ShutterSide = Array.IndexOf(ShutterSides, (string?)o["shutterSide"]) >= 0 ? (string)o["shutterSide"]! : "Fore";
+        p.ShutterSlats = Math.Clamp((int?)o["shutterSlats"] ?? 4, 1, ShutterMaxSlats);
         p.W = Math.Clamp(ShipDesign.F(o["w"], p.W), DeckMin, DeckMax);
         p.L = Math.Clamp(ShipDesign.F(o["l"], p.L), DeckMin, DeckMax);
         p.Travel = Math.Clamp(ShipDesign.F(o["travel"], p.Travel), TravelMin, TravelMax);
@@ -156,6 +169,16 @@ public static class DesignHangar
             p.BayDoorH = Math.Clamp(Math.Min(p.BayDoorH, p.BayH), DoorMinH, DoorMaxH);
         }
         if (o["bayDoor"] is not null) p.BayDoorType = DoorType((string?)o["bayDoor"]);
+        if (o["bayMatch"] is not null)
+        {
+            var match = (bool)o["bayMatch"]!;
+            if (p.BayMatch && !match && Of(p) is { } was)
+                (p.BayW, p.BayH) = (Math.Clamp(was.W, BayMinW, BayMaxW), Math.Clamp(was.H, BayMinH, BayMaxH)); // (unticked, it keeps the door's size)
+            p.BayMatch = match;
+        }
+        if (o["shutterRollers"] is not null) p.ShutterRollers = Math.Clamp((int)o["shutterRollers"]!, 1, 2);
+        if ((string?)o["shutterSide"] is { } side && Array.IndexOf(ShutterSides, side) >= 0) p.ShutterSide = side;
+        if (o["shutterSlats"] is not null) p.ShutterSlats = Math.Clamp((int)o["shutterSlats"]!, 1, ShutterMaxSlats);
         if (o["bayFloor"] is not null) p.BayFloor = (string?)o["bayFloor"] == "Lift-out" ? "Lift-out" : "Fixed";
         if (o["w"] is not null) p.W = Math.Clamp(Sn((double)o["w"]!, 0.5), DeckMin, DeckMax);
         if (o["l"] is not null) p.L = Math.Clamp(Sn((double)o["l"]!, 0.5), DeckMin, DeckMax);
@@ -177,7 +200,8 @@ public static class DesignHangar
     {
         var sb = new StringBuilder();
         if (Of(p) is { } b)
-            sb.Append(",\"bayDoorW\":").Append(ShipDesign.S(p.BayDoorW)).Append(",\"bayDoorH\":").Append(ShipDesign.S(p.BayDoorH)).Append(",\"bayDoor\":").Append(DesignScene.Q(p.BayDoorType)).Append(",\"bayFloor\":").Append(DesignScene.Q(p.BayFloor))
+            sb.Append(",\"bayDoorW\":").Append(ShipDesign.S(p.BayDoorW)).Append(",\"bayDoorH\":").Append(ShipDesign.S(p.BayDoorH)).Append(",\"bayDoor\":").Append(DesignScene.Q(p.BayDoorType)).Append(",\"bayFloor\":").Append(DesignScene.Q(p.BayFloor)).Append(",\"bayMatch\":").Append(p.BayMatch ? "true" : "false")
+              .Append(",\"shutterRollers\":").Append(p.ShutterRollers).Append(",\"shutterSide\":").Append(DesignScene.Q(p.ShutterSide)).Append(",\"shutterSlats\":").Append(p.ShutterSlats)
               .Append(",\"bay\":[").Append(ShipDesign.S(b.W)).Append(',').Append(ShipDesign.S(b.H)).Append(',').Append(ShipDesign.S(b.D)).Append(']')
               .Append(",\"fittings\":").Append(d.Pieces.Count(q => IsFitting(q.Kind) && q.Link == p.Id));
         else if (IsDeck(p.Kind))
@@ -371,7 +395,7 @@ public static class DesignHangar
         Ring(m, hx + band, hz + band, 0.12, 0.25, 0.3, PieceKinds.Amber);
         // The door's well, from the skin to the bay's mouth.
         Ring(m, hx, hz, 0.08, -1.2, 0.02, PieceKinds.Gun);
-        // The door, open: a rolling door run out along the hull on its rails, an iris's blades swung out about the rim, a sliding door run
+        // The door, open: a rolling door run out along the hull on its rails, a shutter's slats rolled up onto its roller, a sliding door run
         // aside on its piston, a hinged one swung out 70 degrees on its lower (aft) edge (shut: over its hole).
         var th = Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2);
         if (p.BayDoorType == "Rolling")
@@ -379,9 +403,9 @@ public static class DesignHangar
             DrawRolling(m, p, hx, hz, band, th, shut);
             goto bay;
         }
-        if (p.BayDoorType == "Iris")
+        if (p.BayDoorType == "Shutter")
         {
-            DrawIris(m, hx, hz, th, shut);
+            DrawShutter(m, p, hx, hz, th, shut);
             goto bay;
         }
         if (p.BayDoorType == "Sliding")
@@ -511,7 +535,7 @@ public static class DesignHangar
         if (hx < 0.5 || hz < 0.5 || ey < 3)
             return null;
         const double th = 0.35;
-        var inner = -1.4 - Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2); // (behind a sliding or iris door's leaf in the well)
+        var inner = -1.4 - Math.Clamp(Math.Min(hx, hz) * 0.06, 0.12, 1.2); // (behind a sliding door's or a shutter's leaves in the well)
         switch (Vertical(w))
         {
             case 1 when w.Y[1] > 0: // a roof bay: on its back wall, up out of the mouth
@@ -575,37 +599,90 @@ public static class DesignHangar
         });
     }
 
+    /// <summary>A shutter's slat: its leaf, its box in the bay's frame shut (across the mouth) and open (on the bay's ceiling, on its
+    /// edge: the slat turned a quarter turn about the cross axis), the frame axis it runs to (0 X, 2 Z) and which way (+1 or -1).</summary>
+    public readonly record struct Slat(int Leaf, double[] Lo, double[] Hi, double[] OpenLo, double[] OpenHi, int Axis, int Sign);
+
+    /// <summary>The depth step between a shutter's slats (shut, each laps under the next; they keep it open, end to end on the ceiling).</summary>
+    private const double SlatStep = 0.04;
+
+    /// <summary>How far past the mouth's edge a shutter's slats run on: the gap from the edge to the first open slat.</summary>
+    public const double ShutterGap = 0.1;
+
     /// <summary>
-    /// An iris door (Karl, 2026-11-27): four blades just inside the mouth, each a quarter of the opening, which swing out sideways (in the
-    /// skin's plane, a quarter turn about the mouth's outer corner) into the well round the mouth, one to each side like a camera's shutter.
-    /// Leaves 0 to 3 are the blades (each a door of its own in the game, welded, so F on any opens them all), each a little deeper than the
-    /// last so they pass over each other.
+    /// A shutter's slats (Karl, 2026-11-27: a sectional garage door, one segment or several, that runs to the side it is set to and on
+    /// along the bay's ceiling there, not onto a drum; or split in the middle, each half to its own side). <paramref name="hx"/>,
+    /// <paramref name="hz"/>: the mouth's half sizes in the frame. Slat 0 of a side is the one nearest it. Shut they lap across the mouth;
+    /// open, the whole train has run its own length (<see cref="ShutterRun"/>) past the side's edge, end to end under the ceiling there.
     /// </summary>
-    private static void DrawIris(DesignMesh m, double hx, double hz, double th, bool shut)
+    public static List<Slat> Slats(Piece p, double hx, double hz, double th)
     {
-        var a = shut ? 0 : Math.PI / 2;
-        double ca = Math.Cos(a), sa = Math.Sin(a);
-        (double, double) Turn(double x, double z) => (x * ca + z * sa, -x * sa + z * ca);
-        var k = 0;
-        foreach (var (sx, sz) in new[] { (1, 1), (-1, 1), (-1, -1), (1, -1) })
-        {
-            var y = -1.0 - k * (th + 0.04);
-            double px = sx * hx, pz = sz * hz; // its pivot: the mouth's outer corner of its quarter
-            var (cx, cz) = Turn(-sx * hx / 2, -sz * hz / 2);
-            var (ax, az) = Turn(hx / 2, 0);
-            var (ex, ez) = Turn(0, hz / 2);
-            var leaf = k;
-            m.Leaf(leaf, () =>
+        var list = new List<Slat>();
+        var side = p.ShutterSide;
+        var axis = side is "Fore" or "Aft" ? 2 : 0;
+        double ha = axis == 2 ? hz : hx, hc = axis == 2 ? hx : hz;
+        var n = Math.Clamp(p.ShutterSlats, 1, ShutterMaxSlats);
+        int[] signs = p.ShutterRollers == 2 ? [1, -1] : [side is "Fore" or "Right" ? 1 : -1];
+        var run = ShutterRun(p, hx, hz);
+        var w = (run - ShutterGap) / n;
+        var c = 2 - axis;
+        var leaf = 0;
+        foreach (var sg in signs)
+            for (var k = 0; k < n; k++)
             {
-                Slab(m, (px + cx, y - th / 2, pz + cz), (ax, 0, az), (0, th / 2, 0), (ex, 0, ez), PieceKinds.Gun);
-                // A hazard stripe along its inner edge (towards the middle when shut).
-                var (ix, iz) = Turn(-sx * hx * 0.95, -sz * hz / 2);
-                var (bx, bz) = Turn(-sx * 0.05 * hx, 0);
-                Slab(m, (px + ix, y + 0.02, pz + iz), (bx, 0, bz), (0, 0.03, 0), (ex * 0.9, 0, ez * 0.9), PieceKinds.Amber);
+                // Shut: along the run's axis from the side's edge (sg * ha) inwards, [ha - (k+1)w, ha - k w], lapping 5 cm towards the side.
+                double u0 = ha - (k + 1) * w, u1 = ha - k * w + (k > 0 ? 0.05 : 0);
+                var y1 = -1.0 - k * SlatStep;
+                var lo = new double[3]; var hi = new double[3];
+                (lo[axis], hi[axis]) = (Math.Min(sg * u0, sg * u1), Math.Max(sg * u0, sg * u1));
+                (lo[c], hi[c]) = (-hc - 0.1, hc + 0.1);
+                (lo[1], hi[1]) = (y1 - th, y1);
+                var olo = (double[])lo.Clone(); var ohi = (double[])hi.Clone();
+                olo[axis] += sg * run; ohi[axis] += sg * run;
+                list.Add(new Slat(leaf++, lo, hi, olo, ohi, axis, sg));
+            }
+        return list;
+    }
+
+    /// <summary>How far a shutter's slats run to open: one side, the mouth's length across that way; split, half of it (and the gap).</summary>
+    public static double ShutterRun(Piece p, double hx, double hz) =>
+        (p.ShutterSide is "Fore" or "Aft" ? hz : hx) * (p.ShutterRollers == 2 ? 1 : 2) + ShutterGap;
+
+    /// <summary>
+    /// A sectional shutter: its slats (leaves 0 up, each a door of its own in the game that slides its run to the side and on under the
+    /// ceiling, welded so F on any opens them all; drawn open unless shut), each with a rib on its bay side, and a track at each end of the
+    /// slats along the ceiling, from the far edge of the mouth to the end of the run.
+    /// </summary>
+    private static void DrawShutter(DesignMesh m, Piece p, double hx, double hz, double th, bool shut)
+    {
+        var slats = Slats(p, hx, hz, th);
+        foreach (var sl in slats)
+        {
+            double[] lo = shut ? sl.Lo : sl.OpenLo, hi = shut ? sl.Hi : sl.OpenHi;
+            m.Leaf(sl.Leaf, () =>
+            {
+                m.Box(lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], PieceKinds.Gun);
+                double[] rl = (double[])lo.Clone(), rh = (double[])hi.Clone();
+                var mid = (lo[sl.Axis] + hi[sl.Axis]) / 2;
+                (rl[sl.Axis], rh[sl.Axis]) = (mid - 0.06, mid + 0.06);
+                (rl[1], rh[1]) = (lo[1] - 0.03, lo[1]);
+                m.Box(rl[0], rl[1], rl[2], rh[0], rh[1], rh[2], PieceKinds.Pale);
             });
-            // Its pivot pin, in the frame.
-            m.Box(px - th, y - th, pz - th, px + th, -0.9, pz + th, PieceKinds.Pale);
-            k++;
+        }
+        foreach (var g in slats.GroupBy(x => x.Sign))
+        {
+            var f = g.First();
+            var c = 2 - f.Axis;
+            var (a0, a1) = (g.Min(x => Math.Min(x.Lo[f.Axis], x.OpenLo[f.Axis])), g.Max(x => Math.Max(x.Hi[f.Axis], x.OpenHi[f.Axis])));
+            var deep = g.Min(x => x.Lo[1]);
+            foreach (var end in new[] { f.Lo[c] - 0.14, f.Hi[c] + 0.02 })
+            {
+                var lo = new double[3]; var hi = new double[3];
+                (lo[f.Axis], hi[f.Axis]) = (a0, a1);
+                (lo[c], hi[c]) = (end, end + 0.12);
+                (lo[1], hi[1]) = (deep - 0.05, -0.98);
+                m.Box(lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], PieceKinds.Pale);
+            }
         }
     }
 

@@ -143,7 +143,8 @@ public static unsafe class Lighting
             vec4 uProbeC;    // mode 2: sun, flicker phasor (x, y), flicker pace
             vec4 uDynPos[32]; // dynamic lights: position, range (the size is LightGrid.MaxDynamic: its check below)
             vec4 uDynCol[32]; // colour * intensity
-            vec4 uDynSpot[32]; // a spot's direction and the cosine of its half angle (w under -1: all round; ConstructLamps' cones)
+            vec4 uDynSpot[32]; // a spot's direction and the cosine of its half angle (w under -1: all round; ConstructLamps' cones; w over 1: a strip, xyz its face)
+            vec4 uDynLine[32]; // a strip's half length along it (xyz; zero: a point)
             vec4 uSurfQ;     // x: the materials setting (0 Low: the classic light, 1 Medium, 2 High; docs/render/MATERIALS.md); y: 1 while glow is marked for the bloom; z: edge bevels on; w: material contrast on
             mat4 uShadowVP;  // world less uShadowC to the sun shadow map's u, v and stored depth (SunShadows.cs)
             vec4 uShadowC;   // xyz: the map's centre; w: the normal offset (m)
@@ -349,9 +350,17 @@ public static unsafe class Lighting
         // fill under a wider cone, the light its pool throws back (SpotFill of it), so a lit hall's machines aren't black on their
         // sides. Its shadow is read only where it lights.
         const float SpotFill = 0.14;
+        // A strip's light behind its face (the room's light thrown back onto the ceiling it hangs from), and what reaches its sides.
+        const float StripFill = 0.05;
+
         vec3 DynLight(int i, vec3 p, vec3 n)
         {
-            vec3 l = uDynPos[i].xyz - p;
+            vec3 c = uDynPos[i].xyz;
+            vec3 h = uDynLine[i].xyz;
+            float hh = dot(h, h);
+            if (hh > 1e-6) // (a strip: lit from its nearest point, so a long one reaches as far all along it)
+                c += h * clamp(dot(p - c, h) / hh, -1.0, 1.0);
+            vec3 l = c - p;
             float d = length(l);
             float q = clamp(d / uDynPos[i].w, 0.0, 1.0);
             float f = (1.0 - q * q) * (1.0 - q * q);
@@ -362,6 +371,8 @@ public static unsafe class Lighting
             vec4 s = uDynSpot[i];
             if (s.w < -1.0)
                 return uDynCol[i].rgb * f * face * LampShadow(i, p, n);
+            if (s.w > 1.0) // (a strip: a flat diffuser lights its room side by the cosine off its face, twice over so it gives what a bulb gave all round; not the ceiling or wall it is on)
+                return uDynCol[i].rgb * f * face * (2.0 * mix(StripFill, 1.0, max(dot(-ld, s.xyz), 0.0))) * LampShadow(i, p, n);
             float cd = dot(-ld, s.xyz);
             float cone = smoothstep(s.w, mix(s.w, 1.0, 0.35), cd);
             float wide = smoothstep(s.w - 0.35, s.w, cd);

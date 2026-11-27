@@ -385,15 +385,6 @@ public static partial class DesignScene
             if (h.CladAft)
                 CladCap(aftClad, cx, hc, rings[^1], true, Open, cladSize);
         }
-        // Beading along the profile's points, bow to stern (Karl, 2026-11-27), off every opening.
-        if (h.Bead != "Off")
-            Bead(skin, h, cx, (x, y, z) =>
-            {
-                foreach (var k in cutouts)
-                    if (k.Covers((x, y, z), k.Margin))
-                        return true;
-                return InHole(x, y, z) || CutBody(x, y, z) || feet.Any(f => f.Holds(x, y, z));
-            }, hc.Clad, hc.CladDepth);
         return (skin, fore, aft, skinClad, foreClad, aftClad);
     }
 
@@ -973,7 +964,7 @@ public static partial class DesignScene
                     var t = placed?.T ?? 0.5;
                     double[]? s0 = null, s1 = null;
                     var dw = placed?.W ?? 0.9;
-                    if ((alongZ || alongX) && w1 - w0 >= dw - 0.01)
+                    if ((alongZ || alongX) && w1 - w0 >= dw - 0.01 && (placed is not null || !d.ManualDoors)) // (manual placement: only placed doors)
                     {
                         double lo = w0 + dw / 2, hi = w1 - dw / 2;
                         door = At(lo + (hi - lo) * t, 0);
@@ -1193,7 +1184,7 @@ public static partial class DesignScene
         else
             foreach (var r in d.Rooms)
                 if (!c.Reached.Contains(r.Id))
-                    c.Issues.Add(new("warn", $"{Name(r)} on deck {r.Deck + 1} has no door to the rest (rooms need 0.9 m of shared wall; a Shaft joins decks)", $"room:{r.Id}"));
+                    c.Issues.Add(new("warn", $"{Name(r)} on deck {r.Deck + 1} has no door to the rest ({(d.ManualDoors ? "place a door on a wall it shares with another room" : "rooms need 0.9 m of shared wall")}; a Shaft joins decks)", $"room:{r.Id}"));
         if (!d.Rooms.Any(r => r.Kind == "Bridge"))
             c.Issues.Add(new("warn", "No bridge", ""));
         return c;
@@ -1307,7 +1298,7 @@ public static partial class DesignScene
             if (h != home) continue; else
             for (var c = 0; c < h.Copies; c++)
             {
-                var half = h.SkinHalf(w[2] - h.Z, w[1] - h.Y);
+                var half = EasedHalf(h, w[2] - h.Z, w[1] - h.Y);
                 if (half < 0.1)
                     continue;
                 var cx = h.CopyX(c);
@@ -1326,6 +1317,24 @@ public static partial class DesignScene
             return l2 < r2 ? (l2, r2) : ((l2 + r2) / 2, (l2 + r2) / 2);
         }
         return (el ? Math.Min(r.X0, lo) : r.X0, er ? Math.Max(r.X1, hi) : r.X1);
+    }
+
+    /// <summary>How far round small kinks a room out to the hull eases its walls (m along, m up; Karl, 2026-11-27: in a busy nose the walls
+    /// followed every facet of the skin and came out lumpy, and every lump was colliders).</summary>
+    public const double EaseAlong = 0.6, EaseUp = 0.35;
+
+    /// <summary>The skin's half width for a room's wall: the narrowest of it a little fore, aft, above and below, so the wall runs straight past
+    /// a bump or a facet's edge instead of following it, and stays inside the skin everywhere.</summary>
+    public static double EasedHalf(HullBody h, double z, double y)
+    {
+        var half = h.SkinHalf(z, y);
+        if (half < 0.1)
+            return half;
+        for (var a = -1; a <= 1; a++)
+            for (var b = -1; b <= 1; b++)
+                if (h.SkinHalf(z + a * EaseAlong, y + b * EaseUp) is var s && s > 0.1) // past the skin's ends or its top: not a kink
+                    half = Math.Min(half, s);
+        return half;
     }
 
     /// <summary>How far along a room runs (Karl, 2026-11-24: a bridge carried on into the nose): a room out to the hull with no room
@@ -1556,7 +1565,7 @@ public static partial class DesignScene
                 m.Frame(ro[0] + oo[0] * p.Size, ro[1] + oo[1] * p.Size, ro[2] + oo[2] * p.Size, L(ax), L(ay), L(az), p.Size);
             });
         }
-        else if (!DesignHangar.Draw(d, p, w, m, shut) && !DesignFittings.Draw(p, w, m) && !DesignLightBars.Draw(d, p, m))
+        else if (!DesignHangar.Draw(d, p, w, m, shut) && !DesignFittings.Draw(p, w, m) && !DesignLightBars.Draw(d, p, m) && !DesignArmour.Draw(d, p, m))
             kind.Draw(m);
         if (p.RecessClad && p.Recess > 0)
         {
@@ -1609,7 +1618,7 @@ public static partial class DesignScene
         var bare = shown is not null || Light; // no hull meshes
         var empty = "{\"p\":[],\"c\":[]}";
         var sb = new StringBuilder(1 << 16);
-        sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"roomView\":").Append(shown is null ? "null" : "[" + string.Join(',', shown) + "]").Append(",\"stacked\":").Append(d.Stacked ? "true" : "false").Append(",\"hulls\":[");
+        sb.Append("{\"name\":").Append(Q(d.Name)).Append(",\"roomView\":").Append(shown is null ? "null" : "[" + string.Join(',', shown) + "]").Append(",\"stacked\":").Append(d.Stacked ? "true" : "false").Append(",\"manualDoors\":").Append(d.ManualDoors ? "true" : "false").Append(",\"hulls\":[");
         for (var i = 0; i < d.Hulls.Count; i++)
         {
             var h = d.Hulls[i];
@@ -1621,8 +1630,7 @@ public static partial class DesignScene
               .Append(",\"cladFrom\":").Append(h.CladFrom != 0 && d.Hull(h.CladFrom) is not null ? h.CladFrom.ToString() : "null")
               .Append(",\"cladOwn\":{\"kind\":").Append(Q(h.Clad)).Append(",\"seed\":").Append(h.CladSeed).Append(",\"size\":").Append(ShipDesign.S(h.CladSize)).Append(",\"depth\":").Append(ShipDesign.S(h.CladDepth)).Append(",\"material\":").Append(Q(h.CladMaterial)).Append('}')
               .Append(",\"material\":").Append(Q(h.Material)).Append(",\"damage\":").Append(ShipDesign.S(h.Damage)).Append(",\"damageSeed\":").Append(h.DamageSeed)
-              .Append(",\"bead\":{\"kind\":").Append(Q(h.Bead)).Append(",\"size\":").Append(ShipDesign.S(h.BeadSize)).Append(",\"colour\":").Append(Q(h.BeadColour)).Append('}')
-              .Append(",\"cladFore\":").Append(h.CladFore ? "true" : "false").Append(",\"cladAft\":").Append(h.CladAft ? "true" : "false")
+              .Append(",\"cladFore\":").Append(h.CladFore ? "true" : "false").Append(",\"cladAft\":").Append(h.CladAft ? "true" : "false").Append(",\"cladSmooth\":").Append(h.CladSmooth ? "true" : "false")
               .Append(",\"roundFore\":").Append(ShipDesign.S(h.RoundFore)).Append(",\"roundAft\":").Append(ShipDesign.S(h.RoundAft))
               .Append(",\"roundMaxFore\":").Append(ShipDesign.S(h.RoundLimit(false))).Append(",\"roundMaxAft\":").Append(ShipDesign.S(h.RoundLimit(true)))
               .Append(",\"paint\":{\"accent\":").Append(Q(h.Accent)).Append(",\"amount\":").Append(ShipDesign.S(h.AccentAmount)).Append(",\"pattern\":").Append(Q(h.Pattern))
@@ -1699,7 +1707,7 @@ public static partial class DesignScene
             var kind = PieceKinds.Find(p.Kind)!;
             var w = DesignSeats.PlaceOf(d, p) ?? DesignLightBars.PlaceOf(d, p) ?? DesignHangar.PlaceOf(d, p) ?? Where(h, p);
             // Its mesh follows its body's shape and (a ramp) the rooms' plans.
-            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" or "window" or "cargo" ? plans : "") + DesignHangar.Key(d, p) + DesignLightBars.Key(d, p) + DesignRecess.Key(d, p), () =>
+            var mesh = shown is not null ? empty : Part("p" + p.Id, p.Id + ":" + p.Hull + ":" + p.ToJson().ToJsonString() + "|" + shapes + "|" + (kind.Socket is "ramp" or "seat" or "window" or "cargo" ? plans : "") + DesignHangar.Key(d, p) + DesignLightBars.Key(d, p) + DesignRecess.Key(d, p) + DesignArmour.Key(d, p), () =>
             {
                 var text = new StringBuilder();
                 var pm = PieceMesh(d, p);
@@ -1726,7 +1734,7 @@ public static partial class DesignScene
               .Append(",\"cut\":").Append(kind.Footprint is not null ? "true" : "false")
               .Append(",\"gapAuto\":").Append(ShipDesign.S(AutoGap(d, h, kind.Opening is null ? 0 : 0.15 * p.Size * p.Hole + p.Clad)))
               .Append(",\"onPair\":").Append(h.Copies == 2 ? "true" : "false").Append(",\"turn\":").Append(ShipDesign.S(p.Turn))
-              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w)).Append(DesignSeats.SceneJson(p)).Append(DesignRamp.SceneJson(p, p.Kind == DesignRamp.Kind ? RampDepth(d, p, w) ?? 0 : 0)).Append(DesignLightBars.SceneJson(d, p))
+              .Append(DesignHangar.SceneJson(d, p)).Append(DesignFittings.SceneJson(d, p, w)).Append(DesignSeats.SceneJson(p)).Append(DesignRamp.SceneJson(p, p.Kind == DesignRamp.Kind ? RampDepth(d, p, w) ?? 0 : 0)).Append(DesignLightBars.SceneJson(d, p)).Append(DesignArmour.SceneJson(p))
               .Append(",\"room\":").Append(p.Room).Append(",\"socket\":").Append(kind.Socket is null ? "null" : Q(kind.Socket)).Append(",\"ok\":").Append(c.PieceOk.GetValueOrDefault(p.Id, true) ? "true" : "false")
               .Append(",\"at\":[").Append(ShipDesign.S(w.O[0])).Append(',').Append(ShipDesign.S(w.O[1])).Append(',').Append(ShipDesign.S(w.O[2])).Append("],\"mesh\":");
             sb.Append(mesh);

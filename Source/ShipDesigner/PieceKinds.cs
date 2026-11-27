@@ -172,6 +172,8 @@ public static class PieceKinds
         ..DesignSeats.Kinds,
         // Light bars on the hull and in rooms (Karl, 2026-11-27): DesignLightBars.
         ..DesignLightBars.Kinds,
+        // Stand-off armour plates (Karl, 2026-11-27): DesignArmour.
+        ..DesignArmour.Kinds,
         // Interior equipment that stands on a room's floor (Karl, 2026-11-27): DesignFurnishings.
         ..DesignFurnishings.Kinds,
     ];

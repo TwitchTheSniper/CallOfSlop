@@ -356,6 +356,7 @@ public static partial class BakedParts
             d.ColliderBoxes = colliderBoxes;
             d.Sockets = [.. sockets];
             d.Lamps = [.. lamps];
+            d.LampLines = []; // (a baked group's lamps are points)
             d.Mass = Math.Clamp(mass, 0.5f, ConstructParts.MaxPartMass);
             d.Health = Math.Clamp(health, 1f, ConstructParts.MaxPartHealth);
             d.Material = material;

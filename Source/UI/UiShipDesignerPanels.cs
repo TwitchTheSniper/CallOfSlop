@@ -13,6 +13,7 @@ public sealed partial class Ui
 {
     private string _shapePick = "Zero Day beam";
     private string _newBody = "Main hull";
+    private (int Hull, int I)? _shapeFrom; // the station whose cross-section Copy shape remembered
     private int _styleFrom; // the body whose settings Copy settings remembered
 
     /// <summary>The Connect tool's settings (the page's cOpt): the section, the numbers by their command keys, and three ticks.</summary>
@@ -133,7 +134,7 @@ public sealed partial class Ui
     private ImInputString? _palFind;
 
     /// <summary>The outside groups in the gallery's order (any other group the catalogue names goes after them).</summary>
-    private static readonly string[] OutsideGroups = ["Sockets", "Boarding", "Docking", "Hangar", "Drives", "Weapons", "Systems", "Lights"];
+    private static readonly string[] OutsideGroups = ["Sockets", "Boarding", "Docking", "Hangar", "Drives", "Weapons", "Armour", "Systems", "Lights"];
 
     private static string GroupTitle(string g) => g == "Sockets" ? "Airlocks, docks and hatches" : g;
 
@@ -335,6 +336,27 @@ public sealed partial class Ui
                 Hint("Joins the rooms it stands in on each deck it passes. A ladder needs 0.8 x 0.7 m of room; a lift its car, 2 x 2 m to start (1 to 8 m a side).");
                 return;
             }
+            H2("Rooms");
+            if (ImGui.Button("Fill unset rooms##sdfill"u8))
+            {
+                var a = Cmd(C("fillUnset"));
+                Toast(Str(a, "error") is { Length: > 0 } e ? e : ManualDoors ? "Rooms with no interior got Clean cladding. Undo takes it back." : "Rooms with no interior got Clean cladding, and touching rooms with no door got the default door. Undo takes it back.", true);
+            }
+            Hint(ManualDoors ? "Rooms with interior Off get the Clean style. Rooms you set are kept." : "Rooms with interior Off get the Clean style; rooms that share a wall and have no door get a default door. Rooms and doors you set are kept.");
+            H2("Doors");
+            Hint("Placement");
+            if (OnButton("Automatic##sddp0", !ManualDoors) && ManualDoors)
+            {
+                Cmd(C("doorPlacement", ("manual", false)));
+                Toast("Every two rooms that share a wall get a doorway. Undo takes it back.", true);
+            }
+            Row();
+            if (OnButton("Manual##sddp1", ManualDoors) && !ManualDoors)
+            {
+                Cmd(C("doorPlacement", ("manual", true)));
+                Toast("Only the doors you place are cut: a shared wall with none stays a wall. Undo takes it back.", true);
+            }
+            Hint(ManualDoors ? "Place each door yourself: pick a room, Add a door, then click the room beside it. Rooms with no door between them are not joined." : "Rooms on one deck that share 0.9 m of wall get a doorway, in the middle of the wall unless you place the door.");
             H2("Decks");
             Hint("Orientation");
             if (OnButton("Along the length##sdor0", !Stacked) && Stacked)
@@ -547,6 +569,8 @@ public sealed partial class Ui
             Checkbox("Clad front##sdhcf", B(h, "cladFore", true), v => Hs(("cladFore", v)));
             Row();
             Checkbox("Clad back##sdhca", B(h, "cladAft", true), v => Hs(("cladAft", v)));
+            Row();
+            Checkbox("Smooth busy areas##sdhcs", B(h, "cladSmooth", false), v => Hs(("cladSmooth", v)));
         }
         if (Found(src))
             Hint($"Follows {Str(src, "name")}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.");
@@ -596,30 +620,6 @@ public sealed partial class Ui
         if (ResetAll("hround", "Both radii back to their defaults"))
             Hs(DfltOf("hull", "roundFore", "roundAft"));
         Hint("0: a hard edge. At most half the end's smallest half-size, and short of the next station.");
-
-        // Beading (Karl, 2026-11-27): raised strips along the profile's points, bow to stern.
-        var bead = Get(h, "bead");
-        var bk = Str(bead, "kind", "Off");
-        H3("Beading");
-        foreach (var k in ShipDesigner.HullBody.BeadKinds)
-        {
-            if (OnButton($"{k}##sdhb{k}", bk == k))
-                Hs(("bead", k));
-            Row();
-        }
-        ImGui.NewLine();
-        if (bk != "Off")
-        {
-            Slider("Bead size", Math.Round(D(bead, "size", 0.06) * 100), 2, 30, 1, " cm", v => Hs(("beadSize", v / 100)), "hbs", Dflt("hull", "beadSize", 100));
-            ImGui.Text("Colour"u8);
-            Row();
-            var bcol = Str(bead, "colour", "");
-            Colour("bead" + hid, bcol.Length == 7 ? bcol : Str(h, "skin"), v => Hs(("beadColour", v)));
-            Row();
-            if (ResetAll("hbcol", "Beading colour back to the skin's, darkened"))
-                Hs(("beadColour", ""));
-        }
-        Hint("Creases: a strip along every sharp corner of the profile; All: along every point. They stand clear of the cladding and stop at openings.");
 
         // Paint: mostly dark with bold accent areas, over the facets and the cladding plates.
         var pa = Get(h, "paint");
@@ -680,6 +680,13 @@ public sealed partial class Ui
             foreach (var (t, sx, sy) in new[] { ("Wider", 1.1, 1.0), ("Narrower", 0.9, 1.0), ("Taller", 1.0, 1.1), ("Lower", 1.0, 0.9), ("Bigger", 1.1, 1.1), ("Smaller", 0.9, 0.9) })
                 if (WrapButton($"{t}##sdsc{t}"))
                     Cmd(C("scaleStation", ("hull", hid), ("i", i), ("sx", sx), ("sy", sy)));
+            foreach (var (t, dy) in new[] { ("Up", 0.25), ("Down", -0.25) })
+                if (WrapButton($"{t}##sdsh{t}"))
+                    Cmd(C("shiftStation", ("hull", hid), ("i", i), ("dy", dy)));
+            if (WrapButton("Copy shape##sdcpsh"))
+                _shapeFrom = (hid, i);
+            if (_shapeFrom is { } sf && WrapButton("Paste shape##sdpssh"))
+                Cmd(C("pasteShape", ("hull", hid), ("i", i), ("fromHull", sf.Hull), ("from", sf.I)));
             EndRow();
         }
         // Each station keeps its own point count: with a station picked the list changes that one, else every station.
@@ -701,7 +708,7 @@ public sealed partial class Ui
         if (ImGui.Button("Copy settings##sdcopys"u8))
             _styleFrom = hid;
         if (ImGui.IsItemHovered())
-            ImGuiSafe.SetTooltip("Remember this body's profile, cladding, beading and paint, to paste onto another");
+            ImGuiSafe.SetTooltip("Remember this body's profile, cladding and paint, to paste onto another");
         Row();
         ImGui.BeginDisabled(_styleFrom == 0 || _styleFrom == hid);
         if (ImGui.Button("Paste settings##sdpastes"u8))
@@ -879,8 +886,17 @@ public sealed partial class Ui
         // throttles by its cost; letting go sends the last one at once.
         if (ImGui.IsItemActive() && _profDrag >= 0 && _profDrag < cur.Count)
         {
-            var nx = Math.Max(0.05, Math.Abs((mouse.X - cx) / sc));
-            var ny = (cy - mouse.Y) / sc;
+            // The point stops at the view's edges and at the centre line (Karl, 2026-11-27): a mouse far outside the view, or across
+            // the middle, no longer carries it out to a spike or mirrors it back out; its height stays between its neighbours', as
+            // the model keeps it.
+            var mx = Math.Clamp(mouse.X, p0.X, p0.X + W);
+            var my = Math.Clamp(mouse.Y, p0.Y, p0.Y + Hh);
+            var nx = Math.Max(0.05, (mx - cx) / sc);
+            var ny = (cy - my) / sc;
+            if (_profDrag > 0)
+                ny = Math.Max(ny, cur[_profDrag - 1].Y + 0.05);
+            if (_profDrag < cur.Count - 1)
+                ny = Math.Min(ny, cur[_profDrag + 1].Y - 0.05);
             cur[_profDrag] = (nx, ny);
             if (Math.Abs(nx - _profLast.X) > 1e-4 || Math.Abs(ny - _profLast.Y) > 1e-4)
             {
@@ -1059,17 +1075,36 @@ public sealed partial class Ui
         {
             var size = Nums(Get(p, "bay"));
             H3("Hangar bay");
-            M("Width", "bayW", ShipDesigner.DesignHangar.BayMinW, ShipDesigner.DesignHangar.BayMaxW, 0.5);
-            M("Height", "bayH", ShipDesigner.DesignHangar.BayMinH, ShipDesigner.DesignHangar.BayMaxH, 0.5);
+            var match = B(p, "bayMatch");
+            Checkbox($"Match door (width and height)##sdhgm{pid}", match, v => Cmd(C("setPiece", ("id", pid), ("bayMatch", v))));
+            if (!match)
+            {
+                M("Width", "bayW", ShipDesigner.DesignHangar.BayMinW, ShipDesigner.DesignHangar.BayMaxW, 0.5);
+                M("Height", "bayH", ShipDesigner.DesignHangar.BayMinH, ShipDesigner.DesignHangar.BayMaxH, 0.5);
+            }
             M("Depth", "bayD", ShipDesigner.DesignHangar.BayMinD, ShipDesigner.DesignHangar.BayMaxD, 0.5);
             if (ResetAll("hgbay" + pid, "Width, height and depth back to the bay's own"))
                 Cmd(C("setPiece", [("id", pid), .. DfltOf2(dk, "bayW", "bayH", "bayD")]));
             H3("Hangar door");
-            M("Door width", "bayDoorW", ShipDesigner.DesignHangar.DoorMinW, Math.Min(ShipDesigner.DesignHangar.DoorMaxW, size.Length > 0 ? size[0] : 48), 0.5);
-            M("Door height", "bayDoorH", ShipDesigner.DesignHangar.DoorMinH, Math.Min(ShipDesigner.DesignHangar.DoorMaxH, size.Length > 1 ? size[1] : 32), 0.5);
+            M("Door width", "bayDoorW", ShipDesigner.DesignHangar.DoorMinW, Math.Min(ShipDesigner.DesignHangar.DoorMaxW, size.Length > 0 && !match ? size[0] : 48), 0.5);
+            M("Door height", "bayDoorH", ShipDesigner.DesignHangar.DoorMinH, Math.Min(ShipDesigner.DesignHangar.DoorMaxH, size.Length > 1 && !match ? size[1] : 32), 0.5);
             ImGui.Text("Type");
             Row();
             MatCombo("hgdoor" + pid, Str(p, "bayDoor", ShipDesigner.DesignHangar.DefDoor), ShipDesigner.DesignHangar.DoorTypes, v => Cmd(C("setPiece", ("id", pid), ("bayDoor", v))));
+            if (Str(p, "bayDoor") == "Shutter")
+            {
+                var two = I(p, "shutterRollers", 1) == 2;
+                ImGui.Text("Rollers");
+                Row();
+                MatCombo("hgsr" + pid, two ? "Two (split in the middle)" : "One", ["One", "Two (split in the middle)"], v => Cmd(C("setPiece", ("id", pid), ("shutterRollers", v == "One" ? 1 : 2))));
+                ImGui.Text(two ? "Split" : "Roller at");
+                Row();
+                var side = Str(p, "shutterSide", "Fore");
+                string[] sides = two ? ["Fore and aft", "Left and right"] : ShipDesigner.DesignHangar.ShutterSides;
+                var shown = two ? (side is "Fore" or "Aft" ? sides[0] : sides[1]) : side;
+                MatCombo("hgss" + pid, shown, sides, v => Cmd(C("setPiece", ("id", pid), ("shutterSide", v == "Fore and aft" ? "Fore" : v == "Left and right" ? "Right" : v))));
+                Slider("Slats", I(p, "shutterSlats", 4), 1, ShipDesigner.DesignHangar.ShutterMaxSlats, 1, two ? " each" : "", v => Cmd(C("setPiece", ("id", pid), ("shutterSlats", (int)v))), "hgsl" + pid, 4);
+            }
             H3("Hangar floor");
             ImGui.Text("Floor");
             Row();
@@ -1083,7 +1118,7 @@ public sealed partial class Ui
                 Hint($"The bay is {Fmt(size[0])} m across, {Fmt(size[1])} m tall and {Fmt(size[2])} m deep. {Str(p, "bayDoor") switch
                 {
                     "Rolling" => "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.",
-                    "Iris" => "Four blades inside the mouth swing out to the sides like a shutter.",
+                    "Shutter" => "A sectional garage door: its slats run on tracks to the side you pick and on along the bay's ceiling there, or split in the middle to both sides.",
                     "Hinged" => "The door swings out on motor hinges.",
                     _ => "The door slides aside inside the well on a piston.",
                 }} {n} docking fitting{(n == 1 ? "" : "s")} linked.");
@@ -1530,6 +1565,37 @@ public sealed partial class Ui
                     Hint(BarCladHint(Str(p, "barClad", ShipDesigner.DesignLightBars.DefClad), B(p, "barCladOn")));
                     Hint("Along the hull it follows the skin's curve; turned it runs straight across. In the game it lights what is round it, always on.");
                 }
+            }
+            if (B(p, "armour"))
+            {
+                // A stand-off armour plate (DesignArmour, Karl 2026-11-27): its size, thickness, stand-off and its outer face's cladding.
+                H3("Armour plate");
+                Slider("Width (along)", D(p, "armW"), ShipDesigner.DesignArmour.MinW, ShipDesigner.DesignArmour.MaxW, 0.05, " m",
+                    v => Cmd(C("setPiece", ("id", pid), ("armW", v))), "pcaw", Dflt("armour", "armW"));
+                Slider("Height (round)", D(p, "armH"), ShipDesigner.DesignArmour.MinH, ShipDesigner.DesignArmour.MaxH, 0.05, " m",
+                    v => Cmd(C("setPiece", ("id", pid), ("armH", v))), "pcah", Dflt("armour", "armH"));
+                Slider("Thickness", Math.Round(D(p, "armT") * 100), Math.Round(ShipDesigner.DesignArmour.MinT * 100), Math.Round(ShipDesigner.DesignArmour.MaxT * 100), 1, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("armT", v / 100))), "pcat", Dflt("armour", "armT", 100));
+                Slider("Stand-off", Math.Round(D(p, "armOff") * 100), Math.Round(ShipDesigner.DesignArmour.MinOff * 100), Math.Round(ShipDesigner.DesignArmour.MaxOff * 100), 5, " cm",
+                    v => Cmd(C("setPiece", ("id", pid), ("armOff", v / 100))), "pcao", Dflt("armour", "armOff", 100));
+                Slider("Console button", D(p, "armButton"), 0, ShipDesigner.DesignArmour.ConsoleButtons, 1, "", v => Cmd(C("setPiece", ("id", pid), ("armButton", v))), "pcabt", 0);
+                Hint(D(p, "armButton") > 0 ? $"Worked by button {D(p, "armButton"):0} on any Utilities console aboard (Inside > Command), and by F on the plate." : "No console button: F on the plate works it. Set a button to work it from a Utilities console.");
+                ImGui.Text("Held by"u8);
+                Row();
+                MatCombo("pcab" + pid, Str(p, "armStruts", ShipDesigner.DesignArmour.DefStruts), ShipDesigner.DesignArmour.StrutKinds, v => Cmd(C("setPiece", ("id", pid), ("armStruts", v))));
+                ImGui.Text("Outer cladding"u8);
+                Row();
+                MatCombo("pcac" + pid, Str(p, "armClad", ShipDesigner.DesignArmour.DefClad), ShipDesigner.HullBody.CladKinds, v => Cmd(C("setPiece", ("id", pid), ("armClad", v))));
+                if (Str(p, "armClad") != "Off")
+                    Slider("Panel size", D(p, "armCladSize"), ShipDesigner.HullBody.CladSizeMin, ShipDesigner.HullBody.CladSizeMax, 0.05, " m",
+                        v => Cmd(C("setPiece", ("id", pid), ("armCladSize", v))), "pcas", Dflt("armour", "armCladSize"));
+                // The plate screen (Karl, 2026-11-27): how it shapes round the hull, and its outline seen flat, sculpted by its edges.
+                H3("Plate shape");
+                Slider("Follow the hull", Math.Round(D(p, "armFollow", 1) * 100), 0, 100, 5, "%", v => Cmd(C("setPiece", ("id", pid), ("armFollow", v / 100))), "pcaf", 100);
+                ArmourOutline(p, pid);
+                if (ImGui.Button("Reset shape##sdarmreset"u8))
+                    Cmd(C("setPiece", ("id", pid), ("armReset", true)));
+                Hint("Follow 100%: it bends with the hull at its stand-off; 0%: flat. Drag the outline's points up or down to grow or cut its edges; Reset squares it again. F in the game: its rams push it out slowly, F again lets it go.");
             }
             Checkbox("Mirror on its own body##sdpcm", B(p, "mirror"), v => Cmd(C("setPiece", ("id", pid), ("mirror", v))));
             if (B(p, "onPair"))

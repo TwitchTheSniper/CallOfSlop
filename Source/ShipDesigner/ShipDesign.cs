@@ -23,6 +23,13 @@ public sealed class ShipDesign
     /// </summary>
     public bool Stacked;
 
+    /// <summary>
+    /// How the doors between rooms are placed (Karl, 2026-11-27). Automatic (false): every two rooms on a deck that share a wall get a
+    /// doorway, where a placed door sits or else in the wall's middle. Manual (true): only the doors the player places are cut; a shared
+    /// wall with none stays a wall, so the rooms behind it are not joined.
+    /// </summary>
+    public bool ManualDoors;
+
     /// <summary>A point on a deck to world: (u, v) on the floor (a room's X and Z), up above it.</summary>
     public double[] World(Deck dk, double u, double v, double up) => Stacked ? [u, v, dk.Floor - up] : [u, dk.Floor + up, v];
 
@@ -111,6 +118,7 @@ public sealed class ShipDesign
             ["version"] = Version,
             ["name"] = Name,
             ["decks orientation"] = Stacked ? "stacked" : "along",
+            ["door placement"] = ManualDoors ? "manual" : "automatic",
             ["hulls"] = new JsonArray([.. Hulls.Select(h => { var j = h.ToJson(); j["id"] = h.Id; if (h.CladFrom != 0 && HullIndex(h.CladFrom) is var ci && ci >= 0) j["cladFrom"] = ci; return (JsonNode)j; })]),
             ["decks"] = new JsonArray([.. Decks.Select(d => { var j = new JsonObject { ["floor"] = R(d.Floor), ["height"] = R(d.Height) }; if (d.Hull != 0 && HullIndex(d.Hull) is var di && di >= 0) j["hull"] = di; return (JsonNode)j; })]),
             ["rooms"] = new JsonArray([.. Rooms.Select(r => { var j = r.ToJson(); j["id"] = r.Id; return (JsonNode)j; })]),
@@ -132,7 +140,7 @@ public sealed class ShipDesign
         catch (Exception e) { throw new FormatException("not JSON: " + e.Message); }
         if (root is not JsonObject o)
             throw new FormatException("not a ship design (no object)");
-        var d = new ShipDesign { Name = (string?)o["name"] ?? "Ship", Stacked = (string?)o["decks orientation"] == "stacked" };
+        var d = new ShipDesign { Name = (string?)o["name"] ?? "Ship", Stacked = (string?)o["decks orientation"] == "stacked", ManualDoors = (string?)o["door placement"] == "manual" };
         foreach (var h in o["hulls"]?.AsArray() ?? [])
             if (h is JsonObject ho && d.Hulls.Count < MaxHulls)
                 d.Hulls.Add(HullBody.FromJson(ho, d.Take(ho)));
@@ -372,6 +380,9 @@ public sealed class Piece
     public double BayW = 20, BayH = 8, BayD = 20; // a bay's own volume across, tall and deep (Karl 2026-11-27; DesignHangar.Of)
     public double BayDoorW = 5, BayDoorH = 3, W = 5, L = 5, Travel = 3, Along, Across;
     public string BayDoorType = DesignHangar.DefDoor;
+    public int ShutterRollers = 1, ShutterSlats = 4; // a shutter bay door's rollers (1 or 2) and slats on each (DesignHangar.Slats)
+    public string ShutterSide = "Fore"; // the side its one roller is at, or the axis two split across
+    public bool BayMatch; // a bay as wide and tall as its door opening (DesignHangar.Of), Karl 2026-11-27
     public string BayFloor = "Fixed"; // a bay's floor: Fixed or Lift-out (DesignHangar.FloorBox)
     public int Link;
     public string Fit = ""; // a weapon mount's weapon (DesignWeaponMounts.cs; "": empty)
@@ -387,19 +398,25 @@ public sealed class Piece
     public double RampW = DesignRamp.DefWidth, RampL = DesignRamp.DefLength; // a boarding ramp's hatch across and along, metres (DesignRamp)
     public int Segments = DesignRamp.DefSegments; // a boarding ramp's telescoping sections (DesignRamp)
     public double RampAngle; // a boarding ramp's set angle, degrees; 0: the automatic one (DesignRamp.Angle)
+    // A stand-off armour plate's (DesignArmour, Karl 2026-11-27): width along, height round, thickness and stand-off (m); its outer face's cladding and panel size.
+    public double ArmW = DesignArmour.DefW, ArmH = DesignArmour.DefH, ArmT = DesignArmour.DefT, ArmOff = DesignArmour.DefOff, ArmCladSize = DesignArmour.DefCladSize;
+    public string ArmClad = DesignArmour.DefClad, ArmStruts = DesignArmour.DefStruts;
+    public double[] ArmTop = new double[DesignArmour.EdgePoints], ArmBot = new double[DesignArmour.EdgePoints]; // its outline's top and bottom edges (DesignArmour.EdgeAt)
+    public double ArmFollow = 1; // 1: it follows the hull's shape; 0: flat
+    public int ArmButton; // the utilities console button that works it (1-8; 0: none, F on the plate only)
 
-    public JsonObject ToJson() => DesignRecess.Write(this, DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
+    public JsonObject ToJson() => DesignArmour.Write(this, DesignRecess.Write(this, DesignLightBars.Write(this, DesignRamp.Write(this, DesignSeats.Write(this, DesignFittings.Write(this, DesignHangar.Write(this, new()
     {
         ["kind"] = Kind, ["surface"] = Surface, ["z"] = ShipDesign.R(Z), ["t"] = ShipDesign.R4(T), ["u"] = ShipDesign.R(U), ["v"] = ShipDesign.R(V),
         ["side"] = Side, ["copy"] = Copy, ["mirror"] = Mirror, ["pair"] = Pair, ["size"] = ShipDesign.R(Size), ["recess"] = ShipDesign.R(Recess), ["clad"] = ShipDesign.R(Clad), ["turn"] = ShipDesign.R(Turn), ["room"] = Room,
         ["gap"] = ShipDesign.R(Gap), ["hole"] = ShipDesign.R(Hole), ["depth"] = ShipDesign.R(Depth), ["double"] = Double,
         ["airW"] = ShipDesign.R(AirW), ["airH"] = ShipDesign.R(AirH), ["airD"] = ShipDesign.R(AirD), ["doorW"] = ShipDesign.R(DoorW), ["door"] = Door, ["feed"] = Feed, ["fit"] = Fit,
-    }))))));
+    })))))));
 
     /// <summary>Reads a piece (its hull is set by the caller).</summary>
     public static Piece FromJson(JsonObject o, int id)
     {
-        var p = DesignRecess.Read(o, DesignLightBars.Read(o, DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id)))))));
+        var p = DesignArmour.Read(o, DesignRecess.Read(o, DesignLightBars.Read(o, DesignRamp.Read(o, DesignSeats.Read(o, DesignFittings.Read(o, DesignHangar.Read(o, Read(o, id))))))));
         if ((string?)o["fit"] is { } fit && PieceWeapons.Fits(p.Kind, fit))
             p.Fit = fit;
         PieceWeapons.Init(p);

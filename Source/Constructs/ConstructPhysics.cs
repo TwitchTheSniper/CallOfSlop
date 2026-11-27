@@ -2583,7 +2583,9 @@ public static partial class ConstructPhysics
         for (var j = 0; j < c.JointCount && still; j++)
         {
             ref var jt = ref c.Joints[j];
-            still = MathF.Abs(jt.Vel) < 0.05f && (!jt.Motorised || jt.Frozen || MathF.Abs(MotorWant(c, jt)) <= 0.05f && jt.Over <= 1); // (a stalled or overloaded motor still pushes)
+            // (a slow motor, an armour plate's rams at 4 cm/s, is still moving under 5 cm/s: its own half speed counts, 2026-11-27)
+            var lim = jt.Motorised && jt.Speed > 0 ? Math.Clamp(jt.Speed * 0.5f, 0.005f, 0.05f) : 0.05f;
+            still = MathF.Abs(jt.Vel) < lim && (!jt.Motorised || jt.Frozen || MathF.Abs(MotorWant(c, jt)) <= lim && jt.Over <= 1); // (a stalled or overloaded motor still pushes)
         }
         if (!still)
         {

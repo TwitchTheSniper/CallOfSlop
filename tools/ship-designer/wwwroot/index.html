@@ -1393,22 +1393,34 @@ function dockControls(p) {
 }
 // A hangar piece's own controls (Karl, 2026-11-26; the bay's own width, height and depth 2026-11-27): a bay's door (width, height, sliding or hinged); a lift platform's or ramp deck's
 // width, length and travel; a docking arm's or cradle's bay link and its spot in the bay. Resets from CAT.defaults.hangar[kind].
-const DOOR_HINT = { Rolling: "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.", Iris: "Four blades inside the mouth swing out to the sides like a shutter.", Sliding: "The door slides aside inside the well on a piston.", Hinged: "The door swings out on motor hinges." };
+const DOOR_HINT = { Rolling: "The door rolls out along the hull on rails twice the opening's length, half of them where it parks.", Shutter: "A sectional garage door: its slats run on tracks to the side you pick and on along the bay's ceiling there, or split in the middle to both sides.", Sliding: "The door slides aside inside the well on a piston.", Hinged: "The door swings out on motor hinges." };
 function hangarControls(p) {
   const D = CAT.defaults.hangar?.[p.kind]; if (!D) return [];
   const send = o => cmd({ op: "setPiece", id: p.id, ...o });
   const m = (label, key, min, max, step, unit = " m") => slider(label, p[key], min, max, step, unit, () => {}, v => send({ [key]: v }), D[key]);
   if (p.bay) {
-    const ty = el("select", { "aria-label": "Door type" }); for (const t of ["Rolling", "Iris", "Sliding", "Hinged"]) ty.append(el("option", t === p.bayDoor ? { selected: "" } : {}, t));
+    const ty = el("select", { "aria-label": "Door type" }); for (const t of ["Rolling", "Shutter", "Sliding", "Hinged"]) ty.append(el("option", t === p.bayDoor ? { selected: "" } : {}, t));
     ty.addEventListener("change", () => send({ bayDoor: ty.value }));
     const fl = el("select", { "aria-label": "Floor" }); for (const t of ["Fixed", "Lift-out"]) fl.append(el("option", t === p.bayFloor ? { selected: "" } : {}, t));
     fl.addEventListener("change", () => send({ bayFloor: fl.value }));
     return [el("h3", {}, "Hangar bay"),
-      m("Width", "bayW", 5, 96, 0.5), m("Height", "bayH", 3, 48, 0.5), m("Depth", "bayD", 5, 96, 0.5),
+      (() => { const cb = el("input", { type: "checkbox", "aria-label": "Match door" }); cb.checked = !!p.bayMatch; cb.addEventListener("change", () => send({ bayMatch: cb.checked })); return el("label", { class: "row" }, cb, " Match door (width and height)"); })(),
+      ...(p.bayMatch ? [] : [m("Width", "bayW", 5, 96, 0.5), m("Height", "bayH", 3, 48, 0.5)]), m("Depth", "bayD", 5, 96, 0.5),
       el("div", { class: "row" }, el("button", { class: "reset", title: "Width, height and depth back to the bay's own", onclick: () => send({ bayW: D.bayW, bayH: D.bayH, bayD: D.bayD }) }, "Reset all")),
       el("h3", {}, "Hangar door"),
-      m("Door width", "bayDoorW", 5, Math.min(48, p.bay[0]), 0.5), m("Door height", "bayDoorH", 3, Math.min(32, p.bay[1]), 0.5),
+      m("Door width", "bayDoorW", 5, p.bayMatch ? 48 : Math.min(48, p.bay[0]), 0.5), m("Door height", "bayDoorH", 3, p.bayMatch ? 32 : Math.min(32, p.bay[1]), 0.5),
       el("div", { class: "row" }, el("span", {}, "Type"), ty, el("button", { class: "reset", title: "Door back to its defaults", onclick: () => send({ bayDoorW: D.bayDoorW, bayDoorH: D.bayDoorH, bayDoor: D.bayDoor }) }, "Reset all")),
+      ...(p.bayDoor === "Shutter" ? (() => {
+        const two = p.shutterRollers === 2;
+        const rl = el("select", { "aria-label": "Rollers" }); for (const [v, t] of [[1, "One"], [2, "Two (split in the middle)"]]) rl.append(el("option", v === (p.shutterRollers || 1) ? { value: v, selected: "" } : { value: v }, t));
+        rl.addEventListener("change", () => send({ shutterRollers: +rl.value }));
+        const opts = two ? [["Fore", "Fore and aft"], ["Right", "Left and right"]] : [["Fore", "Fore"], ["Aft", "Aft"], ["Left", "Left"], ["Right", "Right"]];
+        const cur = two ? (p.shutterSide === "Fore" || p.shutterSide === "Aft" ? "Fore" : "Right") : p.shutterSide;
+        const sd = el("select", { "aria-label": "Roller side" }); for (const [v, t] of opts) sd.append(el("option", v === cur ? { value: v, selected: "" } : { value: v }, t));
+        sd.addEventListener("change", () => send({ shutterSide: sd.value }));
+        return [el("div", { class: "row" }, el("span", {}, "Rollers"), rl), el("div", { class: "row" }, el("span", {}, two ? "Split" : "Roller at"), sd),
+          slider("Slats", p.shutterSlats || 4, 1, 8, 1, two ? " each" : "", () => {}, v => send({ shutterSlats: v }), 4)];
+      })() : []),
       el("h3", {}, "Hangar floor"), el("div", { class: "row" }, el("span", {}, "Floor"), fl),
       ...(p.bayFloor === "Lift-out" ? [el("p", { class: "hint" }, "The floor is a platform the craft stands on: F pushes it out through the mouth by the bay's depth (up from a roof bay, down from a belly bay, sideways from a side bay).")] : []),
       el("p", { class: "hint" }, `The bay is ${p.bay[0]} m across, ${p.bay[1]} m tall and ${p.bay[2]} m deep. ${DOOR_HINT[p.bayDoor] || ""} ${p.fittings} docking fitting${p.fittings === 1 ? "" : "s"} linked.`)];
@@ -1494,6 +1506,60 @@ function barControls(p) {
   out.push(el("p", { class: "hint" }, p.barRoom ? `In ${p.barRoom}. ${p.barOn === "Wall" ? "It goes on the wall nearest where it was dropped, its middle this high over the floor (turned 90 deg: upright)." : "It runs along the room through where it was dropped (turned 90 deg: across)."} It never runs past the room's corners.`
     : "It has no room: drop it on the skin by a room, or pick its room below."));
   return out;
+}
+// A stand-off armour plate's size, thickness, stand-off and outer cladding (Karl, 2026-11-27; Source/ShipDesigner/DesignArmour.cs).
+function armourControls(p) {
+  if (!p.armour) return [];
+  const send = o => { const a = cmd({ op: "setPiece", id: p.id, ...o }); if (a?.error) toast(a.error); }, D = CAT.defaults.armour;
+  const out = [el("h3", {}, "Armour plate"),
+    slider("Width (along)", p.armW, 1, 80, 0.05, " m", () => {}, v => send({ armW: v }), D.armW),
+    slider("Height (round)", p.armH, 1, 40, 0.05, " m", () => {}, v => send({ armH: v }), D.armH),
+    slider("Thickness", Math.round(p.armT * 100), 5, 200, 1, " cm", () => {}, v => send({ armT: v / 100 }), Math.round(D.armT * 100)),
+    slider("Stand-off", Math.round(p.armOff * 100), 30, 800, 5, " cm", () => {}, v => send({ armOff: v / 100 }), Math.round(D.armOff * 100)),
+    slider("Console button", p.armButton ?? 0, 0, 8, 1, "", () => {}, v => send({ armButton: v }), 0),
+    el("p", { class: "hint" }, (p.armButton ?? 0) > 0 ? `Worked by button ${p.armButton} on any Utilities console aboard (Inside > Command), and by F on the plate.` : "No console button: F on the plate works it. Set a button to work it from a Utilities console."),
+    el("div", { class: "row" }, el("span", {}, "Held by"), ...["Arm", "Row of 3", "Row of 4"].map(k => el("button", { class: p.armStruts === k ? "on" : "", onclick: () => send({ armStruts: k }) }, k))),
+    el("div", { class: "row" }, el("span", {}, "Outer cladding"), ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: p.armClad === k ? "on" : "", onclick: () => send({ armClad: k }) }, k)))];
+  if (p.armClad !== "Off") out.push(slider("Panel size", p.armCladSize, 0.4, 6, 0.05, " m", () => {}, v => send({ armCladSize: v }), D.armCladSize));
+  // The plate screen (Karl, 2026-11-27): how it shapes round the hull, and its outline seen flat, sculpted by its edges (the game's Ui.ArmourOutline).
+  out.push(el("h3", {}, "Plate shape"),
+    slider("Follow the hull", Math.round((p.armFollow ?? 1) * 100), 0, 100, 5, "%", () => {}, v => send({ armFollow: v / 100 }), 100),
+    armourOutline(p),
+    el("div", { class: "row" }, el("button", { onclick: () => send({ armReset: true }) }, "Reset shape")),
+    el("p", { class: "hint" }, "Follow 100%: it bends with the hull at its stand-off; 0%: flat. Drag the outline's points up or down to grow or cut its edges; Reset squares it again. F in the game: its rams push it out slowly, F again lets it go."));
+  return out;
+}
+// A plate seen flat: its length across, its height up, the top and bottom edges' points dragged up or down (DesignArmour.EdgeAt).
+function armourOutline(p) {
+  const NS = "http://www.w3.org/2000/svg", W = 260, Hh = 160, pad = 16, top = p.armTop || [], bot = p.armBot || [], n = top.length, w = p.armW, h = p.armH;
+  const svg = document.createElementNS(NS, "svg"); svg.setAttribute("viewBox", `0 0 ${W} ${Hh}`); svg.setAttribute("class", "prof");
+  if (n < 2) return svg;
+  const yHi = h / 2 + Math.max(0, ...top), yLo = -h / 2 - Math.max(0, ...bot);
+  const sc = Math.min((W - pad * 2) / Math.max(w, 0.5), (Hh - pad * 2) / Math.max(yHi - yLo, 0.5)), oy = Hh / 2 + (yHi + yLo) / 2 * sc, x0 = W / 2 - w / 2 * sc;
+  const X = v => x0 + v * w * sc, Y = y => oy - y * sc, mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); svg.append(e); return e; };
+  mk("rect", { x: X(0), y: Y(h / 2), width: w * sc, height: h * sc, fill: "none", stroke: "#33414b", "stroke-dasharray": "3 3" });
+  const at = (k, isTop) => [X(k / (n - 1)), isTop ? Y(h / 2 + top[k]) : Y(-h / 2 - bot[k])];
+  const ring = [...top.map((_, k) => at(k, true)), ...bot.map((_, k) => at(n - 1 - k, false))];
+  const poly = mk("polygon", { points: ring.map(q => q.map(v => v.toFixed(1)).join(",")).join(" "), fill: "rgba(255,176,46,0.08)", stroke: "#ffb02e", "stroke-width": 2 });
+  const edge = (e, v) => { const q = Math.min(1, Math.max(0, v)) * (e.length - 1), k = Math.min(e.length - 2, Math.floor(q)); return e[k] + (e[k + 1] - e[k]) * (q - k); };
+  const rams = p.armStruts === "Arm" ? 1 : p.armStruts === "Row of 4" ? 4 : 3;
+  for (let b = 0; b < rams; b++) { const v = (b + 0.5) / rams; mk("circle", { cx: X(v), cy: Y((edge(top, v) - edge(bot, v)) / 2), r: rams === 1 ? 9 : 6, fill: "#6a7480" }); }
+  for (const isTop of [true, false]) for (let k = 0; k < n; k++) {
+    const [cx, cy] = at(k, isTop), c = mk("circle", { cx, cy, r: 7, fill: "#ffb02e", stroke: "#1b2329", "stroke-width": 2, class: "pt" });
+    c.addEventListener("pointerdown", ev => {
+      ev.preventDefault(); c.setPointerCapture(ev.pointerId); dragFirst = true;
+      const move = e2 => {
+        const r = svg.getBoundingClientRect(), py = Math.min(Hh, Math.max(0, (e2.clientY - r.top) * W / r.width)), y = (oy - py) / sc;
+        const v = Math.min(20, Math.max(-h / 2 + 0.25, Math.round((isTop ? y - h / 2 : -h / 2 - y) / 0.05) * 0.05));
+        (isTop ? top : bot)[k] = v; c.setAttribute("cy", isTop ? Y(h / 2 + v) : Y(-h / 2 - v));
+        dragCmd({ op: "setPiece", id: p.id, armEdge: isTop ? "top" : "bot", k, at: v });
+      };
+      const up = () => { c.removeEventListener("pointermove", move); c.removeEventListener("pointerup", up); c.removeEventListener("pointercancel", up); flush(); inspector(); };
+      c.addEventListener("pointermove", move); c.addEventListener("pointerup", up); c.addEventListener("pointercancel", up);
+    });
+  }
+  const lab = mk("text", { x: 8, y: Hh - 8, fill: "#93a3ad", "font-size": "10", "font-family": "IBM Plex Mono, monospace" }); lab.textContent = `${fmt(w)} m along · drag the edges`;
+  return svg;
 }
 // A floodlight's aim and beam colour (Karl, 2026-11-26), with resets from CAT.defaults.fitting; a tow point's note.
 function fittingControls(p) {
@@ -1587,6 +1653,7 @@ function placeJoin() {
   conn.joinId = a.id; conn.step = "set";
   conn.hullId = conn.newBody ? S.hulls[S.hulls.length - 1].id : 0;
 }
+let shapeFrom = null; // the station Copy shape remembered
 let styleFrom = 0; // the body Copy settings remembered
 let roomKind = "Cabin", drawing = true, clip = null, pickRoomFor = 0;
 
@@ -1662,6 +1729,14 @@ function leftPanel() {
         el("p", { class: "hint" }, "Joins the rooms it stands in on each deck it passes. A ladder needs 0.8 x 0.7 m of room; a lift its car, 2 x 2 m to start (1 to 8 m a side).")));
       return;
     }
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Rooms"),
+      el("button", { onclick: () => { const a = cmd({ op: "fillUnset" }); toast(a.error || (S.manualDoors ? "Rooms with no interior got Clean cladding. Undo takes it back." : "Rooms with no interior got Clean cladding, and touching rooms with no door got the default door. Undo takes it back."), !a.error); rebuild(); panels(); } }, "Fill unset rooms"),
+      el("p", { class: "hint" }, S.manualDoors ? "Rooms with interior Off get the Clean style. Rooms you set are kept." : "Rooms with interior Off get the Clean style; rooms that share a wall and have no door get a default door. Rooms and doors you set are kept.")));
+    L.append(el("div", { class: "sec" }, el("h2", {}, "Doors"), el("p", { class: "hint" }, "Placement"),
+      el("div", { class: "row" },
+        el("button", { class: S.manualDoors ? "" : "on", onclick: () => { if (S.manualDoors) { cmd({ op: "doorPlacement", manual: false }); toast("Every two rooms that share a wall get a doorway. Undo takes it back.", true); rebuild(); panels(); } } }, "Automatic"),
+        el("button", { class: S.manualDoors ? "on" : "", onclick: () => { if (!S.manualDoors) { cmd({ op: "doorPlacement", manual: true }); toast("Only the doors you place are cut: a shared wall with none stays a wall. Undo takes it back.", true); rebuild(); panels(); } } }, "Manual")),
+      el("p", { class: "hint" }, S.manualDoors ? "Place each door yourself: pick a room, Add a door, then click the room beside it. Rooms with no door between them are not joined." : "Rooms on one deck that share 0.9 m of wall get a doorway, in the middle of the wall unless you place the door.")));
     const orient = el("div", { class: "row" },
       el("button", { class: S.stacked ? "" : "on", onclick: () => { if (S.stacked) { cmd({ op: "orient", stacked: false }); deck = 0; toast("Decks laid along the length. Undo brings the old decks and rooms back.", true); panels(); } } }, "Along the length"),
       el("button", { class: S.stacked ? "on" : "", onclick: () => { if (!S.stacked) { cmd({ op: "orient", stacked: true }); deck = 0; toast("Decks stacked across the ship, floors facing the bow: thrust is down. Undo brings the old ones back.", true); panels(); } } }, "Stacked (thrust is down)"));
@@ -1721,7 +1796,8 @@ function stationPanel(h) {
     el("div", { class: "row" }, el("span", {}, "Match body"), matchSel),
     ...(clad.kind === "Off" ? [] : [el("div", { class: "row" },
       el("label", {}, el("input", { type: "checkbox", ...(h.cladFore !== false ? { checked: "" } : {}), onchange: e => hs({ cladFore: e.target.checked }) }), "Clad front"),
-      el("label", {}, el("input", { type: "checkbox", ...(h.cladAft !== false ? { checked: "" } : {}), onchange: e => hs({ cladAft: e.target.checked }) }), "Clad back"))]),
+      el("label", {}, el("input", { type: "checkbox", ...(h.cladAft !== false ? { checked: "" } : {}), onchange: e => hs({ cladAft: e.target.checked }) }), "Clad back"),
+      el("label", { title: "Tapering ends, short bands and end caps in big flush plates at one height" }, el("input", { type: "checkbox", ...(h.cladSmooth ? { checked: "" } : {}), onchange: e => hs({ cladSmooth: e.target.checked }) }), "Smooth busy areas"))]),
     ...(src ? [el("p", { class: "hint" }, `Follows ${src.name}'s cladding (kind, seed, panel size, depth, material and damage). Set Match body to None for this body's own.`)] : [
     el("div", { class: "row" }, ...["Off", "Plates", "Heavy", "Hex"].map(k => el("button", { class: clad.kind === k ? "on" : "", onclick: () => cmd({ op: "setHull", hull: h.id, clad: k }) }, k))),
     ...(clad.kind === "Off" ? [] : [el("div", { class: "row" }, el("span", {}, "Material"), matSel(clad.material || "Hull", ["Hull", ...MAT_NAMES], "Cladding material", v => hs({ cladMaterial: v })),
@@ -1734,16 +1810,6 @@ function stationPanel(h) {
       el("div", { class: "row" }, el("span", {}, "Seed"), num(clad.seed, v => cmd({ op: "setHull", hull: h.id, cladSeed: Math.round(v) }), 1),
         el("button", { onclick: () => cmd({ op: "setHull", hull: h.id, cladSeed: Math.floor(Math.random() * 99999) }) }, "New pattern"))])]),
     el("p", { class: "hint" }, "Plates rise 1-8 cm (Heavy: up to 20 cm, with greebles; Hex: a honeycomb of tiles the panel size across); the depth slider scales that. Windows and sockets stay bare."));
-  // Beading (Karl, 2026-11-27): raised strips along the profile's points, bow to stern.
-  const bead = h.bead || { kind: "Off", size: 0.06, colour: "" };
-  box.append(el("h3", {}, "Beading"),
-    el("div", { class: "row" }, ...["Off", "Creases", "All"].map(k => el("button", { class: bead.kind === k ? "on" : "", onclick: () => hs({ bead: k }) }, k))),
-    ...(bead.kind === "Off" ? [] : [
-      slider("Bead size", Math.round(bead.size * 100), 2, 30, 1, " cm", () => {}, v => hs({ beadSize: v / 100 }), dflt("hull", "beadSize", 100)),
-      el("div", { class: "row" }, el("span", {}, "Colour"),
-        (() => { const c = el("input", { type: "color", value: bead.colour || h.skin, "aria-label": "Beading colour" }); c.addEventListener("change", () => hs({ beadColour: c.value })); return c; })(),
-        resetAll("Beading colour back to the skin's, darkened", () => hs({ beadColour: "" })))]),
-    el("p", { class: "hint" }, "Creases: a strip along every sharp corner of the profile; All: along every point. They stand clear of the cladding and stop at openings."));
   // Damage (apart from paint's wear): plates missing, tilted and dented, scorched patches, and past 60% dents in the drawn skin.
   box.append(el("h3", {}, "Damage"),
     slider("Damage", Math.round((h.damage ?? 0) * 100), 0, 100, 1, "%", () => {}, v => hs({ damage: v / 100 }), dflt("hull", "damage", 100)),
@@ -1798,7 +1864,11 @@ function stationPanel(h) {
       el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 1.1 }) }, "Taller"),
       el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1, sy: 0.9 }) }, "Lower"),
       el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 1.1, sy: 1.1 }) }, "Bigger"),
-      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 0.9, sy: 0.9 }) }, "Smaller")));
+      el("button", { onclick: () => cmd({ op: "scaleStation", hull: h.id, i, sx: 0.9, sy: 0.9 }) }, "Smaller"),
+      el("button", { onclick: () => cmd({ op: "shiftStation", hull: h.id, i, dy: 0.25 }) }, "Up"),
+      el("button", { onclick: () => cmd({ op: "shiftStation", hull: h.id, i, dy: -0.25 }) }, "Down"),
+      el("button", { onclick: () => { shapeFrom = { hull: h.id, i }; toast("Shape copied.", true); panels(); } }, "Copy shape"),
+      el("button", { ...(shapeFrom ? {} : { disabled: "" }), onclick: () => { const a = cmd({ op: "pasteShape", hull: h.id, i, fromHull: shapeFrom.hull, from: shapeFrom.i }); if (a.error) toast(a.error); } }, "Paste shape")));
   }
   // Each station keeps its own point count (Karl, 2026-11-24): with a station picked the list changes that one, else every station.
   const one = sel.station >= 0 && sel.station < h.stations.length;
@@ -1809,7 +1879,7 @@ function stationPanel(h) {
   box.append(el("div", { class: "row" }, el("span", { class: "hint" }, one ? "This station:" : "Every station:"), pts));
   box.append(el("div", { class: "row" },
     el("button", { onclick: () => cmd({ op: "copyHull", hull: h.id }) }, "Copy body"),
-    el("button", { title: "Remember this body's profile, cladding, beading and paint", onclick: () => { styleFrom = h.id; toast("Settings copied.", true); panels(); } }, "Copy settings"),
+    el("button", { title: "Remember this body's profile, cladding and paint", onclick: () => { styleFrom = h.id; toast("Settings copied.", true); panels(); } }, "Copy settings"),
     el("button", { title: "Take the copied body's settings; this body keeps its place", ...(styleFrom && styleFrom !== h.id && S.hulls.some(b => b.id === styleFrom) ? {} : { disabled: "" }), onclick: () => { const a = cmd({ op: "pasteHullStyle", hull: h.id, from: styleFrom }); if (a.error) toast(a.error); } }, "Paste settings"),
     el("button", { onclick: () => { cmd({ op: "delHull", hull: h.id }); select(null, 0); } }, "Remove body")));
   return box;
@@ -1847,8 +1917,10 @@ function profileEditor(h, i) {
       ev.preventDefault(); c.setPointerCapture(ev.pointerId); dragFirst = true; profDragging = true;
       const move = e2 => {
         const r = svg.getBoundingClientRect(), k2 = W / r.width;
-        const px = (e2.clientX - r.left) * k2, py = (e2.clientY - r.top) * k2;
-        const nx = Math.max(0.05, Math.abs((px - cx) / sc)), ny = (cy - py) / sc;
+        // The point stops at the view's edges and at the centre line (Karl, 2026-11-27), its height between its neighbours'.
+        const px = Math.min(W, Math.max(0, (e2.clientX - r.left) * k2)), py = Math.min(Hh, Math.max(0, (e2.clientY - r.top) * k2));
+        const P = h.stations[i].p, lo = k > 0 ? P[k - 1][1] + 0.05 : -Infinity, hi = k < P.length - 1 ? P[k + 1][1] - 0.05 : Infinity;
+        const nx = Math.max(0.05, (px - cx) / sc), ny = Math.min(hi, Math.max(lo, (cy - py) / sc));
         c.setAttribute("cx", X(nx)); c.setAttribute("cy", Y(ny));
         dragCmd({ op: "setPoint", hull: h.id, i, k, h: nx, y: ny, all: $("allst")?.checked ?? false });
       };
@@ -2000,6 +2072,7 @@ function inspector() {
       ...seatControls(p),
       ...rampControls(p),
       ...barControls(p),
+      ...armourControls(p),
       el("div", { class: "row" },
         el("label", {}, el("input", { type: "checkbox", ...(p.mirror ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, mirror: e.target.checked }) }), "Mirror on its own body"),
         ...(p.onPair ? [el("label", {}, el("input", { type: "checkbox", ...(p.pair ? { checked: "" } : {}), onchange: e => cmd({ op: "setPiece", id: p.id, pair: e.target.checked }) }), "Both bodies of the pair")] : [])),
