@@ -259,7 +259,16 @@ function cmd(op, merge = false) {
 // A drag sends a command a frame at most; its first is an undo step, the rest merge into it.
 let pending = null, dragFirst = true;
 function dragCmd(op) { pending = op; }
-function flush() { if (!pending) return; const op = pending; pending = null; const a = cmd(op, !dragFirst); dragFirst = false; return a; }
+// A drag's commands are throttled by their own cost (2026-11-27): the frame's flush waits as long as the last command took, so a big
+// design still redraws live during a drag and the page keeps half its time. A release flushes at once.
+let flushAfter = 0;
+function flush(frame = false) {
+  if (!pending || (frame && performance.now() < flushAfter)) return;
+  const op = pending; pending = null; const t0 = performance.now();
+  const a = cmd(op, !dragFirst); dragFirst = false;
+  flushAfter = performance.now() + Math.min(250, performance.now() - t0);
+  return a;
+}
 
 let toastTimer;
 function toast(msg, info = false) {
@@ -1569,7 +1578,9 @@ function setMode(m) {
 }
 
 // A panel whose slider is being moved isn't drawn again under the pointer (the drag would end); it is when it lets go of the focus.
-function holding(id) { const a = document.activeElement; return a?.type === "range" && $(id).contains(a); }
+// A slider being dragged, or a profile point (its panel redrawn under the pointer would end the drag): the panel waits.
+let profDragging = false;
+function holding(id) { if (profDragging && id === "left") return true; const a = document.activeElement; return a?.type === "range" && $(id).contains(a); }
 function panels() { if (!holding("left")) leftPanel(); if (!holding("inspect")) inspector(); checks(); }
 
 function leftPanel() {
@@ -1795,7 +1806,7 @@ function profileEditor(h, i) {
     const c = document.createElementNS(NS, "circle"); c.setAttribute("cx", X(x)); c.setAttribute("cy", Y(y)); c.setAttribute("r", 7);
     c.setAttribute("fill", "#ffb02e"); c.setAttribute("stroke", "#1b2329"); c.setAttribute("stroke-width", 2); c.setAttribute("class", "pt");
     c.addEventListener("pointerdown", ev => {
-      ev.preventDefault(); c.setPointerCapture(ev.pointerId); dragFirst = true;
+      ev.preventDefault(); c.setPointerCapture(ev.pointerId); dragFirst = true; profDragging = true;
       const move = e2 => {
         const r = svg.getBoundingClientRect(), k2 = W / r.width;
         const px = (e2.clientX - r.left) * k2, py = (e2.clientY - r.top) * k2;
@@ -1803,8 +1814,8 @@ function profileEditor(h, i) {
         c.setAttribute("cx", X(nx)); c.setAttribute("cy", Y(ny));
         dragCmd({ op: "setPoint", hull: h.id, i, k, h: nx, y: ny, all: $("allst")?.checked ?? false });
       };
-      const up = () => { c.removeEventListener("pointermove", move); c.removeEventListener("pointerup", up); flush(); leftPanel(); };
-      c.addEventListener("pointermove", move); c.addEventListener("pointerup", up);
+      const up = () => { c.removeEventListener("pointermove", move); c.removeEventListener("pointerup", up); c.removeEventListener("pointercancel", up); profDragging = false; flush(); leftPanel(); };
+      c.addEventListener("pointermove", move); c.addEventListener("pointerup", up); c.addEventListener("pointercancel", up);
     });
     const t = document.createElementNS(NS, "title"); t.textContent = `point ${k + 1}: ${fmt(x)} m out, ${fmt(y)} m up`; c.append(t);
     svg.append(c);
@@ -2121,7 +2132,7 @@ window.addEventListener("keydown", e => {
 });
 
 window.shipDesigner = { cmd, enterRoomView, exitRoomView, roomView: () => roomView, world, selectStation, select, setMode, camera, controls, timing }; // (for a page test)
-function loop() { requestAnimationFrame(loop); flush(); mountTick(); controls.update(); renderer.render(scene, camera); }
+function loop() { requestAnimationFrame(loop); flush(true); mountTick(); controls.update(); renderer.render(scene, camera); }
 
 try {
   await bootCs();

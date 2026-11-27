@@ -736,6 +736,8 @@ public sealed partial class Ui
 
     // The half profile at one station, drawn whole (both sides), with its neighbours ghosted and the decks across it; drag a point to move it.
     private int _profDrag = -1;
+    private double _profSc, _profCy; // the view's scale and middle height, held while a point is dragged
+    private (double X, double Y) _profLast;
 
     private void ProfileEditor(JsonElement h, int i)
     {
@@ -757,6 +759,12 @@ public sealed partial class Ui
         var p0 = ImGui.GetCursorScreenPos();
         var cx = p0.X + W / 2;
         var cy = p0.Y + Hh / 2 + (y0 + y1) / 2 * sc;
+        // While a point is dragged the view holds still: a scale worked out from the point being moved ran it away from the mouse.
+        if (_profDrag >= 0 && _profSc > 0)
+        {
+            sc = _profSc;
+            cy = p0.Y + _profCy;
+        }
         float X(double x) => (float)(cx + x * sc);
         float Y(double y) => (float)(cy - y * sc);
         ImGui.InvisibleButton("##sdprof"u8, new float2(W, Hh));
@@ -810,17 +818,27 @@ public sealed partial class Ui
                 }
             }
             _dragFirst = true;
+            _profSc = sc;
+            _profCy = cy - p0.Y;
+            _profLast = _profDrag >= 0 ? cur[_profDrag] : default;
         }
+        // The hull follows the point live (Karl, 2026-11-27): a command only when the point has moved, which the frame's flush
+        // throttles by its cost; letting go sends the last one at once.
         if (ImGui.IsItemActive() && _profDrag >= 0 && _profDrag < cur.Count)
         {
             var nx = Math.Max(0.05, Math.Abs((mouse.X - cx) / sc));
             var ny = (cy - mouse.Y) / sc;
             cur[_profDrag] = (nx, ny);
-            DragCmd(C("setPoint", ("hull", hid), ("i", i), ("k", _profDrag), ("h", nx), ("y", ny), ("all", _allStations)));
+            if (Math.Abs(nx - _profLast.X) > 1e-4 || Math.Abs(ny - _profLast.Y) > 1e-4)
+            {
+                _profLast = (nx, ny);
+                DragCmd(C("setPoint", ("hull", hid), ("i", i), ("k", _profDrag), ("h", nx), ("y", ny), ("all", _allStations)));
+            }
         }
         if (ImGui.IsItemDeactivated() && _profDrag >= 0)
         {
             _profDrag = -1;
+            _profSc = 0;
             Flush();
         }
         for (var k = 0; k < cur.Count; k++)
