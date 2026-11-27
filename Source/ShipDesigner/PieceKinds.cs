@@ -159,7 +159,7 @@ public static class PieceKinds
                 m.Box(-0.25, y, 0.39, 0.25, y + 0.04, 0.42, Gun);
         }),
         // Ways aboard from the ground or a pier (Karl, 2026-11-24). Each opens into any room.
-        new(DesignRamp.Kind, "Sockets", "skin", "ramp", "any room", "A 4 m wide hatch with a ramp stowed in the room's floor: F lowers it out of the hatch and runs its extension out to the ground (set its length).", m =>
+        new(DesignRamp.Kind, "Sockets", "skin", "ramp", "any room", "A 5 m long hatch with a ramp stowed in the room's floor: F lowers it out of the hatch and runs its extension out to the ground (set its length).", m =>
         {
             RampFrame(m, 1.0); // (drawn with its ramp by DesignScene.PieceMesh: DesignRamp)
         }),
