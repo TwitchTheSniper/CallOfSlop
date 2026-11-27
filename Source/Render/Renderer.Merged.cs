@@ -133,7 +133,27 @@ public sealed unsafe partial class Renderer
     {
         try
         {
-            const string vsSrc = """
+            _mergeProgram = MakeMerged(MergedVsSrc, out _mLoc);
+            _program.Use();
+            var err = GlDebug.Error();
+            if (err != 0)
+                Console.WriteLine($"[render] GL error 0x{err:X} while setting up the merged meshes (continuing)");
+            Console.WriteLine("[render] merged meshes ready");
+            _mergeReady = true;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[render] merged meshes off: {ex.Message}");
+            _mergeBroken = true;
+            _program.Use();
+            _vao.Bind();
+            return false;
+        }
+    }
+
+    /// <summary>The merged program's vertex shader (the sheet program's is made from it: Renderer.Sheets.cs).</summary>
+    private const string MergedVsSrc = """
                 #version 410 core
                 layout(location = 0) in vec3 aPos;
                 layout(location = 1) in vec3 aNormal;
@@ -194,24 +214,6 @@ public sealed unsafe partial class Renderer
                     gl_Position = uViewProj * w;
                 }
                 """;
-            _mergeProgram = MakeMerged(vsSrc, out _mLoc);
-            _program.Use();
-            var err = GlDebug.Error();
-            if (err != 0)
-                Console.WriteLine($"[render] GL error 0x{err:X} while setting up the merged meshes (continuing)");
-            Console.WriteLine("[render] merged meshes ready");
-            _mergeReady = true;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[render] merged meshes off: {ex.Message}");
-            _mergeBroken = true;
-            _program.Use();
-            _vao.Bind();
-            return false;
-        }
-    }
 
     /// <summary>An array buffer grown (never shrunk) to <paramref name="bytes"/>, then the data written.</summary>
     private static void FillArray(GlBuffer buf, ref int cap, float* data, int bytes)
@@ -338,7 +340,13 @@ public sealed unsafe partial class Renderer
         {
             var shape = m.GroupShape[g];
             int first, count;
-            if (shape == 0)
+            if (shape == SheetShape)
+            {
+                if (SheetsApart)
+                    continue; // (the main view draws its floor sheets textured, after: DrawSheets)
+                (first, count) = (0, 36); // (a shadow or other pass: a sheet is a plain box)
+            }
+            else if (shape == 0)
                 (first, count) = (0, 36);
             else if (!ShapeRange(shape, out first, out count))
                 continue;

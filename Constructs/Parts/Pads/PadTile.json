@@ -12,6 +12,7 @@
   "material": "steel",
   "color": "#35556b",
   "attachSeconds": 2.5,
+  "sheet": true,
   "storage": {
     "pieces": {
       "section": [

@@ -244,6 +244,7 @@ public sealed class BuildStationParts : IPartGenerator
         p.Sock("top", [0, h, 0], "+y");
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Stats(900, 1200, 6, 6.0);
+        p.Set(("sheet", true)); // (a floor tile: a rectangle of them is drawn as one textured box, ConstructRenderSheets.cs)
         p.Set(("machineBlock", BlockKey("block")), ("centreSockets", false), ("collider", "boxes"));
         return p;
     }

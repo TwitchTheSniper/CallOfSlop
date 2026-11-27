@@ -89,6 +89,35 @@ pixel limit, so a 7 cm bolt waited for 25 cm boxes and was drawn out to nearly f
 under a pixel. Works II's floor tiles (Bay Blocks, Pad Tiles, Roller Tiles, Laser Bed Blocks: 2.5 M of its 5 M triangles)
 are mostly bolts and plates under 25 cm, so halving steps drop them near their own pixel size.
 
+## Floor sheets
+
+`ConstructRenderSheets.cs`, `Renderer.Sheets.cs` (Sean, 2026-11-27). A part type marked `"sheet": true` (the Pad Tile and the
+Bay Block, from their generators) is a floor tile. In each merged chunk, tiles of one kind (type, paint, the welded bits that
+aren't its four sides), one turn, one height and one lattice that are welded to each other are grown into rectangles (along
++x, then a row at a time along +z), and each rectangle of two or more is ONE slot: a cube scaled to the rectangle and turned
+with its tiles, in place of every tile's 70 to 110 boxes. Zero Day Works II drew 141,000 of its 200,000 boxes as these
+tiles.
+
+- **The look** is baked on the CPU from the tile's own boxes (`Bake`): 256 texels a side, 32 layers a kind, 16 tops (which
+  of its four sides are welded, since a kerb or a skirt goes where a neighbour is welded) and four per side (which of the
+  side's two ends are). Colours are the box's paint through its material (a metal's diffuse share and a little sky), shaded
+  darker where a box sits back from the face and along a nearer box's edge; the outermost ring stands for the gap between
+  tiles. A cylinder seen down its axis is a disc.
+- **The shader** is the merged program with the box fragment shader's colour taken from the texture: it works out which tile
+  of the rectangle a pixel is on and which of its sides are welded (inside: all; on the edge: as every tile there is) and
+  reads that layer, repeating every tile. It lights plainly (no material), so bare steel shows no gloss.
+- **The sheet's top** is the height covering most of the tile seen from above (its deck), so what stands on a tile stands on
+  the sheet; what rises above it (a kerb, a bolt) is in the texture only.
+- **Left out** (drawn box by box, as before): a tile alone, one hurt, broken, burning, frosted or with a finish, a turned
+  one not upright, a scaled one. A look change in a chunk with tiles builds the chunk again, so a damaged tile leaves its sheet.
+- **Other passes** (sun, dark interiors, lamp shadows) draw a sheet as a plain box (`DrawMerged`); the main view leaves them
+  for `DrawSheets` after the merged chunks (`Renderer.SheetsApart`), each under its chunk's occlusion test.
+- `--no-sheets` draws every tile box by box.
+
+Zero Day Works II at 1600x900 (`--gl-bench "Proving Ground" --bench-bp "Zero Day Works II" --bench-ship-views`, llvmpipe):
+triangles sent 2,416k to 1,637k (inside0), 1,281k to 940k (inside1), 1,586k to 1,286k (beside), 743k to 666k and 938k to
+838k (the spawns), 593k to 559k far off.
+
 ## Occlusion
 
 `ConstructRenderOcclusion.cs`. After the opaque constructs are drawn, each merged chunk of the main view with at least

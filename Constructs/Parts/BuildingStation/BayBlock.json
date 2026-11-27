@@ -12,6 +12,7 @@
   "material": "steel",
   "color": "#3f7d3a",
   "attachSeconds": 6.0,
+  "sheet": true,
   "machineBlock": {
     "family": "station",
     "role": "block"
