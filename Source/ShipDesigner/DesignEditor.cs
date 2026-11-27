@@ -842,6 +842,7 @@ public sealed class DesignEditor
                 if (o["double"] is not null) w.Double = (bool)o["double"]!;
                 if (o["frameOut"] is not null) w.FrameOut = (bool)o["frameOut"]!;
                 if (o["frameIn"] is not null) w.FrameIn = (bool)o["frameIn"]!;
+                if (o["mirror"] is not null) w.Mirror = (bool)o["mirror"]!;
                 return "";
             }
             case "delHullWindow":

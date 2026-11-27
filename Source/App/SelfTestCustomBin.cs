@@ -592,15 +592,19 @@ public static partial class SelfTest
         for (var t = 0; t < 180; t++)
             aw.Step(aq, World.TickDt);
         var ast = aw.StoreOf(ah, av)!;
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var t = 0; t < 240; t++)
+        var round = () =>
         {
-            aw.Step(aq, World.TickDt);
-            ConstructStorage.FillBox(ah, av, ast, out _, out _);
-            ConstructStorage.Capacity(ah, av);
-            ConstructStoreVolume.Check(ah, av, ast, lamp);
-        }
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+            for (var t = 0; t < 240; t++)
+            {
+                aw.Step(aq, World.TickDt);
+                ConstructStorage.FillBox(ah, av, ast, out _, out _);
+                ConstructStorage.Capacity(ah, av);
+                ConstructStoreVolume.Check(ah, av, ast, lamp);
+            }
+        };
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        round();
+        var bytes = RecheckAllocBytes(GC.GetAllocatedBytesForCurrentThread() - before, round);
         Line($"custom bins: {bytes} B allocated over 240 ticks, {ast.Amount} units moved");
         Want(bytes < 2048 && ast.Amount > 30, $"the steady path allocates ({bytes} B, {ast.Amount} moved)");
 

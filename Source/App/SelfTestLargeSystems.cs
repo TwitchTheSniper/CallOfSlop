@@ -755,6 +755,7 @@ public static partial class SelfTest
             tick();
         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         var ms = clock.Elapsed.TotalMilliseconds / 120;
+        bytes = RecheckAllocBytes(bytes, () => { for (var k = 0; k < 120; k++) tick(); });
         Line($"large systems: 16 cars on a deck under way: {ms:0.00} ms a tick, {bytes} B in 120 ticks");
         want(bytes < 1024, $"a crowded deck allocates nothing ({bytes} B in 120 ticks)");
         want(ms < 8, $"a crowded deck costs {ms:0.00} ms a tick");

@@ -18,6 +18,42 @@ public static partial class DesignScene
 
     public static bool IsWindow(double[] q) => q.Length > 7 && q[5] > 1.5;
 
+    /// <summary>
+    /// The hull windows glazed: each of the design's, and after one set to <see cref="HullWindow.Mirror"/> its copy across the ship's middle
+    /// (x = 0; Karl, 2026-11-27): on the matching side of the room that mirrors its room (the same deck, its box mirrored within 5 cm), or on
+    /// the other side of its own room when that room is the middle one (its box about x = 0). A copy has the negated id (its glass, cut and
+    /// opening are cached apart) and is selected as its window. None where no room mirrors it.
+    /// </summary>
+    public static IEnumerable<HullWindow> Glazed(ShipDesign d)
+    {
+        foreach (var w in d.Windows)
+        {
+            yield return w;
+            if (w.Mirror && MirrorOf(d, w) is { } m)
+                yield return m;
+        }
+    }
+
+    /// <summary>A hull window's mirrored copy (<see cref="Glazed"/>), or null where no room mirrors its room.</summary>
+    public static HullWindow? MirrorOf(ShipDesign d, HullWindow w)
+    {
+        if (d.RoomById(w.Room) is not { } r)
+            return null;
+        const double tol = 0.05;
+        var twin = d.Rooms.Find(q => q.Id != r.Id && q.Deck == r.Deck && Math.Abs(q.X0 + r.X1) < tol && Math.Abs(q.X1 + r.X0) < tol
+            && Math.Abs(q.Z0 - r.Z0) < tol && Math.Abs(q.Z1 - r.Z1) < tol)
+            ?? (Math.Abs(r.X0 + r.X1) < tol ? r : null);
+        if (twin is null || twin == r && w.Side is "z0" or "z1")
+            return null; // (a middle room's fore or aft wall mirrors onto itself)
+        var side = w.Side switch { "x0" => "x1", "x1" => "x0", var s => s };
+        var t = w.Side is "z0" or "z1" ? 1 - w.T : w.T; // (along a fore or aft wall, x runs the other way)
+        return new HullWindow
+        {
+            Id = -w.Id, Room = twin.Id, Side = side, T = t, W = w.W, H = w.H, Sill = w.Sill, Shape = w.Shape, Gap = w.Gap, Hole = w.Hole,
+            Depth = w.Depth, Double = w.Double, FrameOut = w.FrameOut, FrameIn = w.FrameIn,
+        };
+    }
+
     /// <summary>A window's opening mark when its inside frame is off (<see cref="HullWindow.FrameIn"/>): still a window (<see cref="IsWindow"/>), framed by nothing.</summary>
     public const double FramelessMark = 3;
 
@@ -32,7 +68,7 @@ public static partial class DesignScene
     {
         var o = new List<double[]>();
         int up = d.Stacked ? 2 : 1;
-        foreach (var w in d.Windows)
+        foreach (var w in Glazed(d))
         {
             var lay = LayOnce(d, w);
             if (WindowFrame(d, w) is not { } f || !lay.Ok)
@@ -127,6 +163,167 @@ public static partial class DesignScene
             var (a, b) = (inner[k], inner[(k + 1) % 4]);
             m.Quad((a[0], a[1], a[2]), (b[0], b[1], b[2]), wall[(k + 1) % 4], wall[k], col, false);
         }
+    }
+
+    /// <summary>
+    /// A Window piece laid on its skin (Karl, 2026-11-27: "doesn't match hull shape or room shape"), into <paramref name="m"/> in the ship's
+    /// frame: its glass, its frame and its reveal follow the skin wherever it slopes or curves, as a hull window's do (<see cref="HullWindowMesh"/>),
+    /// each point found along the piece's own way out from its flat place (the 0.55 x 0.9 glass of PieceKinds.Glazing, the frame to 0.7 x 1.05
+    /// round it), and the sleeve runs from the reveal's inner end to the opening in the wall of the room behind it. False (nothing drawn) when
+    /// no point of it lies on the skin: the flat piece is drawn then.
+    /// </summary>
+    public static bool PieceWindowLaid(ShipDesign d, HullBody h, Piece p, PieceKind kind, DesignMesh m)
+    {
+        var w = Where(h, p);
+        var across = kind.Footprint is not null ? p.Hole : 1;
+        double sx = p.Size * across, sz = p.Size * across;
+        // The skin's place along the piece's way out (+Y) through a point of its flat place (lu, lv in its frame's units): metres from
+        // the flat place, the crossing nearest it; NaN where the skin isn't within reach.
+        double Skin(double lu, double lv)
+        {
+            const double reach = 0.8, step = 0.02;
+            var o = new double[3];
+            for (var k = 0; k < 3; k++)
+                o[k] = w.O[k] + w.X[k] * lu * sx + w.Z[k] * lv * sz;
+            bool In(double t) => h.Depth(o[0] + w.Y[0] * t, o[1] + w.Y[1] * t, o[2] + w.Y[2] * t) > 0;
+            var best = double.NaN;
+            var was = In(-reach);
+            for (var t = -reach; t < reach; t += step)
+            {
+                var next = In(t + step);
+                if (was && !next && (double.IsNaN(best) || Math.Abs(t) < Math.Abs(best)))
+                {
+                    double lo = t, hi = t + step;
+                    for (var it = 0; it < 10; it++)
+                    {
+                        var mid = (lo + hi) / 2;
+                        if (In(mid)) lo = mid; else hi = mid;
+                    }
+                    best = hi;
+                }
+                was = next;
+            }
+            return best;
+        }
+        const double gx = 0.55, gz = 0.9, fx = 0.7, fz = 1.05; // (the glass's and the frame's half sides, in the frame's units)
+        int nu = Math.Clamp((int)Math.Ceiling(2 * gx * sx / 0.1) + 1, 2, 40), nv = Math.Clamp((int)Math.Ceiling(2 * gz * sz / 0.1) + 1, 2, 40);
+        // The rim of a rectangle of half sides (hx, hz), round it (-x -z, +x -z, +x +z, -x +z), as (lu, lv) points, n along each side.
+        List<(double U, double V)> Rim(double hx, double hz)
+        {
+            var r = new List<(double, double)>();
+            for (var i = 0; i < nu - 1; i++) r.Add((-hx + 2 * hx * i / (nu - 1), -hz));
+            for (var j = 0; j < nv - 1; j++) r.Add((hx, -hz + 2 * hz * j / (nv - 1)));
+            for (var i = 0; i < nu - 1; i++) r.Add((hx - 2 * hx * i / (nu - 1), hz));
+            for (var j = 0; j < nv - 1; j++) r.Add((-hx, hz - 2 * hz * j / (nv - 1)));
+            return r;
+        }
+        var grid = new double[nu * nv];
+        var any = false;
+        for (var j = 0; j < nv; j++)
+            for (var i = 0; i < nu; i++)
+            {
+                var t = Skin(-gx + 2 * gx * i / (nu - 1), -gz + 2 * gz * j / (nv - 1));
+                any |= !double.IsNaN(t);
+                grid[j * nu + i] = t;
+            }
+        if (!any)
+            return false;
+        // A point the skin missed (a corner over an edge) takes its nearest found neighbour's place.
+        double Fill(double t, double near) => double.IsNaN(t) ? near : t;
+        var centre = Skin(0, 0);
+        centre = double.IsNaN(centre) ? 0 : centre;
+        for (var k = 0; k < grid.Length; k++)
+            grid[k] = Fill(grid[k], centre);
+        (double, double, double) At(double lu, double lv, double t)
+        {
+            var v = new double[3];
+            for (var k = 0; k < 3; k++)
+                v[k] = w.O[k] + w.X[k] * lu * sx + w.Z[k] * lv * sz + w.Y[k] * (t - p.Recess);
+            return (v[0], v[1], v[2]);
+        }
+        double Lu(int i) => -gx + 2 * gx * i / (nu - 1);
+        double Lv(int j) => -gz + 2 * gz * j / (nv - 1);
+        var glass = DesignMesh.Hex(PieceKinds.Glow);
+        var gun = DesignMesh.Hex(PieceKinds.Gun);
+        var armour = DesignMesh.Hex(PieceKinds.Armour);
+        var depth = Math.Max(0.05, p.Depth);
+        void Pane(double back) => m.Pane(() =>
+        {
+            for (var j = 0; j < nv - 1; j++)
+                for (var i = 0; i < nu - 1; i++)
+                    m.Quad(At(Lu(i), Lv(j), grid[j * nu + i] - back), At(Lu(i + 1), Lv(j), grid[j * nu + i + 1] - back),
+                        At(Lu(i + 1), Lv(j + 1), grid[(j + 1) * nu + i + 1] - back), At(Lu(i), Lv(j + 1), grid[(j + 1) * nu + i] - back), glass, false);
+        });
+        if (p.Double)
+            Pane(0.02);
+        Pane(depth);
+        // The reveal from the skin in to just past the inner pane, round the glass's rim (each rim point's own skin).
+        var rim = Rim(gx, gz);
+        var rimT = new double[rim.Count];
+        for (var k = 0; k < rim.Count; k++)
+        {
+            var (u, v) = rim[k];
+            int i = (int)Math.Round((u + gx) / (2 * gx) * (nu - 1)), j = (int)Math.Round((v + gz) / (2 * gz) * (nv - 1));
+            rimT[k] = grid[j * nu + i];
+        }
+        var well = depth + 0.06;
+        for (var k = 0; k < rim.Count; k++)
+        {
+            var k1 = (k + 1) % rim.Count;
+            m.Quad(At(rim[k].U, rim[k].V, rimT[k] + 0.02), At(rim[k1].U, rim[k1].V, rimT[k1] + 0.02),
+                At(rim[k1].U, rim[k1].V, rimT[k1] - well), At(rim[k].U, rim[k].V, rimT[k] - well), gun, false);
+        }
+        // The frame: a band laid on the skin from the glass's rim out to the frame's, standing 12 cm proud of it along the way out
+        // (as PieceKinds.WindowFrame's armour), its outer edge closed down to the skin.
+        var outer = Rim(fx, fz);
+        var outT = new double[outer.Count];
+        for (var k = 0; k < outer.Count; k++)
+            outT[k] = Fill(Skin(outer[k].U, outer[k].V), rimT[k]);
+        const double proud = 0.12;
+        for (var k = 0; k < rim.Count; k++)
+        {
+            var k1 = (k + 1) % rim.Count;
+            double li = proud * p.Size, a0 = rimT[k], a1 = rimT[k1], b0 = outT[k], b1 = outT[k1];
+            m.Quad(At(rim[k].U, rim[k].V, a0 + li), At(rim[k1].U, rim[k1].V, a1 + li), At(outer[k1].U, outer[k1].V, b1 + li), At(outer[k].U, outer[k].V, b0 + li), armour, false);
+            m.Quad(At(outer[k].U, outer[k].V, b0 + li), At(outer[k1].U, outer[k1].V, b1 + li), At(outer[k1].U, outer[k1].V, b1 - 0.02), At(outer[k].U, outer[k].V, b0 - 0.02), armour, false);
+            m.Quad(At(rim[k1].U, rim[k1].V, a1 + li), At(rim[k].U, rim[k].V, a0 + li), At(rim[k].U, rim[k].V, a0 + 0.02), At(rim[k1].U, rim[k1].V, a1 + 0.02), armour, false);
+        }
+        // The sleeve: from the reveal's inner end on in to the room wall's opening (its four corners there, each rim point placed between
+        // them as it is round the glass), lining the gap between the skin and the wall. None into a room lined out to the hull.
+        var (skin, inward) = PieceGlass(h, p, kind);
+        if (PieceWindow(d, skin, inward) is { Q: { } q, Room.ToHull: false } pw)
+        {
+            var corners = PieceGlass(h, p, kind, -(Math.Max(p.Depth / Math.Max(0.05, p.Size), 0.05) + 0.06)).C;
+            int up = d.Stacked ? 2 : 1, n = (int)q[6], al = n == 0 ? (d.Stacked ? 1 : 2) : 0;
+            double sm = 0, um = 0;
+            foreach (var c in corners)
+                (sm, um) = (sm + c[al] / 4, um + c[up] / 4);
+            var dir = d.Stacked ? -1 : 1;
+            var wall = new double[4][];
+            for (var c = 0; c < 4; c++)
+            {
+                var v = new double[3];
+                v[n] = q[n];
+                v[al] = q[al] + (corners[c][al] < sm ? -1 : 1) * DoorHalf(q);
+                v[up] = q[up] + (corners[c][up] < um == (dir > 0) ? 0 : dir * DoorTop(q));
+                wall[c] = v;
+            }
+            (double, double, double) OnWall(double u, double v)
+            {
+                double a = (u / gx + 1) / 2, b = (v / gz + 1) / 2; // (corners: -x -z, +x -z, +x +z, -x +z)
+                var o = new double[3];
+                for (var k = 0; k < 3; k++)
+                    o[k] = (1 - b) * ((1 - a) * wall[0][k] + a * wall[1][k]) + b * ((1 - a) * wall[3][k] + a * wall[2][k]);
+                return (o[0], o[1], o[2]);
+            }
+            var col = DesignMesh.Hex(p.RevealClad ? DesignRecess.RevealColour(pw.Room) : PieceKinds.Gun);
+            for (var k = 0; k < rim.Count; k++)
+            {
+                var k1 = (k + 1) % rim.Count;
+                m.Quad(At(rim[k].U, rim[k].V, rimT[k] - well), At(rim[k1].U, rim[k1].V, rimT[k1] - well), OnWall(rim[k1].U, rim[k1].V), OnWall(rim[k].U, rim[k].V), col, false);
+            }
+        }
+        return true;
     }
 
     /// <summary>The windows' openings in room r's walls (those <see cref="DoorsOf"/> takes for it).</summary>
