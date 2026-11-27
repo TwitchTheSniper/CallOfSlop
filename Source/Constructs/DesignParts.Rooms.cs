@@ -31,7 +31,7 @@ public static partial class DesignParts
         var (d, els) = (st.D, st.Els);
         if (d.Rooms.Count == 0)
             yield break;
-        var check = DesignScene.Run(d); // (the doorways, as the designer has them)
+        var check = st.Check ??= DesignScene.Run(d); // (the doorways, as the designer has them)
         yield return els.Count;
         for (var ri = 0; ri < d.Rooms.Count; ri++)
         {

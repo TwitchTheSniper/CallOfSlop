@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class DesignParts
 {
-    private static ConstructPartDef? _template, _thrustTemplate, _seatTemplate;
+    private static ConstructPartDef? _template, _thrustTemplate, _seatTemplate, _doorTemplate;
 
     /// <summary>Plain structure's (a band, a join, a piece that does nothing, a floor).</summary>
     private static ConstructPartDef Template => _template ??= ConstructParts.Parse(TemplateJson, "a design part's template");
@@ -15,6 +15,17 @@ public static partial class DesignParts
     private static ConstructPartDef ThrustTemplate => _thrustTemplate ??= ConstructParts.Parse(ThrustJson, "a design thruster's template");
 
     private static ConstructPartDef SeatTemplate => _seatTemplate ??= ConstructParts.Parse(SeatJson, "a design seat's template");
+
+    /// <summary>A door's (DesignParts.Doors.cs): an event door, so its open and locked settings are the parser's; its leaf is each element's own.</summary>
+    private static ConstructPartDef DoorTemplate => _doorTemplate ??= ConstructParts.Parse(DoorJson, "a design door's template");
+
+    private const string DoorJson = """
+        {"format":"call-of-slop-construct-part/1","name":"Design door","description":"A door or hatch of a ship from the Ship Designer.","group":"Production","section":"Designs",
+         "role":"door","tool":"welder","mass":10,"health":100,"material":"steel","color":"#8a8f96","attachSeconds":4,"stage":true,"centreSockets":false,
+         "door":{"kind":"slide","axis":"+x","travel":1,"seconds":1.5,"hang":"back"},
+         "boxes":[{"min":[-0.5,-0.01,-0.5],"max":[0.5,0.01,0.5]}],
+         "sockets":[{"name":"back","at":[0,-0.01,0],"dir":"-y"}]}
+        """;
 
     private const string ThrustJson = """
         {"format":"call-of-slop-construct-part/1","name":"Design thruster","description":"A drive or an RCS nozzle of a ship from the Ship Designer.","group":"Production","section":"Designs",

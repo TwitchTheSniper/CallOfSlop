@@ -350,6 +350,8 @@ public static partial class DesignParts
         public readonly ShipDesign D = d;
         public readonly List<Element> Els = els;
         public readonly Dictionary<(int Hull, int Copy), (int First, int Count, double[] Z)> BandOf = new();
+        /// <summary>The designer's checks of the design (its doorways, placed doors: DesignScene.Run), made once by the first stage that needs them.</summary>
+        public DesignScene.Check? Check;
 
         /// <summary>The band of a body's copy at <paramref name="z"/> (its first copy's when it has no such copy), or -1.</summary>
         public int BandAt(int hull, int copy, double z)
@@ -501,7 +503,7 @@ public static partial class DesignParts
 
     private static DesignMesh Mirror(DesignMesh m, double cx)
     {
-        var o = new DesignMesh();
+        var o = new DesignMesh { Leaves = m.Leaves }; // (its triangles in the same order: its door leaves too)
         for (var t = 0; t < m.Tris; t++)
             for (var v = 2; v >= 0; v--)
             {
