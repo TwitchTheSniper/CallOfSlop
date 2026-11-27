@@ -676,8 +676,9 @@ public static partial class ConstructRender
             DrawNeedle(gfx, d, p, Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * seg * body);
             drawn += 2;
         }
-        // A piston's rod, from its base up to where its leaf has slid to.
-        if (d.Role == PartRole.Joint && d.JointType == JointType.Piston && !d.IsRail && c.JointOf(i) is var pj and >= 0 && c.Joints[pj].Angle > 0.01f)
+        // A piston's rod, from its base up to where its leaf has slid to. Not a ship design's hidden rams (a lift platform's, a lift's
+        // spans): the design draws its own rams, and the rod stood as a white post in the middle of the platform (Karl, 2026-11-27).
+        if (d.Role == PartRole.Joint && d.JointType == JointType.Piston && !d.IsRail && c.JointOf(i) is var pj and >= 0 && c.Joints[pj].Angle > 0.01f && !DesignParts.IsDesign(d))
         {
             ref var jt = ref c.Joints[pj];
             var ext = float.Lerp(jt.PrevAngle, jt.Angle, alpha);
