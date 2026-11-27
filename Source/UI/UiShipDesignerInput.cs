@@ -79,6 +79,9 @@ public sealed partial class Ui
     private int _gizmoHull;
     private Vector3 _gizmoPos;
     private int _gizmoAxis = -1, _gizmoHover = -1;
+
+    // The pointer's shape over the yard, as the page's cursor: set by Hover, kept while its drag runs.
+    private ImGuiMouseCursor _sdCursor = ImGuiMouseCursor.Arrow;
     private Vector3 _gizmoStart, _gizmoGrab;
 
     private const float Fov = 45 * MathF.PI / 180;
@@ -203,7 +206,14 @@ public sealed partial class Ui
                 _camPos = _camTarget + d * MathF.Pow(0.95f, io.MouseWheel * 2);
             }
             if (_drag == null && _paletteDrag == null && _gizmoAxis < 0 && !_sdOrbiting && !_sdPanning)
+            {
+                _sdCursor = ImGuiMouseCursor.Arrow;
                 Hover(mouse);
+                if (_gizmoHover >= 0)
+                    _sdCursor = ImGuiMouseCursor.ResizeAll;
+            }
+            if (_sdCursor != ImGuiMouseCursor.Arrow && !_sdOrbiting && !_sdPanning)
+                ImGui.SetMouseCursor(_sdCursor);
         }
         var h = MathF.Max(1, max.Y - min.Y);
         if (_sdOrbiting)
@@ -941,8 +951,15 @@ public sealed partial class Ui
     private void Hover(float2 m)
     {
         var hits = CastAt(m);
-        if (_sdMode == "connectors" && hits.Any(h => h.O.Pick?.Type == "door"))
+        if (_sdMode == "hull" && hits.Any(h => h.O.Pick?.Type == "station"))
+            _sdCursor = ImGuiMouseCursor.ResizeEW;
+        else if (_sdMode == "pieces" && hits.FirstOrDefault().O?.Pick?.Type == "piece")
+            _sdCursor = ImGuiMouseCursor.Hand;
+        else if (_sdMode == "connectors" && hits.Any(h => h.O.Pick?.Type == "door"))
+        {
+            _sdCursor = ImGuiMouseCursor.Hand;
             _sdTip = "Click to pick the door; drag it along the wall.";
+        }
         else if (_sdMode == "interior" && hits.FirstOrDefault(h => h.O.Pick?.Type == "room") is { O: not null } hit && _mounting == null)
         {
             var r = ById(Arr(S, "rooms"), hit.O.Pick!.Id);
@@ -952,6 +969,8 @@ public sealed partial class Ui
             var hp = hit.Point;
             var onTop = Stacked ? Math.Abs(hp.Z - bx[4]) < 0.12 : Math.Abs(hp.Y - bx[3]) < 0.12;
             var e = onTop ? default : EdgesNear(r, Stacked ? (hp.X, hp.Y) : (hp.X, hp.Z), hit);
+            _sdCursor = onTop ? ImGuiMouseCursor.ResizeNS : !e.Any ? ImGuiMouseCursor.ResizeAll
+                : (e.X0 || e.X1) && (e.Z0 || e.Z1) ? ImGuiMouseCursor.ResizeNWSE : (e.X0 || e.X1) ? ImGuiMouseCursor.ResizeEW : ImGuiMouseCursor.ResizeNS;
             _sdTip = onTop ? "Drag up or down to set the room's height." : e.Any ? "Drag to size the room." : "Drag to move the room.";
         }
     }
