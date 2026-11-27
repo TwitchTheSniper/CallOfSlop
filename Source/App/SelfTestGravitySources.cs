@@ -218,13 +218,14 @@ public static partial class SelfTest
         // No allocation per query.
         var sum = new SummedGravity(model, -Vector3.UnitZ);
         var acc = Vector3.Zero;
-        var a0 = GC.GetAllocatedBytesForCurrentThread();
-        for (var k = 0; k < 200; k++)
+        var alloc = SteadyAllocBytes(() =>
         {
-            var p = new Vector3(k * 37 % 900 - 450, 320 + k, k * 13 % 500);
-            acc += sum.GravityAt(p) + sum.UpAt(p) + new Vector3(sum.HeightOf(p));
-        }
-        var alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
+            for (var k = 0; k < 200; k++)
+            {
+                var p = new Vector3(k * 37 % 900 - 450, 320 + k, k * 13 % 500);
+                acc += sum.GravityAt(p) + sum.UpAt(p) + new Vector3(sum.HeightOf(p));
+            }
+        });
         if (alloc != 0 || !float.IsFinite(acc.X))
             Fail($"gravity sources: 200 summed-field queries allocated {alloc} B");
     }
