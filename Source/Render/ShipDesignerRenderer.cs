@@ -171,7 +171,7 @@ public static unsafe class ShipDesignerRenderer
     /// Draws the yard: <paramref name="objs"/> in the viewport (framebuffer pixels, GL's bottom-left origin), opaque first, then the
     /// see-through ones by their order and far to near, as three.js sorts them.
     /// </summary>
-    public static void Draw(Renderer gfx, IReadOnlyList<DesignObj> objs, Matrix4x4 view, Matrix4x4 proj, Vector3 eye, int vx, int vy, int vw, int vh, Vector3 background)
+    public static void Draw(Renderer gfx, IReadOnlyList<DesignObj> objs, Matrix4x4 view, Matrix4x4 proj, Vector3 eye, int vx, int vy, int vw, int vh, Vector3 background, float backgroundAlpha = 1)
     {
         if (!Init())
             return;
@@ -190,7 +190,7 @@ public static unsafe class ShipDesignerRenderer
         gfx.SetViewport(vx, vy, vw, vh);
         OpenGl.Scissor(vx, vy, vw, vh);
         OpenGl.Enable(GlCapability.ScissorTest);
-        Native.glClearColor(background.X, background.Y, background.Z, 1);
+        Native.glClearColor(background.X, background.Y, background.Z, backgroundAlpha); // (0: clear, for the palette's pictures, DesignThumbs.cs)
         Native.glClear(GL_COLOR_BUFFER_BIT);
         gfx.SetCamera(view, proj);
         gfx.ClearDepthBuffer();
