@@ -800,7 +800,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      its flight computer), so a design key names elements an older peer can't make; no message changed.
     // 475: walkable ship designs (DesignParts.*.cs split per kind): a design makes new and changed elements (hull boxes, doors,
     //      ladders, turned seats, segments and joints, wires), so a design key names elements an older peer builds differently; no message changed.
-    public const ushort ProtocolVersion = 475;
+    // 476: walkable ship designs, doors, risers and systems (DesignParts.Doors/Systems.cs, DesignRisers.cs): a design makes door elements
+    //      (airlock hatches, docking and cargo hatches, room doors, a floor cover), ladders and lift piston chains, guns with hidden ammo boxes
+    //      and fire directors, lamps, hitches, clamps and relays on long wires, so a design key names elements an older peer can't make; no message changed.
+    public const ushort ProtocolVersion = 476;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
