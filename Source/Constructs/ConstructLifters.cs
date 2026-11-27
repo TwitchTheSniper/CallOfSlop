@@ -1715,6 +1715,9 @@ public sealed partial class StationJob
     {
         public Vector3[] At = [], Centre = [];
         public Quaternion[] Rot = [];
+        public Vector3[] Lo = [], Hi = []; // each step's part bounds on the body (body frame): what an early fit stands on (ConstructStationEarlyFit.cs)
+        public byte[] RotIx = []; // each step's Rot24 turn
+        public bool[] Free = []; // the step may go on before its parent, where the costing had it (a plain socket step on the body itself)
     }
 
     public LiftPlan? Plan; // server: null until costed
@@ -1728,7 +1731,7 @@ public static partial class ConstructStation
     private static void LiftCost(StationJob j, ConstructBuild.BuildRun run, Construct built)
     {
         var n = j.Bp!.Steps.Count;
-        var plan = new StationJob.LiftPlan { At = new Vector3[n], Centre = new Vector3[n], Rot = new Quaternion[n] };
+        var plan = new StationJob.LiftPlan { At = new Vector3[n], Centre = new Vector3[n], Rot = new Quaternion[n], Lo = new Vector3[n], Hi = new Vector3[n], RotIx = new byte[n], Free = new bool[n] };
         var of = run.PartOf;
         for (var k = 0; k < n; k++)
         {
@@ -1743,6 +1746,9 @@ public static partial class ConstructStation
             plan.Rot[k] = Rot24.Quat(p.Rot);
             var d = built.DefOf(i);
             plan.Centre[k] = p.Pos + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, plan.Rot[k]);
+            built.PartBounds(i, out plan.Lo[k], out plan.Hi[k]);
+            plan.RotIx[k] = p.Rot;
+            plan.Free[k] = EarlyFree(j.Bp!, k, built, i, d);
         }
         j.Plan = plan;
     }
