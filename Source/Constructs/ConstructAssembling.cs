@@ -353,7 +353,16 @@ public static class ConstructAssembling
         var dest = OutputOf(d, st, recipe);
         var conveyor = ConstructConveyor.Out(c, part);
         var rode = false;
-        if (conveyor >= 0)
+        var own = ToOwnHopper(world, c, part, recipe.Output);
+        if (own != 0)
+        {
+            // Its own later order's input: it goes straight into its hopper, counted for that order's link (made in place).
+            world.AddInputPart(st, (ushort)recipe.Output.Id, recipe.Count);
+            for (var n = 0; n < recipe.Count; n++)
+                ConstructLogisticsPlan.Arrived(world, c, part, own, recipe.Output);
+            rode = true;
+        }
+        else if (conveyor >= 0)
         {
             // A Piece out conveyor takes what it makes, whole batches only; a part too wide for it goes to the tray when a slot takes it.
             rode = ConstructConveyor.PutMade(world, c, conveyor, recipe.Output, recipe.Count, out var full);
@@ -396,6 +405,15 @@ public static class ConstructAssembling
             WorkOrders.Made(world, c, q, recipe.Count); // (its head order: at its count the next order's recipe starts)
         return true;
     }
+
+    /// <summary>
+    /// The link a batch is made for when its head order is an input of another order on this same Assembler (ConstructLogisticsPlan
+    /// asks it to make its own input in place: <see cref="ConstructLogisticsPlan.MakesInPlace"/>), else 0. Such a part never leaves: it
+    /// goes into the hopper, as Zero Day Works II's Assemblers have no way from their beds back in (Sean, 2026-11-28).
+    /// </summary>
+    internal static ushort ToOwnHopper(ConstructWorld world, Construct c, int part, ConstructPartDef made) =>
+        c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Chain is var id and not 0 && !q.Head.IsPiece && q.Head.Part == made.Id
+        && ConstructLogisticsPlan.Open(world, c, part, id) ? id : (ushort)0;
 
     /// <summary>
     /// A body leaves at the output point, on its far side and level, its near side at the point. Why not, or None. An Assembler with a bed
