@@ -176,7 +176,7 @@ public static partial class SelfTest
         Steps(5);
         var mass2 = car.Mass;
         var com2 = car.Com;
-        var route = ConstructRoutes.Add(w, car, RouteType.Chute, bin, 255, 255, 0, default, default, bin2, 255);
+        var route = ConstructRoutes.Add(w, car, RouteType.Chute, bin, 255, CRoute.NoParent, 0, default, default, bin2, 255);
         car.Rebuild();
         Want(route >= 0, "the chute between two bins was refused");
         Steps(150);

@@ -130,7 +130,7 @@ public static partial class Program
             {
                 if (w.Get(_cnA.Body) is not { } ac)
                     gone = "the construct is gone";
-                else if (LinkStamp(ac, _cnA.Part, 255, 0) != _cnStamp)
+                else if (LinkStamp(ac, _cnA.Part, CRoute.NoParent, 0) != _cnStamp)
                     gone = "the construct was changed";
             }
             if (gone != null)
@@ -155,7 +155,7 @@ public static partial class Program
             {
                 _cnA = end;
                 _cnHave = true;
-                _cnStamp = end.Body != 0 && w.Get(end.Body) is { } c ? LinkStamp(c, end.Part, 255, 0) : 0;
+                _cnStamp = end.Body != 0 && w.Get(end.Body) is { } c ? LinkStamp(c, end.Part, CRoute.NoParent, 0) : 0;
                 BuildSounds.Play(BuildSound.LinkNode, default);
             }
             ConnectorHud(g, kind, aimHas ? "" : "aim at a construct or the ground", 0, -1, false);

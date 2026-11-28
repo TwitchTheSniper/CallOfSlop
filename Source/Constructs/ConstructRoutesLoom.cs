@@ -146,7 +146,7 @@ public static partial class ConstructRoutes
     {
         ref var r = ref c.Routes[k];
         var type = r.Type;
-        var junction = r.Parent != 255;
+        var junction = r.Parent != CRoute.NoParent;
         var fromPort = junction ? (byte)255 : r.FromPort;
         Span<Vector3> pts = stackalloc Vector3[LoomPoints];
         Span<int> hosts = stackalloc int[LoomPoints];

@@ -10,7 +10,7 @@ public struct ConstructHit
     public float Distance;
     public Vector3 Point, Normal;
     public byte SlotPlus1; // physical storage: the stored part hit is in this slot of the part (plus one; 0: the part itself)
-    public byte RoutePlus1; // routed links: the link hit (plus one; 0: a part), its segment in RouteSeg (Part: the part at that segment's end)
+    public ushort RoutePlus1; // routed links: the link hit (plus one; 0: a part), its segment in RouteSeg (Part: the part at that segment's end)
     public ushort RouteSeg;
     public byte TrackPlus1; // a freeform track: the track hit (plus one; 0: none); Part is its first wheel
     public bool Glass; // the box hit is a glass pane: rounds go on through it (and break it)
@@ -661,7 +661,7 @@ public sealed partial class ConstructWorld
     {
         if (c.RouteCount >= Construct.MaxRoutes || TotalRoutes >= WireCap)
             return false;
-        if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, WirePort(c, from, to)) < 0)
+        if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, CRoute.NoParent, 0, default, default, to, WirePort(c, from, to)) < 0)
             return false;
         if (rebuild)
             c.Rebuild(); // (the wire is there at once, as it always was)
@@ -1540,7 +1540,7 @@ public sealed partial class ConstructWorld
                 hit.Point = rp;
                 hit.Normal = -dir;
                 hit.SlotPlus1 = 0;
-                hit.RoutePlus1 = (byte)(route + 1);
+                hit.RoutePlus1 = (ushort)(route + 1);
                 hit.RouteSeg = (ushort)rseg;
                 hit.TrackPlus1 = 0;
             }
@@ -1554,7 +1554,7 @@ public sealed partial class ConstructWorld
                 hit.Point = origin + dir * best;
                 hit.Normal = -dir;
                 hit.SlotPlus1 = 0;
-                hit.RoutePlus1 = (byte)(c.Conveyed[rider].Route + 1);
+                hit.RoutePlus1 = (ushort)(c.Conveyed[rider].Route + 1);
                 hit.RouteSeg = 0;
                 hit.TrackPlus1 = 0;
                 hit.Glass = false;

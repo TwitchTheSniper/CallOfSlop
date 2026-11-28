@@ -21,7 +21,7 @@ public enum LogiReason : byte { None, NoWay, Narrow, DestFull, Closed, Loop, NoS
 public sealed class LogiMap
 {
     public const int MaxNodes = 512, MaxRouters = 32, MaxDests = 128;
-    public const byte None = 255;
+    public const ushort None = ushort.MaxValue; // Hop: no way (a link index, a u16 since the cap rose past 254)
 
     public int Stamp = int.MinValue, SizeStamp, PartCount, RouteCount; // what it was built from
     public ulong LinkHash; // ...and its links (ConstructLogistics.LinkHash): a rebuild that changed none keeps the map
@@ -57,7 +57,7 @@ public sealed class LogiMap
 
     // Next hops, a column a destination, made the first time a piece is sent there after a rebuild (server, and a client's terminal list).
     public readonly bool[] Ready = new bool[MaxDests];
-    public readonly byte[] Hop = new byte[MaxRouters * MaxDests]; // the Router's out conveyor toward the destination (None: no way)
+    public readonly ushort[] Hop = new ushort[MaxRouters * MaxDests]; // the Router's out conveyor toward the destination (None: no way)
     public readonly float[] Dist = new float[MaxRouters * MaxDests]; // metres, plus 2 m a junction crossed
     public readonly byte[] Narrow = new byte[MaxRouters * MaxDests]; // the narrowest conveyor on that way, in 5 cm steps
 
@@ -136,7 +136,7 @@ public static class ConstructLogistics
 
     /// <summary>Is a conveyor whole and from a part (not a branch)?</summary>
     private static bool Usable(Construct c, in CRoute r) =>
-        r.Type == RouteType.Conveyor && r.Parent == 255 && r.From < c.PartCount && r.To < c.PartCount && r.FirstCut > r.Count;
+        r.Type == RouteType.Conveyor && r.Parent == CRoute.NoParent && r.From < c.PartCount && r.To < c.PartCount && r.FirstCut > r.Count;
 
     private static int NodeFor(Construct c, LogiMap m, int part)
     {
@@ -277,7 +277,7 @@ public static class ConstructLogistics
         {
             ref readonly var r = ref c.Routes[k];
             m.EdgeLen[k] = 0;
-            if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.From < c.PartCount && r.To < c.PartCount)
+            if (r.Type == RouteType.Conveyor && r.Parent == CRoute.NoParent && r.From < c.PartCount && r.To < c.PartCount)
             {
                 var a = NodeFor(c, m, r.From);
                 var b = NodeFor(c, m, r.To);
@@ -458,7 +458,7 @@ public static class ConstructLogistics
                 if (cost < m.Dist[at])
                 {
                     m.Dist[at] = cost;
-                    m.Hop[at] = (byte)k;
+                    m.Hop[at] = (ushort)k;
                     m.Narrow[at] = (byte)Math.Min(nv, r.ConvW / ConstructConveyor.StepCm);
                     m.ViaLift[at] = vl;
                 }

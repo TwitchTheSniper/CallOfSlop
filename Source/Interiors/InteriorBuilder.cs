@@ -1976,7 +1976,7 @@ public sealed partial class InteriorBuilder : BlueprintScript
     private readonly HashSet<string> _noFit = new(); // (module items no part fits for this class: listed once)
 
     private readonly List<(PlanRoom Room, int Lv, List<VPart> Lamps)> _laterLights = new(); // generated rooms' lamps, switched after the feeds (phase 8)
-    public int DarkRooms; // generated rooms whose lamps had no link left for a switch (the construct's 254, less the players' 64)
+    public int DarkRooms; // generated rooms whose lamps had no link left for a switch (the construct's Construct.MaxRoutes, less the players' 64)
 
     /// <summary>A room's lights: a Switch on the first lamp, wired to every lamp (a lamp lights while its input is on).</summary>
     private void Lights(PlanRoom r, List<VPart> lamps)

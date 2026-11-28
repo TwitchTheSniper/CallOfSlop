@@ -2021,8 +2021,8 @@ public static unsafe partial class Program
                     for (var s = 0; s <= segs; s++)
                         pnodes[s + 1] = new CRouteNode { Host = (ushort)(s * 2 < segs ? from : to), Pos = Vector3.Lerp(pa, pb, s / (float)segs) + up };
                     pnodes[segs + 2] = new CRouteNode { Host = (ushort)to, Pos = pb };
-                    var bad = ConstructRoutes.Check(g.Constructs, c, RouteType.Pipe, from, outP, 255, 0, default, pnodes, to, inP);
-                    if (bad == null && ConstructRoutes.Add(g.Constructs, c, RouteType.Pipe, from, outP, 255, 0, default, pnodes, to, inP) < 0)
+                    var bad = ConstructRoutes.Check(g.Constructs, c, RouteType.Pipe, from, outP, CRoute.NoParent, 0, default, pnodes, to, inP);
+                    if (bad == null && ConstructRoutes.Add(g.Constructs, c, RouteType.Pipe, from, outP, CRoute.NoParent, 0, default, pnodes, to, inP) < 0)
                         bad = "no room for another link";
                     if (bad == null)
                     {
@@ -2034,7 +2034,7 @@ public static unsafe partial class Program
                     return;
                 }
                 var port = c.DefOf(from).DataOut is { Length: > 1 } outs ? ConstructRoutes.DataPortByte(Array.IndexOf(outs, "Data out")) : (byte)255;
-                g.SandboxSendRoute(c.Id, RouteType.Data, from, port, 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, to, 255);
+                g.SandboxSendRoute(c.Id, RouteType.Data, from, port, CRoute.NoParent, 0, default, ReadOnlySpan<CRouteNode>.Empty, to, 255);
                 _wsWait = 5;
                 return;
             }

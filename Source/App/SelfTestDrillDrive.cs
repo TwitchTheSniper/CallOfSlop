@@ -59,9 +59,9 @@ public static partial class SelfTest
         }
         if (!link)
             return new DrillRig(c, en, -1, -1, from, -1); // (the test links it with the linking tool)
-        var bad = ConstructRoutes.Check(w, c, RouteType.Shaft, from, port, 255, 0, default, default, 0, input.Byte);
+        var bad = ConstructRoutes.Check(w, c, RouteType.Shaft, from, port, CRoute.NoParent, 0, default, default, 0, input.Byte);
         want(bad == null, $"a straight shaft into the {drill}'s Drive in: {bad}");
-        var route = ConstructRoutes.Add(w, c, RouteType.Shaft, from, port, 255, 0, default, default, 0, input.Byte);
+        var route = ConstructRoutes.Add(w, c, RouteType.Shaft, from, port, CRoute.NoParent, 0, default, default, 0, input.Byte);
         c.Dirty = true;
         c.Rebuild();
         int sw = DdFit(w, c, "back", "Switch"), lever = DdFit(w, c, "-x", "Lever");
@@ -146,7 +146,7 @@ public static partial class SelfTest
             c.Parts[rig.Switch].State = 0;
             Tapped(0.5f, x0, z0, st);
             var stopped = Tapped(0.5f, x0, z0, st);
-            ConstructRoutes.Add(w, c, RouteType.Power, battery, 255, 255, 0, default, default, rig.Engine, 255); // (the rig's engine hangs in the air: the starter needs the circuit)
+            ConstructRoutes.Add(w, c, RouteType.Power, battery, 255, CRoute.NoParent, 0, default, default, rig.Engine, 255); // (the rig's engine hangs in the air: the starter needs the circuit)
             c.Dirty = true;
             want(stopped == 0 && !st.Busy && st.Drive == ShaftState.EngineOff && c.PowerUse < d.PowerDraw && DdLook(c, st).Contains("isn't running"), $"a stopped shaft with a battery: {stopped}, busy {st.Busy}, {st.Drive}, {c.PowerUse} W, \"{DdLook(c, st)}\"");
             c.Parts[rig.Switch].State = 1;
@@ -253,7 +253,7 @@ public static partial class SelfTest
             var bin = DdFit(w, lone, "+x", "Materials Bin");
             var binDef = ConstructParts.Need("Materials Bin");
             var chutePort = ConstructRoutes.PortNamed(ld, RouteType.Chute, DdChuteOut)!;
-            var chuteBad = bin < 0 ? "no bin" : ConstructRoutes.Check(w, lone, RouteType.Chute, 0, chutePort.Byte, 255, 0, default, default, bin, ConstructRoutes.FirstChutePort(binDef, input: true));
+            var chuteBad = bin < 0 ? "no bin" : ConstructRoutes.Check(w, lone, RouteType.Chute, 0, chutePort.Byte, CRoute.NoParent, 0, default, default, bin, ConstructRoutes.FirstChutePort(binDef, input: true));
             want(chuteBad == null, $"a chute from Chute out to a Materials Bin: {chuteBad}");
             var chute = CbChute(w, lone, 0, chutePort.Byte, bin, 255);
             var moved = Tapped(6, 8, -14);
@@ -313,7 +313,7 @@ public static partial class SelfTest
                     continue;
                 }
                 var made = CbChute(w, tc, 0, chutePort.Byte, tb, 255);
-                want(made >= 0 && ConstructRoutes.Check(w, tc, RouteType.Chute, 0, chutePort.Byte, 255, 0, default, default, DdFit(w, tc, "bottom", "Materials Bin") is var second and >= 0 ? second : tb, 255) is null or "those are already linked", $"the {name}'s Chute out");
+                want(made >= 0 && ConstructRoutes.Check(w, tc, RouteType.Chute, 0, chutePort.Byte, CRoute.NoParent, 0, default, default, DdFit(w, tc, "bottom", "Materials Bin") is var second and >= 0 ? second : tb, 255) is null or "those are already linked", $"the {name}'s Chute out");
                 tc.Parts[t.Switch].State = 1;
                 tc.Parts[t.Lever].State = 1;
                 Tapped(1, x, z);
@@ -378,9 +378,9 @@ public static partial class SelfTest
             return;
         }
         var bin = DdFit(w, c, "+x", "Materials Bin");
-        var into = ConstructRoutes.Check(w, c, RouteType.Chute, bin, 255, 255, 0, default, default, 0, 255);
+        var into = ConstructRoutes.Check(w, c, RouteType.Chute, bin, 255, CRoute.NoParent, 0, default, default, 0, 255);
         want(into != null && into.Contains("no chute input port"), $"a chute into a drill: \"{into}\"");
-        want(!ConstructRoutes.ClickEnds(c, RouteType.Chute, bin, 255, 0, false), "a click on a drill ends a chute");
+        want(!ConstructRoutes.ClickEnds(c, RouteType.Chute, bin, CRoute.NoParent, 0, false), "a click on a drill ends a chute");
         Span<ConstructRoutes.LinkPort> ports = new ConstructRoutes.LinkPort[ConstructRoutes.MaxLinkPorts];
         var n = ConstructRoutes.AllPorts(c, 0, ports);
         var names = string.Join(", ", ports[..n].ToArray().Select(p => p.Name));

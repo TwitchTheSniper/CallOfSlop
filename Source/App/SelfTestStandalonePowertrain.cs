@@ -86,7 +86,7 @@ public static partial class SelfTest
             Wire(w, c, from, to);
             return;
         }
-        if (ConstructRoutes.Add(w, c, RouteType.Data, from, 255, 255, 0, default, default, to, ConstructRoutes.DataPortByte(port)) < 0)
+        if (ConstructRoutes.Add(w, c, RouteType.Data, from, 255, CRoute.NoParent, 0, default, default, to, ConstructRoutes.DataPortByte(port)) < 0)
             Fail($"standalone powertrain: a wire into the {c.DefOf(to).Name}'s port {port} was refused");
         c.Rebuild();
     }

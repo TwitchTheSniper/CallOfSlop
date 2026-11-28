@@ -192,7 +192,7 @@ public static partial class SelfTest
                 var p0 = ConstructRoutes.Point(c, route, -1, out var s0);
                 var p1 = ConstructRoutes.Point(c, route, 0, out _);
                 c.WorldFrame(s0, out var q, out var t);
-                var hit = new ConstructHit { Body = c, Part = c.Routes[route].Source, Distance = 2f, Normal = Vector3.UnitY, Point = t + Vector3.Transform((p0 + p1) * 0.5f, q), RoutePlus1 = (byte)(route + 1) };
+                var hit = new ConstructHit { Body = c, Part = c.Routes[route].Source, Distance = 2f, Normal = Vector3.UnitY, Point = t + Vector3.Transform((p0 + p1) * 0.5f, q), RoutePlus1 = (ushort)(route + 1) };
                 ref var h = ref g.SandboxHands.Hand(g.LocalId);
                 frames++;
                 try

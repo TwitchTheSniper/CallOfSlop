@@ -21,7 +21,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// </list>
 /// Each cell costs the body three links (its run, its chute, its Run), and a body holds <see cref="ConstructRoutes.MaxRoutes"/>: Works
 /// II stood at 237 with its runs before the cells, so five is what fits (2026-11-28: six cells on a conveyor of Large Conveyor Joins,
-/// 30 more links, left the last runs and turntable crossings with no room, and the works fitted fewer parts).
+/// 30 more links, left the last runs and turntable crossings with no room, and the works fitted fewer parts; the cap was 254 then. It
+/// rose to 1,000 the same day, so more cells would fit now).
 /// </summary>
 public sealed partial class ZeroDayWorks2
 {

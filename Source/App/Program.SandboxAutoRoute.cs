@@ -86,7 +86,7 @@ public static partial class Program
 
     private static void LinkGhostEnd(Construct c, int n0, int to, byte port)
     {
-        if (_lkType == RouteType.Conveyor && _lkParent == 255)
+        if (_lkType == RouteType.Conveyor && _lkParent == CRoute.NoParent)
             RouteRender.PreviewWidth = ConstructRoutes.ConveyorWidth(c, _lkFrom, _lkFromPort, to, port); // (a straight conveyor opens to what both ends take)
         RouteRender.PreviewPts[n0] = ConstructRoutes.LivePort(c, to, port, _lkType);
         RouteRender.PreviewSeg[n0++] = c.Parts[to].Seg;

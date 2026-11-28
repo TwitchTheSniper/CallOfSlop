@@ -135,7 +135,7 @@ public static class ConstructPads
                 continue; // (a Roller Tile run's own conveyor is counted by its tiles below, laid or not)
             if (r.Count > 0)
                 Feed(c.RouteNodes[r.Start + r.Count - 1].Pos, o, inv, cell, mid, half, ref sx, ref sz, ref ox, ref oz);
-            else if (r.Parent == 255 && r.From < c.PartCount && r.From != r.To)
+            else if (r.Parent == CRoute.NoParent && r.From < c.PartCount && r.From != r.To)
                 Feed(c.Parts[r.From].Pos, o, inv, cell, mid, half, ref sx, ref sz, ref ox, ref oz);
         }
         // Roller Tile runs whose out end (a run goes along its seed's +z) butts the pad: their conveyors are laid on the server's next

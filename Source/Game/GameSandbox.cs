@@ -34,8 +34,8 @@ public enum CActKind : byte
     GrabFreeze, // freeze what the physics gun holds where it is, and let go (protocol 88)
     UnfreezeAll, // u8 everyone (the host only): unfreeze everything this player froze (protocol 88)
     Configure, // u16 body, u8 n, n x u8 part, u8 m, m x (u8 slot, f32 value): the configure tool sets settings (protocol 89)
-    Route, // u16 body, u8 type (protocol 98: the high nibble, a pipe style, is gone), u8 from, u8 from port, u8 parent link, u8 parent segment, 3 x i16 junction (cm), u8 to, u8 to port, u8 nodes, then each: u8 host part, 3 x i16 (cm): a routed link (protocol 90)
-    RouteEdit, // u16 body, u8 op, u8 link, u8 node, u8 its source, u8 its to, 3 x i16 (cm), u8 host: delete, move a node, repair (protocol 90)
+    Route, // u16 body, u8 type (protocol 98: the high nibble, a pipe style, is gone), u8 from, u8 from port, u8 parent link (u16 since protocol 487), u8 parent segment, 3 x i16 junction (cm), u8 to, u8 to port, u8 nodes, then each: u8 host part, 3 x i16 (cm): a routed link (protocol 90)
+    RouteEdit, // u16 body, u8 op, u8 link (u16 since protocol 487), u8 node, u8 its source, u8 its to, 3 x i16 (cm), u8 host: delete, move a node, repair (protocol 90)
     Spawn, // u8 SbSpawnKind, u8 difficulty, u8 SbLoadKind, u8 its value, u8 zombie mix, u32 count, vec aimed spot: a creative spawn (protocol 92; GameSandboxSpawns.cs)
     ClearSpawns, // every spawned bot and zombie goes (protocol 92)
     Snap, // u8 op (0 undo, 1 quick building off, 2 quick building on, 3 pick: then u16 body, u8 part; 4 take a kind: u16 part id): snappy building (protocol 94; GameSandboxSnap.cs)
@@ -62,7 +62,7 @@ public enum CActKind : byte
     Harpoon, // u8 op: 0 cut the line you hold, 1 reel in, 2 stop reeling, 3 tear out the head stuck in you (protocol 148; GameSandboxHarpoon.cs)
     KeyPress, // u16 body, u16 part, u8 key ('0'-'9', 'C', 'E'): a key of a Numpad or Code Lock (protocol 153; LogicInputs.cs)
     PartText, // u16 body, u16 part, u8 slot, text: a sign's message, a lamp bank's labels (protocol 153; LogicText.cs)
-    Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
+    Loom, // u16 body, u8 links, each u8 route (u16 since protocol 487), u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
     NoCollide, // u16 body, u16 part, u16 body, u16 part, u8 flags (1: the first is its whole piece, 2: the second): the no-collide tool (protocol 154)
     NudgeBegin, // u8 n, n x u16 body, vec pivot: the Nudge tool takes these bodies (protocol 156; GameSandboxNudge.cs)
     NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 156, unreliable)
@@ -87,7 +87,7 @@ public enum CActKind : byte
     QuarrySkip, // nothing: skip the first Ministry duty, the quarry (protocol 236; GameQuarry.cs)
     MakeEngine, // u16 kW, u8 tier, u8 EngineLayout, u8 EngineBoost, u8 size (255 any), 3 x u16 fit (cm; 0 any), u32 seed: creative, the Engine Kit makes an engine in front of the player (protocol 241; GameSandboxEngines.cs)
     RackDrop, // u16 body, u16 part: Shift+F on a Piece Rack, the kind looked at drops loose over it (protocol 249; ConstructEditsRack.cs)
-    Rider, // u16 body, u8 conveyor, u16 front (cm), u8 1 the physics gun: a piece off a conveyor, into the hands or the beam (protocol 249; ConstructEditsRack.cs)
+    Rider, // u16 body, u8 conveyor (u16 since protocol 487), u16 front (cm), u8 1 the physics gun: a piece off a conveyor, into the hands or the beam (protocol 249; ConstructEditsRack.cs)
     LineRecipe, // u16 body, u16 console, u16 machine, u16 recipe value, u8 flags (1: every machine of its kind on the line): the recipe picker (protocol 250; ProductionLines.SetRecipe)
     CraftOrder, // u16 body, u16 terminal, the order (u8 shape, u64 mask, u16 w, h, l, wall, u8 material, u16 part, u16 count): a Crafting Terminal's order (protocol 254; ConstructCrafting.Place)
     CraftCancel, // u16 body, u16 terminal, u16 order id: cancels it (protocol 254; ConstructCrafting.Cancel)
@@ -1608,7 +1608,7 @@ public sealed partial class Game
             case CActKind.Rider:
             {
                 var body = r.U16();
-                var route = r.U8();
+                var route = r.U16();
                 var at = r.U16();
                 return hands.TakeRider(Constructs, p.Id, eye, p.Yaw, body, route, at, r.U8() != 0);
             }
@@ -1618,7 +1618,7 @@ public sealed partial class Game
                 var ts = r.U8();
                 var from = r.U16();
                 var fromPort = r.U8();
-                var parent = r.U8();
+                var parent = r.U16(); // (CRoute.NoParent: from a part)
                 var parentSeg = r.U16();
                 var junction = ReadCm(ref r);
                 var to = r.U16();
@@ -1638,7 +1638,7 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var op = r.U8();
-                var route = r.U8();
+                var route = r.U16();
                 var node = r.U16();
                 var source = r.U16();
                 var to = r.U16();
@@ -1657,7 +1657,7 @@ public sealed partial class Game
                 Span<ushort> to = stackalloc ushort[ConstructRoutes.LoomMaxLinks];
                 for (var i = 0; i < links; i++)
                 {
-                    route[i] = r.U8();
+                    route[i] = r.U16();
                     source[i] = r.U16();
                     to[i] = r.U16();
                 }
@@ -1719,7 +1719,7 @@ public sealed partial class Game
                 w.U16(body).U16(part);
                 break;
             case CActKind.Rider:
-                w.U16(body).U8((byte)part).U16(socket).U8(flags);
+                w.U16(body).U16(part).U16(socket).U8(flags); // (protocol 487: the conveyor is a u16)
                 break;
             case CActKind.StoreIn:
             case CActKind.TakeStored:
@@ -1991,7 +1991,7 @@ public sealed partial class Game
     {
         var w = SbW;
         w.Reserve(64 + nodes.Length * 8); // (a long link outgrows the usual buffer)
-        w.Begin(Msg.CAct).U8((byte)CActKind.Route).U16(body).U8((byte)type).U16((ushort)from).U8(fromPort).U8((byte)parent).U16((ushort)parentSeg);
+        w.Begin(Msg.CAct).U8((byte)CActKind.Route).U16(body).U8((byte)type).U16((ushort)from).U8(fromPort).U16((ushort)parent).U16((ushort)parentSeg);
         Cm(w, junction).U16((ushort)to).U8(toPort).U16((ushort)nodes.Length);
         foreach (var n in nodes)
             Cm(w.U16(n.Host), n.Pos);
@@ -2004,7 +2004,7 @@ public sealed partial class Game
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.Loom).U16(body).U8((byte)routes.Length);
         for (var i = 0; i < routes.Length; i++)
-            w.U8((byte)routes[i]).U16(sources[i]).U16(tos[i]);
+            w.U16((ushort)routes[i]).U16(sources[i]).U16(tos[i]);
         w.U8((byte)guide.Length);
         foreach (var n in guide)
             Cm(w.U16(n.Host), n.Pos);
@@ -2016,7 +2016,7 @@ public sealed partial class Game
     public void SandboxSendRouteEdit(ushort body, RouteEditOp op, int route, int node, ushort source, ushort to, Vector3 pos = default, ushort host = 0)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.RouteEdit).U16(body).U8((byte)op).U8((byte)route).U16((ushort)node).U16(source).U16(to);
+        w.Begin(Msg.CAct).U8((byte)CActKind.RouteEdit).U16(body).U8((byte)op).U16((ushort)route).U16((ushort)node).U16(source).U16(to);
         Cm(w, pos).U16(host);
         SandboxSendBuilt(w);
     }

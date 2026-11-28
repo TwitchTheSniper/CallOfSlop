@@ -9,12 +9,13 @@ namespace CallOfSlop;
 /// </summary>
 public struct CRider
 {
+    public const ushort NoRoute = ushort.MaxValue; // Route: its link went
     public ushort Def; // this machine's id of the piece (Extrusion.Def of its key)
-    public byte Route; // the conveyor it rides on its construct (255: its link went: it drops at the next step where it last was)
+    public ushort Route; // the conveyor it rides on its construct (NoRoute: its link went: it drops at the next step where it last was)
     public float At; // its front, metres along the link from where it starts
     public byte Health; // its health share (255: whole)
     public uint Paint;
-    public byte ViaPlus1; // the conveyor it came off through a junction, plus one, while its back is still in the junction (0: none): its pose there follows the junction's lead-in
+    public ushort ViaPlus1; // the conveyor it came off through a junction, plus one, while its back is still in the junction (0: none): its pose there follows the junction's lead-in
     public Vector3 LastPos; // server: its centre and turn in the world at the last step (where it drops if its link goes)
     public Quaternion LastRot;
     // Smart logistics (ConstructLogistics.cs): where it is going, on either peer as the server last said.
@@ -517,7 +518,7 @@ public static class ConstructConveyor
         if (c.MachineAsmCount > 0 && c.Parts[part].D.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var asm) && MachineBlocks.OutTable(c, asm) is var table and >= 0)
             part = table;
         for (var k = 0; k < c.RouteCount; k++)
-            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == 255 && c.Routes[k].From == part)
+            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == CRoute.NoParent && c.Routes[k].From == part)
                 return k;
         return -1;
     }
@@ -789,7 +790,7 @@ public static class ConstructConveyor
         var rider = new CRider
         {
             Def = piece.Id,
-            Route = (byte)route,
+            Route = (ushort)route,
             At = along,
             Health = (byte)Math.Clamp((int)MathF.Round(pp.Health / MathF.Max(1, was.Health) * 255), 1, 255),
             Paint = pp.Paint,
@@ -841,7 +842,7 @@ public static class ConstructConveyor
             return false;
         for (var n = 0; n < count; n++)
         {
-            var rider = new CRider { Def = d.Id, Route = (byte)route, At = along + (count - 1 - n) * (along + Gap), Health = 255 };
+            var rider = new CRider { Def = d.Id, Route = (ushort)route, At = along + (count - 1 - n) * (along + Gap), Health = 255 };
             WorldPose(c, route, rider, d, out rider.LastPos, out rider.LastRot);
             if (dest != 0)
                 (rider.Dest, rider.Tag, rider.Flags) = (dest, tag, (byte)LogiFlags.Fetched); // (a terminal's fetch: it knows where)
@@ -867,7 +868,7 @@ public static class ConstructConveyor
         if (via >= c.RouteCount || route >= c.RouteCount || c.Routes[via].Type != RouteType.Conveyor)
             return 0;
         int j = c.Routes[route].From;
-        if (c.Routes[route].Parent != 255 || c.Routes[via].To != j || j >= c.PartCount)
+        if (c.Routes[route].Parent != CRoute.NoParent || c.Routes[via].To != j || j >= c.PartCount)
             return 0;
         inEnd = ConstructRoutes.Point(c, via, c.Routes[via].Count, out _);
         outStart = ConstructRoutes.Point(c, route, -1, out _);
@@ -968,13 +969,13 @@ public static class ConstructConveyor
         var d = ConstructParts.Def(c.Conveyed[lead].Def);
         var jd = c.DefOf(j);
         var rollers = jd.IsRollerTile || jd.IsTurntable; // (a run's tile or a turntable: which way on, RollerRuns.Passes)
-        Span<byte> outs = stackalloc byte[8];
+        Span<ushort> outs = stackalloc ushort[8];
         var n = 0;
         for (var o = 0; o < c.RouteCount && n < outs.Length; o++)
-            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j && (!rollers || RollerRuns.Passes(c, j, k, o)))
-                outs[n++] = (byte)o;
+            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == CRoute.NoParent && c.Routes[o].From == j && (!rollers || RollerRuns.Passes(c, j, k, o)))
+                outs[n++] = (ushort)o;
         if (n < outs.Length && jd.IsRollerTile && !RollerRuns.IsRunPort(jd, c.Routes[k].ToPort) && RollerRuns.RunOf(c, j) is var run and >= 0)
-            outs[n++] = (byte)run; // (a link into any tile's Piece in: onto its run, at the run's start)
+            outs[n++] = (ushort)run; // (a link into any tile's Piece in: onto its run, at the run's start)
         for (var t = 0; t < n; t++)
         {
             var pick = (c.Routes[k].Cursor + t) % n;
@@ -984,9 +985,9 @@ public static class ConstructConveyor
                 continue;
             var r = c.Conveyed[lead];
             Remove(c, lead);
-            r.Route = (byte)o;
+            r.Route = (ushort)o;
             r.At = -lead0;
-            r.ViaPlus1 = (byte)(k + 1);
+            r.ViaPlus1 = (ushort)(k + 1);
             if (r.Hops < 255)
                 r.Hops++; // (a Router further on knows a piece a Splitter keeps sending round)
             Insert(c, r);
@@ -1007,15 +1008,15 @@ public static class ConstructConveyor
             return false;
         var r = c.Conveyed[lead];
         Remove(c, lead);
-        r.Route = (byte)o;
+        r.Route = (ushort)o;
         r.At = -lead0;
-        r.ViaPlus1 = (byte)(k + 1);
+        r.ViaPlus1 = (ushort)(k + 1);
         r.Hops = (byte)Math.Min(255, r.Hops + 1);
         r.Wait = 0;
         r.Flags &= unchecked((byte)~LogiFlags.Stuck);
         Insert(c, r);
         for (var u = 0; u < c.RouteCount; u++)
-            if (c.Routes[u].Type == RouteType.Conveyor && c.Routes[u].Parent == 255 && c.Routes[u].From == c.Routes[k].To)
+            if (c.Routes[u].Type == RouteType.Conveyor && c.Routes[u].Parent == CRoute.NoParent && c.Routes[u].From == c.Routes[k].To)
                 c.Routes[u].Timer = k + 1; // (as a join's: the input served last waits behind the others)
         return true;
     }
@@ -1091,7 +1092,7 @@ public static class ConstructConveyor
     {
         Span<float> lengths = stackalloc float[Construct.MaxRoutes];
         Span<float> tail = stackalloc float[Construct.MaxRoutes];
-        Span<byte> waiting = stackalloc byte[16]; // conveyors whose lead waits at a junction this step
+        Span<ushort> waiting = stackalloc ushort[16]; // conveyors whose lead waits at a junction this step
         lengths.Clear();
         Tails(c, tail);
         var nWaiting = 0;
@@ -1161,10 +1162,16 @@ public static class ConstructConveyor
         }
         _throughN = 0;
         // Leads at junctions go on, the one that waited longest first (a join takes its inputs in turn: Timer is the last served, plus one).
+        Span<int> turns = stackalloc int[16]; // (each one's turn once: Turn walks the links)
+        for (var a = 0; a < nWaiting; a++)
+            turns[a] = Turn(c, waiting[a]);
         for (var a = 0; a < nWaiting; a++)
             for (var b = a + 1; b < nWaiting; b++)
-                if (Turn(c, waiting[b]) < Turn(c, waiting[a]))
+                if (turns[b] < turns[a])
+                {
                     (waiting[a], waiting[b]) = (waiting[b], waiting[a]);
+                    (turns[a], turns[b]) = (turns[b], turns[a]);
+                }
         for (var w = 0; w < nWaiting; w++)
             for (var lead = 0; lead < c.ConveyedCount; lead++)
                 if (c.Conveyed[lead].Route == waiting[w])
@@ -1177,13 +1184,15 @@ public static class ConstructConveyor
     }
 
     /// <summary>A waiting input's place in its junction's turn: how far after the input it served last (0: next).</summary>
+    private const int TurnSpan = Construct.MaxRoutes + 1; // (Timer is a link index plus one: 0 to MaxRoutes; it was 256 while links were at most 254)
+
     private static int Turn(Construct c, int k)
     {
         int j = c.Routes[k].To;
         for (var o = 0; o < c.RouteCount; o++)
-            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == 255 && c.Routes[o].From == j)
-                return j * 256 + ((k - (int)c.Routes[o].Timer + 256) & 255);
-        return j * 256;
+            if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == CRoute.NoParent && c.Routes[o].From == j)
+                return j * TurnSpan + ((k - (int)c.Routes[o].Timer) % TurnSpan + TurnSpan) % TurnSpan;
+        return j * TurnSpan;
     }
 
     /// <summary>
@@ -1331,7 +1340,7 @@ public static class ConstructConveyor
             if (_through[t].Route == o)
                 return false;
         var n = r;
-        (n.Route, n.At, n.ViaPlus1, n.Wait) = ((byte)o, along, 0, 0);
+        (n.Route, n.At, n.ViaPlus1, n.Wait) = ((ushort)o, along, (ushort)0, (byte)0);
         _through[_throughN++] = n;
         return true;
     }
@@ -1534,9 +1543,9 @@ public static class ConstructConveyor
         for (var i = 0; i < c.ConveyedCount; i++)
         {
             ref var r = ref c.Conveyed[i];
-            r.Route = r.Route < oldCount && map[r.Route] >= 0 ? (byte)map[r.Route] : (byte)255;
+            r.Route = r.Route < oldCount && map[r.Route] >= 0 ? (ushort)map[r.Route] : CRider.NoRoute;
             var via = r.ViaPlus1 - 1;
-            r.ViaPlus1 = via >= 0 && via < oldCount && map[via] >= 0 ? (byte)(map[via] + 1) : (byte)0;
+            r.ViaPlus1 = via >= 0 && via < oldCount && map[via] >= 0 ? (ushort)(map[via] + 1) : (ushort)0;
         }
     }
 
@@ -1549,9 +1558,9 @@ public static class ConstructConveyor
             var r = src.Conveyed[i];
             if (r.Route < map.Length && map[r.Route] >= 0 && dst.ConveyedCount < Construct.MaxConveyed)
             {
-                r.Route = (byte)map[r.Route];
+                r.Route = (ushort)map[r.Route];
                 var via = r.ViaPlus1 - 1;
-                r.ViaPlus1 = via >= 0 && via < map.Length && map[via] >= 0 ? (byte)(map[via] + 1) : (byte)0;
+                r.ViaPlus1 = via >= 0 && via < map.Length && map[via] >= 0 ? (ushort)(map[via] + 1) : (ushort)0;
                 dst.ReserveConveyed(dst.ConveyedCount + 1);
                 dst.Conveyed[dst.ConveyedCount++] = r;
                 Remove(src, i);
@@ -1567,8 +1576,8 @@ public static class ConstructConveyor
         for (var i = 0; i < b.ConveyedCount && a.ConveyedCount < Construct.MaxConveyed; i++)
         {
             var r = b.Conveyed[i];
-            r.Route = baseRoute + r.Route < Construct.MaxRoutes ? (byte)(baseRoute + r.Route) : (byte)255;
-            r.ViaPlus1 = r.ViaPlus1 != 0 && baseRoute + r.ViaPlus1 <= Construct.MaxRoutes ? (byte)(baseRoute + r.ViaPlus1) : (byte)0;
+            r.Route = r.Route != CRider.NoRoute && baseRoute + r.Route < Construct.MaxRoutes ? (ushort)(baseRoute + r.Route) : CRider.NoRoute;
+            r.ViaPlus1 = r.ViaPlus1 != 0 && baseRoute + r.ViaPlus1 <= Construct.MaxRoutes ? (ushort)(baseRoute + r.ViaPlus1) : (ushort)0;
             a.ReserveConveyed(a.ConveyedCount + 1);
             a.Conveyed[a.ConveyedCount++] = r;
         }
@@ -1577,14 +1586,14 @@ public static class ConstructConveyor
 
     // ---- The wire (protocol 244: CBodyKind.Riders) -------------------------------------------------------------------
 
-    /// <summary>One body's riders, the whole list: u16 body, u16 n, each u8 link, f32 front (m: before a junction's output starts, below 0), u8 health, u32 paint, u8 the link it came through plus one, u16 destination store handle, u16 order, u8 LogiFlags (protocol 264), then the piece's key (protocol 245).</summary>
+    /// <summary>One body's riders, the whole list: u16 body, u16 n, each u16 link (protocol 487: was u8), f32 front (m: before a junction's output starts, below 0), u8 health, u32 paint, u16 the link it came through plus one (protocol 487), u16 destination store handle, u16 order, u8 LogiFlags (protocol 264), then the piece's key (protocol 245).</summary>
     public static void Write(PacketWriter w, Construct c)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Riders).U16(c.Id).U16((ushort)c.ConveyedCount);
         for (var i = 0; i < c.ConveyedCount; i++)
         {
             ref var r = ref c.Conveyed[i];
-            w.U8(r.Route).F32(r.At).U8(r.Health).U32(r.Paint).U8(r.ViaPlus1).U16(r.Dest).U16(r.Tag).U8(r.Flags);
+            w.U16(r.Route).F32(r.At).U8(r.Health).U32(r.Paint).U16(r.ViaPlus1).U16(r.Dest).U16(r.Tag).U8(r.Flags);
             ConstructStorage.WriteDef(w, r.Def); // (a piece's key, or a press's part by its id: protocol 247)
         }
     }
@@ -1602,11 +1611,11 @@ public static class ConstructConveyor
             c.ConveyedCount = 0;
         for (var i = 0; i < n; i++)
         {
-            var route = r.U8();
+            var route = r.U16();
             var at = r.F32();
             var hp = r.U8();
             var paint = r.U32();
-            var via = r.U8();
+            var via = r.U16();
             var dest = r.U16();
             var tag = r.U16();
             var flags = r.U8();
@@ -1639,16 +1648,16 @@ public static class ConstructConveyor
         w.I32(n);
         for (var k = 0; k < routes.Length; k++)
             if (routes[k].Type == RouteType.Conveyor)
-                w.U8((byte)k).U16(routes[k].ConvW).U16(routes[k].ConvH);
+                LinkSave.WriteRoute(w, k).U16(routes[k].ConvW).U16(routes[k].ConvH);
         w.I32(riders.Length);
         foreach (ref readonly var r in riders)
-            w.U8(r.Route).F32(r.At).U8(r.Health).U32(r.Paint).U16(names.Part(r.Def));
+            LinkSave.WriteRoute(w, r.Route).F32(r.At).U8(r.Health).U32(r.Paint).U16(names.Part(r.Def));
     }
 
     /// <summary>What a save holds of a body's conveyors: read before the body is made, put on it once its links are (<see cref="Apply"/>).</summary>
     public sealed class Saved
     {
-        public readonly List<(byte Route, ushort W, ushort H)> Sizes = new();
+        public readonly List<(ushort Route, ushort W, ushort H)> Sizes = new();
         public readonly List<CRider> Riders = new();
         public readonly List<int> Index = new(); // each kept rider's place in the save's list (the LOGI block is in that order)
     }
@@ -1663,13 +1672,13 @@ public static class ConstructConveyor
         if (n < 0 || n > Construct.MaxRoutes)
             throw new WorldFileException($"{n} conveyor sizes");
         for (var i = 0; i < n; i++)
-            saved.Sizes.Add((r.U8(), r.U16(), r.U16()));
+            saved.Sizes.Add((LinkSave.ReadRoute(r), r.U16(), r.U16()));
         var m = r.I32();
         if (m < 0 || m > Construct.MaxConveyed)
             throw new WorldFileException($"{m} riders");
         for (var i = 0; i < m; i++)
         {
-            var route = r.U8();
+            var route = LinkSave.ReadRoute(r);
             var at = r.F32();
             var hp = r.U8();
             var paint = r.U32();

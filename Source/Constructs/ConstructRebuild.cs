@@ -183,7 +183,7 @@ public sealed partial class Construct
     private bool OnRoute(int i)
     {
         for (var r = 0; r < RouteCount; r++)
-            if (Routes[r].Source == i || Routes[r].To == i || Routes[r].Parent == 255 && Routes[r].From == i)
+            if (Routes[r].Source == i || Routes[r].To == i || Routes[r].Parent == CRoute.NoParent && Routes[r].From == i)
                 return true;
         for (var k = 0; k < RouteNodeCount; k++)
             if (RouteNodes[k].Host == i)
@@ -317,7 +317,7 @@ public sealed partial class Construct
                 routed[rt.Source] = true;
             if (rt.To < PartCount)
                 routed[rt.To] = true;
-            if (rt.Parent == 255 && rt.From < PartCount)
+            if (rt.Parent == CRoute.NoParent && rt.From < PartCount)
                 routed[rt.From] = true;
         }
         for (var k = 0; k < RouteNodeCount; k++)

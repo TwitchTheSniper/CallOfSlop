@@ -367,7 +367,7 @@ boxes and 255 sockets and reaches at most 200 m from its origin.
 | Joints + freeform attachments | 16 (8 joins) | 255 (192) | a segment is a byte everywhere |
 | Wheels and track rays, spring feet | 12 | 256 | a raycast each a tick; the wire doesn't care |
 | Guns | 8 | 256 | a turn through the gun step |
-| Routed links, nodes | 64, 768 | 254, 3,000 | a route's parent is a byte with 255 meaning none (a hundred sites and the tests); widening it is mechanical if a ship needs more |
+| Routed links, nodes | 64, 768 | 1,000, 32,768 (8,192 a link) | a link's index (a branch's parent, a rider's conveyor, the hit) is a u16, 65535 none (`CRoute.NoParent`; protocol 487: it was a byte, 255 none, and 254 links); a save writes it as a byte below 254 or 254 and a u16, so old files read the same. Arrays grow with the links a body has |
 | Wires | 64 | 1,024 | |
 | Part mass, health | 50 t, 100,000 | 50,000 t, 16,000,000 | health is u24 on the wire |
 | Part reach, sockets | 5 m, 40 | 200 m, 255 | a socket index is a byte |
@@ -514,7 +514,7 @@ windows are open (a Window Glass fits each); the bunker and pillbox are foundati
 ## Performance and caps
 
 A construct holds at most 16,000 parts, 48,000 links, 255 joints and freeform attachments (64 joins), 256 wheels and track rays,
-256 spring feet, 256 guns, 512 thrusters, 32 modular engines, 254 routed links and 3,000 link nodes, 1,024 wires ([Size classes](#size-classes-the-capital-parts)
+256 spring feet, 256 guns, 512 thrusters, 32 modular engines, 1,000 routed links and 32,768 link nodes, 1,024 wires ([Size classes](#size-classes-the-capital-parts)
 says what limits each). 4 inputs a part, wires up to 8 m (12 m between constructs, 255 of those), 255 couplings, 16,384
 contacts a tick (each rigid group's points against one thing thinned to nine a normal). Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);

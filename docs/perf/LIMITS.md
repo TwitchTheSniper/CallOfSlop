@@ -52,7 +52,7 @@ their log. Add a call wherever a new silent cap goes in.
   shots still hit). Raising needs a u16 count and a split across packets (255 shots are already ~4 KB).
 - **`ConstructTerminal.MaxTerminals` 64** (more read as having no stores) and **`MaxEdges` 2,048**: a big base may reach
   them; the hop search's cost would need measuring.
-- **Beacon networks 64** (a bit of a 64-bit mask) and **routed links 254 a construct** (a parent byte): wire widths.
+- **Beacon networks 64** (a bit of a 64-bit mask) and **routed links 1,000 a construct** (was 254, a parent byte; a u16 since protocol 487): wire widths.
 - **`ConstructParts.MaxBoxes` 256** (was 32, a draw call a box): raised with merged meshes (docs/render/MERGED-MESHES.md),
   which draw a static part's boxes in its chunk's few draws. Moving parts are still drawn box by box; designed ordnance keeps
   32 (`OrdnanceDesign.MaxBoxes`).
@@ -375,7 +375,7 @@ where it has one. Line numbers are those of this audit.
 | Wire width | `MaxPartHealth` | `Constructs/ConstructParts.cs:800` | `16_000_000f` | kg, hp, which three bytes carry; a capital chassis deck | Kept: u24 on the wire |
 | Wire width | `MaxMaterials` | `Constructs/ConstructRecycling.cs:15` | `63` | the inventory holds 64 slots; id 0 is "none"; ids are one byte on the wire, so this is only arrays | Kept: material ids are a byte |
 | Wire width | `MaxBlades` | `Constructs/ConstructRotor.cs:57` | `16` | CfgKey.BladeLost and the wear settings are 16-bit masks; past this a disc is near solid anyway | Kept |
-| Wire width | `MaxRoutes` | `Constructs/ConstructRoutes.cs:78` | `254` | a route's parent is a byte, 255: none | Kept: a route's parent is a byte, 255 none; RouteCount is a byte on the wire |
+| Wire width | `MaxRoutes` | `Constructs/ConstructRoutes.cs:78` | `1000` | a route's index is a u16, 65535: none | Raised from 254 (2026-11-28, protocol 487): the parent, the count and every link index on the wire are u16; saves escape past 253 |
 | Wire width | `MaxKinds` | `Constructs/ConstructStorage.cs:43` | `256` | a Storage Volume's parts: kinds, and how many of one (each a u16 on the wire | Kept |
 | Wire width | `MaxPerKind` | `Constructs/ConstructStorage.cs:43` | `60000` | a Storage Volume's parts: kinds, and how many of one (each a u16 on the wire | Kept |
 | Wire width | `MaxRack` | `Constructs/ConstructStorage.cs:250` | `48` | a shelf's slot: at most this many of a kind, however small the part (one byte each on the wire; 48 keeps a full bay's draw calls bounded | Kept |

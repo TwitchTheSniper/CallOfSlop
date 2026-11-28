@@ -494,7 +494,7 @@ public static partial class ProductionLines
             for (var k = 0; k < c.RouteCount; k++)
             {
                 ref readonly var r = ref c.Routes[k];
-                if (r.Type != RouteType.Conveyor || r.From != reach[at] || r.Parent != 255 || r.To >= c.PartCount)
+                if (r.Type != RouteType.Conveyor || r.From != reach[at] || r.Parent != CRoute.NoParent || r.To >= c.PartCount)
                     continue;
                 var td = c.DefOf(r.To);
                 if (td.IsPieceRack)

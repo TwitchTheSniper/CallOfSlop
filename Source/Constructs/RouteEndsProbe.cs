@@ -72,7 +72,7 @@ public static class RouteEndsProbe
             var whole = new CRouteNode[pre.Length + r.Count];
             pre.CopyTo(whole);
             Array.Copy(r.Nodes, 0, whole, pre.Length, r.Count);
-            if (ConstructRoutes.Check(world, c, t, from, fromPort, 255, 0, default, whole, to, toPort, checkFrom: Math.Max(1, pre.Length)) is { } bad) // (as the tool checks it: the nodes laid before were checked as they were laid)
+            if (ConstructRoutes.Check(world, c, t, from, fromPort, CRoute.NoParent, 0, default, whole, to, toPort, checkFrom: Math.Max(1, pre.Length)) is { } bad) // (as the tool checks it: the nodes laid before were checked as they were laid)
             {
                 s.Invalid++;
                 detail.Append(label).Append(": INVALID: ").Append(bad).AppendLine();
@@ -162,7 +162,7 @@ public static class RouteEndsProbe
                     var b = ConstructRoutes.PortPoint(c, tp, ti.Byte, t);
                     if (Vector3.Distance(a, b) > 16f || Vector3.Distance(a, b) < 0.5f)
                         continue;
-                    if (ConstructRoutes.CheckEnds(world, c, t, fp, fo.Byte, 255, 0, default, 0, tp, ti.Byte) != null)
+                    if (ConstructRoutes.CheckEnds(world, c, t, fp, fo.Byte, CRoute.NoParent, 0, default, 0, tp, ti.Byte) != null)
                         continue;
                     pairs.Add((fp, fo.Byte, tp, ti.Byte));
                 }
@@ -172,7 +172,7 @@ public static class RouteEndsProbe
             {
                 var (from, fb, to, tb) = pairs[k];
                 s.Asked++;
-                var ask = new RouteAsk { World = world, C = c, Type = t, From = from, FromPort = fb, Parent = 255, Nodes = nodes, Count = 0, To = to, ToPort = tb };
+                var ask = new RouteAsk { World = world, C = c, Type = t, From = from, FromPort = fb, Parent = CRoute.NoParent, Nodes = nodes, Count = 0, To = to, ToPort = tb };
                 var r = Run(ask, ref s);
                 if (r.State != RouteSearchState.Found)
                 {
@@ -202,7 +202,7 @@ public static class RouteEndsProbe
             var best = float.MaxValue;
             foreach (var (fp, fo) in ports)
                 if (fo.Type == t && fo.Out && fp != tp && Vector3.Distance(ConstructRoutes.PortPoint(c, fp, fo.Byte, t), p) is var dd && dd < best
-                    && ConstructRoutes.CheckEnds(world, c, t, fp, fo.Byte, 255, 0, default, 0, tp, ti.Byte) == null)
+                    && ConstructRoutes.CheckEnds(world, c, t, fp, fo.Byte, CRoute.NoParent, 0, default, 0, tp, ti.Byte) == null)
                 {
                     best = dd;
                     from = fp;
@@ -230,18 +230,18 @@ public static class RouteEndsProbe
                 }
                 if (host < 0 || ConstructRoutes.SignedDistance(c, w, -1, -1, out _) < ConstructRoutes.Radius(t))
                     continue;
-                var open = new RouteAsk { World = world, C = c, Type = t, From = from, FromPort = fb, Parent = 255, Nodes = nodes, Count = 0, To = -1, OpenAt = w, OpenHost = (ushort)host };
+                var open = new RouteAsk { World = world, C = c, Type = t, From = from, FromPort = fb, Parent = CRoute.NoParent, Nodes = nodes, Count = 0, To = -1, OpenAt = w, OpenHost = (ushort)host };
                 var dummy = new Stats();
                 var r0 = Run(open, ref dummy);
                 if (r0.State != RouteSearchState.Found)
                     continue;
                 var pre = new CRouteNode[r0.Count];
                 Array.Copy(r0.Nodes, pre, r0.Count);
-                var ask = new RouteAsk { World = world, C = c, Type = t, From = from, FromPort = fb, Parent = 255, Nodes = pre, Count = pre.Length, To = tp, ToPort = ti.Byte };
+                var ask = new RouteAsk { World = world, C = c, Type = t, From = from, FromPort = fb, Parent = CRoute.NoParent, Nodes = pre, Count = pre.Length, To = tp, ToPort = ti.Byte };
                 waypointStats.Asked++;
                 var label = $"{t} waypoint ({d},{h},{sd}) -> {c.DefOf(tp).Name}#{tp} {ti.Name}";
                 // (the tool's own first choice: the straight line when it fits and is square or short)
-                var straightWhy = ConstructRoutes.Check(world, c, t, from, fb, 255, 0, default, pre, tp, ti.Byte);
+                var straightWhy = ConstructRoutes.Check(world, c, t, from, fb, CRoute.NoParent, 0, default, pre, tp, ti.Byte);
                 var dd2 = Vector3.Abs(p - w);
                 if (straightWhy == null && (dd2.X + dd2.Y + dd2.Z < 0.75f || (dd2.X > 0.02f ? 1 : 0) + (dd2.Y > 0.02f ? 1 : 0) + (dd2.Z > 0.02f ? 1 : 0) <= 1))
                 {

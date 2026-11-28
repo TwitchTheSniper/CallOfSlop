@@ -223,7 +223,7 @@ public static partial class SelfTest
                 return;
             }
             var nodes = ReadOnlySpan<CRouteNode>.Empty;
-            var bad = ConstructRoutes.Check(w, car, RouteType.Shaft, 19, (byte)outPort, 255, 0, Vector3.Zero, nodes, 18, (byte)inPort);
+            var bad = ConstructRoutes.Check(w, car, RouteType.Shaft, 19, (byte)outPort, CRoute.NoParent, 0, Vector3.Zero, nodes, 18, (byte)inPort);
             Line($"freeform drivetrain (shaft{(turned ? ", engine turned 60 degrees" : "")}): {(bad == null ? "accepted" : $"refused: {bad}")}");
             if (turned)
             {
@@ -236,16 +236,16 @@ public static partial class SelfTest
                 Fail($"freeform drivetrain: a drive shaft from the freeform-welded engine to the transmission is refused: {bad}");
                 return;
             }
-            if (ConstructRoutes.Add(w, car, RouteType.Shaft, 19, (byte)outPort, 255, 0, Vector3.Zero, nodes, 18, (byte)inPort) < 0)
+            if (ConstructRoutes.Add(w, car, RouteType.Shaft, 19, (byte)outPort, CRoute.NoParent, 0, Vector3.Zero, nodes, 18, (byte)inPort) < 0)
             {
                 Fail("freeform drivetrain: the drive shaft across the seam can't be added");
                 return;
             }
             // (the tank rides on the plate: pipe it to the engine across the seam too)
             car.Rebuild();
-            var pipeBad = ConstructRoutes.Check(w, car, RouteType.Pipe, 20, 255, 255, 0, Vector3.Zero, nodes, 19, FdFuelIn(car));
+            var pipeBad = ConstructRoutes.Check(w, car, RouteType.Pipe, 20, 255, CRoute.NoParent, 0, Vector3.Zero, nodes, 19, FdFuelIn(car));
             if (pipeBad == null)
-                ConstructRoutes.Add(w, car, RouteType.Pipe, 20, 255, 255, 0, Vector3.Zero, nodes, 19, FdFuelIn(car));
+                ConstructRoutes.Add(w, car, RouteType.Pipe, 20, 255, CRoute.NoParent, 0, Vector3.Zero, nodes, 19, FdFuelIn(car));
             else
                 Line($"freeform drivetrain (shaft): the tank's pipe to the engine: {pipeBad}");
             car.Rebuild();

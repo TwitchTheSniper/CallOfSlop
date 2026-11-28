@@ -561,8 +561,8 @@ public static partial class SelfTest
             for (byte p = 0; p < 8 && fuelIn == 255; p++)
                 if (ConstructRoutes.PortOf(car.DefOf(ne), RouteType.Pipe, p) is { Fluid: "fuel" })
                     fuelIn = p;
-            if (ConstructRoutes.Check(w, car, RouteType.Pipe, tank, 255, 255, 0, Vector3.Zero, nodes, ne, fuelIn) == null)
-                ConstructRoutes.Add(w, car, RouteType.Pipe, tank, 255, 255, 0, Vector3.Zero, nodes, ne, fuelIn);
+            if (ConstructRoutes.Check(w, car, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, Vector3.Zero, nodes, ne, fuelIn) == null)
+                ConstructRoutes.Add(w, car, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, Vector3.Zero, nodes, ne, fuelIn);
             car.Rebuild();
         }
         Line($"point weld: the engine by clicked points onto the gearbox: {why ?? "welded"} ({car.FreeformCount} freeform, engine linked {ne >= 0 && car.SocketUsed(trans, tOn)}), can drive {car.CanDrive} {car.DriveProblem}");

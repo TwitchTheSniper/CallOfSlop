@@ -658,7 +658,7 @@ public static class ModuleSockets
     {
         var any = false;
         for (var k = 0; k < c.RouteCount && !any; k++)
-            any = Passes(c.Routes[k].Type) && c.Routes[k].Parent == 255 && c.Routes[k].From < c.PartCount && c.DefOf(c.Routes[k].From).ModPart == ModPart.Plug;
+            any = Passes(c.Routes[k].Type) && c.Routes[k].Parent == CRoute.NoParent && c.Routes[k].From < c.PartCount && c.DefOf(c.Routes[k].From).ModPart == ModPart.Plug;
         if (any)
             for (var pass = 0; pass < PassDepth; pass++)
             {
@@ -666,7 +666,7 @@ public static class ModuleSockets
                 for (var k = 0; k < c.RouteCount; k++)
                 {
                     ref var r = ref c.Routes[k];
-                    if (!Passes(r.Type) || r.Parent != 255 || r.From >= c.PartCount || c.DefOf(r.From).ModPart != ModPart.Plug)
+                    if (!Passes(r.Type) || r.Parent != CRoute.NoParent || r.From >= c.PartCount || c.DefOf(r.From).ModPart != ModPart.Plug)
                         continue;
                     var j = PlateLink(c, r.Type, r.From, r.FromPort);
                     ushort src = r.From;
@@ -683,7 +683,7 @@ public static class ModuleSockets
                 for (var k = 0; k < c.RouteCount; k++)
                 {
                     ref var r = ref c.Routes[k];
-                    if (!Passes(r.Type) || r.Parent == 255 || r.Parent >= k)
+                    if (!Passes(r.Type) || r.Parent == CRoute.NoParent || r.Parent >= k)
                         continue;
                     ref var p = ref c.Routes[r.Parent];
                     (r.Source, r.SourcePort, r.Fed) = (p.Source, p.SourcePort, p.Fed && p.FirstCut > r.ParentNode);

@@ -59,8 +59,8 @@ public static partial class SelfTest
         var diffIn = NpNames(c, df, RouteType.Shaft, true);
         var diffOut = NpNames(c, df, RouteType.Shaft, false);
         var frameAny = NpNames(c, fb, RouteType.Shaft, true) + NpNames(c, fb, RouteType.Shaft, false);
-        var toFrame = ConstructRoutes.Check(w, c, RouteType.Shaft, en, ConstructRoutes.PortNamed(c.DefOf(en), RouteType.Shaft, "Drive out")!.Byte, 255, 0, default, default, fb, 0) ?? "";
-        var fromFrame = ConstructRoutes.Check(w, c, RouteType.Shaft, fb, 0, 255, 0, default, default, tr, 0) ?? "";
+        var toFrame = ConstructRoutes.Check(w, c, RouteType.Shaft, en, ConstructRoutes.PortNamed(c.DefOf(en), RouteType.Shaft, "Drive out")!.Byte, CRoute.NoParent, 0, default, default, fb, 0) ?? "";
+        var fromFrame = ConstructRoutes.Check(w, c, RouteType.Shaft, fb, 0, CRoute.NoParent, 0, default, default, tr, 0) ?? "";
         Line($"named ports shafts: engine out \"{engineOut}\" in \"{engineIn}\"; gearbox in \"{boxIn}\" out \"{boxOut}\"; differential in \"{diffIn}\" out \"{diffOut}\"; a frame block offers \"{frameAny}\", \"{toFrame}\" / \"{fromFrame}\"");
         Want(engineOut == "Drive out" && engineIn == "", $"a shaft link to an engine offers only Drive out (out \"{engineOut}\", in \"{engineIn}\")");
         Want(boxIn == "Input shaft" && boxOut == "Output shaft", $"a gearbox offers Input shaft / Output shaft by name (\"{boxIn}\" / \"{boxOut}\")");
@@ -103,7 +103,7 @@ public static partial class SelfTest
         var fed = ConstructRoutes.PipeFeeds(p1, e1);
         var coolant = ConstructRoutes.PortNamed(p1.DefOf(e1), RouteType.Pipe, "Coolant in")!;
         var note = ConstructRoutes.PortNote(p1.DefOf(e1), RouteType.Pipe, coolant.Byte);
-        var wrongPort = ConstructRoutes.Check(w2, p1, RouteType.Pipe, tank, 255, 255, 0, default, default, e2, coolant.Byte, straight: true);
+        var wrongPort = ConstructRoutes.Check(w2, p1, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, default, e2, coolant.Byte, straight: true);
         Line($"named ports pipes: the tank offers \"{tankOut}\"; an engine takes {all} pipe inlets, {forFuel} for fuel (\"{onlyName}\"); the fuel pipe feeds it {fed}; coolant in: \"{note}\"");
         Want(tankOut.StartsWith("Fuel out") && all >= 2 && forFuel == 1 && onlyName == "Fuel in", "a fuel pipe from a tank to an engine has exactly one candidate, Fuel in");
         Want(fed && note.Contains("no effect yet"), "the pipe doesn't feed the engine, or Coolant in isn't marked as having no effect");

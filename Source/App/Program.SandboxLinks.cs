@@ -54,7 +54,7 @@ public static partial class Program
     private static RadialMenu PickerFor(int n) => _lkPickers[n] ??= new RadialMenu(n) { DeadZone = 16f, Reach = 60f };
 
     private static ushort _lkBody; // a link being routed on this construct (0: none)
-    private static int _lkFrom = -1, _lkParent = 255, _lkParentSeg;
+    private static int _lkFrom = -1, _lkParent = CRoute.NoParent, _lkParentSeg;
     private static byte _lkFromPort = 255;
     private static RouteType _lkType;
     private static Vector3 _lkJunction;
@@ -93,7 +93,7 @@ public static partial class Program
         ConstructRoutes.Grade = ConstructRoutes.GradeMode.Free; // (each link starts free: the snap never carries over unseen, a world link's included)
         _lkBody = 0;
         _lkFrom = -1;
-        _lkParent = 255;
+        _lkParent = CRoute.NoParent;
         _lkCount = 0;
         _lkLabel = "";
         _lkMoveRoute = -1;
@@ -217,7 +217,7 @@ public static partial class Program
     private static void LinkTail(Construct c, out Vector3 at, out Vector3 dir, out int host)
     {
         Vector3 start;
-        if (_lkParent != 255)
+        if (_lkParent != CRoute.NoParent)
         {
             start = _lkJunction;
             host = ConstructRoutes.HostOf(c, _lkParent, _lkParentSeg);
@@ -230,7 +230,7 @@ public static partial class Program
         at = _lkCount > 0 ? _lkNodes[_lkCount - 1].Pos : start;
         var before = _lkCount > 1 ? _lkNodes[_lkCount - 2].Pos : start;
         dir = _lkCount > 0 && Vector3.DistanceSquared(at, before) > 1e-8f ? Vector3.Normalize(at - before)
-            : _lkType == RouteType.Shaft && _lkParent == 255 ? ConstructRoutes.PortDir(c, _lkFrom, _lkFromPort, _lkType) : Vector3.Zero;
+            : _lkType == RouteType.Shaft && _lkParent == CRoute.NoParent ? ConstructRoutes.PortDir(c, _lkFrom, _lkFromPort, _lkType) : Vector3.Zero;
         if (_lkCount > 0)
             host = _lkNodes[_lkCount - 1].Host;
     }
@@ -479,12 +479,12 @@ public static partial class Program
     {
         if (_lkType == RouteType.Data)
         {
-            var from = _lkParent != 255 ? _lkParent < c.RouteCount ? c.Routes[_lkParent].Source : -1 : _lkFrom;
-            return from >= 0 && from < c.PartCount && ConstructModules.IsBus(c.DefOf(from), _lkParent != 255 ? c.Routes[_lkParent].SourcePort : _lkFromPort) ? ConstructModules.Bus : ""; // (the picker offers a drive link the drive port)
+            var from = _lkParent != CRoute.NoParent ? _lkParent < c.RouteCount ? c.Routes[_lkParent].Source : -1 : _lkFrom;
+            return from >= 0 && from < c.PartCount && ConstructModules.IsBus(c.DefOf(from), _lkParent != CRoute.NoParent ? c.Routes[_lkParent].SourcePort : _lkFromPort) ? ConstructModules.Bus : ""; // (the picker offers a drive link the drive port)
         }
         if (_lkType != RouteType.Pipe)
             return "";
-        if (_lkParent != 255)
+        if (_lkParent != CRoute.NoParent)
             return _lkParent < c.RouteCount ? ConstructRoutes.CarriedFluid(c, c.Routes[_lkParent].Source, c.Routes[_lkParent].SourcePort) : "";
         return ConstructRoutes.CarriedFluid(c, _lkFrom, _lkFromPort);
     }
@@ -496,8 +496,8 @@ public static partial class Program
         RouteRender.PreviewBody = c;
         RouteRender.PreviewType = _lkType;
         RouteRender.PreviewWidth = 0f; // (a conveyor's ghost is drawn as its bed once its input is known: LinkGhostEnd, LinkAutoInput)
-        RouteRender.PreviewPts[n] = _lkParent != 255 ? _lkJunction : ConstructRoutes.PortPoint(c, _lkFrom, _lkFromPort, _lkType);
-        RouteRender.PreviewSeg[n++] = (byte)(_lkParent != 255 ? c.Parts[Math.Min(ConstructRoutes.HostOf(c, _lkParent, _lkParentSeg), c.PartCount - 1)].Seg : c.Parts[_lkFrom].Seg);
+        RouteRender.PreviewPts[n] = _lkParent != CRoute.NoParent ? _lkJunction : ConstructRoutes.PortPoint(c, _lkFrom, _lkFromPort, _lkType);
+        RouteRender.PreviewSeg[n++] = (byte)(_lkParent != CRoute.NoParent ? c.Parts[Math.Min(ConstructRoutes.HostOf(c, _lkParent, _lkParentSeg), c.PartCount - 1)].Seg : c.Parts[_lkFrom].Seg);
         for (var i = 0; i < _lkCount; i++)
         {
             RouteRender.PreviewPts[n] = _lkNodes[i].Pos;
@@ -537,7 +537,7 @@ public static partial class Program
     /// highlighted, so a click confirms it with no further aim (a one-port device gets a one-option picker). False: no port
     /// can be used.
     /// </summary>
-    private static bool LinkIsWatch(Construct c) => _lkType == RouteType.Data && _lkParent == 255 && _lkFrom >= 0 && _lkFrom < c.PartCount && ConstructRoutes.IsWatch(c.DefOf(_lkFrom), _lkFromPort);
+    private static bool LinkIsWatch(Construct c) => _lkType == RouteType.Data && _lkParent == CRoute.NoParent && _lkFrom >= 0 && _lkFrom < c.PartCount && ConstructRoutes.IsWatch(c.DefOf(_lkFrom), _lkFromPort);
 
     private static bool OpenPicker(Construct c, int part, bool end, Vector3 near, int prefer = -1)
     {
@@ -589,7 +589,7 @@ public static partial class Program
         picker.Preselect(best);
         _lkPickPart = part;
         _lkPickEnd = end;
-        _lkPickStamp = LinkStamp(c, part, 255, 0);
+        _lkPickStamp = LinkStamp(c, part, CRoute.NoParent, 0);
         return true;
     }
 
@@ -600,12 +600,12 @@ public static partial class Program
         _lkBody = c.Id;
         _lkFrom = from;
         _lkFromPort = port;
-        _lkParent = 255;
+        _lkParent = CRoute.NoParent;
         _lkCount = 0;
         _lkType = type;
         var pn = ConstructRoutes.PortName(c.DefOf(from), type, port, input: false);
         _lkLabel = $"{Cap(ConstructRoutes.Name(type))} from {c.DefOf(from).Name}{(pn.Length > 0 ? ": " + pn : "")}";
-        _lkStamp = LinkStamp(c, from, 255, 0);
+        _lkStamp = LinkStamp(c, from, CRoute.NoParent, 0);
         BuildSounds.Play(BuildSound.LinkNode, default);
     }
 
@@ -616,7 +616,7 @@ public static partial class Program
         _lkRevPart = to;
         _lkRevPort = port;
         _lkRevType = type;
-        _lkRevStamp = LinkStamp(c, to, 255, 0);
+        _lkRevStamp = LinkStamp(c, to, CRoute.NoParent, 0);
         var pn = ConstructRoutes.PortName(c.DefOf(to), type, port, input: true);
         _lkRevLabel = $"{c.DefOf(to).Name}{(pn.Length > 0 ? ": " + pn : "")}";
         BuildSounds.Play(BuildSound.LinkNode, default);
@@ -690,7 +690,7 @@ public static partial class Program
             var full = ConstructRoutes.Health(r.Type);
             // (both ends: device and port, "Battery #2: Power out -> Extruder: Power in"; a branch starts at a junction on its tree's source)
             var what = r.Source < c.PartCount && r.To < c.PartCount
-                ? $"{ConstructRoutes.EndLabel(c, r.Source, r.Type, r.SourcePort, input: false)}{(r.Parent != 255 ? ", via a junction" : "")} -> {ConstructRoutes.EndLabel(c, r.To, r.Type, r.ToPort, input: true)}"
+                ? $"{ConstructRoutes.EndLabel(c, r.Source, r.Type, r.SourcePort, input: false)}{(r.Parent != CRoute.NoParent ? ", via a junction" : "")} -> {ConstructRoutes.EndLabel(c, r.To, r.Type, r.ToPort, input: true)}"
                 : "";
             var share0 = r.Type != RouteType.Data && r.Share < 0.999f ? $", {r.Share * 100:0}% of flow" : "";
             var share = r.Type == RouteType.Conveyor ? $", {r.ConvW / 100f:0.00} m wide" : share0;
@@ -784,7 +784,7 @@ public static partial class Program
     /// <summary>What a link being made (or a picker open) was made from: the part's type and place, or the link it branches from. A part taken off before it shifts the indices, so the stamp changes.</summary>
     private static long LinkStamp(Construct c, int part, int route, int routeSeg)
     {
-        if (route != 255)
+        if (route != CRoute.NoParent)
         {
             if (route < 0 || route >= c.RouteCount)
                 return -1;
@@ -821,14 +821,14 @@ public static partial class Program
         {
             if (g.Constructs.Get(_lkRevBody) is not { } vc || _lkRevPart < 0 || _lkRevPart >= vc.PartCount)
                 why = "the part is gone";
-            else if (LinkStamp(vc, _lkRevPart, 255, 0) != _lkRevStamp)
+            else if (LinkStamp(vc, _lkRevPart, CRoute.NoParent, 0) != _lkRevStamp)
                 why = "the construct was changed";
         }
         if (why == null && _lkPicker.IsOpen)
         {
             if (g.Constructs.Get(_lkPickEnd ? _lkBody : _lkPickBody) is not { } pc || _lkPickPart < 0 || _lkPickPart >= pc.PartCount)
                 why = "the part is gone";
-            else if (LinkStamp(pc, _lkPickPart, 255, 0) != _lkPickStamp)
+            else if (LinkStamp(pc, _lkPickPart, CRoute.NoParent, 0) != _lkPickStamp)
                 why = "the construct was changed";
         }
         if (why == null && _lkMoveRoute >= 0)
@@ -1011,7 +1011,7 @@ public static partial class Program
                     case LinkMode.Reroute:
                         var type = r.Type;
                         var source = r.Source;
-                        var port = r.Parent == 255 ? r.FromPort : (byte)255;
+                        var port = r.Parent == CRoute.NoParent ? r.FromPort : (byte)255;
                         g.SandboxSendRouteEdit(c.Id, RouteEditOp.Delete, k, 0, r.Source, r.To);
                         LinkStart(c, source, port, type);
                         w.Mode = LinkMode.Link;
@@ -1057,7 +1057,7 @@ public static partial class Program
             var ports = 0;
             Vector3 next = default, nrm = default;
             var toWorld = !aimed && WorldAim(eye, dir, aimed, hit, out _);
-            if (aimed && hit.Body != rc && _lkType == RouteType.Data && _lkCount == 0 && _lkParent == 255 && !_lkFree && ConstructRoutes.IsInput(hit.Body.DefOf(hit.Part), RouteType.Data))
+            if (aimed && hit.Body != rc && _lkType == RouteType.Data && _lkCount == 0 && _lkParent == CRoute.NoParent && !_lkFree && ConstructRoutes.IsInput(hit.Body.DefOf(hit.Part), RouteType.Data))
             {
                 _lkWhy = null;
                 if (fire)

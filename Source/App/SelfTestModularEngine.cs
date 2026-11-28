@@ -605,8 +605,8 @@ public static partial class SelfTest
                 {
                     var outPort = (byte)Array.FindIndex(fd.Sockets, s => s.Name == "+z");
                     var inPort = (byte)Array.FindIndex(car.DefOf(18).Sockets, s => s.Name == "-z");
-                    var bad = ConstructRoutes.Check(w, car, RouteType.Shaft, fly, outPort, 255, 0, Vector3.Zero, nodes, 18, inPort);
-                    if (bad != null || ConstructRoutes.Add(w, car, RouteType.Shaft, fly, outPort, 255, 0, Vector3.Zero, nodes, 18, inPort) < 0)
+                    var bad = ConstructRoutes.Check(w, car, RouteType.Shaft, fly, outPort, CRoute.NoParent, 0, Vector3.Zero, nodes, 18, inPort);
+                    if (bad != null || ConstructRoutes.Add(w, car, RouteType.Shaft, fly, outPort, CRoute.NoParent, 0, Vector3.Zero, nodes, 18, inPort) < 0)
                     {
                         Fail($"modular engine: a shaft from the flywheel to the gearbox is refused: {bad}");
                         return;
@@ -616,8 +616,8 @@ public static partial class SelfTest
                 var tank = PartNamed(car, "Fuel Tank");
                 var carb = PartNamed(car, MeCarb);
                 const byte fuelIn = 255; // (a part's first pipe port)
-                var pipeBad = ConstructRoutes.Check(w, car, RouteType.Pipe, tank, 255, 255, 0, Vector3.Zero, nodes, carb, fuelIn);
-                if (pipeBad != null || ConstructRoutes.Add(w, car, RouteType.Pipe, tank, 255, 255, 0, Vector3.Zero, nodes, carb, fuelIn) < 0)
+                var pipeBad = ConstructRoutes.Check(w, car, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, Vector3.Zero, nodes, carb, fuelIn);
+                if (pipeBad != null || ConstructRoutes.Add(w, car, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, Vector3.Zero, nodes, carb, fuelIn) < 0)
                 {
                     Fail($"modular engine: the fuel pipe into the carburettor is refused: {pipeBad}");
                     return;
@@ -690,8 +690,8 @@ public static partial class SelfTest
             {
                 var nodes = ReadOnlySpan<CRouteNode>.Empty;
                 const byte si = 255, so = 255; // (each part's first pipe port)
-                var bad = ConstructRoutes.Check(w, p, RouteType.Pipe, po, so, 255, 0, Vector3.Zero, nodes, stack, si);
-                if (bad == null && ConstructRoutes.Add(w, p, RouteType.Pipe, po, so, 255, 0, Vector3.Zero, nodes, stack, si) >= 0)
+                var bad = ConstructRoutes.Check(w, p, RouteType.Pipe, po, so, CRoute.NoParent, 0, Vector3.Zero, nodes, stack, si);
+                if (bad == null && ConstructRoutes.Add(w, p, RouteType.Pipe, po, so, CRoute.NoParent, 0, Vector3.Zero, nodes, stack, si) >= 0)
                 {
                     p.Rebuild();
                     var pe = MeOf(p);

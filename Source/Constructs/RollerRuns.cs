@@ -56,7 +56,7 @@ public static class RollerRuns
     public static bool IsRun(Construct c, int k)
     {
         ref readonly var r = ref c.Routes[k];
-        if (r.Type != RouteType.Conveyor || r.Parent != 255 || r.Count != 2)
+        if (r.Type != RouteType.Conveyor || r.Parent != CRoute.NoParent || r.Count != 2)
             return false;
         int h0 = c.RouteNodes[r.Start].Host, h1 = c.RouteNodes[r.Start + 1].Host;
         if (h0 >= c.PartCount || h1 >= c.PartCount || !c.Parts[h0].D.IsRollerTile || !c.Parts[h1].D.IsRollerTile)
@@ -92,14 +92,14 @@ public static class RollerRuns
         for (var k = 0; k < c.RouteCount && run < 0; k++)
         {
             ref readonly var r = ref c.Routes[k];
-            if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.Count == 2 && r.To == tile && IsRunPort(d, r.ToPort)
+            if (r.Type == RouteType.Conveyor && r.Parent == CRoute.NoParent && r.Count == 2 && r.To == tile && IsRunPort(d, r.ToPort)
                 && c.RouteNodes[r.Start + 1].Host == tile && IsRun(c, k))
                 run = k;
         }
         if (run < 0)
             return -1;
         for (var k = 0; k < c.RouteCount; k++)
-            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == 255 && c.Routes[k].From == tile && !IsRunPort(d, c.Routes[k].FromPort))
+            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == CRoute.NoParent && c.Routes[k].From == tile && !IsRunPort(d, c.Routes[k].FromPort))
                 return -1; // (it goes on along a conveyor linked from the tile's Piece out)
         return run;
     }
@@ -116,7 +116,7 @@ public static class RollerRuns
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref readonly var r = ref c.Routes[k];
-            if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.Count == 2 && r.To < c.PartCount && c.RouteNodes[r.Start + 1].Host == tile
+            if (r.Type == RouteType.Conveyor && r.Parent == CRoute.NoParent && r.Count == 2 && r.To < c.PartCount && c.RouteNodes[r.Start + 1].Host == tile
                 && (c.Parts[r.To].D.IsPanelFormer && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is { OnBed: true } || c.Parts[r.To].D.IsLayDownPad) && (IsRun(c, k) || DieFeed(c, k)))
                 return k; // (or onto a pad: a formed skin for a station's order waits at the pad's edge, too long for it or not its way)
         }
@@ -163,7 +163,7 @@ public static class RollerRuns
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref readonly var r = ref c.Routes[k];
-            if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.Count == 2 && r.From == tile && IsRunPort(d, r.FromPort)
+            if (r.Type == RouteType.Conveyor && r.Parent == CRoute.NoParent && r.Count == 2 && r.From == tile && IsRunPort(d, r.FromPort)
                 && c.RouteNodes[r.Start].Host == tile && IsRun(c, k))
                 return k;
         }
@@ -239,7 +239,7 @@ public static class RollerRuns
                 continue;
             nodes[0] = new CRouteNode { Pos = want.N0, Host = want.H0 };
             nodes[1] = new CRouteNode { Pos = want.N1, Host = want.H1 };
-            var k = ConstructRoutes.Add(world, c, RouteType.Conveyor, want.From, want.FromPort, 255, 0, default, nodes, want.To, want.ToPort);
+            var k = ConstructRoutes.Add(world, c, RouteType.Conveyor, want.From, want.FromPort, CRoute.NoParent, 0, default, nodes, want.To, want.ToPort);
             if (k < 0)
             {
                 Console.WriteLine($"[rollers] {c.Id}: no room for a Roller Tile run's conveyor (links {c.RouteCount}/{Construct.MaxRoutes})");
@@ -266,7 +266,7 @@ public static class RollerRuns
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            if (r.Type != RouteType.Conveyor || r.Parent != 255 || r.ConvW != Old || r.From >= c.PartCount || r.To >= c.PartCount || IsRun(c, k) || IsCrossing(c, k))
+            if (r.Type != RouteType.Conveyor || r.Parent != CRoute.NoParent || r.ConvW != Old || r.From >= c.PartCount || r.To >= c.PartCount || IsRun(c, k) || IsCrossing(c, k))
                 continue;
             var fd = c.DefOf(r.From);
             var td = c.DefOf(r.To);
@@ -307,7 +307,7 @@ public static class RollerRuns
     public static bool IsCrossing(Construct c, int k)
     {
         ref readonly var r = ref c.Routes[k];
-        if (r.Type != RouteType.Conveyor || r.Parent != 255 || r.Count < 2 || r.From == r.To
+        if (r.Type != RouteType.Conveyor || r.Parent != CRoute.NoParent || r.Count < 2 || r.From == r.To
             || r.From >= c.PartCount || r.To >= c.PartCount || !c.Parts[r.From].D.IsTurntable
             || !c.Parts[r.To].D.IsTurntable && ConstructRoutes.PortOf(c.Parts[r.To].D, RouteType.Conveyor, r.ToPort) is not { OnBed: true })
             return false; // (it ends on a tile of the field, or on the bed the field's way out leads into)
@@ -322,7 +322,7 @@ public static class RollerRuns
     private static bool Meets(Construct c, int k, int t, bool into)
     {
         ref readonly var r = ref c.Routes[k];
-        return r.Type == RouteType.Conveyor && (into ? r.To == t : r.Parent == 255 && r.From == t) && !IsCrossing(c, k);
+        return r.Type == RouteType.Conveyor && (into ? r.To == t : r.Parent == CRoute.NoParent && r.From == t) && !IsCrossing(c, k);
     }
 
     /// <summary>
@@ -472,7 +472,7 @@ public static class RollerRuns
                 continue;
             for (var i = 0; i < x.NodeN; i++)
                 nodes[i] = new CRouteNode { Pos = _crossAt[w * MaxCrossNodes + i], Host = _crossHosts[w * MaxCrossNodes + i] };
-            var k = ConstructRoutes.Add(world, c, RouteType.Conveyor, x.From, x.FromPort, 255, 0, default, nodes[..x.NodeN], x.To, x.ToPort);
+            var k = ConstructRoutes.Add(world, c, RouteType.Conveyor, x.From, x.FromPort, CRoute.NoParent, 0, default, nodes[..x.NodeN], x.To, x.ToPort);
             if (k < 0)
             {
                 Console.WriteLine($"[rollers] {c.Id}: no room for a turntable field's crossing (links {c.RouteCount}/{Construct.MaxRoutes})");
@@ -727,7 +727,7 @@ public static class RollerRuns
     private static bool PlayerOut(Construct c, int part)
     {
         for (var k = 0; k < c.RouteCount; k++)
-            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == 255 && c.Routes[k].From == part && !IsRun(c, k))
+            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == CRoute.NoParent && c.Routes[k].From == part && !IsRun(c, k))
                 return true;
         return false;
     }

@@ -132,7 +132,7 @@ public static partial class ConstructRoutes
         var to = partOf[s.To];
         var from = s.Branch < 0 ? partOf[s.From] : -1;
         // (blueprint links are added in order, after the wires: link k is route WireRoutes + k)
-        var parent = 255;
+        int parent = CRoute.NoParent;
         if (s.Branch >= 0)
         {
             parent = c.RouteCount - (BuiltLinks(c) - s.Branch);
@@ -167,7 +167,7 @@ public static partial class ConstructRoutes
         }
         var junction = ConstructWorld.Quantise(s.At);
         if (Check(world, c, s.Type, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort, straight: s.Laid || s.Nodes.Count == 0 && s.Branch < 0) is { } why)
-            return $"{Name(s.Type)} {c.DefOf(parent == 255 ? from : c.Routes[parent].Source).Name} -> {c.DefOf(to).Name}: {why}";
+            return $"{Name(s.Type)} {c.DefOf(parent == CRoute.NoParent ? from : c.Routes[parent].Source).Name} -> {c.DefOf(to).Name}: {why}";
         if (Add(world, c, s.Type, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort) < 0)
             return "no room for another link";
         c.Routes[c.RouteCount - 1].Cursor = BlueprintMark;
@@ -357,7 +357,7 @@ public static partial class ConstructRoutes
             for (var i = 0; i < nn; i++)
                 nodes[i].Host = (ushort)a;
             var type = fuel ? RouteType.Pipe : RouteType.Shaft;
-            Add(world, c, type, a, fuel ? (byte)255 : (byte)sockA, 255, 0, default, nodes[..nn], b, fuel ? (byte)255 : (byte)sockB);
+            Add(world, c, type, a, fuel ? (byte)255 : (byte)sockA, CRoute.NoParent, 0, default, nodes[..nn], b, fuel ? (byte)255 : (byte)sockB);
             world.Events.Add($"construct {c.Id}: {(fuel ? "a fuel line" : "a drive shaft")} of {n} part(s) became a {Name(type)} link");
             c.Rebuild();
             return true;
@@ -480,7 +480,7 @@ public static partial class ConstructRoutes
             if (written++ > 0)
                 sb.Append(',');
             sb.Append("{\"type\":\"").Append(TypeKey(r.Type)).Append('"');
-            if (r.Parent != 255)
+            if (r.Parent != CRoute.NoParent)
             {
                 // (the segment as it was when this branch was built: junctions of later branches before it weren't there yet)
                 var seg = (int)r.ParentNode;
@@ -494,7 +494,7 @@ public static partial class ConstructRoutes
             else
                 sb.Append(",\"from\":").Append(S(r.From));
             sb.Append(",\"to\":").Append(S(r.To));
-            if (r.FromPort != 255 && r.Parent == 255)
+            if (r.FromPort != 255 && r.Parent == CRoute.NoParent)
                 sb.Append(",\"fromPort\":\"").Append(PortName(c.DefOf(r.From), r.Type, r.FromPort, input: false)).Append('"');
             if (r.ToPort != 255)
                 sb.Append(",\"toPort\":\"").Append(PortName(c.DefOf(r.To), r.Type, r.ToPort, input: true)).Append('"');

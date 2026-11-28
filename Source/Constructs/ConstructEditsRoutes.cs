@@ -24,14 +24,14 @@ public sealed partial class ConstructEdits
     {
         if (Linking(world, player, eye, body, to, out var c) is { } why)
             return why;
-        if (parent == 255 && Linking(world, player, eye, body, from, out _, inReach: false) is { } why2)
+        if (parent == CRoute.NoParent && Linking(world, player, eye, body, from, out _, inReach: false) is { } why2)
             return why2;
         if (ConstructRoutes.Check(world, c!, type, from, fromPort, parent, parentSeg, junction, nodes, to, toPort, tidy: true) is { } bad) // (the tool's: nodes fixed to structure only, ConstructRoutesWalls.cs)
             return bad;
         if (ConstructRoutes.Add(world, c!, type, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) < 0)
             return "no room for another link";
         c!.Rebuild();
-        Done.Add($"player {player}: {ConstructRoutes.Name(type)} {(parent == 255 ? c.DefOf(from).Name : "branch")} -> {c.DefOf(to).Name} on construct {c.Id} ({nodes.Length} nodes)");
+        Done.Add($"player {player}: {ConstructRoutes.Name(type)} {(parent == CRoute.NoParent ? c.DefOf(from).Name : "branch")} -> {c.DefOf(to).Name} on construct {c.Id} ({nodes.Length} nodes)");
         return null;
     }
 

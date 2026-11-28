@@ -173,7 +173,7 @@ public static class ConstructReplace
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            if (r.Parent == 255 && r.From == part && !CanLink(e, r.Type, false) || r.To == part && !CanLink(e, r.Type, true))
+            if (r.Parent == CRoute.NoParent && r.From == part && !CanLink(e, r.Type, false) || r.To == part && !CanLink(e, r.Type, true))
                 return $"a {ConstructRoutes.TypeKey(r.Type)} link on it has nowhere to go on the {e.Name}";
         }
         for (var k = 0; k < world.WorldLinkCount; k++)
@@ -203,7 +203,7 @@ public static class ConstructReplace
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            if (r.Parent == 255 && r.From == part && PortFor(d, e, r.Type, r.FromPort, false) is var f and >= 0)
+            if (r.Parent == CRoute.NoParent && r.From == part && PortFor(d, e, r.Type, r.FromPort, false) is var f and >= 0)
                 r.FromPort = (byte)f;
             if (r.To == part && PortFor(d, e, r.Type, r.ToPort, true) is var t and >= 0)
                 r.ToPort = (byte)t;

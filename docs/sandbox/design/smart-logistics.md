@@ -62,8 +62,8 @@ round.** It is the flood `ConstructCrafting.Build` already does, taken out of th
 | Part of the map | Contents | Bound |
 | --- | --- | --- |
 | Nodes | Every part that ends a conveyor or chute: `Part`, `Kind` (Source, Dest, Store, Router, Splitter, Join, Machine), `Net` (its group, a byte), its place in the body frame (for the board) | 255 |
-| Conveyor edges | One per conveyor: `From` node, `To` node, `Route`, length in metres (walked once here, not per step), width in cm, intact | 254 (`MaxRoutes`) |
-| Chute edges | One per chute: from, to. Used for membership, the board and "can bulk reach it"; never for next hops | 254 |
+| Conveyor edges | One per conveyor: `From` node, `To` node, `Route`, length in metres (walked once here, not per step), width in cm, intact | 1,000 (`MaxRoutes`) |
+| Chute edges | One per chute: from, to. Used for membership, the board and "can bulk reach it"; never for next hops | 1,000 |
 | `NetOfPart` | part to group (255: none), so "same network?" is one array read | parts |
 | Destinations | Nodes a piece can be sent to: racks, trays, press bays (one per bay port), the Panel Former, from phase 2 an Assembler's Piece in | 128 |
 | Next hop | `Hop[router, dest]`: the Router's output conveyor that leads to `dest` by the shortest intact way (255: none), and `Narrow[router, dest]`: the narrowest conveyor on that way in 5 cm steps | 32 Routers x 128 = 4 KB + 4 KB a construct |

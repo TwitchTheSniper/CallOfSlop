@@ -534,8 +534,8 @@ public static partial class SelfTest
 
     private static string? FxChute(ConstructWorld w, Construct c, int from, int to)
     {
-        var why = ConstructRoutes.Check(w, c, RouteType.Chute, from, 255, 255, 0, default, default, to, 255);
-        if (why == null && ConstructRoutes.Add(w, c, RouteType.Chute, from, 255, 255, 0, default, default, to, 255) < 0)
+        var why = ConstructRoutes.Check(w, c, RouteType.Chute, from, 255, CRoute.NoParent, 0, default, default, to, 255);
+        if (why == null && ConstructRoutes.Add(w, c, RouteType.Chute, from, 255, CRoute.NoParent, 0, default, default, to, 255) < 0)
             why = "no room";
         c.Rebuild();
         return why;
@@ -636,9 +636,9 @@ public static partial class SelfTest
             new CRouteNode { Pos = ConstructWorld.Quantise(c.Parts[low].Pos + new Vector3(0, 0, side * 0.42f)), Host = (byte)low, Health = ConstructRoutes.Health(RouteType.Chute) },
             new CRouteNode { Pos = ConstructWorld.Quantise(c.Parts[high].Pos + new Vector3(0, 0.12f, side * 0.42f)), Host = (byte)high, Health = ConstructRoutes.Health(RouteType.Chute) },
         ];
-        var fail = ConstructRoutes.Check(w, c, RouteType.Chute, a, 255, 255, 0, default, nodes, b, 255);
+        var fail = ConstructRoutes.Check(w, c, RouteType.Chute, a, 255, CRoute.NoParent, 0, default, nodes, b, 255);
         if (fail == null)
-            ConstructRoutes.Add(w, c, RouteType.Chute, a, 255, 255, 0, default, nodes, b, 255);
+            ConstructRoutes.Add(w, c, RouteType.Chute, a, 255, CRoute.NoParent, 0, default, nodes, b, 255);
         c.Rebuild();
         if (fail != null || c.FlexSectionCount != 1)
         {
@@ -752,7 +752,7 @@ public static partial class SelfTest
         }
         var c1 = FxChute(w, ship, bin, reel);
         var c2 = FxChute(w, dock, inlet, into);
-        var wrong = ConstructRoutes.Check(w, ship, RouteType.Chute, reel, 255, 255, 0, default, default, bin, 255);
+        var wrong = ConstructRoutes.Check(w, ship, RouteType.Chute, reel, 255, CRoute.NoParent, 0, default, default, bin, 255);
         w.Deposit(ship, bin, 200, 1);
         var hand = ConstructWorld.HosePoint(ship, reel);
         w.Hands = id => id == 1 ? hand : null;

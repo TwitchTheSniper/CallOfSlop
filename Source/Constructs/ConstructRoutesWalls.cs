@@ -104,7 +104,7 @@ public static partial class ConstructRoutes
             for (var i = 0; i <= r.Count; i++)
             {
                 var b = Point(c, k, i, out var sb);
-                var buried = can && sa == sb && Covered(c, a, b, sa, i == 0 && r.Parent == 255 ? r.From : -1, i == r.Count ? r.To : -1);
+                var buried = can && sa == sb && Covered(c, a, b, sa, i == 0 && r.Parent == CRoute.NoParent ? r.From : -1, i == r.Count ? r.To : -1);
                 if (i < r.Count)
                     c.RouteNodes[r.Start + i].Buried = buried;
                 else
