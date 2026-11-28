@@ -70,7 +70,7 @@ public static class AssembledParts
             else
             {
                 mats.Add((names.IdOf("copper"), 6));
-                Add(parts, "Control Unit", 1);
+                Add(parts, "Circuit Board", 2); // (2 Boards where a Control Unit was, Sean 2026-11-28)
                 seconds = 20 + 5 * n * g;
             }
             if (s.Layout == RackLayout.Drum)
@@ -121,7 +121,7 @@ public static class AssembledParts
     {
         "copper" or "Copper Coil" or "Wiring Loom" or "Servo Motor" => Bit("Power Coupling"),
         "bronze" or "Bearing" or "Piston Set" or "Turbine Stage" => Bit("Coolant Loop"),
-        "gold" or "circuits" or "Circuit Board" or "Control Unit" => Bit("Servo Rack"),
+        "gold" or "circuits" or "Circuit Board" => Bit("Servo Rack"),
         "levite" or "Field Coil" or "Levite Core" => Bit("Plasma Conditioner"),
         _ => 0,
     };

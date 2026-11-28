@@ -7267,14 +7267,7 @@
      "label": "rifle receiver",
      "preset": "solid 20x20x40 steel",
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "heavy",
@@ -7282,14 +7275,7 @@
      "label": "heavy receiver",
      "preset": "solid 25x25x50 steel",
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "shell",
@@ -7297,14 +7283,7 @@
      "label": "shell receiver",
      "preset": "hollow 20x20x40 steel",
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "bastillelmg",
@@ -7313,14 +7292,7 @@
      "preset": "solid 20x20x75 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "bucketlauncher",
@@ -7329,14 +7301,7 @@
      "preset": "solid 20x20x40 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "bunkerbuster",
@@ -7345,14 +7310,7 @@
      "preset": "solid 25x25x65 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "couriercarbine",
@@ -7361,14 +7319,7 @@
      "preset": "solid 15x15x40 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "farmhandpump",
@@ -7377,14 +7328,7 @@
      "preset": "solid 15x15x45 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "gravediggerauto",
@@ -7393,14 +7337,7 @@
      "preset": "solid 15x15x50 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "hammerfallautoca",
@@ -7409,14 +7346,7 @@
      "preset": "solid 30x30x80 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "handmortar",
@@ -7425,14 +7355,7 @@
      "preset": "solid 20x20x40 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "hellwheelrotary",
@@ -7441,14 +7364,7 @@
      "preset": "solid 20x20x60 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "kingpinrevolver",
@@ -7457,14 +7373,7 @@
      "preset": "solid 20x20x35 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "longbowdmr",
@@ -7473,14 +7382,7 @@
      "preset": "solid 15x15x65 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "longreachbolt",
@@ -7489,14 +7391,7 @@
      "preset": "solid 15x15x60 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "paradecannon",
@@ -7505,14 +7400,7 @@
      "preset": "solid 20x20x40 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "peashooter",
@@ -7521,14 +7409,7 @@
      "preset": "solid 15x15x35 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "pepperbox",
@@ -7537,14 +7418,7 @@
      "preset": "solid 20x20x40 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "plinker",
@@ -7553,14 +7427,7 @@
      "preset": "solid 15x15x35 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "railspikecoil",
@@ -7569,14 +7436,7 @@
      "preset": "solid 15x15x60 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "reaperbattlerifl",
@@ -7585,14 +7445,7 @@
      "preset": "solid 20x20x55 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "sawmill",
@@ -7601,14 +7454,7 @@
      "preset": "solid 20x20x75 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "sparkplugenergy",
@@ -7617,14 +7463,7 @@
      "preset": "solid 20x20x50 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "stampede",
@@ -7633,14 +7472,7 @@
      "preset": "solid 15x15x40 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     },
     {
      "id": "sunbeamlance",
@@ -7649,14 +7481,7 @@
      "preset": "solid 15x15x60 steel",
      "auto": false,
      "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.02,
-      "by": "mass",
-      "max": 20
-     }
+     "along": "z"
     }
    ]
   }

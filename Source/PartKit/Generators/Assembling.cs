@@ -77,7 +77,7 @@ public sealed class Assembling : IPartGenerator
         Rec("Copper Coil", 3, 2, m: [("copper", 3)]),
         Rec("Wiring Loom", 3, 2, m: [("copper", 2), ("rubber", 1)]),
         Rec("Circuit Board", 4, 3, m: [("circuits", 2), ("laminate", 1)]),
-        Rec("Control Unit", 6, 3, m: [("steel", 1)], p: [("Circuit Board", 1), ("Wiring Loom", 1)]),
+        // (the Control Unit row went, Sean 2026-11-28: a recipe that wanted one wants 2 Circuit Boards: ConstructAssemblingTable.Removed)
         Rec("Servo Motor", 6, 2, m: [("steel", 2)], p: [("Copper Coil", 1), ("Bearing", 2)]),
         Rec("Tyre Carcass", 5, 1, m: [("rubber", 4), ("cloth", 2)]),
         Rec("Steel Plate", 2, 1, count: 2, m: [("steel", 5)]),
@@ -90,8 +90,8 @@ public sealed class Assembling : IPartGenerator
         Rec("Small Engine", 10, 2, m: [("steel", 6)], p: [("Piston Set", 1), ("Wiring Loom", 1)]),
         Rec("V8 Engine", 40, 3, m: [("steel", 45)], p: [("Piston Set", 4), ("Wiring Loom", 2), ("Bearing", 4)]),
         Rec("Diesel Engine", 50, 3, m: [("steel", 70)], p: [("Piston Set", 6), ("Wiring Loom", 2), ("Bearing", 6)]),
-        Rec("Turbine", 60, 4, m: [("steel", 25), ("bronze", 10)], p: [("Bearing", 8), ("Control Unit", 1)]),
-        Rec("Electric Motor", 15, 3, m: [("steel", 10)], p: [("Copper Coil", 4), ("Bearing", 2), ("Control Unit", 1)]),
+        Rec("Turbine", 60, 4, m: [("steel", 25), ("bronze", 10)], p: [("Bearing", 8), ("Circuit Board", 2)]),
+        Rec("Electric Motor", 15, 3, m: [("steel", 10)], p: [("Copper Coil", 4), ("Bearing", 2), ("Circuit Board", 2)]),
         Rec("Transmission", 12, 1, m: [("steel", 8)], p: [("Gear Set", 2)]),
         Rec("Differential", 12, 2, m: [("steel", 10)], p: [("Gear Set", 2), ("Bearing", 2)]),
         Rec("Suspension", 5, 1, m: [("steel", 3), ("rubber", 1)]),
@@ -103,7 +103,7 @@ public sealed class Assembling : IPartGenerator
         Rec("Fuel Line", 2, 1, count: 2, m: [("rubber", 1), ("copper", 1)]),
         Rec("Alternator", 8, 2, m: [("steel", 1)], p: [("Copper Coil", 2), ("Bearing", 1)]),
         Rec("Battery", 8, 3, m: [("copper", 4), ("circuits", 2)]),
-        Rec("Battery Pack", 40, 4, m: [("copper", 20), ("steel", 12)], p: [("Control Unit", 1)]),
+        Rec("Battery Pack", 40, 4, m: [("copper", 20), ("steel", 12)], p: [("Circuit Board", 2)]),
         Rec("Seat", 5, 1, m: [("cloth", 3), ("steel", 3)]),
         Rec("Bunk", 6, 1, m: [("cloth", 4), ("steel", 3)]),
         Rec("Driving Module", 3, 1, m: [("steel", 3), ("rubber", 1)]),
@@ -112,10 +112,10 @@ public sealed class Assembling : IPartGenerator
         Rec("Proximity Sensor", 4, 3, p: [("Lens", 1), ("Circuit Board", 1)]),
         Rec("Gun Barrel", 6, 1, m: [("steel", 2)]),
         Rec("Ammo Box", 5, 2, m: [("steel", 3), ("bronze", 3)]),
-        Rec("Rifle Receiver", 10, 2, m: [("steel", 6)], p: [("Gear Set", 1), ("Bearing", 2)]),
+        Rec("Rifle Receiver", 10, 2, m: [("steel", 6)], p: [("Bearing", 2)]),
         Rec("Gun Scope", 4, 2, m: [("steel", 1)], p: [("Lens", 2)]),
-        Rec("Mounted MG", 20, 3, m: [("steel", 10), ("bronze", 4)], p: [("Gear Set", 1), ("Control Unit", 1)]),
-        Rec("Firebreather Receiver", 10, 2, m: [("steel", 6), ("bronze", 2)], p: [("Gear Set", 1)]),
+        Rec("Mounted MG", 20, 3, m: [("steel", 10), ("bronze", 4)], p: [("Circuit Board", 2)]),
+        Rec("Firebreather Receiver", 10, 2, m: [("steel", 6), ("bronze", 2)]),
         Rec("Flame Valve", 3, 1, m: [("steel", 1), ("bronze", 1)]),
         Rec("Flame Nozzle", 4, 1, m: [("steel", 2)]),
         Rec("Fuel Canister", 3, 1, m: [("steel", 2)]),
@@ -129,15 +129,15 @@ public sealed class Assembling : IPartGenerator
         Rec("Harpoon Rack", 5, 2, m: [("steel", 3), ("bronze", 1)]),
         Rec("Harpoon Drum", 7, 2, m: [("steel", 5), ("bronze", 2)], p: [("Bearing", 1)]),
         Rec("Barbed Head", 3, 1, m: [("steel", 2)]),
-        Rec("Field Gun Receiver", 20, 3, m: [("steel", 18), ("bronze", 4)], p: [("Gear Set", 2), ("Bearing", 2)]),
-        Rec("Howitzer Receiver", 30, 3, m: [("steel", 28), ("bronze", 6)], p: [("Gear Set", 3), ("Bearing", 2), ("Control Unit", 1)]),
+        Rec("Field Gun Receiver", 20, 3, m: [("steel", 18), ("bronze", 4)], p: [("Bearing", 2)]),
+        Rec("Howitzer Receiver", 30, 3, m: [("steel", 28), ("bronze", 6)], p: [("Bearing", 2), ("Circuit Board", 2)]),
         Rec("Sliding Breech", 8, 2, m: [("steel", 4), ("bronze", 1)]),
         Rec("Interrupted Breech", 10, 2, m: [("steel", 5), ("bronze", 2)]),
         Rec("Howitzer Tube", 12, 2, m: [("steel", 12)]),
         Rec("Long Gun Tube", 16, 3, m: [("steel", 20)]),
         Rec("Loading Tray", 4, 1, m: [("steel", 3)]),
         Rec("Ready Rack", 8, 2, m: [("steel", 6), ("bronze", 1)]),
-        Rec("Shell Hoist", 12, 3, m: [("steel", 10)], p: [("Gear Set", 1)]),
+        Rec("Shell Hoist", 12, 3, m: [("steel", 10)]),
         Rec("High Explosive Shell", 4, 2, m: [("steel", 3), ("bronze", 1)]),
         Rec("Siege Shell", 7, 3, m: [("steel", 5), ("bronze", 2)]),
         Rec("Smoke Shell", 4, 2, m: [("steel", 2), ("rubber", 1)]),
@@ -145,15 +145,15 @@ public sealed class Assembling : IPartGenerator
         Rec("Materials Bin", 10, 1, m: [("steel", 8), ("concrete", 2)]),
         Rec("Chest", 6, 1, m: [("planks", 8), ("steel", 2)]),
         Rec("Recycler", 30, 2, m: [("steel", 45)], p: [("Gear Set", 4), ("Wiring Loom", 2)]),
-        Rec("Inventory Beacon", 25, 3, m: [("steel", 16), ("copper", 6)], p: [("Control Unit", 2)]),
+        Rec("Inventory Beacon", 25, 3, m: [("steel", 16), ("copper", 6)], p: [("Circuit Board", 4)]),
         Rec("Shelf Bay 0.5", 3, 1, m: [("planks", 2), ("steel", 1)]),
         Rec("Shelf Bay 1", 4, 1, m: [("planks", 4), ("steel", 1)]),
         Rec("Tall Shelf Bay 1", 5, 1, m: [("planks", 4), ("steel", 2)]),
         Rec("Medium Shelf Bay 1", 6, 1, m: [("planks", 8), ("steel", 3)]),
         Rec("Medium Shelf Bay 2", 8, 1, m: [("planks", 14), ("steel", 5)]),
         Rec("Medium Shelf Bay 4", 12, 1, m: [("planks", 30), ("steel", 12)]),
-        Rec("Smart Terminal", 15, 2, m: [("steel", 12), ("glass", 2)], p: [("Control Unit", 1), ("Circuit Board", 2)]),
-        Rec("Computer", 12, 3, m: [("steel", 4), ("glass", 2)], p: [("Circuit Board", 2), ("Control Unit", 1)]),
+        Rec("Smart Terminal", 15, 2, m: [("steel", 12), ("glass", 2)], p: [("Circuit Board", 4)]),
+        Rec("Computer", 12, 3, m: [("steel", 4), ("glass", 2)], p: [("Circuit Board", 4)]),
         Rec("Fax Machine", 10, 3, m: [("steel", 3), ("laminate", 1)], p: [("Circuit Board", 1), ("Copper Coil", 1)]),
         Rec("Server Rack", 15, 3, m: [("steel", 8)], p: [("Circuit Board", 3), ("Wiring Loom", 2)]),
         Rec("Network Switch", 4, 3, m: [("steel", 1), ("copper", 1)], p: [("Circuit Board", 1)]),
@@ -162,11 +162,11 @@ public sealed class Assembling : IPartGenerator
         Rec("Loudhailer", 3, 2, m: [("steel", 1), ("copper", 1)]),
         Rec("Phone Mast", 4, 2, m: [("steel", 2), ("copper", 1)]),
         Rec("Light Bomb", 3, 2, m: [("steel", 6), ("concrete", 2)]),
-        Rec("AA Gun", 20, 3, m: [("steel", 40)], p: [("Gear Set", 1)]),
+        Rec("AA Gun", 20, 3, m: [("steel", 40)]),
         Rec("Rocket Pod Mk2", 12, 3, m: [("steel", 18), ("copper", 3)]),
         Rec("Flare Dispenser", 6, 2, m: [("steel", 6), ("copper", 1)]),
         Rec("AA Sight", 8, 3, m: [("steel", 3), ("glass", 2)], p: [("Lens", 1), ("Circuit Board", 1)]),
-        Rec("Seeker Head", 12, 4, m: [("steel", 3), ("glass", 2)], p: [("Lens", 2), ("Control Unit", 1)]),
+        Rec("Seeker Head", 12, 4, m: [("steel", 3), ("glass", 2)], p: [("Lens", 2), ("Circuit Board", 2)]),
         Rec("Ordnance Bench", 15, 2, m: [("steel", 30), ("planks", 6)]),
         Rec("Impact Fuse", 3, 2, m: [("steel", 2), ("copper", 1)]),
         Rec("Delay Fuse", 4, 2, m: [("steel", 2), ("copper", 2)]),
@@ -188,12 +188,12 @@ public sealed class Assembling : IPartGenerator
         Rec("Canards", 5, 3, m: [("steel", 3)], p: [("Servo Motor", 1)]),
         Rec("Gimbal Mount", 8, 4, m: [("steel", 4)], p: [("Servo Motor", 2)]),
         Rec("Jet Vanes", 5, 3, m: [("steel", 2), ("bronze", 2)]),
-        Rec("Reaction Jets", 8, 4, m: [("steel", 4), ("copper", 2)], p: [("Control Unit", 1)]),
+        Rec("Reaction Jets", 8, 4, m: [("steel", 4), ("copper", 2)], p: [("Circuit Board", 2)]),
         Rec("Heat Seeker", 10, 4, m: [("steel", 2), ("glass", 2)], p: [("Lens", 1), ("Circuit Board", 1)]),
         Rec("Radar Seeker", 12, 4, m: [("steel", 3), ("copper", 2)], p: [("Circuit Board", 2)]),
         Rec("Command Link", 8, 3, m: [("steel", 2), ("copper", 1)], p: [("Circuit Board", 1)]),
         Rec("Laser Seeker", 10, 4, m: [("steel", 2), ("glass", 1)], p: [("Lens", 1), ("Circuit Board", 1)]),
-        Rec("GPS Unit", 10, 4, m: [("steel", 2), ("copper", 1)], p: [("Control Unit", 1)]),
+        Rec("GPS Unit", 10, 4, m: [("steel", 2), ("copper", 1)], p: [("Circuit Board", 2)]),
         Rec("Radio Homer", 8, 3, m: [("steel", 2), ("copper", 2)], p: [("Circuit Board", 1)]),
         Rec("Beacon Homer", 8, 3, m: [("steel", 2), ("copper", 2)], p: [("Circuit Board", 1)]),
         Rec("Proximity Fuse", 6, 3, m: [("steel", 2), ("copper", 1)], p: [("Circuit Board", 1)]),
@@ -206,36 +206,36 @@ public sealed class Assembling : IPartGenerator
         Rec("Cluster Dispenser", 10, 3, m: [("steel", 10), ("concrete", 3)]),
         Rec("Fire Bomblets", 10, 3, m: [("steel", 8), ("concrete", 2), ("rubber", 2)]),
         Rec("Mine Dispenser", 12, 4, m: [("steel", 10), ("concrete", 3)], p: [("Circuit Board", 1)]),
-        Rec("MIRV Bus", 18, 4, m: [("steel", 12), ("copper", 3)], p: [("Control Unit", 1)]),
+        Rec("MIRV Bus", 18, 4, m: [("steel", 12), ("copper", 3)], p: [("Circuit Board", 2)]),
         Rec("Rod Bundle", 10, 3, m: [("steel", 40)]),
         Rec("Kinetic Penetrator", 10, 3, m: [("steel", 40), ("bronze", 4)]),
-        Rec("Fission Warhead", 120, 4, m: [("steel", 120), ("concrete", 40), ("gold", 25)], p: [("Control Unit", 2), ("Circuit Board", 4)]),
-        Rec("Fusion Warhead", 240, 4, m: [("steel", 200), ("gold", 40), ("hydrogen", 120), ("helium", 60)], p: [("Control Unit", 3)]),
-        Rec("Antimatter Warhead", 480, 4, m: [("steel", 160), ("gold", 60), ("levite", 80), ("helium", 40)], p: [("Levite Core", 2), ("Control Unit", 4)]),
+        Rec("Fission Warhead", 120, 4, m: [("steel", 120), ("concrete", 40), ("gold", 25)], p: [("Circuit Board", 8)]),
+        Rec("Fusion Warhead", 240, 4, m: [("steel", 200), ("gold", 40), ("hydrogen", 120), ("helium", 60)], p: [("Circuit Board", 6)]),
+        Rec("Antimatter Warhead", 480, 4, m: [("steel", 160), ("gold", 60), ("levite", 80), ("helium", 40)], p: [("Levite Core", 2), ("Circuit Board", 8)]),
         Rec("Tandem Spacer", 3, 3, m: [("steel", 2)]),
         Rec("Glide Wings", 8, 3, m: [("steel", 8), ("laminate", 2)]),
         Rec("Pop-out Wings", 8, 3, m: [("steel", 6), ("laminate", 1)], p: [("Servo Motor", 1)]),
         Rec("Cruise Wings", 8, 3, m: [("steel", 6), ("laminate", 3)]),
-        Rec("Glide Guidance Kit", 10, 4, m: [("steel", 3)], p: [("Servo Motor", 1), ("Control Unit", 1)]),
+        Rec("Glide Guidance Kit", 10, 4, m: [("steel", 3)], p: [("Servo Motor", 1), ("Circuit Board", 2)]),
         Rec("Rocket Assist", 8, 3, m: [("steel", 6), ("concrete", 3)]),
         Rec("Retard Chute", 4, 2, m: [("cloth", 3), ("steel", 1)]),
         Rec("Ballute", 4, 2, m: [("rubber", 3), ("steel", 1)]),
         Rec("Ring Tail", 3, 2, m: [("steel", 4)]),
         Rec("Parachute", 3, 1, m: [("rubber", 2), ("planks", 2)]),
         Rec("Backpack Glider", 4, 2, m: [("rubber", 3), ("steel", 2)]),
-        Rec("Jetpack", 8, 4, m: [("steel", 6), ("copper", 3)], p: [("Control Unit", 1), ("Wiring Loom", 2)]),
+        Rec("Jetpack", 8, 4, m: [("steel", 6), ("copper", 3)], p: [("Circuit Board", 2), ("Wiring Loom", 2)]),
         Rec("Ejection Seat", 5, 2, m: [("steel", 6), ("rubber", 2)], p: [("Wiring Loom", 1)]),
-        Rec("Space Suit Locker", 20, 3, m: [("steel", 14), ("glass", 4), ("rubber", 8), ("cloth", 6)], p: [("Control Unit", 1)]), // (spacewalk gear: docs/sandbox/EVA.md)
+        Rec("Space Suit Locker", 20, 3, m: [("steel", 14), ("glass", 4), ("rubber", 8), ("cloth", 6)], p: [("Circuit Board", 2)]), // (spacewalk gear: docs/sandbox/EVA.md)
         Rec("MMU Dock", 15, 3, m: [("steel", 24), ("rubber", 2)], p: [("Wiring Loom", 1)]),
-        Rec("Manned Manoeuvring Unit", 30, 4, m: [("steel", 18), ("copper", 4)], p: [("Control Unit", 2), ("Wiring Loom", 2)]),
-        Rec("Life Support Unit", 30, 3, m: [("steel", 20), ("copper", 4), ("rubber", 4)], p: [("Control Unit", 1), ("Wiring Loom", 1)]), // (ship air: docs/sandbox/EVA.md)
+        Rec("Manned Manoeuvring Unit", 30, 4, m: [("steel", 18), ("copper", 4)], p: [("Circuit Board", 4), ("Wiring Loom", 2)]),
+        Rec("Life Support Unit", 30, 3, m: [("steel", 20), ("copper", 4), ("rubber", 4)], p: [("Circuit Board", 2), ("Wiring Loom", 1)]), // (ship air: docs/sandbox/EVA.md)
         Rec("Oxygen Tank", 15, 2, m: [("steel", 22), ("rubber", 2)]),
-        Rec("Mirror Table", 30, 3, m: [("steel", 24), ("glass", 12)], p: [("Control Unit", 2), ("Lens", 2)]),
-        Rec("Line Layer", 30, 3, m: [("steel", 30), ("copper", 6)], p: [("Control Unit", 2), ("Servo Motor", 2)]),
-        Rec("Replacer", 30, 3, m: [("steel", 26), ("copper", 6)], p: [("Control Unit", 2), ("Servo Motor", 3)]),
-        Rec("Build Gantry", 60, 3, m: [("steel", 70), ("copper", 12)], p: [("Control Unit", 4), ("Servo Motor", 4), ("Lens", 4)]),
-        Rec("Selector", 30, 3, m: [("steel", 20), ("circuits", 6)], p: [("Control Unit", 3), ("Lens", 1)]),
-        Rec("Blueprint Desk", 30, 3, m: [("steel", 20), ("laminate", 6)], p: [("Control Unit", 3), ("Circuit Board", 2)]),
+        Rec("Mirror Table", 30, 3, m: [("steel", 24), ("glass", 12)], p: [("Circuit Board", 4), ("Lens", 2)]),
+        Rec("Line Layer", 30, 3, m: [("steel", 30), ("copper", 6)], p: [("Circuit Board", 4), ("Servo Motor", 2)]),
+        Rec("Replacer", 30, 3, m: [("steel", 26), ("copper", 6)], p: [("Circuit Board", 4), ("Servo Motor", 3)]),
+        Rec("Build Gantry", 60, 3, m: [("steel", 70), ("copper", 12)], p: [("Circuit Board", 8), ("Servo Motor", 4), ("Lens", 4)]),
+        Rec("Selector", 30, 3, m: [("steel", 20), ("circuits", 6)], p: [("Circuit Board", 6), ("Lens", 1)]),
+        Rec("Blueprint Desk", 30, 3, m: [("steel", 20), ("laminate", 6)], p: [("Circuit Board", 8)]),
         Rec("Foundation", 15, 1, m: [("concrete", 100), ("steel", 10)]),
         Rec("Frame Block", 4, 1, m: [("steel", 6)]),
         Rec("Frame Beam", 6, 1, m: [("steel", 14)]),
@@ -246,11 +246,11 @@ public sealed class Assembling : IPartGenerator
         // Linked logistics (docs/sandbox/design/linked-logistics.md section 3): the link ends, the dock and port, the ship's and the factory's computers.
         Rec("Logistics Transmitter", 12, 2, m: [("steel", 20), ("copper", 6)], p: [("Circuit Board", 4), ("Copper Coil", 2)]),
         Rec("Logistics Receiver", 12, 2, m: [("steel", 20), ("copper", 6)], p: [("Circuit Board", 4), ("Copper Coil", 2)]),
-        Rec("Logistics Relay", 60, 3, m: [("steel", 200), ("copper", 40)], p: [("Circuit Board", 12), ("Control Unit", 2)]),
+        Rec("Logistics Relay", 60, 3, m: [("steel", 200), ("copper", 40)], p: [("Circuit Board", 16)]),
         Rec("Cargo Dock", 40, 2, m: [("steel", 400), ("copper", 20)], p: [("Gear Set", 4), ("Circuit Board", 2)]),
         Rec("Cargo Port", 8, 1, m: [("steel", 40)], p: [("Circuit Board", 2)]),
         Rec("Route Computer", 15, 2, m: [("steel", 20), ("glass", 2)], p: [("Circuit Board", 6)]),
-        Rec("Logistics Dispatcher", 25, 3, m: [("steel", 60), ("glass", 4)], p: [("Circuit Board", 10), ("Control Unit", 1)])
+        Rec("Logistics Dispatcher", 25, 3, m: [("steel", 60), ("glass", 4)], p: [("Circuit Board", 12)])
     ];
 
     /// <summary>
@@ -275,7 +275,7 @@ public sealed class Assembling : IPartGenerator
         else
         {
             (m, tier, seconds) = (new PyDict { ["steel"] = steel, ["copper"] = 6 }, 4, 20 + 5 * n * g);
-            extra["Control Unit"] = 1;
+            extra["Circuit Board"] = 2; // (2 Boards where a Control Unit was, Sean 2026-11-28)
         }
         if (layout == "drum")
             extra["Gear Set"] = g <= 1.6 ? 1 : 2;
@@ -287,9 +287,10 @@ public sealed class Assembling : IPartGenerator
     private static readonly Dictionary<string, string> RoleParts = new()
     {
         ["engine"] = "Piston Set", ["transmission"] = "Gear Set", ["differential"] = "Gear Set", ["transfer"] = "Gear Set", ["joint"] = "Servo Motor",
-        ["battery"] = "Control Unit", ["alternator"] = "Copper Coil", ["logic"] = "Circuit Board", ["hose"] = "Wiring Loom",
-        ["gun"] = "Gear Set", ["suspension"] = "Bearing", ["seat"] = "Tyre Carcass", ["hinge"] = "Bearing", ["door"] = "Bearing", ["wheel"] = "Tyre Carcass",
-        ["enginePiece"] = "Piston Set", ["generator"] = "Copper Coil", ["thruster"] = "Gear Set",
+        ["battery"] = "Circuit Board", ["alternator"] = "Copper Coil", ["logic"] = "Circuit Board", ["hose"] = "Wiring Loom",
+        ["suspension"] = "Bearing", ["seat"] = "Tyre Carcass", ["hinge"] = "Bearing", ["door"] = "Bearing", ["wheel"] = "Tyre Carcass",
+        ["enginePiece"] = "Piston Set", ["generator"] = "Copper Coil",
+        // (no Gear Set in a gun or a thruster, Sean 2026-11-28: they stay in drivetrain parts; a gun's or a thruster's working comes from its die)
     };
 
     // What a part's class costs: (material, share of the part's mass as units of it per kg, second material or null).
@@ -307,7 +308,7 @@ public sealed class Assembling : IPartGenerator
     private static readonly Dictionary<string, int> PartTier = new()
     {
         ["Thrust Chamber"] = 1, ["Turbine Stage"] = 2, ["Field Coil"] = 3, ["Levite Core"] = 4, ["Gear Set"] = 1, ["Tyre Carcass"] = 1, ["Bearing"] = 2, ["Piston Set"] = 2,
-        ["Copper Coil"] = 2, ["Wiring Loom"] = 2, ["Servo Motor"] = 2, ["Circuit Board"] = 3, ["Control Unit"] = 3,
+        ["Copper Coil"] = 2, ["Wiring Loom"] = 2, ["Servo Motor"] = 2, ["Circuit Board"] = 3,
     };
 
     private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings", "Lore", "ShipWorks", "Shells/Spares", "SpaceStations"]; // (dies come from a Die Lathe, or the start kit; the colony's lore items are its own)
@@ -320,6 +321,10 @@ public sealed class Assembling : IPartGenerator
     private static int RInt(double v) => (int)Py.RoundInt(v);
 
     private static int Int(object? v) => (int)Py.D(v);
+
+    // Sean, 2026-11-28: the Control Unit folded into Circuit Boards; where a rule gave n Control Units it gives 2n Boards more.
+    private static void Boards(PyDict extra, int controlUnits) =>
+        extra["Circuit Board"] = Math.Min(20, (extra.Has("Circuit Board") ? Int(extra["Circuit Board"]) : 0) + 2 * controlUnits);
 
     private static bool IsItem(PyDict p) => (p.Get("tool") as string ?? "wrench") != "welder" && Py.D(p.Get("mass") ?? 0) <= 40 && !Py.Truthy(p.Get("physicsOnly"));
 
@@ -342,7 +347,7 @@ public sealed class Assembling : IPartGenerator
         if (RoleParts.TryGetValue(role, out var rp))
         {
             var rail = joint?.Get("type") as string == "swivel" ? "free" : (joint?.Get("rail") as PyDict)?.Get("drive") as string;
-            extra[rail == "free" ? "Bearing" : rail == "shaft" ? "Gear Set" : rp] = Math.Min(20, Math.Max(1, RInt(mass / 50)));
+            extra[rail == "free" ? "Bearing" : rail == "shaft" ? "Gear Set" : rp] = Math.Min(20, Math.Max(1, RInt(mass / 50)) * (role == "battery" ? 2 : 1)); // (a battery's 2 Boards a Control Unit was, Sean 2026-11-28)
         }
         if (role is "logic" or "battery" or "alternator" or "hose" && !m.Has("copper"))
             m["copper"] = Math.Min(MaxUnits, Math.Max(1, RInt(mass / 3)));
@@ -358,12 +363,12 @@ public sealed class Assembling : IPartGenerator
             else
                 m["rubber"] = Math.Min(MaxUnits, RInt(mass / 40)); // (a tier 1 machine asks nothing a tier 1 machine can't make, so survival can start)
             if (t >= 3)
-                extra["Control Unit"] = Math.Min(20, t - 2);
+                Boards(extra, t - 2);
         }
         if (role == "enginePiece" && (p.Get("enginePiece") as PyDict)?.Get("kind") as string == "cylinder" && Int(ptier ?? 1) >= 3)
         {
             // The Engine Kit's tier cylinders (Bored 3, Performance 4, Racing 5: Source/EngineKit/EngineKitParts.cs) climb the tech tree:
-            // bronze bearing shells and Bearings from tier 3, copper and a Circuit Board from 4, gold and a Control Unit at 5 (six inputs at most).
+            // bronze bearing shells and Bearings from tier 3, copper and a Circuit Board from 4, gold and 2 more Circuit Boards (once a Control Unit) at 5 (six inputs at most).
             var t = Int(ptier);
             var u = Int(m[material]);
             var pistons = extra.Has("Piston Set") ? Int(extra["Piston Set"]) : 1;
@@ -377,24 +382,24 @@ public sealed class Assembling : IPartGenerator
             else if (t >= 5)
             {
                 m["gold"] = Math.Min(MaxUnits, Math.Max(1, u / 10));
-                extra["Control Unit"] = Math.Min(20, Math.Max(1, pistons / 4));
+                Boards(extra, Math.Max(1, pistons / 4));
             }
         }
         if (p.Get("lifter") is PyDict lif && lif.Get("kind") as string == "bridge")
         {
-            // A Bridge Crane (LifterParts.cs): its hoist drum and travel drives (Gear Sets), the trolley's wheels (Bearings), a Control Unit.
+            // A Bridge Crane (LifterParts.cs): its hoist drum and travel drives (Gear Sets), the trolley's wheels (Bearings), 2 Circuit Boards (once a Control Unit).
             extra["Gear Set"] = 4;
             extra["Bearing"] = 4;
-            extra["Control Unit"] = 1;
+            Boards(extra, 1);
         }
         else if (p.Get("lifter") is PyDict)
         {
             // A Loader Arm (LifterParts.cs) turns on a slewing ring and bends at two joints: Gear Sets at tier 1, Servo Motors from 2, a
-            // Control Unit from 3 (its tier's Assembler makes them).
+            // Control Unit's 2 Circuit Boards from 3.
             var lt = Int(ptier ?? 1);
             extra[lt == 1 ? "Gear Set" : "Servo Motor"] = Math.Min(20, 2 * lt);
             if (lt >= 3)
-                extra["Control Unit"] = lt - 2;
+                Boards(extra, lt - 2);
         }
         if (m.Count + extra.Count < 2 && mass >= 3)
             // Two chains at least: anything of steel has a little rubber or concrete in its fixings (fixings stay fixings on a 240 t crank).
@@ -442,7 +447,7 @@ public sealed class Assembling : IPartGenerator
         if (!name.Contains("Solid Booster"))
             extra["Wiring Loom"] = Math.Min(20, Math.Max(1, n / 2));
         if (core == "Field Coil")
-            extra["Control Unit"] = Math.Min(20, Math.Max(1, n / 4));
+            Boards(extra, Math.Max(1, n / 4));
         if (name.Contains("Anti-Grav"))
             extra["Levite Core"] = n;
         r["parts"] = extra;
@@ -601,7 +606,7 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Armoured Bulkhead Door", 10.0, 2, m: [("steel", 55)], p: [("Bearing", 3)])),
         (null, null, Rec("Worn Ladder", 5, 1, m: [("steel", 8), ("rubber", 1)])), // (the commoner fittings Karl kept, 2026-11-20: CommonerFittingParts; at the end so saved choices keep their index)
         (null, null, Rec("Water Tote", 6, 1, m: [("steel", 6), ("planks", 2), ("rubber", 4)])),
-        (null, null, Rec("Oxygen Generator", 30, 3, m: [("steel", 16), ("copper", 6), ("rubber", 4), ("glass", 4)], p: [("Control Unit", 1), ("Wiring Loom", 1)])), // (a Life Support Unit's)
+        (null, null, Rec("Oxygen Generator", 30, 3, m: [("steel", 16), ("copper", 6), ("rubber", 4), ("glass", 4)], p: [("Circuit Board", 2), ("Wiring Loom", 1)])), // (a Life Support Unit's)
         (null, null, Rec("Radio Set", 8, 1, m: [("steel", 4), ("copper", 4), ("planks", 2), ("glass", 1)])),
         (null, null, Rec("Sling Jump Seat", 5, 1, m: [("cloth", 3), ("steel", 4)])),
         (null, null, Rec("Jacked Strut", 6, 1, m: [("steel", 16), ("planks", 1)])),
@@ -845,7 +850,7 @@ public sealed class Assembling : IPartGenerator
         ("Lifters/HallCranes", "Crane Rail Block", null),
         ("Lifters/HallCranes", "Crane Core", null),
         // (the Grow Former, Sean 2026-11-21: one Core and its Former Block in place of the Wheel, Fan and Airframe Formers' twelve parts)
-        (null, null, Rec("Grow Former", 180, 1, m: [("steel", 900), ("rubber", 120), ("copper", 40)], p: [("Gear Set", 4), ("Servo Motor", 2), ("Control Unit", 1)])),
+        (null, null, Rec("Grow Former", 180, 1, m: [("steel", 900), ("rubber", 120), ("copper", 40)], p: [("Gear Set", 4), ("Servo Motor", 2), ("Circuit Board", 2)])),
         (null, null, Rec("Former Block", 90, 1, m: [("steel", 500), ("rubber", 40)], p: [("Gear Set", 1)])),
         ("Pads", "Pad Tile", null), // (drawing 23: Piece Racks fold into Pad Tiles)
         ("Pads", "Rack Side", null),
@@ -978,7 +983,7 @@ public sealed class Assembling : IPartGenerator
         (null, null, Rec("Power Coupling", 40, 1, m: [("steel", 30), ("copper", 40), ("rubber", 6)], p: [("Wiring Loom", 2)])),
         (null, null, Rec("Coolant Loop", 60, 1, m: [("steel", 50), ("copper", 20), ("rubber", 10)], p: [("Gear Set", 1), ("Wiring Loom", 1)])),
         (null, null, Rec("Servo Rack", 90, 1, m: [("steel", 70), ("copper", 20)], p: [("Servo Motor", 3), ("Circuit Board", 2)])),
-        (null, null, Rec("Plasma Conditioner", 140, 1, m: [("steel", 50), ("copper", 60), ("gold", 6)], p: [("Control Unit", 2), ("Wiring Loom", 2)])),
+        (null, null, Rec("Plasma Conditioner", 140, 1, m: [("steel", 50), ("copper", 60), ("gold", 6)], p: [("Circuit Board", 4), ("Wiring Loom", 2)])),
         // (steel catwalks in the Roamer Stair's style, Sean 2026-11-21: CatwalkParts; at the end so saved choices keep their index)
         ("Catwalks", "Steel Catwalk 1.5 m", null),
         ("Catwalks", "Steel Catwalk 3 m", null),
@@ -1257,7 +1262,7 @@ public sealed class Assembling : IPartGenerator
     {
         ["copper"] = "Power Coupling", ["Copper Coil"] = "Power Coupling", ["Wiring Loom"] = "Power Coupling", ["Servo Motor"] = "Power Coupling",
         ["bronze"] = "Coolant Loop", ["Bearing"] = "Coolant Loop", ["Piston Set"] = "Coolant Loop", ["Turbine Stage"] = "Coolant Loop",
-        ["gold"] = "Servo Rack", ["circuits"] = "Servo Rack", ["Circuit Board"] = "Servo Rack", ["Control Unit"] = "Servo Rack",
+        ["gold"] = "Servo Rack", ["circuits"] = "Servo Rack", ["Circuit Board"] = "Servo Rack",
         ["levite"] = "Plasma Conditioner", ["Field Coil"] = "Plasma Conditioner", ["Levite Core"] = "Plasma Conditioner",
     };
 
