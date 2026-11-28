@@ -259,6 +259,13 @@ public static class StationCheck
             }
             return 0;
         }
+        using (place.In())
+            RollerRuns.Sync(w, c); // (the runs, as the first conveyor step lays them: an oven's way in is its runs', ConstructRollOut.OvenWays)
+        if (c.Dirty)
+            c.Rebuild();
+        for (var a = 0; a < c.MachineAsmCount; a++) // (each oven's way in, as its runs lay it, and its way out)
+            if (c.MachineAsms[a].Core is var oc && oc < c.PartCount && c.DefOf(oc).IsBakeOven && c.MachineAsms[a].W > 0)
+                Console.WriteLine($"  Bake Oven part {oc} at {c.Parts[oc].Pos.X:0}, {c.Parts[oc].Pos.Z:0}: tunnel laid by {(c.MachineAsms[a].OvenWay != 0 ? "its runs" : "its Core's place")}, way out {(ConstructRollOut.OutRunOf(c, oc) is var ok and >= 0 ? $"run {ok}" : "none")}");
         Console.WriteLine($"  station: part {t}; the bill of {target.Name} as its panel shows it before Start:");
         var preview = new StationPreview();
         preview.Begin(target);

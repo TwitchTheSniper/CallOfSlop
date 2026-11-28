@@ -104,6 +104,63 @@ public static class ConstructRollOut
         return -1;
     }
 
+    /// <summary>
+    /// At the rebuild (MachineBlocks.Build, after the runs' tiles have their assemblies): each Bake Oven's tunnel as its roller runs lay it
+    /// (<see cref="CMachineAsm.OvenWay"/>), so its Core may stand anywhere round its bed and a layout puts it where nothing else needs the
+    /// floor (Sean, 2026-11-28: a rover's dock beside an oven's Core at its in end). A run whose line, run on past its last tile, meets
+    /// the bed at one end heading along the bed makes that end the way in; failing one, a run whose line, run back past its first tile,
+    /// leaves the bed at one end heading away makes that end the way out. With neither, the Core's place decides (ConstructBakeOven.Bed).
+    /// The first such run (link order) wins, so every peer lays it alike. Nothing allocates.
+    /// </summary>
+    public static void OvenWays(Construct c)
+    {
+        var any = false;
+        for (var a = 0; a < c.MachineAsmCount; a++)
+        {
+            ref var m = ref c.MachineAsms[a];
+            m.OvenWay = 0;
+            any |= m.W > 0 && (uint)m.Core < (uint)c.PartCount && c.Parts[m.Core].D.IsBakeOven;
+        }
+        if (!any)
+            return;
+        for (var pass = 0; pass < 2; pass++) // (runs in first, then runs out)
+            for (var k = 0; k < c.RouteCount; k++)
+            {
+                if (c.Routes[k].Type != RouteType.Conveyor || !Line(c, k, out var n0, out var n1, out var dir))
+                    continue;
+                var at = pass == 0 ? n1 + dir * (RollerRuns.EndIn + Probe) : n0 - dir * (RollerRuns.EndIn + Probe);
+                var oven = OvenAt(c, at);
+                if (oven < 0 || oven >= c.BlockAsmOf.Length || c.BlockAsmOf[oven] < 0)
+                    continue;
+                ref var asm = ref c.MachineAsms[c.BlockAsmOf[oven]];
+                if (asm.OvenWay != 0)
+                    continue;
+                ref readonly var p = ref c.Parts[oven];
+                var inv = MachineBlocks.Rot24Inverse(p.Rot);
+                var rel = (Rot24.Apply(inv, at - p.Pos) - (p.D.BlockOrigin ?? Vector3.Zero)) / p.D.BlockCell;
+                var way = Rot24.Apply(inv, dir);
+                bool alongX;
+                float s, low;
+                if (MathF.Abs(way.X) > 0.9f)
+                    (alongX, s, low) = (true, way.X, rel.X - (asm.X0 + (asm.W - 1) * 0.5f));
+                else if (MathF.Abs(way.Z) > 0.9f)
+                    (alongX, s, low) = (false, way.Z, rel.Z - (asm.Z0 + (asm.L - 1) * 0.5f));
+                else
+                    continue; // (across the bed at a slant: no end of it)
+                // In: met at the low end heading up (the in end low), or at the high end heading down (reversed). Out: leaving the high
+                // end heading up (the in end low), or the low end heading down (reversed). Anything else meets the bed's middle or its side.
+                var atLow = low < 0;
+                bool reversed;
+                if (pass == 0 ? atLow && s > 0 : !atLow && s > 0)
+                    reversed = false;
+                else if (pass == 0 ? !atLow && s < 0 : atLow && s < 0)
+                    reversed = true;
+                else
+                    continue;
+                asm.OvenWay = (byte)(1 | (alongX ? 2 : 0) | (reversed ? 4 : 0));
+            }
+    }
+
     /// <summary>A body-frame point and way of <paramref name="c"/> in oven <paramref name="part"/>'s tunnel frame (ConstructBakeOven.Bed).</summary>
     private static bool InTunnel(Construct c, int part, Vector3 at, Vector3 way, out Vector3 local, out Vector3 dir, out ConstructBakeOven.Bed bed)
     {
