@@ -15,8 +15,8 @@ namespace CallOfSlop.PartKit.Generators;
 /// Materials Bin in front of it (metal, copper, steel, concrete, rubber, planks), the Foundries' second inputs from the bins and silos
 /// beside them, the two spare bins chained as reserves (metal, steel).</item>
 /// <item>The lines: each Extruder's Materials Bin chuted from a steel stock silo and into the Extruder's back; each Line Console wired to
-/// its Extruder's Run (and its line's Panel Former, or its presses and Assembler) and one console a Building Station into its Orders;
-/// the Die Racks chuted into their presses; each Assembler chuted from the steel, copper, concrete and rubber bins.</item>
+/// its Extruder's Run (and its line's Panel Former, or its presses) and one console a Building Station into its Orders;
+/// the Die Racks chuted into their presses; each kit line's Extruder chuted from the copper, concrete, rubber and cloth bins too.</item>
 /// </list>
 /// A link the rules refuse is named in the log (a "[zeroday_works2]" line) and left out.
 /// </summary>
@@ -320,7 +320,7 @@ public sealed partial class ZeroDayWorks2
             Chute(bins[51], null, f3, "Chute in", low + 1.5f); // (the rubber Foundry's planks)
         }
 
-        /// <summary>The lines: each Extruder's bin, its feed and its console; the presses' racks; the Assembler's stock.</summary>
+        /// <summary>The lines: each Extruder's bin, its feed and its console; the presses' racks.</summary>
         private void Lines(float s)
         {
             var bunker = StockSilos(s)[1..];
@@ -351,7 +351,7 @@ public sealed partial class ZeroDayWorks2
                     Note($"links: no Line Console within 20 m of the Extruder at ({at.X:0}, {at.Y:0})");
                     continue;
                 }
-                Cable(console, core, "Run", 6f); // (its Panel Former's, presses' and Assembler's Runs come from a station's console: Orders)
+                Cable(console, core, "Run", 6f); // (its Panel Former's and presses' Runs come from a station's console: Orders)
                 _consoles.Add((at, console));
             }
             var pressConsole = NearestLab("extruder", P(s, 53, -39), 3) is { } first ? ownConsole.GetValueOrDefault(first) : null;
@@ -365,16 +365,6 @@ public sealed partial class ZeroDayWorks2
             }
             DieCell(s);
             JoinSecondRun(s);
-            // The Assembler's stock (Orders pull their inputs from the stores chuted in), from the back row's bins, over everything at 18 m.
-            var assembler = Find("Assembler", P(s, 33, -33));
-            var up = 18f;
-            foreach (var x in new[] { 36f, 26f, 41f, 46f, GlassBin, BronzeBin, ClothBin }) // (steel, copper, concrete, rubber; glass, bronze, cloth: ZeroDayWorks2.Electronics.cs)
-            {
-                Chute(Find("Materials Bin", P(s, x, 114)), null, assembler, "Chute in", up);
-                if (s < 0 && _bigAsm != null) // (the big Assembler by the main station, from the same bins, a level up)
-                    Chute(Find("Materials Bin", P(s, x, 114)), null, _bigAsm, "Chute in", up + 2.5f);
-                up += 0.5f;
-            }
         }
 
         /// <summary>
@@ -514,11 +504,11 @@ public sealed partial class ZeroDayWorks2
 
         /// <summary>
         /// What each Building Station orders through (a station takes one console; Sean, 2026-11-26: the frigate's hull pieces are made on the
-        /// extrusion lines, never the Assembler). A line's station is the one nearest the end of its Laser Cutter (the line rolls Extruder,
+        /// extrusion lines). A line's station is the one nearest the end of its Laser Cutter (the line rolls Extruder,
         /// Panel Former, cutter, station bay): its first line's console goes into the station's Orders and is wired to every Extruder and Panel
         /// Former of the lines that end there, so a kit's plates and skins are ordered from them. The main station (no line ends there) takes the
-        /// press line's console, wired to every Bake Oven, Press and Assembler on the site: its hull pieces are the ovens' orders, each oven builds
-        /// its kit at its line's station, and its fittings the presses' and the Assemblers'.
+        /// press line's console, wired to every Bake Oven and Press on the site: its hull pieces and fittings are the ovens' orders (each oven builds
+        /// its kit at its line's station), and its small parts the presses'.
         /// </summary>
         private void Orders()
         {
@@ -569,6 +559,7 @@ public sealed partial class ZeroDayWorks2
                 l.Add(c);
             }
             var used = new HashSet<VPart>();
+            KitLineStock(lines.Values.SelectMany(l => l.Select(c => c.At))); // (every kit line's Extruders from the back row's other bins: ZeroDayWorks2.NoAssembler.cs)
             foreach (var (station, l) in lines)
             {
                 var console = l[0].Console;
@@ -600,17 +591,16 @@ public sealed partial class ZeroDayWorks2
                     continue;
                 }
                 used.Add(best.Console);
-                Note($"links: the Building Station at ({at.X:0}, {at.Y:0}) orders through the console of the Extruder at ({best.At.X:0}, {best.At.Y:0}): every oven, press and Assembler");
+                Note($"links: the Building Station at ({at.X:0}, {at.Y:0}) orders through the console of the Extruder at ({best.At.X:0}, {best.At.Y:0}): every oven and press");
                 Cable(best.Console, station, "Orders", 7.5f);
-                // (a Press, an Assembler and a Panel Former take one input each: their Run from this console only; the other press line's
+                // (a Press and a Panel Former take one input each: their Run from this console only; the other press line's
                 // Extruder is run from here too, as its pieces feed those presses)
                 foreach (var m in _labs.Where(l => l.Id is "bake-oven" or "press"))
                     Cable(best.Console, m.Core, "Run", 9f);
+                foreach (var bp in _bridgePresses) // (the press lines' third presses: ZeroDayWorks2.NoAssembler.cs)
+                    Cable(best.Console, bp, "Run", 9f);
                 foreach (var c in _consoles.Where(c => c.Console != best.Console && !used.Contains(c.Console) && _labs.Any(l => l.Id == "press" && Vector2.Distance(l.At, c.At) < 20)))
                     Cable(best.Console, NearestLab("extruder", c.At, 12), "Run", 8f);
-                if (_items.TryGetValue("Assembler", out var asms))
-                    foreach (var (_, asm) in asms)
-                        Cable(best.Console, asm, "Run", 7f);
                 // (the compact extruder cells beside the main station's north end: the station nearest the site's middle, ZeroDayWorks2.CompactCells.cs)
                 if (_stations.OrderBy(st => st.At.Length()).First().Core == station)
                     CompactCellRuns(best.Console);

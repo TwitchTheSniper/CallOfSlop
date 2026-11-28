@@ -87,6 +87,7 @@ public sealed partial class ZeroDayWorks : IPartGenerator
             LayAnnex();
             LayArmourLines();
             LayGeneralLine();
+            KitLineStock(); // (the kit lines' Extruders from the copper, concrete and rubber bins: ZeroDayWorks.NoAssembler.cs)
             LayPower();
             LayYard();
             LayPressBelts();

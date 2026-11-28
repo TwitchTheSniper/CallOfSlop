@@ -113,7 +113,7 @@ public static class WorkOrders
         if (o.Name != null && HullLoft.IsCutName(o.Name))
             return $"the {d.Name} cuts nothing: a cut part is a Laser Cutter's order";
         if (o.IsMade && !d.IsAssembler)
-            return $"the {d.Name} doesn't make it: the {o.Name} is an Assembler's order";
+            return $"the {d.Name} doesn't make it: the {o.Name} is {CatalogueMaker(o)}'s order";
         if (d.IsPress)
             return PressRefusal(world, c, part, d, o);
         if (d.IsPanelFormer)
@@ -286,7 +286,7 @@ public static class WorkOrders
     /// not the Assembler (Sean saw 147 hull pieces called "an Assembler's order" at Zero Day Works II).
     /// </summary>
     public static string CatalogueMaker(in WorkOrder o) =>
-        o.IsMade ? "an Assembler"
+        o.IsMade ? (ConstructParts.Get(o.Part) is { } md && md.Name == o.Name && BakeKits.Has(md) ? "a Bake Oven" : "an Assembler")
         : o.IsPiece || o.Name != null ? "another machine"
         : ConstructParts.Get(o.Part) is { } d && BakeKits.Has(d) ? "a Bake Oven"
         : Pressed.SpecOf(o) != null ? "a Press"

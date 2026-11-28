@@ -186,6 +186,7 @@ public static class MakerRoutes
         var gears = 0;
         var bearings = 0;
         var pressNames = new List<string>();
+        var asmNames = new List<string>(); // (the kinds still the Assembler's: what a works without one can't make)
         var splitKinds = new List<string>();
         var wholeShare = new int[Ovens.Length + 1];
         var splitShare = new int[Ovens.Length + 1];
@@ -198,6 +199,8 @@ public static class MakerRoutes
             count[(int)route] += n;
             if (route == Route.Press)
                 pressNames.Add($"{d.Name} x{n}");
+            if (route == Route.Assembler)
+                asmNames.Add($"{d.Name} x{n}");
             if (route is Route.OneBake or Route.Kit or Route.KitNow)
             {
                 oven[OvenFor(d)] += n;
@@ -237,6 +240,8 @@ public static class MakerRoutes
         }
         if (pressNames.Count > 0)
             sb.AppendLine($"  press chain kinds: {string.Join(", ", pressNames)}");
+        if (asmNames.Count > 0)
+            sb.AppendLine($"  still Assembler kinds: {string.Join(", ", asmNames)}");
         ShareLines(sb, bp.Name, wholeShare, splitShare);
         if (splitKinds.Count > 0)
             sb.AppendLine($"  split into sub-kits: {string.Join(", ", splitKinds)}");

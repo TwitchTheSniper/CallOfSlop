@@ -95,7 +95,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 Group = "Factories",
             };
             using var doc = JsonDocument.Parse(layoutText);
-            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(Restocked).Select(MovedOut).Select(NarrowOut).Select(PadGrown).Concat(Additions.Concat(ElectronicsAdditions()).Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(Restocked).Select(MovedOut).Select(NarrowOut).Select(PadGrown).Where(e => !Retired(e)).Concat(AssemblerBridges().Select(a => JsonDocument.Parse(a).RootElement.Clone())).Concat(Additions.Concat(ElectronicsAdditions()).Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
             items.AddRange(DeepPads(items));
             items.AddRange(NarrowStrip(items));
             items.AddRange(CompactCellAdditions().Select(a => JsonDocument.Parse(a).RootElement.Clone())); // (the compact extruder cells: ZeroDayWorks2.CompactCells.cs)
@@ -218,7 +218,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
         /// row toward the presses, to 12 x 12 m (Sean, 2026-11-27: "the presses output pads could get a little bit bigger ... the roller
         /// conveyors could be shrunk a little"): the two tiles of each roller row nearest the pad (|x| 21 and 23, z 29 and 31) become Pad
         /// Tiles (<see cref="PadGrown"/>) and the rest of those two columns are filled (<see cref="Additions"/>). The row's run is 3 tiles
-        /// (6 m) from the block Assembler's bed. Nothing else moves.
+        /// (6 m) from the press where the block Assembler stood (2026-11-28). Nothing else moves.
         /// </summary>
         private static bool InPadGrowth(JsonElement e) => Str(e, "name") == "Roller Tile" && MathF.Abs(Num(e, "x")) is 21 or 23 && Num(e, "z") is 29 or 31; // (the columns and the rest of their rows, z 25, 27, 33 and 35: Additions)
 
@@ -545,7 +545,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 if (!Entry(((int)(cell.Item1 - 2 * into.X), (int)(cell.Item2 - 2 * into.Y))))
                     _intoPress.Remove(cell);
             // The plain Roller Tiles in a press line's row, between its presses and the building station the row ends at (beside the presses'
-            // beds and the block Assembler's), roll toward that station: the layout laid them facing the other way, so a pressed part rode
+            // beds and the third press's, where the block Assembler stood), roll toward that station: the layout laid them facing the other way, so a pressed part rode
             // away from the station and dropped loose (2026-11-26, Sean: carry pressed parts on to the main station). Only their facing
             // changes; each piece stays where his layout puts it, and pieces roll through the beds on the way (ConstructConveyor.PassesThrough).
             var stationsAt = items.Where(i => Str(i, "t") == "lab" && Str(i, "id") == "building-station").Select(i => (At: new Vector2(Num(i, "x"), -Num(i, "z")), Span: (float)Math.Max(Int(i, "w"), Int(i, "l")))).ToList();
@@ -591,16 +591,16 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
 
             // Pieces on the floor first (block parts, then the bigger ones), the lab machines, then what welds on them.
             var parts = items.Where(i => Str(i, "t") == "part").ToList();
-            var cores = new[] { "Smelter", "Foundry", "Sawmill", "Assembler" };
+            var cores = new[] { "Smelter", "Foundry", "Sawmill" };
             foreach (var it in parts.Where(i => !cores.Contains(Str(i, "name")) && !Str(i, "name").StartsWith("Kit Genset")))
                 PartItem(it, items);
             foreach (var it in items.Where(i => Str(i, "t") == "lab"))
                 LabItem(it);
+            BridgePresses(); // (where the press lines' Assemblers stood: ZeroDayWorks2.NoAssembler.cs)
             foreach (var it in parts.Where(i => cores.Contains(Str(i, "name"))))
                 PartItem(it, items);
             foreach (var it in items.Where(i => Str(i, "t") == "rover"))
                 RoverItem(it);
-            BigAssembler();
             var g = 0;
             foreach (var it in parts.Where(i => Str(i, "name").StartsWith("Kit Genset")))
                 Genset(new Vector2(Num(it, "x"), -Num(it, "z")), g++);
@@ -655,21 +655,6 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                         Note($"the {name} laid at ({at.X:0}, {at.Y:0}) is seated at ({seat.X:0}, {seat.Y:0}), butting its {bed}s");
                     return Piece(name, name == "Sawmill" ? at : seat, XFacing(dir), Refining);
                 }
-                case "Assembler":
-                {
-                    // (its three upgrade modules, as the first works' Assemblers carry: the frigate's doors, panels, racks and lights
-                    // need a Coolant Loop, a Power Coupling or a Servo Rack; 2026-11-26)
-                    var p = Piece(name, at, Facing(flow), Steel);
-                    if (p != null)
-                    {
-                        Onto(p, "module1", "Power Coupling", "mount");
-                        Onto(p, "module2", "Servo Rack", "mount");
-                        Onto(p, "module3", "Coolant Loop", "mount");
-                    }
-                    return p;
-                }
-                case "Assembly Bed Block":
-                    return Piece(name, at, Facing(flow), Steel);
                 case "Ore Silo 4 m" or "Ore Bunker 4 m" or "Materials Bin":
                     return Piece(name, at, Facing(flow), Stock);
                 case "Line Console":
@@ -799,51 +784,6 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 }
             }
         }
-
-        /// <summary>
-        /// The big Assembler by the main station (Sean, 2026-11-26: "add one big Assembler by the station"), on the free floor west of its
-        /// south-west pick pad (pad 1615's, at about (-19, -29)), past the west press line's die cell: its Core at (-35, -23), a 4 x 4 bed
-        /// east of it, three Mast Blocks on each bed corner (6 m clear: the frigate's ladders, bulkhead doors, reactor, hatches, shower and
-        /// Robot Shell Docks), a Gantry Carriage on each row, its three modules, and a Kit Long Arm between the bed and the pad, which carries
-        /// what it builds onto the pad for the station's rovers. Added beside Sean's pieces; none of his move. Stocked and run as the other
-        /// Assemblers are (<see cref="Lines"/>, <see cref="Orders"/>: it is one of the "Assembler" items).
-        /// </summary>
-        private void BigAssembler()
-        {
-            var at = new Vector2(BigAsmX, BigAsmZ);
-            var core = Piece("Assembler", at, XFacing(new Vector2(1, 0)), Steel);
-            if (core == null)
-            {
-                Note("big Assembler: its Core is NOT placed");
-                return;
-            }
-            const int n = 4, masts = 3;
-            var bed = new VPart[n, n];
-            for (var i = 0; i < n; i++)
-                Paint(bed[i, 0] = Onto(i == 0 ? core : bed[i - 1, 0], "+x", "Assembly Bed Block", "-x"), Steel);
-            for (var j = 1; j < n; j++)
-                for (var i = 0; i < n; i++)
-                    Paint(bed[i, j] = Onto(bed[i, j - 1], "+z", "Assembly Bed Block", "-z"), Steel);
-            foreach (var (c, side, by) in new[] { (bed[0, 0], "-z", "+z.low"), (bed[n - 1, 0], "-z", "+z.low"), (bed[0, n - 1], "+z", "-z.low"), (bed[n - 1, n - 1], "+z", "-z.low") })
-            {
-                var m = Onto(c, side, "Mast Block", by);
-                Paint(m, Steel);
-                for (var k = 1; k < masts; k++)
-                    Paint(m = Onto(m, "top", "Mast Block", "bottom"), Steel);
-            }
-            for (var j = 0; j < n; j++)
-                Paint(Onto(bed[0, j], "carriage", "Gantry Carriage", "bottom"), Crane);
-            Onto(core, "module1", "Power Coupling", "mount");
-            Onto(core, "module2", "Servo Rack", "mount");
-            Onto(core, "module3", "Coolant Loop", "mount");
-            Register("Assembler", at, core);
-            _bigAsm = core;
-            var arm = KitArm("Kit Long Arm", new Vector2(BigArmX, BigArmZ), new Vector2(-1, 0)); // (14 m of reach, 6 t: the bed's far corner is 13 m off and the reactor 5 t)
-            Note($"big Assembler at ({at.X:0}, {at.Y:0}), a 4 x 4 bed, masts {masts} high; its arm at ({BigArmX:0}, {BigArmZ:0}){(arm == null ? " NOT placed" : "")}");
-        }
-
-        private const float BigAsmX = -35, BigAsmZ = -23, BigArmX = -23, BigArmZ = -25; // (the big Assembler's Core and its Line Arm, site metres: Core 2 m cells at odd metres as the others; the bed's north masts 2 m clear of the west press row's Assembler bed, or the masts join the two beds into one machine)
-        private VPart? _bigAsm;
 
         /// <summary>
         /// A Sheet Extruder: its Core on an Extruder Plinth beside the die bank, w Die Blocks welded along its own +x on plinths, the die face

@@ -156,14 +156,45 @@ public static partial class BakeKits
     /// </summary>
     public static bool Has(ConstructPartDef d)
     {
+        if (IsMadeKind(d))
+            return MadeHas(d);
         if (d.IsNamedRuntime || d.IsExtrusion || Extrusion.IsRuntimeId((ushort)d.Id))
-            return false; // (a run-time part, an Ord Rack or an ordnance design, AssembledParts: the Assembler's still)
+            return false; // (another run-time part: an extrusion, a pressed or lofted part)
         var id = d.Id;
         var defs = _hasDef;
         if ((uint)id < (uint)defs.Length && ReferenceEquals(defs[id], d) && ReferenceEquals(_hasTable, AssemblingTable.Current))
             return _has[id];
         return HasNow(d);
     }
+
+    /// <summary>
+    /// A run-time Ord Rack or ordnance design (AssembledParts: made from its key, its id this process's own and given back when it is
+    /// let go): baked from a kit of its boxes and its row's components since the Zero Day Works lost their Assemblers (retiring the
+    /// Assembler, phase 5), as a placed part by the rule is. Kept by its key, never its id.
+    /// </summary>
+    public static bool IsMadeKind(ConstructPartDef d) => (d.IsRackRuntime || d.IsOrdnance) && AssembledParts.IsName(d.Name);
+
+    private static readonly Dictionary<string, bool> _madeHas = new(StringComparer.Ordinal);
+
+    private static bool MadeHas(ConstructPartDef d)
+    {
+        lock (Gate)
+        {
+            if (!ReferenceEquals(_hasTable, AssemblingTable.Current))
+                (_hasTable, _hasDef, _has) = (AssemblingTable.Current, [], []);
+            if (_madeHas.Count > 0 && !ReferenceEquals(_madeTable, AssemblingTable.Current))
+                _madeHas.Clear();
+            _madeTable = AssemblingTable.Current;
+            if (_madeHas.TryGetValue(d.Name, out var v))
+                return v;
+        }
+        var has = ByRule(d) && KitOf(d, true) != null;
+        lock (Gate)
+            _madeHas[d.Name] = has;
+        return has;
+    }
+
+    private static AssemblingTable? _madeTable;
 
     private static ConstructPartDef?[] _hasDef = [];
     private static bool[] _has = [];
@@ -212,7 +243,7 @@ public static partial class BakeKits
     /// </summary>
     public static bool ByRule(ConstructPartDef d) =>
         !d.IsNamedRuntime && !d.IsExtrusion && AssemblingTable.Current.Problem.Length == 0
-        && AssemblingTable.Current.Of((ushort)d.Id) is not null && d.PhysicsOnly && PressTable.Current.PresetKeyOf(d) == null;
+        && AssemblingTable.Current.Of((ushort)d.Id) is not null && (d.PhysicsOnly || IsMadeKind(d)) && PressTable.Current.PresetKeyOf(d) == null;
 
     /// <summary>Is this part made from a kit BakeKits.json or Constructs/BakeKits/ lists (an Assembler never builds it, as before phase 3)?</summary>
     public static bool ListedKit(ConstructPartDef made) => Has(made) && IsNamed(made.Name);

@@ -206,6 +206,7 @@ public static class StationCheck
                 .GroupBy(i => (c.DefOf(i).Name, MathF.Round(c.Parts[i].Pos.Z))).OrderBy(g => g.Key.Item2))
                 Console.WriteLine($"  near: z {g.Key.Item2}: {g.Count()} x {g.Key.Name}, x {g.Min(i => c.Parts[i].Pos.X):0.0}..{g.Max(i => c.Parts[i].Pos.X):0.0}, y {c.Parts[g.First()].Pos.Y:0.00}"
                     + string.Concat(g.Where(i => c.DefOf(i).ExtRunOut > 0).Select(i => $" [{i} table of {ConstructExtruder.TableMachine(c, i)}, run {RollerRuns.RunOf(c, i)}, links {string.Join("/", Enumerable.Range(0, 1).SelectMany(_ => { var l = new List<string>(); for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e)) l.Add(c.DefOf(c.OtherEnd(e)).Name); return l; }))}]"))
+                    + string.Concat(g.Where(i => c.DefOf(i).BlockRole != BlockRole.None && !c.DefOf(i).IsRollerTile).Select(i => $" [{i} of {(MachineBlocks.AsmOf(c, i) is var am and >= 0 ? $"{c.DefOf(c.MachineAsms[am].Core).Name} {c.MachineAsms[am].Core}, bed {c.MachineAsms[am].W} x {c.MachineAsms[am].L}{(c.MachineAsms[am].LowBed ? " low" : "")}" : "no machine")}]")) // (a block machine's cell: whose bed it is)
                     + string.Concat(g.Where(i => c.DefOf(i).IsRollerTile).Select(i => $" [{i} run {RollerRuns.RunOf(c, i)}{(RollerRuns.RunOf(c, i) is var rk and >= 0 && rk < c.RouteCount ? $" {c.Routes[rk].ConvW / 100f:0.00} m wide" : "")}]"))
                     + string.Concat(g.Where(i => WorkOrders.TakesOrders(c.DefOf(i))).Select(i => ConstructConveyor.Out(c, i) is var o and >= 0
                         ? $" [{i} out {o}: {ConstructConveyor.Length(c, o):0.0} m to {c.DefOf(c.Routes[o].To).Name} {c.Routes[o].To} at {c.Parts[c.Routes[o].To].Pos.X:0},{c.Parts[c.Routes[o].To].Pos.Z:0}]" : $" [{i} no out]"))
@@ -215,10 +216,11 @@ public static class StationCheck
         }
         if (Arg("--why") is { } whyParts) // (--why "PART;PART": each machine's answer to an order for it)
             foreach (var wn in whyParts.Split(';', StringSplitOptions.RemoveEmptyEntries))
-                if (ConstructParts.Find(wn.Trim()) is { } wd)
+                if ((ConstructParts.Find(wn.Trim()) ?? Extrusion.Parse(wn.Trim())) is { } wd) // (an extrusion by its name too: "Extrusion solid 50x1x50 rubber")
                     for (var i = 0; i < c.PartCount; i++)
                         if (WorkOrders.TakesOrders(c.DefOf(i)) && !c.DefOf(i).IsBakeOven)
-                            Console.WriteLine($"  why {wd.Name}: {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0}: {WorkOrders.Refusal(w, c, i, ConstructStation.OrderFor(wd, 1)) ?? "takes it"}");
+                            Console.WriteLine($"  why {wd.Name}: {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0}: {WorkOrders.Refusal(w, c, i, ConstructStation.OrderFor(wd, 1)) ?? "takes it"}"
+                                + (wd.IsExtrusion && c.DefOf(i).IsExtruder && !c.DefOf(i).IsPanelFormer ? (ConstructExtruder.Feeds(w, c, i, wd.ExKey.Material) ? ", fed" : ", NOT fed its material") : ""));
         if (t < 0)
         {
             Console.WriteLine("  no Building Station in it");

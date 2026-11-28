@@ -68,10 +68,10 @@ public sealed class AssemblingTable
     /// back (<see cref="LegacyChoice"/>). A row only ever goes at the end of a family's list (.claude/rules/production.md); if one
     /// is ever taken out again, its place is kept here the same way, under a new mark.
     /// </summary>
-    public const string RowsMark = "asm-rows-2026-11-28-tools-phase4";
+    public const string RowsMark = "asm-rows-2026-11-28-works-phase5";
 
     /// <summary>Every rows mark there has been, oldest first (<see cref="RowsMark"/> is the last): a file's level is the newest one it names.</summary>
-    public static readonly string[] Marks = ["asm-rows-2026-11-24", "asm-rows-2026-11-24-arms", "asm-rows-2026-11-26-servo", "asm-rows-2026-11-28-control-unit", "asm-rows-2026-11-28-press-phase2", RowsMark];
+    public static readonly string[] Marks = ["asm-rows-2026-11-24", "asm-rows-2026-11-24-arms", "asm-rows-2026-11-26-servo", "asm-rows-2026-11-28-control-unit", "asm-rows-2026-11-28-press-phase2", "asm-rows-2026-11-28-tools-phase4", RowsMark];
 
     /// <summary>
     /// The rows taken out, by the mark that took them (its place in <see cref="Marks"/>): each group stood right after its After row, and
@@ -89,6 +89,9 @@ public sealed class AssemblingTable
     /// list's order: Bearing (4), Control Unit (3), Servo Motor (2).
     /// Mark 5 (2026-11-28; retiring the Assembler, phase 4): the Decoupler, the Thruster Jig's one item, pressed on the Button die. It stood
     /// after the Capital Rocket Engine (a kit row now, still in the list); an old choice of it builds the Medium Decoupler, its nearest row.
+    /// Mark 6 (2026-11-28; retiring the Assembler, phase 5: the Zero Day Works have no Assemblers): the Server Rack, Robot Shell and Manned
+    /// Manoeuvring Unit, pressed round their Circuit Boards (PressParts.Phase2.cs); an old choice of one builds the row before it, as mark 4's.
+    /// The Robot Shell's group goes after mark 4's on the Laser Seeker: it stood after the Remote Fuse in that list.
     /// </summary>
     private static readonly (int Mark, string After, string[] Gone, string? To)[] Removed =
     [
@@ -123,6 +126,9 @@ public sealed class AssemblingTable
         (4, "Parts Shelf", ["Requisition Crate"], null),
         (4, "Deck Speed Dial", ["Fire Director", "Long Range Sensor"], null),
         (5, "Capital Rocket Engine", ["Decoupler"], "Medium Decoupler"),
+        (6, "Fax Machine", ["Server Rack"], null),
+        (6, "Laser Seeker", ["Robot Shell"], null),
+        (6, "MMU Dock", ["Manned Manoeuvring Unit"], null),
     ];
 
     private Dictionary<(int, int), int[]>? _legacy; // per (family, file level): an old choice (1 + its place in the old list) to this table's choice
