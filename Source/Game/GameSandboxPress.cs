@@ -23,7 +23,7 @@ public sealed partial class Game
             {
                 var core = c.MachineAsms[a].Core;
                 if (!c.Parts[core].D.IsPress || c.Parts[core].Broken || !ConstructPress.LidSpace(c, core, out var mid, out var rot, out var lo, out var hi)
-                    || Constructs.StoreOf(c, core) is not { } st || !ProductionLines.Working(Constructs, c, core, st, now))
+                    || Constructs.StoreOf(c, core) is not { } st || st.PressRepeat || !ProductionLines.Working(Constructs, c, core, st, now))
                     continue;
                 var into = ConstructPress.StrokeSecondsServer(c, core, st); // (the stroke's own clock: the swing every peer draws)
                 if (into - PressCrushEvery / (double)World.TickRate < ConstructPress.ShutSec && into >= ConstructPress.ShutSec)

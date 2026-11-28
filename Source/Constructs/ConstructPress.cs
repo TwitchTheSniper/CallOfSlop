@@ -497,11 +497,32 @@ public static partial class ConstructPress
         card.Add(line, preset != null ? "Makes " : "Sized ").Add(line, preset?.Name ?? pattern.Label);
 
     /// <summary>A sized stroke's work until the part is made (the lid shut): creative or not, never shorter than the lid's swing.</summary>
-    private static int StrokeFull(ConstructWorld world, Construct c, int part, PressDie die, in ExtrusionKey blank)
+    private static int StrokeFull(ConstructWorld world, Construct c, int part, CStore st, PressDie die, in ExtrusionKey blank)
     {
         var work = WorkOf(c, part);
-        return world.CreativeRecycling ? CreativeStrokeSteps * work
-            : Math.Max(StrokeMinSteps * work, SizedTicks(die, blank) * Bites(c, part, blank) * Milli); // (a blank longer than the bed goes in bites)
+        var min = st.PressRepeat ? RepeatMinSteps : StrokeMinSteps; // (a repeat: the lid is shut and latched already, only the stamp)
+        return world.CreativeRecycling ? (min + 2) * work
+            : Math.Max(min * work, SizedTicks(die, blank) * Bites(c, part, blank) * Milli); // (a blank longer than the bed goes in bites)
+    }
+
+    /// <summary>
+    /// Server: is another blank the same size as <paramref name="blank"/> waiting for this press: in another of its bays, or riding a
+    /// conveyor or roller run into it? Then the lid stays shut and the next stroke is the stamp alone (Sean, 2026-11-28). Allocates nothing.
+    /// </summary>
+    private static bool SameWaiting(Construct c, int part, int bay, in ExtrusionKey blank)
+    {
+        var d = c.Parts[part].D;
+        for (var b = 0; b < d.PressBays.Length; b++)
+            if (b != bay && b != HopperBay && PieceIn(c, part, b) is var i and >= 0 && (c.Parts[i].D.ExKey with { Growing = false }) == blank)
+                return true;
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            int k = c.Conveyed[i].Route;
+            if (k < c.RouteCount && c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].To == part
+                && ConstructParts.Def(c.Conveyed[i].Def) is { IsExtrusion: true } rd && (rd.ExKey with { Growing = false }) == blank)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>A step of a press with a sized die. True when parts came or went.</summary>
@@ -525,12 +546,18 @@ public static partial class ConstructPress
         SetStall(world, st, why);
         if (st.LidCool > 0)
             st.LidCool--; // (the lid still opening on the last part: ConstructPressLid.cs)
+        if (st.PressRepeat && st.JobTicks == 0 && why == PressStall.Wants && !held && !p.Broken && st.RepeatHold > 0)
+        {
+            st.RepeatHold--; // (the lid stays shut a moment for the same-size blank on its way in: SameWaiting)
+            return false;
+        }
         // (a stroke already over, its lid opening on the made part: a stop, a power dip or a full tray no longer throws the part away;
         // only the blank leaving its bay or the press breaking does)
-        var opening = bay >= 0 && st.JobTicks > 0 && HasLid(c, part) && !p.Broken && st.JobTicks >= StrokeFull(world, c, part, die, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
+        var opening = bay >= 0 && st.JobTicks > 0 && HasLid(c, part) && !p.Broken && st.JobTicks >= StrokeFull(world, c, part, st, die, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
         if (!opening && (why != PressStall.None || held || p.Broken || st.LidCool > 0 && st.JobTicks == 0))
         {
             st.JobTicks = 0;
+            st.PressRepeat = false; // (the lid opens: the next stroke swings it shut again)
             ConstructGatherer.SetBusy(world, st, false);
             return false;
         }
@@ -543,7 +570,7 @@ public static partial class ConstructPress
         // Zero Day works the part came out while the lid was still shut). Busy falls at the stroke's end, so every peer draws the lid
         // opening (LidAt), while the work runs on for LidOpenSteps; the blank stays on its bay until the part goes.
         var work = WorkOf(c, part);
-        var full = StrokeFull(world, c, part, die, blank);
+        var full = StrokeFull(world, c, part, st, die, blank);
         var open = HasLid(c, part) ? LidOpenSteps * work : 0;
         if (st.JobTicks == 0)
             MachineScreens.SetProgress(world, st, 0); // (a new stroke: sent at once, so every peer starts its shells' swing: StrokeAt)
@@ -554,13 +581,18 @@ public static partial class ConstructPress
             MachineScreens.SetProgress(world, st, (int)((long)st.JobTicks * 100 / full));
             return false;
         }
-        if (st.JobTicks < full + open)
+        // Small pieces of one size one after another (Sean, 2026-11-28): with another such blank waiting (SameWaiting) the lid stays shut,
+        // the part goes at once and the next stroke is the stamp alone (RepeatMinSteps; drawn by LidAt from Busy never falling). The last
+        // of the run opens the lid and waits for the ejector as above.
+        var again = open > 0 && st.JobTicks - work < full && SameWaiting(c, part, bay, blank);
+        if (!again && st.JobTicks < full + open)
         {
             ConstructGatherer.SetBusy(world, st, false); // (the stroke is over: the lid unlatches, swings open and the ejector lifts)
             MachineScreens.SetProgress(world, st, 100);
             return false;
         }
-        ConstructGatherer.SetBusy(world, st, false);
+        if (!again)
+            ConstructGatherer.SetBusy(world, st, false);
         st.JobTicks = 0;
         // The part: a preset is the catalogue part; anything else is made from its key (once a machine, then shared: Pressed.Parse).
         var output = preset ?? Pressed.Parse(Pressed.KeyOf(die, pattern!, blank));
@@ -571,10 +603,19 @@ public static partial class ConstructPress
         }
         if (!PutOut(world, query, c, part, st, output, 1))
         {
-            if (open > 0)
+            if (again)
+            {
+                st.PressRepeat = false; // (it can't go: the lid opens on it as for the last of a run, and it tries again when open)
+                st.JobTicks = full;
+            }
+            else if (open > 0)
                 st.JobTicks = full + open - work; // (the lid stays open on the made part and it tries again next step, not a whole new stroke)
             return false;
         }
+        st.PressRepeat = again;
+        st.RepeatHold = again ? RepeatHoldSteps : (byte)0;
+        if (again)
+            MachineScreens.SetProgress(world, st, 100); // (the stroke's end: the next one's 0 tells every peer a new stamp began)
         if (need > 0 && pattern!.Bay2 is { } kit)
         {
             if (kit.Part != null)
