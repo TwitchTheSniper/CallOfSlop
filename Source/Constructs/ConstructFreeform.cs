@@ -346,7 +346,7 @@ public sealed partial class ConstructWorld
             var from = km ? x.From : x.From + off;
             var to = km ? x.To + off : x.To;
             if (from < keep.PartCount && to < keep.PartCount)
-                ConstructRoutes.Add(this, keep, RouteType.Data, from, 255, 255, 0, default, default, to, 255);
+                ConstructRoutes.Add(this, keep, RouteType.Data, from, 255, CRoute.NoParent, 0, default, default, to, 255);
             XWires[k] = XWires[--XWireCount];
             LinksDirty = true;
         }

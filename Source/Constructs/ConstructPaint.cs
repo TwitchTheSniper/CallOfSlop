@@ -124,15 +124,15 @@ public static class ConstructPaint
             }
         w.PatchU16(at, (ushort)n);
         at = w.Length;
-        w.U8(0);
+        w.U16(0); // (protocol 487: the painted links' count and indices are u16)
         n = 0;
         for (var k = 0; k < c.RouteCount; k++)
             if (c.Routes[k].Paint != 0)
             {
-                w.U8((byte)k).U8((byte)(c.Routes[k].Paint >> 16)).U8((byte)(c.Routes[k].Paint >> 8)).U8((byte)c.Routes[k].Paint);
+                w.U16((ushort)k).U8((byte)(c.Routes[k].Paint >> 16)).U8((byte)(c.Routes[k].Paint >> 8)).U8((byte)c.Routes[k].Paint);
                 n++;
             }
-        w.PatchU8(at, (byte)n);
+        w.PatchU16(at, (ushort)n);
     }
 
     /// <summary>Reads <see cref="WriteFull"/>'s block (after the parts and links: every index is checked against them).</summary>
@@ -147,10 +147,10 @@ public static class ConstructPaint
                 throw new MalformedPacketException("paint on a part that isn't there");
             c.Parts[part].Paint = SetBit | rgb;
         }
-        n = r.U8();
+        n = r.U16();
         for (var k = 0; k < n; k++)
         {
-            int route = r.U8();
+            int route = r.U16();
             var rgb = (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
             if (route >= c.RouteCount)
                 throw new MalformedPacketException("paint on a link that isn't there");

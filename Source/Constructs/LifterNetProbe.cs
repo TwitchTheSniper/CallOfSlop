@@ -73,8 +73,8 @@ public static partial class LifterProbe
                 return $"net: body {parts[i].Id} would not join the arm's";
         }
         int pPress = idx[0], pRack = idx[1], pPad = idx[2], pTerm = idx[3], pRouter = idx[4], pStock = idx[5];
-        var k1 = ConstructRoutes.Add(world, arm, RouteType.Conveyor, pStock, Port(arm.DefOf(pStock), true), 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, pRouter, Port(router, false));
-        var k2 = ConstructRoutes.Add(world, arm, RouteType.Conveyor, pRouter, Port(router, true), 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, pRack, Port(arm.DefOf(pRack), false));
+        var k1 = ConstructRoutes.Add(world, arm, RouteType.Conveyor, pStock, Port(arm.DefOf(pStock), true), CRoute.NoParent, 0, default, ReadOnlySpan<CRouteNode>.Empty, pRouter, Port(router, false));
+        var k2 = ConstructRoutes.Add(world, arm, RouteType.Conveyor, pRouter, Port(router, true), CRoute.NoParent, 0, default, ReadOnlySpan<CRouteNode>.Empty, pRack, Port(arm.DefOf(pRack), false));
         var k3 = -1;
         if (feedPad)
         {
@@ -83,7 +83,7 @@ public static partial class LifterProbe
             foreach (var np in router.NamedPorts)
                 if (np.Type == RouteType.Conveyor && np.Out && ++outs == 2)
                     second = np.Byte;
-            k3 = ConstructRoutes.Add(world, arm, RouteType.Conveyor, pRouter, second, 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, pPad, Port(arm.DefOf(pPad), false));
+            k3 = ConstructRoutes.Add(world, arm, RouteType.Conveyor, pRouter, second, CRoute.NoParent, 0, default, ReadOnlySpan<CRouteNode>.Empty, pPad, Port(arm.DefOf(pPad), false));
         }
         arm.Dirty = true;
         arm.Rebuild();

@@ -60,7 +60,7 @@ public static partial class SelfTest
 
     private static int CbChute(ConstructWorld w, Construct c, int from, byte fromPort, int to, byte toPort)
     {
-        var k = ConstructRoutes.Add(w, c, RouteType.Chute, from, fromPort, 255, 0, default, default, to, toPort);
+        var k = ConstructRoutes.Add(w, c, RouteType.Chute, from, fromPort, CRoute.NoParent, 0, default, default, to, toPort);
         c.Dirty = true;
         c.Rebuild();
         return k;
@@ -186,9 +186,9 @@ public static partial class SelfTest
         var binIn = w.AddPart(c, binDef, new Vector3(2, 0, 0), 0);
         var binOut = w.AddPart(c, binDef, new Vector3(4, 0, 0), 0);
         c.Rebuild();
-        var inWrong = ConstructRoutes.Check(w, c, RouteType.Chute, vol, 255, 255, 0, default, default, binOut, 255, true);
+        var inWrong = ConstructRoutes.Check(w, c, RouteType.Chute, vol, 255, CRoute.NoParent, 0, default, default, binOut, 255, true);
         Want(inWrong != null && inWrong.Contains("no such chute output"), $"a chute can't start at Chute in (\"{inWrong}\")");
-        var outWrong = ConstructRoutes.Check(w, c, RouteType.Chute, binIn, 255, 255, 0, default, default, vol, outByte, true);
+        var outWrong = ConstructRoutes.Check(w, c, RouteType.Chute, binIn, 255, CRoute.NoParent, 0, default, default, vol, outByte, true);
         Want(outWrong != null && outWrong.Contains("no such chute input"), $"a chute can't end at Chute out (\"{outWrong}\")");
         var chIn = CbChute(w, c, binIn, 255, vol, 255);
         var chOut = CbChute(w, c, vol, outByte, binOut, 255);

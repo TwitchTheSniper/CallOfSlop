@@ -46,10 +46,10 @@ public static partial class SelfTest
         nodes[1] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(fmn.X - r, ec.Y - d, ec.Z)), Host = 0 };
         var below = nodes[1].Pos.Y < fmx.Y;
         var oldEnd = ConstructRoutes.Blocked(c, nodes[1].Pos, ec, r * 0.5f - 0.012f, -1, engine); // (the old rule: the box grown by half the radius less 1.2 cm)
-        var grace = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..2], engine, 255);
-        var gracePreview = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..1], nodes[1].Pos, 0);
+        var grace = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, nodes[..2], engine, 255);
+        var gracePreview = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, nodes[..1], nodes[1].Pos, 0);
         // Past the grace the normal rule applies: on from the second node straight through the slab to its far side.
-        var farWhy = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..2], ConstructWorld.Quantise(new Vector3(fmx.X + r, nodes[1].Pos.Y, ec.Z)), 0);
+        var farWhy = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, nodes[..2], ConstructWorld.Quantise(new Vector3(fmx.X + r, nodes[1].Pos.Y, ec.Z)), 0);
         Line($"link clipping grace: grace {ConstructRoutes.Grace(r):0.00} m for a pipe; tank and engine on the slab's edge, end segments from below its side ({below}) over its corner: "
              + $"old rule {(oldEnd is { } oe ? $"refused (the {c.DefOf(oe).Name})" : "passed")}, now \"{grace ?? "ok"}\" (preview \"{gracePreview ?? "ok"}\"); past the grace \"{farWhy ?? "ok"}\"");
         Want(below && oldEnd != null, "the rail case doesn't reproduce the old refusal (the bench changed?)");
@@ -67,8 +67,8 @@ public static partial class SelfTest
             n[2] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(0.15f, y, ec.Z)), Host = 0 };
             n[3] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(0.15f, ec.Y, ec.Z)), Host = 0 };
             return preview
-                ? ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, n[..1], n[1].Pos, 0)
-                : ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, n, engine, 255);
+                ? ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, n[..1], n[1].Pos, 0)
+                : ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, n, engine, 255);
         }
         var half = Embedded(0.5f, false);
         var deep = Embedded(0.7f, false);
@@ -181,12 +181,12 @@ public static partial class SelfTest
         nodes[3] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(e2c.X, p0.Y, 0.25f)), Host = 0 };
         nodes[4] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(p1.X - 0.3f, p0.Y, 0.25f)), Host = 0 };
         nodes[5] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(p1.X - 0.3f, p1.Y, p1.Z)), Host = 0 };
-        var endsFree = ConstructRoutes.ClickEnds(c, RouteType.Pipe, tank, 255, e2, true);
-        var endsSnap = ConstructRoutes.ClickEnds(c, RouteType.Pipe, tank, 255, e2, false);
-        var nodeOnEngine = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..2], nodes[2].Pos, e2);
-        var finishOnEngine = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, default, e2, 255); // (the click from the tank straight at it)
-        var past = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, nodes, e1, 255);
-        var added = past == null ? ConstructRoutes.Add(w, c, RouteType.Pipe, tank, 255, 255, 0, default, nodes, e1, 255) : -1;
+        var endsFree = ConstructRoutes.ClickEnds(c, RouteType.Pipe, tank, CRoute.NoParent, e2, true);
+        var endsSnap = ConstructRoutes.ClickEnds(c, RouteType.Pipe, tank, CRoute.NoParent, e2, false);
+        var nodeOnEngine = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, nodes[..2], nodes[2].Pos, e2);
+        var finishOnEngine = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, default, e2, 255); // (the click from the tank straight at it)
+        var past = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, nodes, e1, 255);
+        var added = past == null ? ConstructRoutes.Add(w, c, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, nodes, e1, 255) : -1;
         c.Rebuild();
         var feeds = added >= 0 && ConstructRoutes.PipeFeeds(c, e1) && !ConstructRoutes.PipeFeeds(c, e2);
         // The key: Left Shift by default, sharing it with Sprint (no clash), live in Sandbox only.

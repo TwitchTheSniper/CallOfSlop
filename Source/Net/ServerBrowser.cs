@@ -823,7 +823,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 485: a Pad Tile pad's columns lie side by side as well as along it: each column on the wire carries its place across and its width
     //      (ConstructRackPack.Write).
     // 486: a station rover's trip holds up to 40 body keys (was 24), for drives round the parts already fitted (RoverPlan.MaxBase).
-    public const ushort ProtocolVersion = 486;
+    // 487: a construct holds up to 1,000 links (Construct.MaxRoutes, was 254): a link's index is a u16 wherever it was a u8 (CBody's
+    //      link count and each link's parent, the paint block's painted links, CBodyKind.Riders' link and junction, CActKind.Route's
+    //      parent, CActKind.RouteEdit's link, CActKind.Loom's links, CActKind.Rider's conveyor); none is 65535 (CRoute.NoParent).
+    public const ushort ProtocolVersion = 487;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

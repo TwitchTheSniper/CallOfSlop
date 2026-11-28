@@ -113,7 +113,7 @@ public static partial class SelfTest
             var p1 = ConstructRoutes.Point(c, route, 0, out _);
             c.WorldFrame(s0, out var q, out var t);
             hit.Point = t + Vector3.Transform((p0 + p1) * 0.5f, q);
-            hit.RoutePlus1 = (byte)(route + 1);
+            hit.RoutePlus1 = (ushort)(route + 1);
             hit.RouteSeg = 0;
             Program.LinkTestFrame(a, ref h, hit, true);
         }
@@ -170,7 +170,7 @@ public static partial class SelfTest
                 whyFuel = ConstructRoutes.EndWhy(cm, engine2, RouteType.Shaft, "", all[i]);
         Want(whyFuel == "a drive shaft can't connect to Fuel in" && fuelInPort.Type == RouteType.Pipe, $"a fuel inlet's reason for a drive shaft is \"{whyFuel}\"");
         // A device whose ports are all of other types is no end (a surface).
-        Want(!ConstructRoutes.ClickEnds(cm, RouteType.Shaft, engine, 255, engine2, false), "an engine ends a drive shaft");
+        Want(!ConstructRoutes.ClickEnds(cm, RouteType.Shaft, engine, CRoute.NoParent, engine2, false), "an engine ends a drive shaft");
         // (the engine's shaft can't reach a transmission's side without a corner gearbox; cancel it with Esc's reset)
         Program.LinkTestReset();
         // A transmission's Output shaft to the differential's Input shaft: the end picker lists the differential's ports,

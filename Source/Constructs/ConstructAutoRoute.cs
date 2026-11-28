@@ -9,9 +9,9 @@ public struct RouteAsk
     public ConstructWorld? World;
     public Construct C;
     public RouteType Type;
-    public int From; // the output (when Parent is 255)
+    public int From; // the output (when Parent is CRoute.NoParent)
     public byte FromPort;
-    public int Parent, ParentSeg; // a branch: the link and its segment (255: from a part)
+    public int Parent, ParentSeg; // a branch: the link and its segment (CRoute.NoParent: from a part)
     public Vector3 Junction;
     public CRouteNode[] Nodes; // the nodes so far (Count of them)
     public int Count;
@@ -337,12 +337,12 @@ public sealed partial class RouteSearch
         _closed = a.To >= 0;
         _flat = a.Type != RouteType.Shaft;
         _radius = ConstructRoutes.Radius(a.Type);
-        _width = a.Type == RouteType.Conveyor && a.Parent == 255 ? ConstructRoutes.ConveyorWidth(c, a.From, a.FromPort, a.To >= 0 ? a.To : -1, a.ToPort) : 0f;
-        _startHost = a.Parent != 255 ? ConstructRoutes.HostOf(c, a.Parent, a.ParentSeg) : a.From;
+        _width = a.Type == RouteType.Conveyor && a.Parent == CRoute.NoParent ? ConstructRoutes.ConveyorWidth(c, a.From, a.FromPort, a.To >= 0 ? a.To : -1, a.ToPort) : 0f;
+        _startHost = a.Parent != CRoute.NoParent ? ConstructRoutes.HostOf(c, a.Parent, a.ParentSeg) : a.From;
         _goalHost = _closed ? a.To : a.OpenHost;
         _stage = a.Conduit > 0f && _flat ? 1 : 0; // (conduit: from a 4 m look, so the walls and ceiling round the ends are in it)
         _air = a.Conduit > 0f && _flat ? MathF.Max(a.Conduit, 1f) : 1f;
-        _pierce = a.Conduit > 0f && _flat && a.Parent == 255 && a.Count == 0;
+        _pierce = a.Conduit > 0f && _flat && a.Parent == CRoute.NoParent && a.Count == 0;
         _loose = a.Conduit > 0f && _flat && a.Type is RouteType.Data or RouteType.Power;
         _hWeight = _loose ? ConduitWeight : 1f; // (a chute or pipe is big and seen: its search keeps to the best route, not one 1.5 times as dear)
         _pierced = false;
@@ -384,7 +384,7 @@ public sealed partial class RouteSearch
             return;
         }
         // The start and the way the link leaves it.
-        var start = a.Parent != 255 ? a.Junction : ConstructRoutes.PortPoint(c, a.From, a.FromPort, a.Type);
+        var start = a.Parent != CRoute.NoParent ? a.Junction : ConstructRoutes.PortPoint(c, a.From, a.FromPort, a.Type);
         var at = ToWork(seg0, start);
         var first = at;
         var prev = at;
@@ -402,11 +402,11 @@ public sealed partial class RouteSearch
         _s = prev;
         _hasPrev = a.Count > 0;
         _prevDir = a.Count > 0 && Vector3.DistanceSquared(prev, before) > 1e-6f ? Vector3.Normalize(prev - before) : Vector3.Zero;
-        _sDir = a.Count == 0 && a.Parent == 255 ? PortDirWork(_startHost, a.FromPort) : Vector3.Zero;
+        _sDir = a.Count == 0 && a.Parent == CRoute.NoParent ? PortDirWork(_startHost, a.FromPort) : Vector3.Zero;
         if (!_flat && a.Count == 0 && _sDir != Vector3.Zero)
             _prevDir = _sDir;
         _firstExit = 0f;
-        if (a.Count > 0 && a.Parent == 255)
+        if (a.Count > 0 && a.Parent == CRoute.NoParent)
             _firstExit = ConstructRoutes.ExitAlongIn(c, _startHost, first, ToWork(c.Parts[Math.Min((int)a.Nodes[0].Host, c.PartCount - 1)].Seg, a.Nodes[0].Pos), _frame == 0 && c.FreeformCount > 0);
         _g = _closed ? ToWork(c.Parts[a.To].Seg, ConstructRoutes.PortPoint(c, a.To, a.ToPort, a.Type)) : ToWork(c.Parts[a.OpenHost].Seg, a.OpenAt);
         _gDir = _closed ? PortDirWork(a.To, a.ToPort) : Vector3.Zero;
@@ -1298,14 +1298,14 @@ public sealed partial class RouteSearch
             }
             float reach;
             if (_hasPrev)
-                reach = MathF.Max(ConstructRoutes.Grace(_radius) + (_ask.Parent == 255 ? _firstExit : 0f) - _alongSoFar, 0.1f);
+                reach = MathF.Max(ConstructRoutes.Grace(_radius) + (_ask.Parent == CRoute.NoParent ? _firstExit : 0f) - _alongSoFar, 0.1f);
             else
-                reach = ConstructRoutes.Grace(_radius) + (_ask.Parent != 255 ? 0f : ConstructRoutes.ExitAlongIn(c, _startHost, _s, _s + way * 4f, _frame == 0 && c.FreeformCount > 0));
+                reach = ConstructRoutes.Grace(_radius) + (_ask.Parent != CRoute.NoParent ? 0f : ConstructRoutes.ExitAlongIn(c, _startHost, _s, _s + way * 4f, _frame == 0 && c.FreeformCount > 0));
             var at = sp;
             var axis = d / 2;
             var sign = (d & 1) == 0 ? 1 : -1;
             var i = Index(axis, sp, _stride, _n);
-            var port = !_hasPrev && _ask.Parent == 255; // (out of a port: a stub at least _endStub, clear past the grace)
+            var port = !_hasPrev && _ask.Parent == CRoute.NoParent; // (out of a port: a stub at least _endStub, clear past the grace)
             var far = port ? MathF.Max(reach, _endStub * 1.5f) : reach;
             var least = port ? _endStub : MathF.Min(StubMin, reach * 0.5f);
             for (var k = i + sign; k >= 0 && k < _n[axis]; k += sign)
@@ -1687,7 +1687,7 @@ public sealed partial class RouteSearch
         // (a conduit's chute or pipe keeps its port faces, so its ends are tidied as the tool's are; not one that passes through a wall, whose shape the check can't judge)
         if (_closed && _gDir != Vector3.Zero && !_loose && !_pierced)
             n = TidyEnd(n, false);
-        if (_ask.Parent == 255 && (_hasPrev || _sDir != Vector3.Zero) && !_loose && !_pierced)
+        if (_ask.Parent == CRoute.NoParent && (_hasPrev || _sDir != Vector3.Zero) && !_loose && !_pierced)
             n = TidyEnd(n, true);
         return Nodes(n, true);
     }
@@ -1738,7 +1738,7 @@ public sealed partial class RouteSearch
         var far = _lay == LinkLay.Far;
         var reach = _radius * 1.5f + 0.03f; // (a corner this far off a face lies against it: the tool's routes keep a radius off, a conduit's a quarter)
         var lastNode = n - 1; // (a closed path's last point is the port; an open one's is the spot clicked, laid as the player asked)
-        var fromPort = _ask.Parent == 255 && _ask.Count == 0;
+        var fromPort = _ask.Parent == CRoute.NoParent && _ask.Count == 0;
         // (the devices at the ends are corners too, for the walls they are mounted on, further off: a lamp's middle is a few cm out from
         // its wall; they stay where they are, and the dips below join them to the walls their runs were moved into)
         var first = fromPort ? 0 : 1;
@@ -1847,7 +1847,7 @@ public sealed partial class RouteSearch
                 m++;
             }
         }
-        if (_ask.Parent == 255 && _ask.Count == 0 && m >= 3 && _buryAxes[1] != 0)
+        if (_ask.Parent == CRoute.NoParent && _ask.Count == 0 && m >= 3 && _buryAxes[1] != 0)
         {
             var dip = Dip(_s, _unburied[1], _path[1], _buryAxes[1]);
             if (Vector3.DistanceSquared(dip, _s) > 1e-4f && Vector3.DistanceSquared(dip, _path[1]) > 1e-4f)
@@ -1901,7 +1901,7 @@ public sealed partial class RouteSearch
     /// <summary>A closed conveyor's bed as it will be laid (cm): what its ends take, no wider than its turns leave room for.</summary>
     private ushort BedWidth(int total)
     {
-        if (_ask.Type != RouteType.Conveyor || !_closed || _ask.Parent != 255)
+        if (_ask.Type != RouteType.Conveyor || !_closed || _ask.Parent != CRoute.NoParent)
             return 0;
         var c = _ask.C;
         var m = 0;
@@ -2007,7 +2007,7 @@ public sealed partial class RouteSearch
         var bestN = n;
         Array.Copy(p, _best, n);
         // The way the link moves at the far end (p[0]): out of its port, or on from the last node laid (zero: free, a junction).
-        var port0 = atStart ? _closed : !_hasPrev && _ask.Parent == 255;
+        var port0 = atStart ? _closed : !_hasPrev && _ask.Parent == CRoute.NoParent;
         var din0 = atStart ? (_closed ? _gDir : Vector3.Zero) : port0 ? _sDir : _prevDir;
         Span<Vector3> cand = stackalloc Vector3[3];
         for (var k = n - 2; k >= 0; k--)
@@ -2186,7 +2186,7 @@ public sealed partial class RouteSearch
                 bentAfter = deg > ConstructRoutes.ConveyorBendDeg;
                 score += bentAfter ? 1f : deg > 0.5f ? 0.1f : 0f;
             }
-            var endLeg = i == n - 1 || i == 1 && (atStart ? _closed : !_hasPrev && _ask.Parent == 255); // (p[0] is a port too)
+            var endLeg = i == n - 1 || i == 1 && (atStart ? _closed : !_hasPrev && _ask.Parent == CRoute.NoParent); // (p[0] is a port too)
             if (bentBefore && bentAfter && len < _minRun - 0.005f || endLeg && (bentBefore || bentAfter) && len < _endStub - 0.005f)
                 score += 1.5f;
             bentBefore = bentAfter;

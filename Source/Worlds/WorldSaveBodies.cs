@@ -476,8 +476,9 @@ public sealed partial class ConstructWorld
         w.I32(b.RouteCount);
         foreach (ref var r in s.Routes.AsSpan(b.Routes, b.RouteCount))
         {
-            w.U8((byte)r.Type).U16(r.From).U16(r.To).U8(r.FromPort).U8(r.ToPort).U8(r.Parent);
-            if (r.Parent == 255 || r.ParentNode < LinkSave.NodeEscape)
+            w.U8((byte)r.Type).U16(r.From).U16(r.To).U8(r.FromPort).U8(r.ToPort);
+            LinkSave.WriteRoute(w, r.Parent);
+            if (r.Parent == CRoute.NoParent || r.ParentNode < LinkSave.NodeEscape)
                 w.U8((byte)Math.Min((int)r.ParentNode, 255));
             else
                 w.U8(LinkSave.NodeEscape).U16(r.ParentNode);
@@ -934,7 +935,7 @@ public sealed partial class ConstructWorld
             rt.To = r.U16();
             rt.FromPort = r.U8();
             rt.ToPort = r.U8();
-            rt.Parent = r.U8();
+            rt.Parent = LinkSave.ReadRoute(r);
             rt.ParentNode = r.U8();
             if (rt.ParentNode == LinkSave.NodeEscape)
                 rt.ParentNode = r.U16();
@@ -944,7 +945,7 @@ public sealed partial class ConstructWorld
             rt.Timer = r.F32();
             rt.Cursor = r.U8();
             rt.Start = (ushort)nodeList.Count;
-            if (rt.To >= n || (rt.Parent == 255 ? rt.From >= n : rt.Parent >= k || rt.ParentNode >= routeList[rt.Parent].Count) || rt.Count > Construct.MaxNodesPerRoute
+            if (rt.To >= n || (rt.Parent == CRoute.NoParent ? rt.From >= n : rt.Parent >= k || rt.ParentNode >= routeList[rt.Parent].Count) || rt.Count > Construct.MaxNodesPerRoute
                 || nodeList.Count + rt.Count > Construct.MaxRouteNodes)
                 throw new WorldFileException("a routed link that doesn't fit");
             for (var i = 0; i < rt.Count; i++)
@@ -1418,11 +1419,30 @@ public sealed partial class ConstructWorld
 /// <summary>
 /// A link's node counts in a world save: a byte, as saves always had them (links once had at most 32 nodes, so every old file
 /// reads the same), or an escape byte and a u16 for a long link. A root link's parent node is 255, so the escape there is 254.
+/// A link's index (a branch's parent, a rider's or a conveyor size's link) is a byte below <see cref="RouteEscape"/>, 255 for
+/// none, or the escape and a u16: links were at most 254 a construct (so an index was at most 253) until the cap rose to
+/// <see cref="Construct.MaxRoutes"/>, and every old file reads the same.
 /// </summary>
 internal static class LinkSave
 {
     public const byte NodeEscape = 254;
     private const byte CountEscape = 255;
+    public const byte RouteEscape = 254;
+    private const byte RouteNone = 255;
+
+    /// <summary>A link's index, or none (<see cref="CRoute.NoParent"/>, <see cref="CRider.NoRoute"/>: 65535).</summary>
+    public static SaveWriter WriteRoute(SaveWriter w, int k)
+    {
+        if (k == ushort.MaxValue)
+            return w.U8(RouteNone);
+        return k < RouteEscape ? w.U8((byte)k) : w.U8(RouteEscape).U16((ushort)k);
+    }
+
+    public static ushort ReadRoute(SaveReader r)
+    {
+        var b = r.U8();
+        return b == RouteNone ? ushort.MaxValue : b == RouteEscape ? r.U16() : b;
+    }
 
     public static void WriteNodeCount(SaveWriter w, int count)
     {

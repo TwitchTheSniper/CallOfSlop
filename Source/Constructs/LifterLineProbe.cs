@@ -155,8 +155,8 @@ public static partial class LifterProbe
             return $"base: the plinth took battery {b}, switches {BaseMains}, {BaseRun}";
         arm.Parts[BaseMains].State |= 1;
         arm.Parts[BaseRun].State |= 1;
-        var w1 = ConstructRoutes.Add(world, arm, RouteType.Data, BaseMains, 255, 255, 0, default, default, b, 255);
-        var w2 = ConstructRoutes.Add(world, arm, RouteType.Data, BaseRun, 255, 255, 0, default, default, 0, 255);
+        var w1 = ConstructRoutes.Add(world, arm, RouteType.Data, BaseMains, 255, CRoute.NoParent, 0, default, default, b, 255);
+        var w2 = ConstructRoutes.Add(world, arm, RouteType.Data, BaseRun, 255, CRoute.NoParent, 0, default, default, 0, 255);
         arm.Dirty = true;
         arm.Rebuild();
         world.StructureDirty.Add(arm.Id);

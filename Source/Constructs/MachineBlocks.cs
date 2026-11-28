@@ -389,7 +389,7 @@ public static class MachineBlocks
                 for (var k = 0; k < c.RouteCount; k++) // (the links, not the parts: bounded by what is laid, as Out is)
                 {
                     ref readonly var r = ref c.Routes[k];
-                    if (r.Type == RouteType.Conveyor && r.Parent == 255 && r.From < c.PartCount && r.From < c.BlockAsmOf.Length && c.BlockAsmOf[r.From] == id && c.Parts[r.From].D.BlockRole == BlockRole.End)
+                    if (r.Type == RouteType.Conveyor && r.Parent == CRoute.NoParent && r.From < c.PartCount && r.From < c.BlockAsmOf.Length && c.BlockAsmOf[r.From] == id && c.Parts[r.From].D.BlockRole == BlockRole.End)
                         return r.From;
                 }
         }

@@ -134,7 +134,7 @@ public sealed class NetPlan
     {
         var n = 0;
         for (var k = 0; k < c.RouteCount; k++)
-            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == 255 && c.Routes[k].From == part)
+            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Parent == CRoute.NoParent && c.Routes[k].From == part)
                 n++;
         return n;
     }

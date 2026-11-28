@@ -369,7 +369,7 @@ public static partial class SelfTest
                 var car2 = Buggy(14);
                 var target = -1;
                 for (var k = 0; car2 != null && k < car2.RouteCount && target < 0; k++)
-                    if (car2.Routes[k].Parent == 255 && car2.Routes[k].To < car2.PartCount && car2.DefOf(car2.Routes[k].To).Role != PartRole.Seat)
+                    if (car2.Routes[k].Parent == CRoute.NoParent && car2.Routes[k].To < car2.PartCount && car2.DefOf(car2.Routes[k].To).Role != PartRole.Seat)
                         target = car2.Routes[k].To;
                 var routesBefore = car2?.RouteCount ?? 0;
                 var targetName = target < 0 ? "-" : car2!.DefOf(target).Name;
@@ -385,7 +385,7 @@ public static partial class SelfTest
                     Run(g, ref now, 0.2);
                 }
                 var partGone = target >= 0 && Enumerable.Range(0, car2!.PartCount).All(i => car2.Parts[i].Tag != targetTag);
-                var noDangling = car2 != null && Enumerable.Range(0, car2.RouteCount).All(k => car2.Routes[k].To < car2.PartCount && (car2.Routes[k].Parent != 255 || car2.Routes[k].From < car2.PartCount));
+                var noDangling = car2 != null && Enumerable.Range(0, car2.RouteCount).All(k => car2.Routes[k].To < car2.PartCount && (car2.Routes[k].Parent != CRoute.NoParent || car2.Routes[k].From < car2.PartCount));
                 var linksFell = target >= 0 && car2!.RouteCount < routesBefore;
                 Line($"remover: links: one link selected {linkOne} (type {loneType} into {loneTo}), asked {linkAsk}, gone alone {linkGone}; deleting a {targetName} with a link on it: {routesBefore} -> {car2?.RouteCount} links");
                 if (!linkOne || !linkGone || !partGone || !noDangling || !linksFell)

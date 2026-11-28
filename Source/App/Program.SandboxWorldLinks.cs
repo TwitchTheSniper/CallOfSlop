@@ -26,7 +26,7 @@ public static partial class Program
 
     /// <summary>Can the link being routed become a world link? Null, or why not.</summary>
     private static string? LinkWorldRefusal() =>
-        _lkParent != 255 ? "a branch stays on its construct" : _lkType == RouteType.Shaft ? "a drive shaft stays on one construct: torque doesn't cross between bodies" : null;
+        _lkParent != CRoute.NoParent ? "a branch stays on its construct" : _lkType == RouteType.Shaft ? "a drive shaft stays on one construct: torque doesn't cross between bodies" : null;
 
     /// <summary>The link being routed leaves its construct: its nodes so far become world link nodes on it.</summary>
     private static void LinkGoWorld(Construct rc)

@@ -82,7 +82,7 @@ public sealed class ClipUses
             for (var k = 0; k < c.RouteCount; k++)
             {
                 ref var r = ref c.Routes[k];
-                if (r.Parent == 255)
+                if (r.Parent == CRoute.NoParent)
                     continue;
                 if (plan.InsideOne(k) != plan.InsideOne(r.Parent))
                     foreach (var part in new[] { (int)r.To, (int)r.Source })

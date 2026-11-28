@@ -46,7 +46,7 @@ public sealed partial class RouteSearch
         _dirMinLen = _ask.Type == RouteType.Conveyor ? LongestPiece() : 0f;
         var w = _width > 0f ? _width : 0f;
         var stub = MathF.Max(StubMin, w > 0f ? w : _radius * 4f);
-        var d0 = _ask.Parent != 255 ? Vector3.Zero : _hasPrev ? _prevDir : _sDir; // (the way on from the start: its port's, or the last node's)
+        var d0 = _ask.Parent != CRoute.NoParent ? Vector3.Zero : _hasPrev ? _prevDir : _sDir; // (the way on from the start: its port's, or the last node's)
         var d1 = _closed ? _gDir : Vector3.Zero; // (the goal's port faces out: the link comes in along -d1)
         var v = _g - _s;
         // Straight.
@@ -172,7 +172,7 @@ public sealed partial class RouteSearch
     {
         var c = _ask.C;
         var least = DirectMinConveyor;
-        if (_ask.Parent == 255 && _ask.From >= 0 && _ask.From < c.PartCount && c.DefOf(_ask.From).IsExtruder)
+        if (_ask.Parent == CRoute.NoParent && _ask.From >= 0 && _ask.From < c.PartCount && c.DefOf(_ask.From).IsExtruder)
         {
             ConstructExtruder.Reach(c, _ask.From, out _, out _, out var longest);
             least = MathF.Max(least, longest + ConstructConveyor.Gap);
@@ -339,7 +339,7 @@ public sealed partial class RouteSearch
     /// <summary>The first leg's price for its way (-1: not allowed): out of a port by <see cref="PortCost"/>, on from the last node by the bend rule, any way from a junction.</summary>
     private float DirectLeaves(Vector3 dir)
     {
-        if (_ask.Parent != 255)
+        if (_ask.Parent != CRoute.NoParent)
             return 0f;
         if (_hasPrev)
             return _prevDir == Vector3.Zero || ConstructRoutes.BendRule(_ask.Type, _prevDir, dir) == null ? 0f : -1f;

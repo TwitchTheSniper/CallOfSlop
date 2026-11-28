@@ -101,13 +101,13 @@ public static partial class SelfTest
         var lamp = PartNamed(c, "Lamp", 2);
         Span<CRouteNode> nodes = stackalloc CRouteNode[2];
         nodes[0] = new CRouteNode { Pos = new Vector3(-0.45f, 0.29f, -0.75f), Host = 0 };
-        var sinks = ConstructRoutes.Check(w, c, RouteType.Data, sw, 255, 255, 0, default, nodes[..1], lamp, 255) ?? "";
+        var sinks = ConstructRoutes.Check(w, c, RouteType.Data, sw, 255, CRoute.NoParent, 0, default, nodes[..1], lamp, 255) ?? "";
         nodes[0] = new CRouteNode { Pos = new Vector3(0.25f, 0.32f, -0.4f), Host = 0 };
         nodes[1] = new CRouteNode { Pos = new Vector3(0.25f, 0.32f, 0.9f), Host = 0 };
-        var through = ConstructRoutes.Check(w, c, RouteType.Power, PartNamed(c, "Battery"), 255, 255, 0, default, nodes[..2], lamp, 255) ?? "";
+        var through = ConstructRoutes.Check(w, c, RouteType.Power, PartNamed(c, "Battery"), 255, CRoute.NoParent, 0, default, nodes[..2], lamp, 255) ?? "";
         // The type's ends: a pipe can't start at a switch, a chute can't end at a lamp.
-        var noOut = ConstructRoutes.Check(w, c, RouteType.Pipe, sw, 255, 255, 0, default, default, lamp, 255) ?? "";
-        var noIn = ConstructRoutes.Check(w, c, RouteType.Power, PartNamed(c, "Battery"), 255, 255, 0, default, default, PartNamed(c, "Fuel Tank"), 255) ?? "";
+        var noOut = ConstructRoutes.Check(w, c, RouteType.Pipe, sw, 255, CRoute.NoParent, 0, default, default, lamp, 255) ?? "";
+        var noIn = ConstructRoutes.Check(w, c, RouteType.Power, PartNamed(c, "Battery"), 255, CRoute.NoParent, 0, default, default, PartNamed(c, "Fuel Tank"), 255) ?? "";
         Line($"routed links rules: pipe steps {pipeOk} (22 refused: {pipeBad}), chute {chuteOk} (30 refused: {chuteBad}), shaft 30/45 {shaftOk}, 60 refused {shaftBad}, 90 needs a gearbox {shaftCorner}, cables free {freeOk}; "
              + $"a 22 degree pipe snapped to {bend:0.0} (on a step {onStep}), a chute to {chuteBend:0.0}, on the grid {grid}; nodes off the surface (sunk: {sunk.Count}); refusals: \"{sinks}\", \"{through}\", \"{noOut}\", \"{noIn}\"");
         if (!pipeOk || !pipeBad || !chuteOk || !chuteBad || !shaftOk || !shaftBad || !shaftCorner || !freeOk)
@@ -151,8 +151,8 @@ public static partial class SelfTest
         nodes[1] = new CRouteNode { Pos = new Vector3(0.25f, 0.335f, -0.45f), Host = 0 };
         nodes[2] = new CRouteNode { Pos = new Vector3(0.25f, 0.65f, -0.04f), Host = (byte)PartNamed(c, "Fuel Tank") };
         nodes[3] = new CRouteNode { Pos = new Vector3(0.25f, 0.84f, -0.04f), Host = (byte)PartNamed(c, "Fuel Tank") };
-        var why = ConstructRoutes.Check(w, c, RouteType.Power, bat, 255, 255, 0, default, nodes, l3, 255);
-        var cable = why == null ? ConstructRoutes.Add(w, c, RouteType.Power, bat, 255, 255, 0, default, nodes, l3, 255) : -1;
+        var why = ConstructRoutes.Check(w, c, RouteType.Power, bat, 255, CRoute.NoParent, 0, default, nodes, l3, 255);
+        var cable = why == null ? ConstructRoutes.Add(w, c, RouteType.Power, bat, 255, CRoute.NoParent, 0, default, nodes, l3, 255) : -1;
         var junction = new Vector3(0.5f, 0.335f, -0.45f);
         var why2 = cable < 0 ? "no cable" : ConstructRoutes.Check(w, c, RouteType.Power, -1, 255, cable, 1, junction, default, l2, 255);
         var branch = why2 == null ? ConstructRoutes.Add(w, c, RouteType.Power, -1, 255, cable, 1, junction, default, l2, 255) : -1;
@@ -200,7 +200,7 @@ public static partial class SelfTest
         if (RoutesBuild(w2, BenchB(), 0, 0, "Bench B") is { } c2)
         {
             ConstructRoutes.Remove(w2, c2, 0);
-            angled = ConstructRoutes.Check(w2, c2, RouteType.Pipe, PartNamed(c2, "Fuel Tank"), 255, 255, 0, default, nodes, PartNamed(c2, "Engine"), 255) ?? "";
+            angled = ConstructRoutes.Check(w2, c2, RouteType.Pipe, PartNamed(c2, "Fuel Tank"), 255, CRoute.NoParent, 0, default, nodes, PartNamed(c2, "Engine"), 255) ?? "";
         }
         // Cut the branch: the second engine starves, the first is still fed; a cut fuel pipe leaks.
         var fuel0 = c.Fuel;
@@ -297,7 +297,7 @@ public static partial class SelfTest
             ConstructRoutes.Remove(w2, d, 0);
             Span<CRouteNode> nodes = stackalloc CRouteNode[1];
             nodes[0] = new CRouteNode { Pos = new Vector3(-0.75f, 0.55f, 0f), Host = 0 };
-            corner = ConstructRoutes.Check(w2, d, RouteType.Shaft, tr, fp, 255, 0, default, nodes, df, tp) ?? "";
+            corner = ConstructRoutes.Check(w2, d, RouteType.Shaft, tr, fp, CRoute.NoParent, 0, default, nodes, df, tp) ?? "";
         }
         Line($"routed links shafts: the truck has {shafts} shaft links and {legacy} old shaft parts; drives {all} wheels in 4WD, {fewer} with its front shaft cut; a bare junction: \"{junction}\"; "
              + $"a straight shaft on a bench {straight}, one turning a corner: \"{corner}\"");
@@ -349,7 +349,7 @@ public static partial class SelfTest
             ConstructRoutes.Remove(w, car, 0);
             car.PartBounds(tank, out var mn, out var mx);
             one[0] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3((mn.X + mx.X) * 0.5f, mx.Y + 0.04f, mx.Z - 0.05f)), Host = (byte)tank };
-            ConstructRoutes.Add(w, car, RouteType.Pipe, tank, 255, 255, 0, default, one, PartNamed(car, "Engine"), 255);
+            ConstructRoutes.Add(w, car, RouteType.Pipe, tank, 255, CRoute.NoParent, 0, default, one, PartNamed(car, "Engine"), 255);
             car.Rebuild();
             Seat(car);
             var p0 = car.WorldCom;
@@ -373,7 +373,7 @@ public static partial class SelfTest
                 tur.ReserveRoutes(1, 1);
                 tur.RouteNodes[0] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3((mn.X + mx.X) * 0.5f, mx.Y + 0.03f, mx.Z - 0.1f)), Host = (byte)beam, Health = 20 };
                 tur.RouteNodeCount = 1;
-                tur.Routes[0] = new CRoute { Type = RouteType.Data, From = 0, To = (byte)beam, FromPort = 255, ToPort = 255, Parent = 255, ParentNode = 255, Start = 0, Count = 1, EndHealth = 20 };
+                tur.Routes[0] = new CRoute { Type = RouteType.Data, From = 0, To = (byte)beam, FromPort = 255, ToPort = 255, Parent = CRoute.NoParent, ParentNode = 255, Start = 0, Count = 1, EndHealth = 20 };
                 tur.RouteCount = 1;
                 var gap0 = Vector3.Distance(ConstructRoutes.WorldPoint(tur, 0, 0), ConstructRender.PartCentre(tur, beam));
                 var at0 = ConstructRoutes.WorldPoint(tur, 0, 0);
@@ -424,9 +424,9 @@ public static partial class SelfTest
         var bat = PartNamed(c, "Battery");
         var lamp = PartNamed(c, "Lamp", 1);
         e.SetTool(me, ConstructTool.Welder);
-        var wrongTool = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, 255, 0, default, default, lamp, 255) ?? "";
+        var wrongTool = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, CRoute.NoParent, 0, default, default, lamp, 255) ?? "";
         e.SetTool(me, ConstructTool.Linker);
-        var routed = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, 255, 0, default, default, lamp, 255);
+        var routed = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, CRoute.NoParent, 0, default, default, lamp, 255);
         var deleted = e.RouteEdit(w, me, eye, c.Id, RouteEditOp.Delete, c.RouteCount - 1, 0, (byte)bat, (byte)lamp, default, 0);
         Line($"routed links round trips: blueprint \"links\" {same} ({json.Length} chars); a client's copy {mirrored} ({wr.Length} bytes), a short packet refused {refused}; "
              + $"the linking tool: the wrench refused \"{wrongTool}\", routed {routed ?? "ok"}, deleted {deleted ?? "ok"}");

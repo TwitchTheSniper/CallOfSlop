@@ -232,7 +232,7 @@ public static partial class SelfTest
         var gun2 = Find(c2, "Rifle Receiver");
         var sock2 = Find(c2, "Ammo Socket");
         byte Port(Construct c, int part, string name) => Array.Find(c.DefOf(part).NamedPorts, n => n.Name == name)!.Byte;
-        ConstructRoutes.Add(w, c2, RouteType.Feed, sock2, Port(c2, sock2, "Ammo out"), 255, 0, default, default, gun2, Port(c2, gun2, "Ammo in"));
+        ConstructRoutes.Add(w, c2, RouteType.Feed, sock2, Port(c2, sock2, "Ammo out"), CRoute.NoParent, 0, default, default, gun2, Port(c2, gun2, "Ammo in"));
         c2.Rebuild();
         w.StructureDirty.Add(c2.Id);
         Pump(server, [a], 0.5, ref now, clock);
@@ -311,7 +311,7 @@ public static partial class SelfTest
         var reel4 = Find(c4, "Ammo Reel");
         var sock4 = Find(c4, "Ammo Socket");
         var sw4 = Find(c4, "Switch");
-        ConstructRoutes.Add(w, c4, RouteType.Feed, crate4, Port(c4, crate4, "Ammo out"), 255, 0, default, default, reel4, Port(c4, reel4, "Ammo in"));
+        ConstructRoutes.Add(w, c4, RouteType.Feed, crate4, Port(c4, crate4, "Ammo out"), CRoute.NoParent, 0, default, default, reel4, Port(c4, reel4, "Ammo in"));
         w.PlugHose(c4, reel4, c4, sock4);
         ConstructBuild.Place(c4, sock4, Array.FindIndex(socketDef.Sockets, s => s.Name == "back"), mag, Array.FindIndex(mag.Sockets, s => s.Name == "bottom"), 0, out var gs);
         var onSock = ConstructBuild.Attach(w, c4, mag, gs);

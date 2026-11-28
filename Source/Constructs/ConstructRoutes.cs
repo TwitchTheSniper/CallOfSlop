@@ -50,7 +50,8 @@ public struct CRoute
     public RouteType Type;
     public ushort From, To; // parts (From is the branch's source part once rebuilt; while Parent is set, From is unused: 255)
     public byte FromPort, ToPort; // a socket of the part (shafts), a named data port (DataPortBase | k, the spawners), or 255: the part itself
-    public byte Parent; // a branch: the link it starts on (255: from a part)
+    public ushort Parent; // a branch: the link it starts on (NoParent: from a part; a byte, 255 none, before protocol 487)
+    public const ushort NoParent = ushort.MaxValue; // Parent: a link from a part, not a branch
     public ushort ParentNode; // ... and its node there
     public ushort Start;
     public ushort Count;
@@ -79,7 +80,7 @@ public struct CRoute
 /// <summary>Routed links on a construct (fixed arrays, like everything else here: nothing allocates).</summary>
 public sealed partial class Construct
 {
-    public const int MaxRoutes = 254; // (a route's parent is a byte, 255: none)
+    public const int MaxRoutes = 1000; // (a route's index is a u16: CRoute.NoParent and CRider.NoRoute, 65535, are none)
     public const int MaxRouteNodes = 8192; // a construct's storage for link nodes, 65 km of link at a full span each; a link's length has no limit of its own
     public const int MaxNodesPerRoute = MaxRouteNodes;
 
@@ -283,9 +284,9 @@ public static partial class ConstructRoutes
         if (free || part < 0 || part >= c.PartCount)
             return false;
         var d = c.DefOf(part);
-        if (type == RouteType.Data && parent == 255 && IsWatch(c.DefOf(from), fromPort))
+        if (type == RouteType.Data && parent == CRoute.NoParent && IsWatch(c.DefOf(from), fromPort))
             return part != from;
-        return IsInput(d, type) && !(part == from && parent == 255 && !(type == RouteType.Data && d.Role == PartRole.Logic));
+        return IsInput(d, type) && !(part == from && parent == CRoute.NoParent && !(type == RouteType.Data && d.Role == PartRole.Logic));
     }
 
     public static string OutputHint(RouteType t) => t switch
@@ -698,7 +699,7 @@ public static partial class ConstructRoutes
         ref var rt = ref c.Routes[r];
         if (i < 0)
         {
-            if (rt.Parent != 255 && rt.Parent < c.RouteCount)
+            if (rt.Parent != CRoute.NoParent && rt.Parent < c.RouteCount)
             {
                 ref var pn = ref c.Node(rt.Parent, rt.ParentNode);
                 seg = pn.Host < c.PartCount ? c.Parts[pn.Host].Seg : 0;
@@ -752,7 +753,7 @@ public static partial class ConstructRoutes
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            if (r.Parent != 255 && r.Parent < k && r.ParentNode < c.Routes[r.Parent].Count)
+            if (r.Parent != CRoute.NoParent && r.Parent < k && r.ParentNode < c.Routes[r.Parent].Count)
                 branches[c.Routes[r.Parent].Start + r.ParentNode]++;
         }
         for (var k = 0; k < c.RouteCount; k++)
@@ -785,7 +786,7 @@ public static partial class ConstructRoutes
             }
             var split = r.Type != RouteType.Data;
             float arrive;
-            if (r.Parent != 255 && r.Parent < k)
+            if (r.Parent != CRoute.NoParent && r.Parent < k)
             {
                 ref var p = ref c.Routes[r.Parent];
                 r.Source = p.Source;
@@ -847,7 +848,7 @@ public static partial class ConstructRoutes
                         c.Wires[c.WireCount++] = new CWire { From = r.Source, To = r.To, FromPort = fromK, ToPort = toK };
                     break;
                 case RouteType.Shaft:
-                    if (r.Parent == 255 && c.ShaftEdgeCount < Construct.MaxRoutes)
+                    if (r.Parent == CRoute.NoParent && c.ShaftEdgeCount < Construct.MaxRoutes)
                     {
                         c.ShaftEdges[c.ShaftEdgeCount] = new CLink { A = r.From, SA = r.FromPort, B = r.To, SB = r.ToPort };
                         c.ShaftEff[c.ShaftEdgeCount++] = MathF.Pow(ShaftBendEff, r.Bends);
@@ -949,9 +950,9 @@ public static partial class ConstructRoutes
     {
         if (CheckEnds(world, c, type, from, fromPort, parent, parentSeg, junction, nodes.Length, to, toPort) is { } why)
             return why;
-        if (tidy && Unfixed(c, type, parent != 255 ? -1 : from, to, nodes, Math.Max(0, checkFrom - 1)) is { } loose)
+        if (tidy && Unfixed(c, type, parent != CRoute.NoParent ? -1 : from, to, nodes, Math.Max(0, checkFrom - 1)) is { } loose)
             return loose;
-        if (type == RouteType.Conveyor && parent != 255)
+        if (type == RouteType.Conveyor && parent != CRoute.NoParent)
             return "a conveyor doesn't branch: a piece can't split";
         // The geometry: every point in the rest frame (each segment at joint angle 0), checked by the one path rule the
         // client's preview uses too (PathRule).
@@ -959,7 +960,7 @@ public static partial class ConstructRoutes
         Span<Vector3> pts = count <= OnStack ? stackalloc Vector3[OnStack] : new Vector3[count];
         Span<int> hosts = count <= OnStack ? stackalloc int[OnStack] : new int[count];
         var n = 0;
-        if (parent != 255)
+        if (parent != CRoute.NoParent)
         {
             pts[n] = junction;
             hosts[n++] = HostOf(c, parent, parentSeg);
@@ -980,7 +981,7 @@ public static partial class ConstructRoutes
         }
         pts[n] = PortPoint(c, to, toPort, type);
         hosts[n++] = to;
-        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight, checkFrom)
+        return PathRule(c, type, pts[..n], hosts[..n], parent != CRoute.NoParent, parent != CRoute.NoParent ? (byte)255 : fromPort, true, toPort, straight, checkFrom)
             ?? (type == RouteType.Conveyor ? ConveyorTurns(c, pts[..n], hosts[..n]) : null); // (ConstructRoutesEnds.cs)
     }
 
@@ -1007,7 +1008,7 @@ public static partial class ConstructRoutes
         if (world != null && world.TotalRoutes >= world.WireCap)
             return "the world has all the links it can take";
         int source;
-        if (parent != 255)
+        if (parent != CRoute.NoParent)
         {
             if (parent < 0 || parent >= c.RouteCount)
                 return "that link is gone";
@@ -1040,25 +1041,25 @@ public static partial class ConstructRoutes
         var td = c.DefOf(to);
         if (c.Parts[source].Broken || c.Parts[to].Broken)
             return "that part is wrecked";
-        if (parent == 255 && !IsOutput(fd, type))
+        if (parent == CRoute.NoParent && !IsOutput(fd, type))
             return NoPortWhy(fd, type, input: false);
-        var watch = type == RouteType.Data && IsWatch(fd, parent != 255 ? c.Routes[parent].SourcePort : fromPort);
+        var watch = type == RouteType.Data && IsWatch(fd, parent != CRoute.NoParent ? c.Routes[parent].SourcePort : fromPort);
         if (watch != (type == RouteType.Data && toPort == WatchPort))
             return watch ? "a watch link ends at the part it watches" : "only a sensor's watch output ends there";
         if (!watch && !IsInput(td, type))
             return NoPortWhy(td, type, input: true);
-        if (parent == 255 && from == to && !(type == RouteType.Data && td.Role == PartRole.Logic))
+        if (parent == CRoute.NoParent && from == to && !(type == RouteType.Data && td.Role == PartRole.Logic))
             return "a part can't be linked to itself";
         if (type == RouteType.Data && !watch)
         {
             if (td.Logic == CLogic.Reader && fd.Role != PartRole.Seat)
                 return "an input reader reads a seat: wire it from one";
-            if (ConstructModules.LinkWhy(c.DefOf(source), parent != 255 ? c.Routes[parent].SourcePort : fromPort, td, toPort) is { } moduleWhy)
+            if (ConstructModules.LinkWhy(c.DefOf(source), parent != CRoute.NoParent ? c.Routes[parent].SourcePort : fromPort, td, toPort) is { } moduleWhy)
                 return moduleWhy;
             if (c.RoutesInto(to, RouteType.Data) >= td.MaxInputs)
                 return $"a {td.Name} takes at most {td.MaxInputs} input{(td.MaxInputs == 1 ? "" : "s")}";
         }
-        var srcPort = parent != 255 ? c.Routes[parent].SourcePort : fromPort;
+        var srcPort = parent != CRoute.NoParent ? c.Routes[parent].SourcePort : fromPort;
         for (var k = 0; k < c.RouteCount; k++)
             if (c.Routes[k].Type == type && c.Routes[k].Source == source && c.Routes[k].To == to && (type != RouteType.Data || c.Routes[k].SourcePort == srcPort && c.Routes[k].ToPort == toPort))
                 return "those are already linked";
@@ -1075,7 +1076,7 @@ public static partial class ConstructRoutes
         else if (type is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed or RouteType.Conveyor)
         {
             Span<byte> ports = stackalloc byte[16];
-            if (parent == 255 && !Contains(ports[..Ports(c, from, type, ports, input: false)], fromPort))
+            if (parent == CRoute.NoParent && !Contains(ports[..Ports(c, from, type, ports, input: false)], fromPort))
                 return $"the {fd.Name} has no such {TypeKey(type)} output port";
             if (!Contains(ports[..Ports(c, to, type, ports, input: true)], toPort))
                 return $"the {td.Name} has no such {TypeKey(type)} input port";
@@ -1085,7 +1086,7 @@ public static partial class ConstructRoutes
             // Named data ports (the spawners): an output port of the source, an input port of the part it goes into.
             var fk = DataPort(fromPort);
             var tk = DataPort(toPort);
-            if (fk < 0 || fromPort != 255 && (parent != 255 || fk >= fd.DataOut.Length) || tk < 0 || toPort != 255 && toPort != WatchPort && tk >= td.DataIn.Length)
+            if (fk < 0 || fromPort != 255 && (parent != CRoute.NoParent || fk >= fd.DataOut.Length) || tk < 0 || toPort != 255 && toPort != WatchPort && tk >= td.DataIn.Length)
                 return "that part has no such data port";
         }
         else if (fromPort != 255 || toPort != 255)
@@ -1546,9 +1547,9 @@ public static partial class ConstructRoutes
     {
         public Construct C;
         public RouteType Type;
-        public int From; // the output (when Parent is 255)
+        public int From; // the output (when Parent is CRoute.NoParent)
         public byte FromPort;
-        public int Parent, ParentSeg; // a branch: the link and its segment (255: from a part)
+        public int Parent, ParentSeg; // a branch: the link and its segment (CRoute.NoParent: from a part)
         public Vector3 Junction;
         public CRouteNode[] Nodes; // the nodes so far (Count of them)
         public int Count;
@@ -1569,7 +1570,7 @@ public static partial class ConstructRoutes
         Span<Vector3> pts = count <= OnStack ? stackalloc Vector3[OnStack] : new Vector3[count];
         Span<int> hosts = count <= OnStack ? stackalloc int[OnStack] : new int[count];
         var n = 0;
-        if (parent != 255)
+        if (parent != CRoute.NoParent)
         {
             if (parent < 0 || parent >= c.RouteCount)
                 return "that link is gone";
@@ -1590,9 +1591,9 @@ public static partial class ConstructRoutes
         }
         pts[n] = next;
         hosts[n++] = host;
-        if (Tidies(type) && host != (parent != 255 ? -1 : from) && !IsFixing(c.DefOf(host)))
+        if (Tidies(type) && host != (parent != CRoute.NoParent ? -1 : from) && !IsFixing(c.DefOf(host)))
             return FixingWhy(c, type, host);
-        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, false, 255, checkFrom: nodes.Length) // (only the new end: the rest was checked as it was laid)
+        return PathRule(c, type, pts[..n], hosts[..n], parent != CRoute.NoParent, parent != CRoute.NoParent ? (byte)255 : fromPort, false, 255, checkFrom: nodes.Length) // (only the new end: the rest was checked as it was laid)
             ?? (type == RouteType.Conveyor ? ConveyorTurns(c, pts[..n], hosts[..n], nodes.Length) : null);
     }
 
@@ -1784,7 +1785,7 @@ public static partial class ConstructRoutes
         if (c.RouteCount >= Construct.MaxRoutes || c.RouteNodeCount + nodes.Length + 1 > Construct.MaxRouteNodes)
             return -1;
         var parentNode = 255;
-        if (parent != 255)
+        if (parent != CRoute.NoParent)
         {
             parentNode = parentSeg;
             InsertNode(c, parent, parentSeg, new CRouteNode { Pos = ConstructWorld.Quantise(junction), Host = (ushort)HostOf(c, parent, parentSeg), Health = SegmentHealth(c, parent, parentSeg) });
@@ -1794,16 +1795,16 @@ public static partial class ConstructRoutes
         c.Routes[k] = new CRoute
         {
             Type = type,
-            From = parent != 255 ? (ushort)255 : (ushort)from,
-            FromPort = parent != 255 ? (byte)255 : fromPort,
+            From = parent != CRoute.NoParent ? (ushort)255 : (ushort)from,
+            FromPort = parent != CRoute.NoParent ? (byte)255 : fromPort,
             To = (ushort)to,
             ToPort = toPort,
-            Parent = (byte)parent,
+            Parent = (ushort)parent,
             ParentNode = (ushort)parentNode,
             Start = (ushort)c.RouteNodeCount,
             Count = (ushort)nodes.Length,
             EndHealth = Health(type),
-            Source = parent != 255 ? c.Routes[parent].Source : (ushort)from,
+            Source = parent != CRoute.NoParent ? c.Routes[parent].Source : (ushort)from,
             Fed = true,
             FirstCut = (ushort)(nodes.Length + 1),
             Share0 = 1f,
@@ -1853,7 +1854,7 @@ public static partial class ConstructRoutes
         gone.Clear();
         gone[route] = true;
         for (var k = route + 1; k < c.RouteCount; k++)
-            if (c.Routes[k].Parent != 255 && c.Routes[k].Parent < c.RouteCount && gone[c.Routes[k].Parent])
+            if (c.Routes[k].Parent != CRoute.NoParent && c.Routes[k].Parent < c.RouteCount && gone[c.Routes[k].Parent])
                 gone[k] = true;
         var n = Compact(c, gone);
         if (n > 0)
@@ -1868,7 +1869,7 @@ public static partial class ConstructRoutes
         gone.Clear();
         var any = false;
         for (var k = 0; k < c.RouteCount; k++)
-            if (k < marked.Length && marked[k] || c.Routes[k].Parent != 255 && c.Routes[k].Parent < k && gone[c.Routes[k].Parent])
+            if (k < marked.Length && marked[k] || c.Routes[k].Parent != CRoute.NoParent && c.Routes[k].Parent < k && gone[c.Routes[k].Parent])
                 any = gone[k] = true;
         if (!any)
             return 0;
@@ -1888,7 +1889,7 @@ public static partial class ConstructRoutes
             ref var r = ref c.Routes[k];
             if (type is { } t && r.Type != t)
                 continue;
-            if (r.From == part || r.To == part || r.Parent != 255 && r.Parent < k && gone[r.Parent])
+            if (r.From == part || r.To == part || r.Parent != CRoute.NoParent && r.Parent < k && gone[r.Parent])
                 any = gone[k] = true;
         }
         if (!any)
@@ -1907,7 +1908,7 @@ public static partial class ConstructRoutes
         var removed = 0;
         for (var k = 0; k < c.RouteCount; k++)
         {
-            if (gone[k] || c.Routes[k].Parent != 255 && (c.Routes[k].Parent >= k || map[c.Routes[k].Parent] < 0))
+            if (gone[k] || c.Routes[k].Parent != CRoute.NoParent && (c.Routes[k].Parent >= k || map[c.Routes[k].Parent] < 0))
             {
                 map[k] = -1;
                 removed++;
@@ -1918,8 +1919,8 @@ public static partial class ConstructRoutes
                 c.RouteNodes[nn + i] = c.RouteNodes[r.Start + i];
             r.Start = (ushort)nn;
             nn += r.Count;
-            if (r.Parent != 255)
-                r.Parent = (byte)map[r.Parent];
+            if (r.Parent != CRoute.NoParent)
+                r.Parent = (ushort)map[r.Parent];
             map[k] = rn;
             c.Routes[rn++] = r;
         }
@@ -1948,16 +1949,16 @@ public static partial class ConstructRoutes
         {
             var r = src.Routes[k];
             routeMap[k] = -1;
-            var from = r.Parent != 255 ? 0 : r.From < map.Length ? map[r.From] : -1;
+            var from = r.Parent != CRoute.NoParent ? 0 : r.From < map.Length ? map[r.From] : -1;
             var to = r.To < map.Length ? map[r.To] : -1;
-            var parent = r.Parent == 255 ? -2 : r.Parent < k ? routeMap[r.Parent] : -1;
+            var parent = r.Parent == CRoute.NoParent ? -2 : r.Parent < k ? routeMap[r.Parent] : -1;
             if (from < 0 || to < 0 || parent == -1 || rn >= Construct.MaxRoutes || nn + r.Count > Construct.MaxRouteNodes)
                 continue;
             if (!same)
                 dst.ReserveRoutes(rn + 1, nn + r.Count); // (a piece split off starts with no room for them)
             var start = r.Start;
             r.Start = (ushort)nn;
-            var anchor = r.Parent != 255 ? to : from;
+            var anchor = r.Parent != CRoute.NoParent ? to : from;
             for (var i = 0; i < r.Count; i++)
             {
                 var node = src.RouteNodes[start + i];
@@ -1970,10 +1971,10 @@ public static partial class ConstructRoutes
                 node.Host = (ushort)host;
                 dst.RouteNodes[nn++] = node;
             }
-            if (r.Parent == 255)
+            if (r.Parent == CRoute.NoParent)
                 r.From = (ushort)from;
             else
-                r.Parent = (byte)parent;
+                r.Parent = (ushort)parent;
             r.To = (ushort)to;
             routeMap[k] = rn;
             dst.Routes[rn++] = r;
@@ -2010,8 +2011,8 @@ public static partial class ConstructRoutes
                 node.Host = (ushort)(node.Host + off);
                 a.RouteNodes[a.RouteNodeCount++] = node;
             }
-            if (r.Parent != 255)
-                r.Parent = (byte)(r.Parent + baseRoute);
+            if (r.Parent != CRoute.NoParent)
+                r.Parent = (ushort)(r.Parent + baseRoute);
             else
                 r.From = (ushort)(r.From + off);
             r.To = (ushort)(r.To + off);
@@ -2051,19 +2052,19 @@ public static partial class ConstructRoutes
             nodes[i] = c.RouteNodes[r.Start + i];
         nodes[node] = new CRouteNode { Pos = ConstructWorld.Quantise(pos), Host = host, Health = nodes[node].Health };
         string? why;
-        if (r.Parent != 255)
+        if (r.Parent != CRoute.NoParent)
             why = CheckBranchMove(c, r, nodes[..r.Count]);
         else
         {
             // Check it as a new link without itself (its own "already linked" and caps).
             var saved = r;
             r.Type = RouteType.COUNT; // (not matched by the duplicate check while checked)
-            why = Check(null, c, saved.Type, saved.From, saved.FromPort, 255, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort);
+            why = Check(null, c, saved.Type, saved.From, saved.FromPort, CRoute.NoParent, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort);
             // (a pre-built's conduit laid through a wall fails the full rule as it stands, ConstructConduit: a move that doesn't add a new
             // fault, its ends and spans still good, is let through)
             if (why != null && !why.StartsWith("at most", StringComparison.Ordinal)
-                && Check(null, c, saved.Type, saved.From, saved.FromPort, 255, 0, Vector3.Zero, c.RouteNodes.AsSpan(saved.Start, saved.Count), saved.To, saved.ToPort) == why
-                && Check(null, c, saved.Type, saved.From, saved.FromPort, 255, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort, straight: true) == null)
+                && Check(null, c, saved.Type, saved.From, saved.FromPort, CRoute.NoParent, 0, Vector3.Zero, c.RouteNodes.AsSpan(saved.Start, saved.Count), saved.To, saved.ToPort) == why
+                && Check(null, c, saved.Type, saved.From, saved.FromPort, CRoute.NoParent, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort, straight: true) == null)
                 why = null;
             r = saved;
         }
@@ -2420,14 +2421,14 @@ public static partial class ConstructRoutes
 
     // ---- The wire format (protocol 90): compact, nodes on the 1 cm grid --------------------------------------------
 
-    /// <summary>Writes a construct's links: per link 11 bytes plus a health byte per segment, per node 8 bytes.</summary>
+    /// <summary>Writes a construct's links: per link 12 bytes plus a health byte per segment, per node 8 bytes.</summary>
     public static void Write(PacketWriter w, Construct c)
     {
-        w.U8((byte)c.RouteCount);
+        w.U16((ushort)c.RouteCount); // (protocol 487: a u16, as is each link's parent)
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            w.U8((byte)r.Type).U16(r.From).U8(r.FromPort).U16(r.To).U8(r.ToPort).U8(r.Parent).U16(r.ParentNode).U16(r.Count);
+            w.U8((byte)r.Type).U16(r.From).U8(r.FromPort).U16(r.To).U8(r.ToPort).U16(r.Parent).U16(r.ParentNode).U16(r.Count);
             for (var i = 0; i < r.Count; i++)
             {
                 ref var n = ref c.RouteNodes[r.Start + i];
@@ -2444,7 +2445,7 @@ public static partial class ConstructRoutes
     /// <summary>Reads <see cref="Write"/>'s bytes (after the parts: every index is checked against them).</summary>
     public static void Read(ref PacketReader r, Construct c, int parts)
     {
-        int count = r.U8();
+        int count = r.U16();
         if (count > Construct.MaxRoutes)
             throw new MalformedPacketException($"a construct of {count} links");
         c.RouteCount = 0;
@@ -2460,13 +2461,13 @@ public static partial class ConstructRoutes
                 FromPort = r.U8(),
                 To = r.U16(),
                 ToPort = r.U8(),
-                Parent = r.U8(),
+                Parent = r.U16(),
                 ParentNode = r.U16(),
                 Count = r.U16(),
             };
             if (rt.Type >= RouteType.COUNT)
                 throw new MalformedPacketException($"link {k}: type {ts}");
-            if (rt.To >= parts || (rt.Parent == 255 ? rt.From >= parts : rt.Parent >= k || rt.ParentNode >= c.Routes[rt.Parent].Count) || rt.Count > Construct.MaxNodesPerRoute
+            if (rt.To >= parts || (rt.Parent == CRoute.NoParent ? rt.From >= parts : rt.Parent >= k || rt.ParentNode >= c.Routes[rt.Parent].Count) || rt.Count > Construct.MaxNodesPerRoute
                 || c.RouteNodeCount + rt.Count > Construct.MaxRouteNodes)
                 throw new MalformedPacketException($"link {k} doesn't fit its construct");
             rt.Start = (ushort)c.RouteNodeCount;

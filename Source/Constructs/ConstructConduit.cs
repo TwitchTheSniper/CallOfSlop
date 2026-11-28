@@ -178,7 +178,7 @@ public static class ConstructConduit
         open = 0f;
         var search = _search ??= new RouteSearch();
         search.Clear();
-        var ask = new RouteAsk { World = world, C = c, Type = type, From = from, FromPort = fromPort, Parent = 255, Nodes = [], Count = 0, To = to, ToPort = toPort, Conduit = air, ConduitGap = gap, Exact = exact,
+        var ask = new RouteAsk { World = world, C = c, Type = type, From = from, FromPort = fromPort, Parent = CRoute.NoParent, Nodes = [], Count = 0, To = to, ToPort = toPort, Conduit = air, ConduitGap = gap, Exact = exact,
             Lay = type is RouteType.Data or RouteType.Power ? LinkLay.Wall : LinkLay.Near }; // (a pre-built's cables lie in its walls, only the switches and lamps seen: Karl, 2026-11-18)
         var end = Math.Min(deadline, Stopwatch.GetTimestamp() + (long)((exact ? ExactBudgetMs : BudgetMs) * Stopwatch.Frequency / 1000));
         RouteSearch.Result r;
@@ -201,7 +201,7 @@ public static class ConstructConduit
         if (r.Unburied)
             Console.WriteLine($"[conduit] construct {c.Id}: a {ConstructRoutes.Name(type)} {c.DefOf(from).Name} -> {c.DefOf(to).Name} lies on the walls, not in them: {r.BuryWhy}");
         open = OpenLength(c, type, from, fromPort, to, toPort, nodes);
-        why = OnMoving(c, ship, from, to, nodes) ? "it would ride a moving part" : ConstructRoutes.Check(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort, straight: r.Pierced);
+        why = OnMoving(c, ship, from, to, nodes) ? "it would ride a moving part" : ConstructRoutes.Check(world, c, type, from, fromPort, CRoute.NoParent, 0, default, nodes, to, toPort, straight: r.Pierced);
         return why == null ? nodes : null;
     }
 
@@ -368,8 +368,8 @@ public static class ConstructConduit
     }
 
     private static bool Fits(ConstructWorld world, Construct c, bool ship, RouteType type, int from, byte fromPort, int to, byte toPort, CRouteNode[] nodes) =>
-        !OnMoving(c, ship, from, to, nodes) && (ConstructRoutes.Check(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort) == null
-            || ConstructRoutes.Check(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort, straight: true) == null); // (one through a wall: its ends and spans, as it was found)
+        !OnMoving(c, ship, from, to, nodes) && (ConstructRoutes.Check(world, c, type, from, fromPort, CRoute.NoParent, 0, default, nodes, to, toPort) == null
+            || ConstructRoutes.Check(world, c, type, from, fromPort, CRoute.NoParent, 0, default, nodes, to, toPort, straight: true) == null); // (one through a wall: its ends and spans, as it was found)
 
     /// <summary>
     /// A node on a part gone, or on one that moves apart from both of the link's ends (a gate's leaf the wire only passes). A link whose
@@ -391,7 +391,7 @@ public static class ConstructConduit
     {
         if (c.RouteCount >= Construct.MaxRoutes || world.TotalRoutes >= world.WireCap)
             return false;
-        return ConstructRoutes.Add(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort) >= 0;
+        return ConstructRoutes.Add(world, c, type, from, fromPort, CRoute.NoParent, 0, default, nodes, to, toPort) >= 0;
     }
 
     /// <summary>
@@ -420,7 +420,7 @@ public static class ConstructConduit
             for (var r = 0; r < c.RouteCount; r++)
             {
                 ref var rt = ref c.Routes[r];
-                if (!Routable(rt.Type) || rt.Parent != 255)
+                if (!Routable(rt.Type) || rt.Parent != CRoute.NoParent)
                     continue;
                 var a = ConstructRoutes.PortPoint(c, rt.From, rt.FromPort, rt.Type);
                 var b = ConstructRoutes.PortPoint(c, rt.To, rt.ToPort, rt.Type);

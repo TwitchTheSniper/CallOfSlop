@@ -43,8 +43,9 @@ from the parts' own details sitting on their cell faces, not from the layout, so
 extrusions). Five one-die Extruders (a Core and one Die Block) stand north of the main station's bay at layout x -9 to 7, z -48, flowing
 south, each fed steel by one chute from its side's first steel silo and run from the main station's ordering console. Each Run-out Table
 ends on one Roller Tile whose run ends straight on a 9 x 2 Pad Tile pick pad past the bay's north end (x -10 to 8, z -40 to -44), so the
-station's small-extrusion orders go to the cells first and are shared over them. Each cell costs three of a body's 254 links (its run,
-chute and Run); Works II stood at 237, so it is at 252 now and has no room for more machines without freeing links.
+station's small-extrusion orders go to the cells first and are shared over them. Each cell costs three of a body's links (its run,
+chute and Run); Works II stood at 237, so it is at 252 now. The cap was 254 then, which left no room for more machines; it is
+1,000 now (`Construct.MaxRoutes`, 2026-11-28).
 
 ## The shed's shell parts
 
