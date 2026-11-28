@@ -978,9 +978,9 @@ public sealed partial class PressParts : IPartGenerator
 
     private static PyDict ReceiverDie()
     {
-        var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20); // (as the Drive die: the action's gearing)
+        // (no Gear Set in bay 2 any more, Sean 2026-11-28: a gun's action comes from the die; Gear Sets stay in drivetrain parts)
         var die = SizedDie("Receiver", ["solid", "hollow"], ["steel"], [15, 120], [30, 600], [1, 1], 4, 0.02, Py.L(),
-            AllReceiverPatterns().Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z", auto: r.Auto)).ToList());
+            AllReceiverPatterns().Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, along: "z", auto: r.Auto)).ToList());
         die["aspect"] = "preset";
         return die;
     }

@@ -339,6 +339,8 @@ public static unsafe partial class Program
             return CallOfSlop.Pressed.Cli([.. args.SkipWhile(a => !a.Equals("--press-part", StringComparison.OrdinalIgnoreCase)).Skip(1)]); // a pressed part: its key, numbers and checks; list, presets, sweep (Pressed.cs)
         if (args.Any(a => a.Equals("--former-presets", StringComparison.OrdinalIgnoreCase)))
             return FormerPresets.Cli(); // every catalogue wing and rotor against the key a Fan or Airframe Former would cut for it (FormerPresets.cs)
+        if (args.Any(a => a.Equals("--maker-report", StringComparison.OrdinalIgnoreCase)))
+            return MakerRoutes.Cli(args); // each Assembler recipe's maker as the Assembler retires: press chain, one-piece bake, station kit, and the oven size (MakerRoutes.cs)
         if (args.SkipWhile(a => !a.Equals("--bill", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } billOf)
             return ConstructBill.Cli(billOf); // a blueprint's bill: the pieces it needs by key with counts (WorkOrders.cs)
         if (args.Any(a => a.Equals("--bench-compare", StringComparison.OrdinalIgnoreCase)))

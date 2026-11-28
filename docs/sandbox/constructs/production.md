@@ -936,7 +936,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 - **Tool Bay and tool blocks** (Assembler PR 3; `AssemblerToolBay.cs`). A recipe with `"tool"` (`thruster`: thrusters, rocket engines, boosters; `tailor`: lift cells) needs that tool block docked in the Core's Tool Bay: a **Thruster Jig Block** or a **Sewing Table Block** (2 x 2 m, role `tool` in `machineBlock` with its `tool`) on a Core side socket (`+x`, `-x` or `+z`) its bed doesn't use, by its `dock` socket. `MachineBlocks` finds it at the rebuild (`CMachineAsm.Tool`, `ToolPart`; it joins the assembly and shows the Core's work); without it the state is `NeedsTool` and the look line names the block. The **Block Rack** is the Die Rack at 2 m bays (one generator, `PressParts.Rack`; Sean: "the die rack and the block rack the same piece"): two shelves, one kind a shelf, that hold tool blocks and dies. Tool blocks are physics-only, but a rack shelf holds them all the same (`ConstructStorage.RackHolds`); taken by hand, one leaves as a body; let go low over a rack's bay with the physics gun, it goes on the shelf (`ConstructTerminal.Shelve`). An Assembler hands a made tool block out as a body. Its three rows sit after the folded thruster and tailor rows (`Assembling.AfterFolded`), so no saved recipe number moves. **The swap:** a chute from a store into the Core takes the tool block its head recipe needs (`AssemblerToolBay.Chute`); at the start of the next step the old block goes back into that store and the new one docks in its place (`Deliver`, `Dock`); a swap that couldn't finish (no slot for the old block, no free side) is never started (`CanSwap`). Tool blocks on a rack are never refused at the Core (they wait). The look line names the store that holds the wanted block (a store chuted into the Core first, else one on its body: `AssemblerToolBay.HeldIn`). Not done yet: a Hall Crane, Loader Arm or carriage carrying the blocks (Sean: with the factory layout threads).
 - **The recipe** is a setting (`"config": [{"key": "recipe"}]`): a choice filled from the table as the parts load, so the configure tool lists every recipe (a filter box stands over a long list) and a blueprint step names one (`"config": {"recipe": "Engine"}`). 0 is none.
 - **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `needs` (the upgrade modules it takes, written by the generator from its inputs), `tool` (thruster or tailor: the tool block it will need in the Core's Tool Bay, Assembler PR 3; not yet enforced), `techTier` (how advanced the part is, the old Assembler tier: faction vehicles weigh parts and loot tables cap them by it; the Assembler ignores it) and `minTier` (unused by the Assembler now). At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`). A part a die presses from a standard blank has no row: it is pressed, not assembled ([The Press](#the-press)).
-- **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production category): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Control Unit, Servo Motor, Tyre Carcass, Steel Plate, Lens.
+- **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production category): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Servo Motor, Tyre Carcass, Steel Plate, Lens. The Control Unit part still loads but has no recipe: it folded into 2 Circuit Boards (Sean, 2026-11-28; [Retiring the Assembler](#retiring-the-assembler-2026-11-28)).
 - **Written and generated.** the part kit's `--gen-parts assembling` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and the modules from what that needs. The Thruster Assembler's and the Tailor's rows went to the end of the one list (`tool`), so saved recipe numbers before them keep. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
 
 | Example (by hand) | Takes | Seconds | Needs |
@@ -945,7 +945,6 @@ The step after refining: an **Assembler** builds parts from what the chains make
 | Wheel | 2 steel + 1 Tyre Carcass | 5 | nothing |
 | Bearing (2) | 2 bronze | 2 | Coolant Loop |
 | Engine | 20 steel + 2 Piston Set + 1 Wiring Loom | 20 | Power Coupling, Coolant Loop |
-| Control Unit | 1 steel + 1 Circuit Board + 1 Wiring Loom | 6 | Power Coupling, Servo Rack |
 
   (Gear Sets, Piston Sets, Wiring Looms and Circuit Boards are pressed: [The Press](#the-press).)
 - **Input.** Materials sit in the mixed input, parts in the store's kinds. Chutes bring both, as many at once as you run: a chute from a bin brings a load of a material the recipe uses; a chute from a shelf or a Storage Volume brings one part a second that the recipe wants, passing over others. What it can't use stays in the source, and the look line says so. Each input holds up to `batches` of what a batch asks. F, in order: the held part if the recipe wants it, the materials it wants from what you carry, a part off the tray, then its input back, which clears a machine whose recipe changed.
@@ -2119,7 +2118,7 @@ inverse kinematics from the hand (`ArmIk.Solve`), in the tier's colours (`lifter
 
 Each tier grows by the machine tiers' size (x1 to x2.5) and has its look: a rusty derrick on timber props, blue cast iron with
 cream trim, a yellow hydraulic arm with its power pack, olive armour with sandbags, a dark rounded drum with a glowing ring.
-Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Motors from 2, a Control Unit from 3.
+Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Motors from 2, 2 Circuit Boards (once a Control Unit) from 3.
 
 **The big arms** (Sean, 2026-11-24: arms that carry a shipyard's pieces from the line pads straight into its building bay;
 `LifterParts.BigArms`, folder `Lifters/BigArms`) are past the tiers: a 3.5 m square pedestal (14 cells, `"centre -y"` stands it
@@ -2594,7 +2593,7 @@ made that way. Code: `BakeKits.cs` (the kits and their match), `ConstructBakeOve
     rectangle is one of its pick pads (`ConstructStationPads.ButtOff`).
   - *Turntable runs.* A run from a Turntable Tile takes a piece up to half a tile longer than itself (`TurnOver`: the 5.65 m Housing blank).
   - *Servo Motors.* The `actuator.servo` pattern presses a Servo Motor from a solid 20x20x35 steel blank with a Copper Coil in bay 2.
-    Its Assembler row is gone: rows mark `asm-rows-2026-11-26-servo`, and old choices of it become the Control Unit.
+    Its Assembler row is gone: rows mark `asm-rows-2026-11-26-servo`, and old choices of it become the Control Unit (the Circuit Board since rows mark `asm-rows-2026-11-28-control-unit`).
   - *The Housing press.* It has a 4-row bed (3.6 m of daylight, for the Fuel Pump M and Drive Core M) and its Die Rack stands 2 m
     further out. Both come from `ZeroDayWorks2.Revisions`, Sean's card answers laid over the lab's export.
   - *Assemblers.* Every Works II Assembler carries a Power Coupling, a Servo Rack and a Coolant Loop. A big Assembler stands west of
@@ -2747,3 +2746,25 @@ with the Runabout's blueprint, `WorksRunabout.json`, beside it). Notes, the mach
 - **Measured** (2026-11-14, host, creative, the window tool): Start to Done in under four minutes, 30 of 30 parts and 3 of 3 links; the
   server tick median 0.14 ms, worst 0.72 ms over the sampled frames while it built (`station measure`); the station's own step worst
   3.3 ms in one tick (its costing), 0.4 MB over the build. Notes: `docs/sandbox/design/showcase-new-notes.md`.
+
+### Retiring the Assembler (2026-11-28)
+
+Sean: "Wherever possible, I really want to get rid of the assembler as a machine in the game." The plan (Claude Doc "Retire the
+Assembler: migration plan", https://claude.ai/artifact/JFJcWdn8bwkVJfgoPhxtjN) moves every Assembler row to a press chain (items and
+components: a die gives a blank its working), a one-piece bake (a placed part of one solid box, baked from one extrusion on an oven with
+no station) or a station kit baked in an oven (its components fitted as kit pieces, rubber or concrete as sheet pieces where the recipe
+had them). Big parts are made as baked sub-assemblies on the smallest oven that holds them, so the work spreads over every oven size;
+only a part that can't be split (a railgun barrel) needs a bigger bed. The Assembler stays a fallback until the last phase.
+
+- **Phase 1 (this change).** No Gear Set in a gun or a thruster: the part kit's role map gives `gun` and `thruster` nothing, the hand
+  rows for receivers, the Mounted MG, the Shell Hoist and the AA Gun lost theirs, and the Receiver die's bay 2 takes none. Gear Sets
+  stay in drivetrain parts (gearboxes, differentials, shafts, hubs, axles, suspension, an Ordnance drum's turning gear). The Zero Day
+  Frigate's bill went from 326 Gear Sets to 4. The **Control Unit** row went: every rule and row that gave n Control Units gives 2n
+  Circuit Boards (`Assembling.Boards`, at most 20), the run-time Ordnance Rack's too (`AssembledParts`); rows mark
+  `asm-rows-2026-11-28-control-unit` moves an old Assembler's choice of it to the Circuit Board. Loot's Control Units became Circuit
+  Boards.
+- **`--maker-report [--build NAME] [--out FILE]`** (`MakerRoutes.cs`): every Assembler row's route (press chain, one-piece bake,
+  station kit + bake, kit already, pressed already) and, for a placed part, the smallest oven that holds it whole (small 20 x 6 m, big
+  20 x 20 m, the largest bed a Core takes 32 x 16 m, or a bigger bed); with `--build`, a blueprint's Assembler-made parts by route and
+  oven, and its kit pieces by length. 2026-11-28: 433 press chain, 1,452 one-piece bake, 830 station kit, 70 kits already; the frigate's
+  76 Assembler-made kinds hold 429 kit pieces, 285 of them 2 m or shorter.

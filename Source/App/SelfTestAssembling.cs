@@ -416,7 +416,7 @@ public static partial class SelfTest
 
         // ---- F: a held part it wants, carried material it wants, the tray, then its input back after a recipe change.
         var eye = ft + Vector3.Transform(bay.Parts[asm].Pos, fq) + new Vector3(0, 1.5f, 0);
-        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Control Unit"));
+        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Bearing"));
         ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Alternator")); // (the Servo Motor is pressed now, 2026-11-26: the Alternator takes steel and a Bearing as it did)
         Run(0.2f);
         Want(Recipe()?.Name == "Alternator", "the recipe didn't change");
