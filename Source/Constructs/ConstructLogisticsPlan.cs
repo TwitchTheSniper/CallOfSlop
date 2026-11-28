@@ -871,6 +871,20 @@ public static class ConstructLogisticsPlan
         }
     }
 
+    /// <summary>
+    /// Has the chained order's link asked for its own inputs yet (<see cref="ChainFlags.Expanded"/>; a player's own order, 0, has none)? Until it
+    /// has, <see cref="Need"/> still counts by the order's place in its queue, so the order must not move (<see cref="ConstructAssembling"/>'s ReadyFirst).
+    /// </summary>
+    internal static bool Settled(ConstructWorld world, Construct c, ushort chain)
+    {
+        if (chain == 0)
+            return true;
+        for (var i = 0; i < world.ChainCount; i++)
+            if (world.Chains[i].Id == chain && world.Chains[i].Body == c.Id)
+                return ((ChainFlags)world.Chains[i].Flags & ChainFlags.Expanded) != 0;
+        return true;
+    }
+
     /// <summary>Plan steps (0.5 s each: 10 s) between one link's looks at whether its maker still leads to it (<see cref="Leads"/>), spread by its id.</summary>
     private const int LeadsEvery = 20;
 

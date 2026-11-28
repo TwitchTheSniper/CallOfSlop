@@ -268,6 +268,10 @@ public static class ConstructAssembling
         ConstructGatherer.SetHeld(world, st, held);
         var fit = FitOf(c, part);
         var state = StateOf(d, st, recipe, fit);
+        if (state != AsmState.Short)
+            st.ShortAt = 0;
+        else if (c.Parts[part].Orders is { Bill: false, Count: > 1 } && ReadyFirst(world, table, c, part, st, d, fit))
+            return; // (a later order goes first: its batch starts on the next step)
         if (state is not (AsmState.Ready or AsmState.Blocked))
         {
             st.JobTicks = 0;
@@ -304,6 +308,86 @@ public static class ConstructAssembling
             return;
         st.JobTicks -= need; // (what is left over carries into the next batch)
         Wave(world, query, c, part, st, recipe, fit);
+    }
+
+    /// <summary>Server ticks an Assembler's head order waits short of an input before a later ready order goes first (<see cref="ReadyFirst"/>).</summary>
+    private const uint ShortWait = 10 * World.TickRate;
+
+    /// <summary>
+    /// Server: the head order has been short of an input for <see cref="ShortWait"/> (a part made elsewhere, a material no chute brings): the
+    /// first later order this Assembler can start now goes to the head, so the machine works while the head waits (Sean, 2026-11-28: Works
+    /// II's main Assembler stood for good behind 4 Drive Bells waiting on Gear Sets, its lockers, crates and Bearings queued behind them).
+    /// Ready means it builds here (tier, modules, bed, tool), every part input is in the hopper over what the orders ahead of it need
+    /// (it never takes the head's gathered inputs), and every material is in the hopper or in a store chuted into it. No batch of the head
+    /// is under way (it is short), so nothing is lost; it goes back one place, and takes the head again when the order then at the head
+    /// finishes or is itself short for <see cref="ShortWait"/> with the old head ready (the search runs in queue order). A chained order
+    /// moves only once its link has asked for its own inputs (<see cref="ConstructLogisticsPlan.Settled"/>), so its count of the hopper stands.
+    /// True when one moved.
+    /// </summary>
+    private static bool ReadyFirst(ConstructWorld world, AssemblingTable table, Construct c, int part, CStore st, ConstructPartDef d, in AsmFit fit)
+    {
+        var now = Math.Max(1u, MoverPhysics.Clock);
+        if (st.ShortAt == 0)
+        {
+            st.ShortAt = now;
+            return false;
+        }
+        if (now - st.ShortAt < ShortWait)
+            return false;
+        st.ShortAt = now; // (looks again a wait later)
+        var q = c.Parts[part].Orders!;
+        for (var k = 1; k < q.Count; k++)
+        {
+            if (q.Items[k].IsPiece || !ConstructLogisticsPlan.Settled(world, c, q.Items[k].Chain) || table.Of(q.Items[k].Part) is not { } r || r.Machine != d.AsmMachine || r.MinTier > d.Tier
+                || fit.Missing(r) != 0 || fit.LacksTool(r) || fit.AtOnce(r.Output) == 0 || !CanStart(world, table, c, part, st, q, k, r))
+                continue;
+            var o = q.Items[k];
+            Array.Copy(q.Items, 0, q.Items, 1, k);
+            q.Items[0] = o;
+            world.OrdersChanged(c);
+            Console.WriteLine($"[assembler] the {d.Name} at {c.Parts[part].Pos.X:0}, {c.Parts[part].Pos.Z:0} takes its {o.Count} x {r.Output.Name} first: its head order waits for an input");
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Has the Assembler what a batch of order <paramref name="k"/> takes, over what the orders ahead of it need of the same parts?</summary>
+    private static bool CanStart(ConstructWorld world, AssemblingTable table, Construct c, int part, CStore st, OrderList q, int k, AssembleRecipe r)
+    {
+        foreach (var (p, count) in r.Parts)
+        {
+            var have = st.KindIndex(p.Id) is var i and >= 0 ? st.KindCount![i] : 0;
+            for (var j = 0; j < k && have >= count; j++)
+                if (!q.Items[j].IsPiece && table.Of(q.Items[j].Part) is { } rj)
+                    have -= rj.CountOf(p.Id) * ((q.Items[j].Left + rj.Count - 1) / rj.Count); // (whole batches: a recipe makes Count a batch)
+            if (have < count)
+                return false;
+        }
+        foreach (var (m, units) in r.Materials)
+        {
+            var have = st.MixOf(m);
+            for (var j = 0; j < k && have >= units; j++)
+                if (!q.Items[j].IsPiece && table.Of(q.Items[j].Part) is { } rj)
+                    foreach (var (mj, uj) in rj.Materials)
+                        if (mj == m)
+                            have -= uj * ((q.Items[j].Left + rj.Count - 1) / rj.Count);
+            if (have < units && !Chuted(world, c, part, m))
+                return false; // (what the hopper holds over the orders ahead, or a chute that brings more: a tipped-in material is kept for them)
+        }
+        return true;
+    }
+
+    /// <summary>Does a chute into the Assembler come from a store holding <paramref name="material"/>?</summary>
+    private static bool Chuted(ConstructWorld world, Construct c, int part, byte material)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type == RouteType.Chute && r.To == part && r.Source < c.PartCount && r.Source != part && world.StoreOf(c, r.Source) is { } src
+                && (src.Amount > 0 && src.Material == material || src.MixOf(material) > 0))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
