@@ -612,7 +612,10 @@ public sealed partial class Ui
                     }
                 }
                 else if (ImGui.SliderFloat(e.UiId, ref v, e.Min, e.Max, e.Format, ImGuiSliderFlags.AlwaysClamp))
+                {
+                    v = e.Snap(v); // (the slider snaps to Step; a typed value keeps its Fine precision)
                     changed = true;
+                }
                 if (ImGui.IsItemHovered())
                     ImGuiSafe.SetTooltip(e.TooltipText);
                 ImGui.SameLine();
