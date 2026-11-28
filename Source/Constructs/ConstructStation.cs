@@ -95,6 +95,8 @@ public sealed partial class StationJob
     public int ArmGap = 1; // ticks since the rovers' last look (their caller looks every tick while one moves, else every half second)
     public int GateRank, GateStall; // the lowest rank with a step still to fit; ticks without a fit (a stall lets the next rank go after 90 s)
     public Vector2 KeepLo, KeepHi; // the build's footprint in the bay's frame (the rovers' keep-out ring)
+    public RoverFloor? Floor; // server: the cells over fitted parts the rovers keep off (ConstructStationRoverFloor.cs; made again at each fit)
+    public Vector4[] StepFoot = []; // each step's footprint in the bay's frame (x0, z0, x1, z1): a fitted step's is ground the rovers keep off
     public float BuiltTop; // the highest part fitted so far over the bay's floor
 
     private static int[] Filled(int v)

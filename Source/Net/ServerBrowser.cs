@@ -822,7 +822,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      holding one builds different colliders on an older peer; no message changed.
     // 485: a Pad Tile pad's columns lie side by side as well as along it: each column on the wire carries its place across and its width
     //      (ConstructRackPack.Write).
-    public const ushort ProtocolVersion = 485;
+    // 486: a station rover's trip holds up to 40 body keys (was 24), for drives round the parts already fitted (RoverPlan.MaxBase).
+    public const ushort ProtocolVersion = 486;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
