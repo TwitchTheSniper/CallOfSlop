@@ -146,6 +146,7 @@ public static class PartKit
         new Generators.Assembling(),
         new Generators.ProductionShowcase(), // (a blueprint built through the game's rules from the part files: last)
         new Generators.SubmoduleShowcase(),
+        new Generators.StarterWorks(), // (the Survival start's kit line: Extruder, station, oven; retiring the Assembler, phase 6)
         new Generators.HallShowcase(), // (the Hall Bay: the Hall Crane, pads and roller runs on the block rules)
         new Generators.ZeroDayWorks(), // (the Zero Day works: the factory that builds the frigate, Sean 2026-11-22; after the machines it lays)
         new Generators.ZeroDayWorks2(), // (Zero Day Works II: Sean's Factory Lab layout, 2026-11-25; after the machines it lays)

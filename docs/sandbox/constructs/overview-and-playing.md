@@ -798,9 +798,10 @@ Code: `Source/Game/GameSandboxSurvival.cs`.
 - **The start kit.** From an empty start nothing can make a Drill Module, a Saw Module or any machine, so a survival game
   chosen in the lobby starts with `Constructs/SurvivalStart.json`: Starter Assembler, Smelter, Foundry and Sawmill (each a machine,
   its bins on chutes and a Small Genset on a Fuel Tank, anchored on 4 m slabs), a Drill Rig and a Saw Rig, the five dies, and since the
-  Assembler retired (2026-11-28, production.md "Retiring the Assembler" phase 6) a Starter Press (a Press fed by an Extruder), a Starter
-  Bake Oven (an 8 x 6 m bed) and a Starter Building Station (an 8 x 6 m bay), each with its own genset: presses and ovens make what the
-  Assembler no longer does. Each goes on the nearest
+  Assembler retired (2026-11-28, production.md "Retiring the Assembler" phase 6) a Starter Press (a Press fed by an Extruder) and the
+  Starter Works (an Extruder with a Die Block fed by two bins, a pick pad beside a Building Station's 8 x 6 m bay, a roller run into a
+  Bake Oven's 8 x 6 m bed, a Small Genset and Battery): presses and ovens make what the Assembler no longer does. Order a part at the
+  Works' oven; a kit that needs a pressed piece (Piston Set, Turbine Stage) waits, since the Starter Press is not on its line. Each goes on the nearest
   clear, level ground round the rack (`SandboxKitPiece`; no room: it is left out and logged). They belong to nobody, as the map's
   constructs do. A rig starts frozen, upright, and is under the survival physics gun's starting 5,000 kg while its bin is near empty: carry
   it to a vein, hold the bit just over the ground, freeze it. A map's `"survivalStart": ["name", ...]` (blueprints or parts)

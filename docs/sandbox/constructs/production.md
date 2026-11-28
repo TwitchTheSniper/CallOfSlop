@@ -2897,9 +2897,13 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   **Assembly Bay** builds Wheels, with no modules (the "Assembling" self-tests set its Engine and keep it on the Assembler for their chain:
   `BakeKits.TestKeep`, and the old module gate check became one that a baked part is refused). **Survival start**
   (`Constructs/SurvivalStart.json`, the Ground start's kit): the Starter Assembler stays (items) and three hand-written blueprints join
-  it: **Starter Press** (the Press Line with a Small Genset on a Fuel Tank in place of its Battery), **Starter Bake Oven** (the 4 x 3 bed
-  oven, 8 x 6 m, a Small Genset and Fuel Tank on the Core's back) and **Starter Building Station** (a 4 x 3 bay, one more Bay Block past
-  its end carrying a Small Genset and Fuel Tank). A pressed part is its press's at a station's ask, never an oven's
+  it: **Starter Press** (the Press Line with a Small Genset on a Fuel Tank in place of its Battery, hand-written) and **Starter
+  Works** (generator `starter_works`, `Source/PartKit/Generators/StarterWorks.cs`, 30 x 14 m): an Extruder with a Die Block fed by two
+  Materials Bins (steel; a kit's rubber, concrete or cloth sheet), its pieces on a conveyor onto two Pad Tiles beside a Building Station's
+  4 x 3 bay, a Line Console wiring the Extruder into the station's Orders, two Roller Tiles from the bay into a 4 x 3 Bake Oven bed, and a
+  Small Genset on two Fuel Tanks with a Battery. Proven headless: `--station-check "Starter Works" --oven-order "Bolt Deck 1 m" --fill
+  "-0.5,-10,steel,500;-0.5,-8,rubber,200"` bakes it in 65 s. Not yet: a kit with a pressed piece (Engine: Piston Set; Small Jet: Turbine
+  Stage) waits, since the Starter Press is not on the Works' net; Chassis Tub 2 m waits on its hollow extrusion (unexplained). A pressed part is its press's at a station's ask, never an oven's
   (`ConstructCrafting.MachineMakes` asks `BakeKits.Has` with `OffAssembler`). Works II's frigate: 16 of 346 in 300 s (main 16 to 19).
   Protocol 494.
 
