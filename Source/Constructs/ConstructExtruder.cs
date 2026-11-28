@@ -105,30 +105,42 @@ public static partial class ConstructExtruder
     private const int PurgeUnits = 10; // what an Extruder may purge from its chamber when it changes material and no bin takes it (its last steps' rounding)
 
     /// <summary>
-    /// An Extruder on orders whose head order is in another material than it holds puts what it holds back into a store its chutes come
-    /// from that holds the same (or nothing), so a chute brings the order's material next (<see cref="ChuteRoom"/>): one Extruder fed copper
-    /// and laminate by two chutes makes both in turn (Zero Day Works II's electronics Extruders, 2026-11-28). Its chutes bring only a run's
-    /// need while another material waits (<see cref="RunNeed"/>), so what is left is a few units, purged when no bin has room (<see cref="PurgeUnits"/>).
-    /// False: more than that is left and no such store took it.
+    /// An Extruder on orders whose head order is in another material than it holds puts what it holds back into a bin its chutes come from
+    /// that holds the same (never an empty one: that may be another material's bin, which would then be blocked), so a chute brings the
+    /// order's material next (<see cref="ChuteRoom"/>): one Extruder fed copper and laminate by two chutes makes both in turn (Zero Day Works
+    /// II's electronics Extruders, 2026-11-28). Its chutes bring only a run's need while another material waits (<see cref="RunNeed"/>), so
+    /// what is left is a few units of the steps' rounding: purged, with a log line, when no bin has room (<see cref="PurgeUnits"/>), and only
+    /// on an Extruder chuted from bins. False: it still holds the old material.
     /// </summary>
     private static bool HandBack(ConstructWorld world, Construct c, int part, CStore st)
     {
+        var chuted = false;
         for (var k = 0; k < c.RouteCount && st.Amount > 0; k++)
         {
             ref var r = ref c.Routes[k];
             if (r.Type != RouteType.Chute || r.To != part || r.Source >= c.PartCount || r.Source == part || c.DefOf(r.Source) is not { IsBin: true, Role: PartRole.Storage }
-                || world.StoreOf(c, r.Source) is not { } src || src.Amount > 0 && src.Material != st.Material)
+                || world.StoreOf(c, r.Source) is not { } src)
+                continue;
+            chuted = true;
+            if (src.Amount <= 0 || src.Material != st.Material)
                 continue;
             var put = world.Deposit(c, r.Source, st.Amount, st.Material);
             if (put > 0)
                 world.Withdraw(c, part, put);
         }
-        if (st.Amount > PurgeUnits)
+        if (st.Amount > 0 && (!chuted || st.Amount > PurgeUnits))
             return false;
         if (st.Amount > 0)
-            world.Withdraw(c, part, st.Amount); // (a few units over the run's need: purged with the old material, as a real press does)
+            Purge(world, c, part, st);
         st.JobAmount = 0;
         return true;
+    }
+
+    /// <summary>The few units left over a run, purged from the chamber as a real press purges between materials (logged: never silent).</summary>
+    private static void Purge(ConstructWorld world, Construct c, int part, CStore st)
+    {
+        Console.WriteLine($"[extruder] body {c.Id} part {part}: purged {st.Amount} {RecyclingTable.Current.NameOf(st.Material)} to change material (no chuted bin of it had room)");
+        world.Withdraw(c, part, st.Amount);
     }
 
     /// <summary>Does a chute into this Extruder on orders come from a store that holds <paramref name="material"/> (<see cref="HandBack"/>)?</summary>
