@@ -320,7 +320,7 @@ public sealed partial class ZeroDayWorks2
             Chute(bins[51], null, f3, "Chute in", low + 1.5f); // (the rubber Foundry's planks)
         }
 
-        /// <summary>The lines: each Extruder's bin, its feed and its console; the presses' racks; the press line's bridge run.</summary>
+        /// <summary>The lines: each Extruder's bin, its feed and its console; the presses' racks.</summary>
         private void Lines(float s)
         {
             var bunker = StockSilos(s)[1..];
@@ -365,7 +365,6 @@ public sealed partial class ZeroDayWorks2
             }
             DieCell(s);
             JoinSecondRun(s);
-            BridgeRun(s); // (where the press line's Assembler stood: ZeroDayWorks2.NoAssembler.cs)
         }
 
         /// <summary>
@@ -598,6 +597,8 @@ public sealed partial class ZeroDayWorks2
                 // Extruder is run from here too, as its pieces feed those presses)
                 foreach (var m in _labs.Where(l => l.Id is "bake-oven" or "press"))
                     Cable(best.Console, m.Core, "Run", 9f);
+                foreach (var bp in _bridgePresses) // (the press lines' third presses: ZeroDayWorks2.NoAssembler.cs)
+                    Cable(best.Console, bp, "Run", 9f);
                 foreach (var c in _consoles.Where(c => c.Console != best.Console && !used.Contains(c.Console) && _labs.Any(l => l.Id == "press" && Vector2.Distance(l.At, c.At) < 20)))
                     Cable(best.Console, NearestLab("extruder", c.At, 12), "Run", 8f);
                 // (the compact extruder cells beside the main station's north end: the station nearest the site's middle, ZeroDayWorks2.CompactCells.cs)

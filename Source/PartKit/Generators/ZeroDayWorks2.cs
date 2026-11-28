@@ -218,7 +218,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
         /// row toward the presses, to 12 x 12 m (Sean, 2026-11-27: "the presses output pads could get a little bit bigger ... the roller
         /// conveyors could be shrunk a little"): the two tiles of each roller row nearest the pad (|x| 21 and 23, z 29 and 31) become Pad
         /// Tiles (<see cref="PadGrown"/>) and the rest of those two columns are filled (<see cref="Additions"/>). The row's run is 3 tiles
-        /// (6 m) from where the block Assembler's bed stood (its bridge run since 2026-11-28). Nothing else moves.
+        /// (6 m) from the press where the block Assembler stood (2026-11-28). Nothing else moves.
         /// </summary>
         private static bool InPadGrowth(JsonElement e) => Str(e, "name") == "Roller Tile" && MathF.Abs(Num(e, "x")) is 21 or 23 && Num(e, "z") is 29 or 31; // (the columns and the rest of their rows, z 25, 27, 33 and 35: Additions)
 
@@ -545,7 +545,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 if (!Entry(((int)(cell.Item1 - 2 * into.X), (int)(cell.Item2 - 2 * into.Y))))
                     _intoPress.Remove(cell);
             // The plain Roller Tiles in a press line's row, between its presses and the building station the row ends at (beside the presses'
-            // beds and the bridge run where the block Assembler stood), roll toward that station: the layout laid them facing the other way, so a pressed part rode
+            // beds and the third press's, where the block Assembler stood), roll toward that station: the layout laid them facing the other way, so a pressed part rode
             // away from the station and dropped loose (2026-11-26, Sean: carry pressed parts on to the main station). Only their facing
             // changes; each piece stays where his layout puts it, and pieces roll through the beds on the way (ConstructConveyor.PassesThrough).
             var stationsAt = items.Where(i => Str(i, "t") == "lab" && Str(i, "id") == "building-station").Select(i => (At: new Vector2(Num(i, "x"), -Num(i, "z")), Span: (float)Math.Max(Int(i, "w"), Int(i, "l")))).ToList();
@@ -596,6 +596,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 PartItem(it, items);
             foreach (var it in items.Where(i => Str(i, "t") == "lab"))
                 LabItem(it);
+            BridgePresses(); // (where the press lines' Assemblers stood: ZeroDayWorks2.NoAssembler.cs)
             foreach (var it in parts.Where(i => cores.Contains(Str(i, "name"))))
                 PartItem(it, items);
             foreach (var it in items.Where(i => Str(i, "t") == "rover"))

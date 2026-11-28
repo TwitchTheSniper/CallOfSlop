@@ -104,14 +104,14 @@ public sealed partial class ZeroDayWorks2
                 return;
             }
             // (straight from the back row's bins: a bin of its own beside it would stand in the second blank Extruder's way, FindShifts)
-            foreach (var from in new[] { LamBin, 26f })
+            foreach (var from in new[] { LamBin, 26f, BronzeBin }) // (bronze since phase 5: the Bearings' round blanks, for the press in each line's old Assembler place)
             {
                 Chute(Find("Materials Bin", P(s, from, 114)), null, core, "Chute in", high);
                 high += 0.5f;
             }
             if (console != null)
                 Cable(console, core, "Run", 6.5f);
-            Note($"electronics: the Extruder at ({s * ex:0}, {-ElecZ:0}), fed laminate and copper from the back row's bins");
+            Note($"electronics: the Extruder at ({s * ex:0}, {-ElecZ:0}), fed laminate, copper and bronze from the back row's bins");
             var end = Find("Roller Tile", P(s, ex - 8, -ElecRowZ), 0.5f);
             var entry = Find("Roller Tile", P(s, 53, -32), 0.5f);
             if (end == null || entry == null || !entry.Def.IsTurntable)
