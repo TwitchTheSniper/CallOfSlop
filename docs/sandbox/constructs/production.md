@@ -2901,9 +2901,12 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   Works** (generator `starter_works`, `Source/PartKit/Generators/StarterWorks.cs`, 30 x 14 m): an Extruder with a Die Block fed by two
   Materials Bins (steel; a kit's rubber, concrete or cloth sheet), its pieces on a conveyor onto two Pad Tiles beside a Building Station's
   4 x 3 bay, a Line Console wiring the Extruder into the station's Orders, two Roller Tiles from the bay into a 4 x 3 Bake Oven bed, and a
-  Small Genset on two Fuel Tanks with a Battery. Proven headless: `--station-check "Starter Works" --oven-order "Bolt Deck 1 m" --fill
-  "-0.5,-10,steel,500;-0.5,-8,rubber,200"` bakes it in 65 s. Not yet: a kit with a pressed piece (Engine: Piston Set; Small Jet: Turbine
-  Stage) waits, since the Starter Press is not on the Works' net; Chassis Tub 2 m waits on its hollow extrusion (unexplained). A pressed part is its press's at a station's ask, never an oven's
+  Small Genset on two Fuel Tanks with a Battery; south of the pad three Press Cores with the Piston, Cable and Ring Dies fitted (Piston
+  Sets, Wiring Looms, Bearings, Turbine Stages), each fed by its own orders-only Extruder, on the console's Run, their Piece out onto the
+  pad, bay 2's bronze from a bin of its own (an Extruder's hopper drew a shared bin dry and the Ring press starved). Proven headless with
+  `--station-check "Starter Works" --oven-order PART --fill "-0.5,-10,steel,500;-0.5,-8,rubber,200;3.5,-19.5,bronze,300;14.5,-14,bronze,300;15.5,-19.5,copper,300"`:
+  Engine 63 s, Small Jet 214 s, Chassis Tub 2 m 75 s, Bolt Deck 1 m 65 s (the console first stood in the Die Block's run, so 2 m pieces
+  stuck as "Blocked"). A pressed part is its press's at a station's ask, never an oven's
   (`ConstructCrafting.MachineMakes` asks `BakeKits.Has` with `OffAssembler`). Works II's frigate: 16 of 346 in 300 s (main 16 to 19).
   Protocol 494.
 
