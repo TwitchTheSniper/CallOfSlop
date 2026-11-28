@@ -45,6 +45,7 @@ public static partial class ConstructStation
                 j.RankOrder[k] = k;
             j.KeepLo = j.KeepHi = Vector2.Zero;
             j.StepFoot = [];
+            j.StepLo = j.StepHi = [];
             return;
         }
         Bay(c, t, out var floor, out var rot, out _);
@@ -72,6 +73,7 @@ public static partial class ConstructStation
                 floors.Add(his[k]);
         }
         (j.KeepLo, j.KeepHi) = klo.X <= khi.X ? (klo, khi) : (Vector2.Zero, Vector2.Zero);
+        (j.StepLo, j.StepHi) = (los, his);
         floors.Sort();
         for (var k = floors.Count - 1; k > 0; k--)
             if (floors[k] - floors[k - 1] < 0.5f)
@@ -117,6 +119,30 @@ public static partial class ConstructStation
         Console.WriteLine($"[station] {j.Name}: build order {floors.Count} deck{(floors.Count == 1 ? "" : "s")}, ranks up to {(n > 0 ? ranks.Max() : 0)}; footprint {khi.X - klo.X:0.0} x {khi.Y - klo.Y:0.0} m");
     }
 
+    /// <summary>
+    /// Would step <paramref name="k"/>, of a rank past the lowest still open (<see cref="StationJob.OpenRank"/>: it goes on ahead of it,
+    /// by the stall or as a piece at hand), cover a step of a lower rank still to fit: one whose footprint it overlaps and whose top lies
+    /// no higher than its own bottom (a chair under a deck)? Then it waits, so no arm has to reach in under it later (Sean 2026-11-28:
+    /// "if you're putting chairs on the first deck and then put the second deck on, how would the arm reach in"). Bounded: one pass over
+    /// the steps for each step tried, and only past the open rank.
+    /// </summary>
+    private static bool Covers(StationJob j, int k)
+    {
+        if (j.StepRank.Length != j.PartOf.Length || j.StepRank[k] <= j.OpenRank || j.StepFoot.Length != j.PartOf.Length || j.StepLo.Length != j.PartOf.Length)
+            return false;
+        var f = j.StepFoot[k];
+        var lo = j.StepLo[k] + 0.3f;
+        for (var s = 0; s < j.PartOf.Length; s++)
+        {
+            if (s == k || j.PartOf[s] != -1 || j.StepRank[s] >= j.StepRank[k] || j.StepHi[s] > lo || ConstructStationTree.External(j, s))
+                continue;
+            var e = j.StepFoot[s];
+            if (e.X < f.Z - 0.05f && e.Z > f.X + 0.05f && e.Y < f.W - 0.05f && e.W > f.Y + 0.05f)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>A step went on (whoever fitted it): the gate's stall clock starts again and the carry height learns the build's top.</summary>
     private static void Fitted(Construct c, int t, StationJob j, int k, ConstructPartDef? d)
     {
@@ -138,6 +164,7 @@ public static partial class ConstructStation
                 open = j.StepRank[k];
                 break;
             }
+        j.OpenRank = open;
         if (open == int.MaxValue)
             return;
         if (open > j.GateRank)
@@ -192,7 +219,7 @@ public static partial class ConstructStation
                 if (d.Mass > rc.Kg)
                     continue;
                 heavy = false;
-                ok = StationRovers.Reaches(rc, StationRovers.SpotFor(g, rc, place), place);
+                ok = StationRovers.Reaches(rc, StationRovers.StandFor(g, rc, place), place);
             }
             if (ok)
                 continue;
@@ -218,6 +245,9 @@ public static partial class ConstructStation
             if (!floor.Fresh(j, hx, hz))
                 floor.Make(j, hx, hz); // (again at each fit: what is built is what the rovers keep off)
         }
+        // (the keep-out ring is what is fitted so far, not the finished build: Sean 2026-11-28; a job with no plan keeps the whole footprint)
+        if (floor != null)
+            return new StationRovers.Ground { Hx = hx, Hz = hz, KLo = floor.KLo, KHi = floor.KHi, Keep = floor.Any, Floor = floor };
         return new StationRovers.Ground { Hx = hx, Hz = hz, KLo = j.KeepLo, KHi = j.KeepHi, Keep = j.KeepHi.X > j.KeepLo.X, Floor = floor };
     }
 
@@ -255,8 +285,18 @@ public static partial class ConstructStation
     /// </summary>
     private static int FirstClash(StationJob j, ReadOnlySpan<StationDock> docks, int n, int a, bool moving = false, float reach = 0, float hang = 0)
     {
+        // (a second apart first, which finds most clashes cheaply; then, clear at that, every quarter second, so a near miss between two
+        // samples isn't missed: Sean 2026-11-28, a trip never goes through another rover or its piece)
+        var hit = ClashEvery(j, docks, n, a, moving, reach, hang, 1f);
+        return hit >= 0 ? hit : ClashEvery(j, docks, n, a, moving, reach, hang, ClashStep);
+    }
+
+    public const float ClashStep = 0.25f; // s between the fine clash check's samples
+
+    private static int ClashEvery(StationJob j, ReadOnlySpan<StationDock> docks, int n, int a, bool moving, float reach, float hang, float step)
+    {
         var p = j.Try;
-        for (var u = 0f; u <= p.Total + 0.01f; u += 1f)
+        for (var u = 0f; u <= p.Total + 0.01f; u += step)
         {
             p.BaseAt(u, out var x, out var z, out _);
             var me = new Vector2(x, z);
@@ -386,8 +426,8 @@ public static partial class ConstructStation
     private const int JobLook = 30; // ticks between an idle rover's looks for a step of its own
 
     /// <summary>
-    /// Has idle rover <paramref name="a"/> a job coming: a ready step nobody carries whose piece it can lift and whose class is nearer
-    /// its own than any other dock's? None: it drives home at once rather than stand in the bay (Sean 2026-11-27: "unless the idle rover
+    /// Has idle rover <paramref name="a"/> a job coming: a ready step nobody carries whose piece it can lift (any idle rover that lifts a
+    /// piece may take it, Assign)? None: it drives home at once rather than stand in the bay (Sean 2026-11-27: "unless the idle rover
     /// knows it will have a job soon"). Bounded: one pass over the steps every <see cref="JobLook"/> ticks a standing rover.
     /// </summary>
     private static bool JobSoon(StationJob j, ReadOnlySpan<StationDock> docks, int n, int a)
@@ -402,13 +442,7 @@ public static partial class ConstructStation
                 continue;
             if (ConstructParts.Get(j.KindDef[kind]) is not { } d || d.Mass > kg)
                 continue;
-            var want = StationRovers.Want(d);
-            var mine = true;
-            for (var b = 0; b < n && mine; b++)
-                mine = b == a || StationRovers.Classes[docks[b].Cls].Kg < d.Mass || Math.Abs(docks[b].Cls - want) >= Math.Abs(cls - want)
-                    || j.ArmStep[b] >= 0; // (a nearer class busy: Assign may give it to this one, as its class cost allows)
-            if (mine)
-                return true;
+            return true; // (any idle rover that lifts it may take it: Assign, Sean 2026-11-28)
         }
         return false;
     }
@@ -555,6 +589,8 @@ public static partial class ConstructStation
             }
             if (ahead && j.KindLaid[kind])
                 continue; // (laid fittings keep the order)
+            if (Covers(j, k))
+                continue; // (it would go on over a lower piece still to come: a deck over a missing chair, Sean 2026-11-28)
             if (ConstructParts.Get(j.KindDef[kind]) is not { } d)
                 continue;
             looks++;
@@ -568,29 +604,25 @@ public static partial class ConstructStation
             Vector3? bestPick = null;
             for (var a = 0; a < n; a++)
             {
+                // Any idle rover that lifts it takes it (Sean 2026-11-28: a step never waits for a busy rover of a better size; the size
+                // only breaks near ties between idle ones, ClassPenalty).
+                if (!(j.ArmStep[a] < 0 && (j.ArmTicks[a] == 0 || j.Rov[a].Home)))
+                    continue;
                 var rc = StationRovers.Classes[docks[a].Cls];
-                if (d.Mass > rc.Kg || !StationRovers.Reaches(rc, StationRovers.SpotFor(g, rc, place), place))
+                if (d.Mass > rc.Kg || !StationRovers.Reaches(rc, StationRovers.StandFor(g, rc, place), place))
                     continue;
-                var from = laid ? -3 : PickFrom(world, c, t, j, tray, kind, d, rc.Kg);
-                if (from == -2)
-                    continue;
-                Vector3? pick = from >= 0 ? PadPickAt(world, c, t, j, from, d) : from == -1 ? new Vector3(docks[0].Mid.X, 1.2f, docks[0].Mid.Y) : null;
-                if (pick is { } pq && !StationRovers.Reaches(rc, StationRovers.SpotFor(g, rc, pq), pq))
-                {
-                    // (the piece's own place on the pad is past this rover's reach: it takes it at the pad's edge, as rovers did before
-                    // they went to the piece, rather than leave the step for nobody)
-                    if (from < 0)
-                        continue;
-                    var pe = PadEdgeAt(c, t, from, d);
-                    if (!StationRovers.Reaches(rc, StationRovers.SpotFor(g, rc, pe), pe))
-                        continue;
-                    pick = pe;
-                }
                 PoseAt(j, docks[a], a, 0, out var at, out _);
-                var idle = j.ArmStep[a] < 0 && (j.ArmTicks[a] == 0 || j.Rov[a].Home);
-                var wait = idle ? 0f : j.ArmLeft[a] / (float)World.TickRate;
+                Vector3? pick = null;
+                var from = -3;
+                if (!laid)
+                {
+                    from = PickNear(world, c, t, j, tray, kind, d, rc, g, at, place, out var pq);
+                    if (from == -2)
+                        continue;
+                    pick = from == -1 ? new Vector3(docks[0].Mid.X, 1.2f, docks[0].Mid.Y) : pq;
+                }
                 var via = pick is { } pp ? new Vector2(pp.X, pp.Z) : new Vector2(place.X, place.Z);
-                var cost = wait + (Vector2.Distance(at, via) + Vector2.Distance(via, new Vector2(place.X, place.Z))) / rc.Speed + 10f
+                var cost = (Vector2.Distance(at, via) + Vector2.Distance(via, new Vector2(place.X, place.Z))) / rc.Speed + 10f
                     + StationRovers.ClassPenalty * Math.Abs(docks[a].Cls - want);
                 if (cost < bestCost)
                     (best, bestCost, bestFrom, bestPick) = (a, cost, from, pick);
@@ -598,7 +630,10 @@ public static partial class ConstructStation
             if (best < 0 || !(j.ArmStep[best] < 0 && (j.ArmTicks[best] == 0 || j.Rov[best].Home)))
                 continue; // (nobody fits it now, or its rover is busy: left for that one)
             var turn = Quaternion.Normalize(Quaternion.Conjugate(BayRot(c, t)) * j.Rot * (j.Plan is { } lp && k < lp.Rot.Length ? lp.Rot[k] : Quaternion.Identity));
-            if (!Plan(c, t, j, docks, n, best, bestPick, place, d, g, turn))
+            var planned = Plan(world, c, t, j, docks, n, best, bestPick, place, d, g, turn);
+            if (planned == PlanBlocked)
+                return false; // (no clear trip yet: it waits for the way to clear, and the next look tries again; one blocked step a look)
+            if (planned != PlanOk)
                 continue;
             Begin(world, c, j, best, k, (ushort)d.Id, bestFrom >= 0 ? (ushort)bestFrom : None);
             j.Rov[best].Turn = turn;
@@ -613,11 +648,18 @@ public static partial class ConstructStation
         return rot;
     }
 
+    private const int PlanOk = 0, PlanNoReach = 1, PlanBlocked = 2;
+    public const int PlanShifts = 6; // stands slid along the lane a try (1 to 3 rover widths each way) while the start waits less than 20 s
+    public const int PlanTries = 40, PlanTriesMany = 16; // clash checks one plan may make (more than 4 rovers: fewer, each costs more)
+
     /// <summary>
-    /// Rover <paramref name="a"/>'s carry into <c>j.Try</c>, clear of the others: a spot beside along the lane, then a later start (up to
-    /// <see cref="StationRovers.MaxWait"/>); an idle rover standing in its way is sent home first. False: no stand reaches.
+    /// Rover <paramref name="a"/>'s carry into <c>j.Try</c>, clear of the others: an idle rover standing in its way is sent home first;
+    /// then a spot beside along the lane, then a later start (up to <see cref="StationRovers.MaxWait"/>). It never goes through another
+    /// rover or its piece (Sean 2026-11-28): with no clear trip in <see cref="PlanTries"/> it waits (<see cref="PlanBlocked"/>) and the
+    /// next look tries again. The carry height clears only the fitted parts along the piece's way (<see cref="PathTop"/>).
     /// </summary>
-    private static bool Plan(Construct c, int t, StationJob j, ReadOnlySpan<StationDock> docks, int n, int a, Vector3? pick, Vector3 place, ConstructPartDef d, in StationRovers.Ground g, Quaternion turn)
+    private static int Plan(ConstructWorld world, Construct c, int t, StationJob j, ReadOnlySpan<StationDock> docks, int n, int a, Vector3? pick, Vector3 place,
+        ConstructPartDef d, in StationRovers.Ground g, Quaternion turn)
     {
         var dk = docks[a];
         var rc = StationRovers.Classes[dk.Cls];
@@ -625,42 +667,74 @@ public static partial class ConstructStation
         var hook = HookNow(j, dk, a);
         var size = d.BoundsMax - d.BoundsMin;
         var src = pick ?? place;
-        var s1 = StationRovers.SpotFor(g, rc, src);
-        var s2 = StationRovers.SpotFor(g, rc, place);
+        var s1 = StationRovers.StandFor(g, rc, src);
+        var s2 = StationRovers.StandFor(g, rc, place);
         var cap = MathF.Min(StationRovers.MaxUp(rc, Vector2.Distance(s1, new Vector2(src.X, src.Z))), StationRovers.MaxUp(rc, Vector2.Distance(s2, new Vector2(place.X, place.Z))));
         // The carry height (Sean 2026-11-28: pieces kept out of the floor and what is built): the piece's lowest point, as it hangs turned
         // and tilted at the top of its swing (StationRender), clears the highest fitted part by 0.6 m, as high as the arm lifts it there.
         var tilt = StationRovers.TiltOf(size);
         var hang = MathF.Max(StationRovers.HangDepth(size, Quaternion.Identity, tilt), StationRovers.HangDepth(size, turn, tilt));
-        var up = MathF.Max(MathF.Min(j.BuiltTop + hang + 0.6f, cap), MathF.Max(src.Y, place.Y) + 0.3f);
+        var low = MathF.Max(src.Y, place.Y) + 0.3f;
+        var up = MathF.Max(MathF.Min(j.BuiltTop + hang + 0.6f, cap), low);
         var weld = StationRovers.DropSeconds; // (once over its place a rover sets the piece down at once: the drive there is the time)
+        var half = 0.5f * MathF.Max(size.X, size.Z);
         var keep = j.ArmTicks[a];
         j.ArmTicks[a] = 0; // (its own trip home is no obstacle to itself)
         try
         {
+            if (!StationRovers.PlanCarry(j.Try, g, dk, at, h, hook, pick, place, up, weld, 0, 0))
+                return PlanNoReach; // (no stand of its own reaches)
+            // (then only as high as the fitted parts under the piece's way need, Sean 2026-11-28: the way at the build's top, its parts
+            // looked up under it; the way's plan lies the same at any height)
+            if (g.Floor != null)
+                up = MathF.Max(MathF.Min(PathTop(j.Try, g.Floor, half, j.BuiltTop) + hang + 0.6f, cap), low);
             var tries = 0;
+            var sent = 0;
+            var limit = n > 4 ? PlanTriesMany : PlanTries;
             for (var w = 0f; w <= StationRovers.MaxWait; w += w < 20 ? 2 : w < 80 ? 5 : 12)
-                for (var shift = 0; shift <= (w < 10 ? 4 : 0); shift++)
+                for (var shift = 0; shift <= (w < 20 ? PlanShifts : 0); shift++)
                 {
                     var off = shift == 0 ? 0 : (shift + 1) / 2 * ((shift & 1) == 1 ? 1 : -1);
                     if (!StationRovers.PlanCarry(j.Try, g, dk, at, h, hook, pick, place, up, weld, w, off))
-                    {
-                        if (shift == 0 && w == 0)
-                            return false; // (no stand of its own reaches)
                         continue;
-                    }
-                    if (++tries > (n > 4 ? 12 : 40))
-                        return true; // (enough looking: it goes, as the lab's rare overlaps do)
-                    var hit = FirstClash(j, docks, n, a, reach: 0.5f * MathF.Max(size.X, size.Z), hang: hang);
+                    if (++tries > limit)
+                        return PlanBlocked;
+                    var hit = FirstClash(j, docks, n, a, reach: half, hang: hang);
                     if (hit < 0)
-                        return true;
+                        return PlanOk;
+                    if (w == 0 && j.ArmTicks[hit] == 0 && j.RovSet[hit] && j.ArmStep[hit] < 0 && sent < n)
+                    {
+                        // (an idle rover standing in its way goes home first, Sean 2026-11-28: then the way is planned again, round its trip)
+                        sent++;
+                        SendHome(world, c, t, j, docks, n, hit);
+                        shift--;
+                    }
                 }
-            return StationRovers.PlanCarry(j.Try, g, dk, at, h, hook, pick, place, up, weld, 0, 0);
+            return PlanBlocked;
         }
         finally
         {
             j.ArmTicks[a] = keep;
         }
+    }
+
+    /// <summary>
+    /// The highest top of a fitted part under the piece's way on trip <paramref name="p"/> (from its grip to its fit, a quarter second
+    /// apart), the piece's half length <paramref name="half"/> and half a metre round each point; <paramref name="none"/> for a trip with
+    /// no carry. Allocates nothing.
+    /// </summary>
+    private static float PathTop(RoverPlan p, RoverFloor f, float half, float none)
+    {
+        if (p.FitT <= p.GripT)
+            return none;
+        var top = float.MinValue;
+        for (var u = p.GripT; u <= p.FitT + 0.01f; u += ClashStep)
+        {
+            p.BaseAt(u, out var x, out var z, out _);
+            var hk = p.HookAt(u);
+            top = MathF.Max(top, f.TopNear(new Vector2(x + hk.X, z + hk.Z), half + 0.5f));
+        }
+        return top; // (float.MinValue: nothing fitted under its way)
     }
 
     /// <summary>

@@ -221,7 +221,7 @@ public static class StationRovers
     public const float DropSpeed = 4f; // m/s the hook goes down onto a piece or its place and back up (Sean 2026-11-27: the drive is the time, the drop in is quick)
     public const float DropSeconds = 0.5f; // s a rover holds a piece on its place before it lets go (the fit; a crane's weld time is the station's own)
     public const float GripSeconds = 0.4f, ReleaseSeconds = 0.3f;
-    public const float ClassPenalty = 90f; // s: a piece taken by the wrong class costs this a class (the lab's rule)
+    public const float ClassPenalty = 5f; // s: a piece taken by an idle rover of another class costs this a class (a near tie's breaker: Sean 2026-11-28, any idle rover that lifts it goes; the lab's rule was 90 s, and a step waited for its busy class)
     public const float MaxWait = 300f; // s a trip waits for its way to clear before it goes anyway
     public const float HomeAfter = 15f; // s idle in the bay before a rover drives home (at once when no ready step is its: RoverJob JobSoon)
     public const float PickClear = 0.6f; // m between a rover's body and a pad's edge
@@ -462,6 +462,20 @@ public static class StationRovers
             }
         }
         return p;
+    }
+
+    /// <summary>
+    /// Where a rover stands to work at <paramref name="q"/>: <see cref="SpotFor"/>, off the ring round what is fitted; when that spot
+    /// doesn't reach (the ring grew past its reach), the nearest point on the bay inside the ring (a stand over what is fitted is moved
+    /// off it after by <see cref="FreeStand"/>), so a piece inside the build is never left for nobody.
+    /// </summary>
+    public static Vector2 StandFor(in Ground g, in RoverClass rc, Vector3 q)
+    {
+        var s = SpotFor(g, rc, q);
+        if (!g.Keep || Reaches(rc, s, q))
+            return s;
+        g.Inset(rc, out var ix, out var iz);
+        return new Vector2(Math.Clamp(q.X, -ix, ix), Math.Clamp(q.Z, -iz, iz));
     }
 
     /// <summary>The class number of <paramref name="rc"/> (1 small, 2 medium, 3 large).</summary>
@@ -714,8 +728,8 @@ public static class StationRovers
             s1 = s2 = at;
         else
         {
-            s1 = SpotFor(g, rc, src);
-            s2 = SpotFor(g, rc, place);
+            s1 = StandFor(g, rc, src);
+            s2 = StandFor(g, rc, place);
             if (shift != 0)
             {
                 s1 = Slide(g, rc, s1, shift);
