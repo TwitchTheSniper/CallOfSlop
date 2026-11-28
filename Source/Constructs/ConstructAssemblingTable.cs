@@ -131,6 +131,20 @@ public sealed class AssemblingTable
         (6, "MMU Dock", ["Manned Manoeuvring Unit"], null),
     ];
 
+    /// <summary>
+    /// Rows put into the middle of the plain list, not at its end, by the newest mark a file without them can name (its place in
+    /// <see cref="Marks"/>, -1 none): a file at that level or older had no such row, so its later choices are moved on past it.
+    /// PR 645 (2026-11-25) put the three Dock Expansions after Grapnel Ladder Section 3 and PR 672 (2026-11-26) the Ship Docking
+    /// Station after Worn Flight Couch, with no new mark, so only the files they can be told from are moved: a file at mark 0 or none
+    /// had neither, one at mark 1 had no Ship Docking Station. A mark 1 file may or may not have the Dock Expansions and a mark 2 file
+    /// the Ship Docking Station (the same mark spans both sides): those are left as they read. Never add to this: a new row goes at the end.
+    /// </summary>
+    private static readonly (int Level, string Name)[] Inserted =
+    [
+        (0, "Dock Expansion"), (0, "Medium Dock Expansion"), (0, "Large Dock Expansion"),
+        (1, "Ship Docking Station"),
+    ];
+
     private Dictionary<(int, int), int[]>? _legacy; // per (family, file level): an old choice (1 + its place in the old list) to this table's choice
 
     /// <summary>
@@ -160,7 +174,8 @@ public sealed class AssemblingTable
             }
         foreach (var r in now)
         {
-            map.Add(r.Choice);
+            if (machine != 0 || Array.FindIndex(Inserted, x => x.Level >= level && r.Name.Equals(x.Name, StringComparison.OrdinalIgnoreCase)) < 0)
+                map.Add(r.Choice); // (a row the file's list didn't have yet takes no old choice)
             foreach (var (mark, after, gone, to) in Removed)
                 if (mark > level && r.Name.Equals(after, StringComparison.OrdinalIgnoreCase))
                 {
