@@ -1563,7 +1563,7 @@
     {"output": "Drone Battery", "materials": {"steel": 1, "copper": 2}, "parts": {"Circuit Board": 2}, "seconds": 2.1, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Drone Frame", "materials": {"steel": 2, "bronze": 1}, "seconds": 2.2, "techTier": 2, "needs": ["Coolant Loop"]},
     {"output": "Drone Pusher", "materials": {"steel": 1}, "seconds": 2.0},
-    {"output": "Drone Receiver", "materials": {"steel": 1, "bronze": 1}, "seconds": 2.1, "techTier": 2, "needs": ["Coolant Loop"]},
+    {"output": "Drone Receiver", "materials": {"steel": 1, "rubber": 1}, "seconds": 2.1},
     {"output": "Drone Rotor", "materials": {"steel": 1}, "seconds": 2.1},
     {"output": "Large Camera Screen", "materials": {"steel": 2, "bronze": 1}, "seconds": 2.2, "techTier": 2, "needs": ["Coolant Loop"]},
     {"output": "Medium Camera", "materials": {"steel": 6, "rubber": 1}, "seconds": 2.9, "techTier": 2},

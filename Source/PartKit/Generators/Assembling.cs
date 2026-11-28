@@ -403,8 +403,9 @@ public sealed class Assembling : IPartGenerator
                 Boards(extra, lt - 2);
         }
         if (m.Count + extra.Count < 2 && mass >= 3)
-            // Two chains at least: anything of steel has a little rubber or concrete in its fixings (fixings stay fixings on a 240 t crank).
-            m[mass < 12 ? "bronze" : role != "frame" ? "rubber" : "concrete"] = Math.Min(MaxUnits / 4, Math.Max(1, RInt(mass / 25)));
+            // Two chains at least: anything of steel has a little rubber or concrete in its fixings (fixings stay fixings on a 240 t crank). A small
+            // seat takes rubber, not bronze: its padding, where it had a Tyre Carcass until 2026-11-28, so it stays tier 1.
+            m[mass < 12 && role != "seat" ? "bronze" : role != "frame" ? "rubber" : "concrete"] = Math.Min(MaxUnits / 4, Math.Max(1, RInt(mass / 25)));
         var size = p.Get("sizeClass") as string ?? "small";
         var tier = m.Keys.Select(k => TierOf.GetValueOrDefault(k, 1)).Concat(extra.Keys.Select(k => PartTier.GetValueOrDefault(k, 1)))
             .Append(Math.Min(5, Int(ptier ?? 1))).Append(ClassTier[size]).Max();
