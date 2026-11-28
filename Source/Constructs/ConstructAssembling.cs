@@ -813,12 +813,12 @@ public static class ConstructAssembling
                 AsmState.NeedsModule => $" - the {r!.Name} needs {AsmFit.ModuleWords(fit.Missing(r))} on the Core",
                 AsmState.TooBig => $" - the {r!.Name} {fit.TooBigWhy(r.Output)}",
                 AsmState.NeedsTool => toolIn != null
-                    ? $" - the {r!.Name} needs the {AsmFit.ToolBlockName(r.ToolId)} in its Tool Bay: one is on the {toolIn} (chute it in from there, or dock it on a free side of the Core)"
-                    : $" - the {r!.Name} needs the {AsmFit.ToolBlockName(r.ToolId)} in its Tool Bay: dock one on a free side of the Core, or chute one in from a Block Rack",
+                    ? $" - the {r!.Name} needs the {AsmFit.ToolBlockName(r.ToolId)} in its Tool Bay: one is on the {toolIn}"
+                    : $" - the {r!.Name} needs the {AsmFit.ToolBlockName(r.ToolId)} in its Tool Bay",
                 AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")}" : "",
                 AsmState.Untaught => TaughtBy?.Invoke(r!.Output.Name) is { } who ? $" - not taught: {who}" : " - not taught: a faction must teach it first (F2)",
                 AsmState.OutputFull => " - tray full",
-                AsmState.NoOrders => " - waiting for orders (Clear on its screen: back to its recipe)",
+                AsmState.NoOrders => " - waiting for orders",
                 AsmState.Blocked => BlockedWhy(st),
                 _ => " - no power: needs a charged battery",
             };
@@ -846,7 +846,7 @@ public static class ConstructAssembling
         AsmBlock.ConveyorSmall => " - refused: the part is too wide for its conveyor: widen it",
         AsmBlock.ConveyorFull => " - blocked: its conveyor is full",
         AsmBlock.ConveyorCut => " - its conveyor is cut",
-        AsmBlock.BedFull => " - its bed is full of what it made: a crane or an arm must lift them off (to a station or a rack with room)",
+        AsmBlock.BedFull => " - bed full: lift its pieces off",
         _ => " - something is in the way of its output",
     };
 
