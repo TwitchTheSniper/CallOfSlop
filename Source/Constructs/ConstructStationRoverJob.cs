@@ -44,6 +44,7 @@ public static partial class ConstructStation
             for (var k = 0; k < n; k++)
                 j.RankOrder[k] = k;
             j.KeepLo = j.KeepHi = Vector2.Zero;
+            j.StepFoot = [];
             return;
         }
         Bay(c, t, out var floor, out var rot, out _);
@@ -53,6 +54,7 @@ public static partial class ConstructStation
         var floors = new List<float>();
         Vector2 klo = new(float.MaxValue), khi = new(float.MinValue);
         var defs = new ConstructPartDef?[n];
+        j.StepFoot = new Vector4[n];
         for (var k = 0; k < n; k++)
         {
             var d = defs[k] = ConstructParts.Find(bp.Steps[k].Part);
@@ -63,6 +65,7 @@ public static partial class ConstructStation
             var e = Vector3.Abs(Vector3.Transform(Vector3.UnitX, q)) * h.X + Vector3.Abs(Vector3.Transform(Vector3.UnitY, q)) * h.Y + Vector3.Abs(Vector3.Transform(Vector3.UnitZ, q)) * h.Z;
             var m = Vector3.Transform(j.Pos + Vector3.Transform(plan.Centre[k], j.Rot) - floor, inv);
             (los[k], his[k]) = (m.Y - e.Y, m.Y + e.Y);
+            j.StepFoot[k] = new Vector4(m.X - e.X, m.Z - e.Z, m.X + e.X, m.Z + e.Z);
             klo = Vector2.Min(klo, new Vector2(m.X - e.X, m.Z - e.Z));
             khi = Vector2.Max(khi, new Vector2(m.X + e.X, m.Z + e.Z));
             if (d.Name.Contains("Deck", StringComparison.OrdinalIgnoreCase) && d.Role is PartRole.Frame or PartRole.Panel && e.X * e.Z >= 1f)
@@ -207,7 +210,15 @@ public static partial class ConstructStation
     private static StationRovers.Ground GroundOf(Construct c, int t, StationJob j)
     {
         var bay = BaySize(c, t);
-        return new StationRovers.Ground { Hx = bay.X * 0.5f, Hz = bay.Z * 0.5f, KLo = j.KeepLo, KHi = j.KeepHi, Keep = j.KeepHi.X > j.KeepLo.X };
+        float hx = bay.X * 0.5f, hz = bay.Z * 0.5f;
+        RoverFloor? floor = null;
+        if (j.StepFoot.Length > 0 && j.StepFoot.Length == j.PartOf.Length)
+        {
+            floor = j.Floor ??= new RoverFloor();
+            if (!floor.Fresh(j, hx, hz))
+                floor.Make(j, hx, hz); // (again at each fit: what is built is what the rovers keep off)
+        }
+        return new StationRovers.Ground { Hx = hx, Hz = hz, KLo = j.KeepLo, KHi = j.KeepHi, Keep = j.KeepHi.X > j.KeepLo.X, Floor = floor };
     }
 
     /// <summary>Rover <paramref name="a"/> as it stands <paramref name="ahead"/> s from now (on its trip, or where it stands).</summary>
@@ -236,14 +247,22 @@ public static partial class ConstructStation
         return new Vector3(dk.Dir.X * 1.5f, rc.Shoulder + 0.5f, dk.Dir.Y * 1.5f);
     }
 
-    /// <summary>The first rover the trip in <c>j.Try</c> for rover <paramref name="a"/> would meet (-1: none), sampled a second apart.</summary>
-    private static int FirstClash(StationJob j, ReadOnlySpan<StationDock> docks, int n, int a, bool moving = false)
+    /// <summary>
+    /// The first rover the trip in <c>j.Try</c> for rover <paramref name="a"/> would meet (-1: none), sampled a second apart: their bodies,
+    /// and (Sean 2026-11-28, "keep their pieces from clipping through each other") the piece it carries, of half length
+    /// <paramref name="reach"/> hanging <paramref name="hang"/> under the jaws, against another's carried piece at a height they share or
+    /// against another rover's chassis and turret under it.
+    /// </summary>
+    private static int FirstClash(StationJob j, ReadOnlySpan<StationDock> docks, int n, int a, bool moving = false, float reach = 0, float hang = 0)
     {
         var p = j.Try;
         for (var u = 0f; u <= p.Total + 0.01f; u += 1f)
         {
             p.BaseAt(u, out var x, out var z, out _);
             var me = new Vector2(x, z);
+            var carry = reach > 0 && u >= p.GripT && u < p.FitT;
+            var hk = carry ? p.HookAt(u) : default;
+            var mine = me + new Vector2(hk.X, hk.Z);
             for (var b = 0; b < n; b++)
             {
                 if (b == a || moving && j.ArmTicks[b] == 0)
@@ -251,9 +270,37 @@ public static partial class ConstructStation
                 PoseAt(j, docks[b], b, u, out var ob, out _);
                 if (StationRovers.Clash(docks[a], me, docks[b], ob, 0.3f))
                     return b;
+                var other = PieceAt(j, b, u, ob, out var op, out var oy, out var oReach, out var oHang);
+                var parked = j.ArmTicks[b] == 0 && !j.RovSet[b]; // (on its dock, off the bay: a piece swung past it is no clash)
+                if (carry && !parked)
+                {
+                    var rcb = StationRovers.Classes[docks[b].Cls];
+                    if (hk.Y - hang < rcb.Shoulder + 1f && Vector2.Distance(mine, ob) < reach + rcb.Radius + 0.3f)
+                        return b; // (its piece low through the other's chassis)
+                    if (other && Vector2.Distance(mine, op) < reach + oReach + 0.3f && hk.Y - hang < oy + 0.2f && oy - oHang < hk.Y + 0.2f)
+                        return b; // (the two pieces at one height, crossing)
+                }
+                if (other && oy - oHang < StationRovers.Classes[docks[a].Cls].Shoulder + 1f && Vector2.Distance(op, me) < oReach + StationRovers.Classes[docks[a].Cls].Radius + 0.3f)
+                    return b; // (the other's piece low through this one's chassis)
             }
         }
         return -1;
+    }
+
+    /// <summary>Rover <paramref name="b"/>'s carried piece <paramref name="ahead"/> s from now (it standing at <paramref name="ob"/>): where it hangs, its jaws' height, its half length and how deep it hangs. False: it carries none then.</summary>
+    private static bool PieceAt(StationJob j, int b, float ahead, Vector2 ob, out Vector2 at, out float y, out float reach, out float hang)
+    {
+        (at, y, reach, hang) = (ob, 0, 0, 0);
+        if (j.ArmTicks[b] == 0 || j.ArmStep[b] < 0 || ConstructParts.Get(j.ArmDef[b]) is not { } d)
+            return false;
+        var p = j.Rov[b];
+        var el = (j.ArmTicks[b] - j.ArmLeft[b]) / (float)World.TickRate + ahead;
+        if (el < p.GripT || el >= p.FitT)
+            return false;
+        var hk = p.HookAt(el);
+        var size = d.BoundsMax - d.BoundsMin;
+        (at, y, reach, hang) = (ob + new Vector2(hk.X, hk.Z), hk.Y, 0.5f * MathF.Max(size.X, size.Z), StationRovers.HangDepth(size, p.Turn, 0));
+        return true;
     }
 
     /// <summary>
@@ -550,11 +597,11 @@ public static partial class ConstructStation
             }
             if (best < 0 || !(j.ArmStep[best] < 0 && (j.ArmTicks[best] == 0 || j.Rov[best].Home)))
                 continue; // (nobody fits it now, or its rover is busy: left for that one)
-            if (!Plan(c, t, j, docks, n, best, bestPick, place, d, g))
+            var turn = Quaternion.Normalize(Quaternion.Conjugate(BayRot(c, t)) * j.Rot * (j.Plan is { } lp && k < lp.Rot.Length ? lp.Rot[k] : Quaternion.Identity));
+            if (!Plan(c, t, j, docks, n, best, bestPick, place, d, g, turn))
                 continue;
             Begin(world, c, j, best, k, (ushort)d.Id, bestFrom >= 0 ? (ushort)bestFrom : None);
-            var turn = Quaternion.Conjugate(BayRot(c, t)) * j.Rot * (j.Plan is { } lp && k < lp.Rot.Length ? lp.Rot[k] : Quaternion.Identity);
-            j.Rov[best].Turn = Quaternion.Normalize(turn);
+            j.Rov[best].Turn = turn;
             return true;
         }
         return false;
@@ -570,7 +617,7 @@ public static partial class ConstructStation
     /// Rover <paramref name="a"/>'s carry into <c>j.Try</c>, clear of the others: a spot beside along the lane, then a later start (up to
     /// <see cref="StationRovers.MaxWait"/>); an idle rover standing in its way is sent home first. False: no stand reaches.
     /// </summary>
-    private static bool Plan(Construct c, int t, StationJob j, ReadOnlySpan<StationDock> docks, int n, int a, Vector3? pick, Vector3 place, ConstructPartDef d, in StationRovers.Ground g)
+    private static bool Plan(Construct c, int t, StationJob j, ReadOnlySpan<StationDock> docks, int n, int a, Vector3? pick, Vector3 place, ConstructPartDef d, in StationRovers.Ground g, Quaternion turn)
     {
         var dk = docks[a];
         var rc = StationRovers.Classes[dk.Cls];
@@ -581,7 +628,11 @@ public static partial class ConstructStation
         var s1 = StationRovers.SpotFor(g, rc, src);
         var s2 = StationRovers.SpotFor(g, rc, place);
         var cap = MathF.Min(StationRovers.MaxUp(rc, Vector2.Distance(s1, new Vector2(src.X, src.Z))), StationRovers.MaxUp(rc, Vector2.Distance(s2, new Vector2(place.X, place.Z))));
-        var up = MathF.Max(MathF.Min(j.BuiltTop + size.Y + 0.6f, cap), MathF.Max(src.Y, place.Y) + 0.3f);
+        // The carry height (Sean 2026-11-28: pieces kept out of the floor and what is built): the piece's lowest point, as it hangs turned
+        // and tilted at the top of its swing (StationRender), clears the highest fitted part by 0.6 m, as high as the arm lifts it there.
+        var tilt = StationRovers.TiltOf(size);
+        var hang = MathF.Max(StationRovers.HangDepth(size, Quaternion.Identity, tilt), StationRovers.HangDepth(size, turn, tilt));
+        var up = MathF.Max(MathF.Min(j.BuiltTop + hang + 0.6f, cap), MathF.Max(src.Y, place.Y) + 0.3f);
         var weld = StationRovers.DropSeconds; // (once over its place a rover sets the piece down at once: the drive there is the time)
         var keep = j.ArmTicks[a];
         j.ArmTicks[a] = 0; // (its own trip home is no obstacle to itself)
@@ -600,7 +651,7 @@ public static partial class ConstructStation
                     }
                     if (++tries > (n > 4 ? 12 : 40))
                         return true; // (enough looking: it goes, as the lab's rare overlaps do)
-                    var hit = FirstClash(j, docks, n, a);
+                    var hit = FirstClash(j, docks, n, a, reach: 0.5f * MathF.Max(size.X, size.Z), hang: hang);
                     if (hit < 0)
                         return true;
                 }

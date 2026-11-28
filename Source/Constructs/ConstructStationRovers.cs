@@ -18,7 +18,7 @@ public readonly record struct RoverClass(string Name, float Reach, float Kg, flo
 /// </summary>
 public sealed class RoverPlan
 {
-    public const int MaxBase = 24, MaxHook = 14;
+    public const int MaxBase = 40, MaxHook = 14; // (protocol 486: 40 keys, for drives round what is fitted)
     public int NB, NH;
     public readonly float[] Bt = new float[MaxBase], Bx = new float[MaxBase], Bz = new float[MaxBase], Bh = new float[MaxBase];
     public readonly float[] Ht = new float[MaxHook];
@@ -198,8 +198,8 @@ public sealed partial class Construct
 /// The rover docks (Sean 2026-11-24, "Okay, I like it. Build it."; spec /mnt/project-files/building-station-lab/BUILD-SPEC.md, the Building
 /// Station Lab, docs/sandbox/constructs/production.md "Building station"). A station's fitting arms are arm rovers that live in docks: the Core
 /// is a dock pad for one small rover, each Dock Expansion welded mouth first to the bay's edge holds one more of its class. A rover drives
-/// out of its dock, never jumps: it turns on the spot to face the way, then drives straight, round the build by the corners of a keep-out
-/// ring, squares up with its short end to the work, takes the piece off a pick pad from beside it (its body stays on the bay), swings it
+/// out of its dock, never jumps: it turns on the spot to face the way, then drives straight, round the parts already fitted
+/// (RoverFloor: over them only when there is no room), squares up with its short end to the work, takes the piece off a pick pad from beside it (its body stays on the bay), swings it
 /// round its mast and sets it on. It stays put when its spot reaches both the pick and the place, makes one stop that reaches both when it
 /// can, and drives twice only when it must. A trip that meets another rover tries a spot beside along the lane, then a later start (up to
 /// 300 s); an idle rover in the way is sent home. Idle with no ready step of its own, or a while, it drives home, folding as it goes. Pieces go to their class (8 t and 3 m to small,
@@ -231,6 +231,29 @@ public static class StationRovers
         var s = d.BoundsMax - d.BoundsMin;
         var m = MathF.Max(s.X, MathF.Max(s.Y, s.Z));
         return d.Mass <= 8000 && m <= 3 ? 1 : d.Mass <= 52000 && m <= 10 ? 2 : 3;
+    }
+
+    /// <summary>
+    /// How far a carried piece is tilted at the top of its swing (the wrist's pitch, StationRender): a plate edge first 0.55 rad, a long
+    /// piece 0.3, a short one 0.15. <paramref name="size"/> is the piece's whole size (its def's bounds).
+    /// </summary>
+    public static float TiltOf(Vector3 size)
+    {
+        var lng = MathF.Max(size.X, size.Z);
+        return size.Y < 0.6f && lng > 1.5f ? 0.55f : lng > 3 ? 0.3f : 0.15f;
+    }
+
+    /// <summary>How deep a piece hangs under the jaws turned by <paramref name="turn"/> (bay frame) and tilted by <paramref name="tilt"/> about a level axis.</summary>
+    public static float HangDepth(Vector3 size, Quaternion turn, float tilt)
+    {
+        var h = size * 0.5f;
+        var worst = 0f;
+        for (var ax = 0; ax < 2; ax++)
+        {
+            var r = Matrix4x4.CreateFromQuaternion(turn) * (ax == 0 ? Matrix4x4.CreateRotationX(tilt) : Matrix4x4.CreateRotationZ(tilt));
+            worst = MathF.Max(worst, 2 * (MathF.Abs(r.M12) * h.X + MathF.Abs(r.M22) * h.Y + MathF.Abs(r.M32) * h.Z));
+        }
+        return worst;
     }
 
     public static float Ease(float x) => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
@@ -396,6 +419,7 @@ public static class StationRovers
         public float Hx, Hz; // the bay's half size
         public Vector2 KLo, KHi; // the build's footprint (bay frame)
         public bool Keep; // a build stands in the bay
+        public RoverFloor? Floor; // the parts already fitted, which drives go round and stands keep off (null: the ring alone)
 
         public readonly void Inset(in RoverClass rc, out float ix, out float iz)
         {
@@ -439,6 +463,48 @@ public static class StationRovers
         return p;
     }
 
+    /// <summary>The class number of <paramref name="rc"/> (1 small, 2 medium, 3 large).</summary>
+    public static int ClsOf(in RoverClass rc)
+    {
+        for (var c = 1; c < Classes.Length; c++)
+            if (Classes[c].Name == rc.Name)
+                return c;
+        return 0;
+    }
+
+    /// <summary>
+    /// A stand off what is already fitted (Sean 2026-11-28): <paramref name="s"/> itself when it is clear, else the nearest clear spot on
+    /// the bay within half the arm's reach that still reaches <paramref name="q1"/> and <paramref name="q2"/>; <paramref name="s"/> when
+    /// none does (a large rover in a narrow bay stands on the build).
+    /// </summary>
+    public static Vector2 FreeStand(in Ground g, in RoverClass rc, Vector2 s, Vector3 q1, Vector3 q2)
+    {
+        var cls = ClsOf(rc);
+        if (g.Floor is not { } f || !f.Covered(cls, s))
+            return s;
+        g.Inset(rc, out var ix, out var iz);
+        var max = MathF.Min(8f, rc.Reach * 0.5f);
+        for (var r = 0.5f; r <= max; r += 0.5f)
+        {
+            var steps = Math.Max(8, (int)(r * 2 * MathF.PI / 0.5f));
+            var best = s;
+            var bestD = float.MaxValue;
+            for (var k = 0; k < steps; k++)
+            {
+                var an = k * 2 * MathF.PI / steps;
+                var p = s + new Vector2(MathF.Cos(an), MathF.Sin(an)) * r;
+                if (MathF.Abs(p.X) > ix || MathF.Abs(p.Y) > iz || f.Covered(cls, p) || !Reaches(rc, p, q1) || !Reaches(rc, p, q2))
+                    continue;
+                var d = Vector2.DistanceSquared(p, new Vector2(q1.X, q1.Z)) + Vector2.DistanceSquared(p, new Vector2(q2.X, q2.Z));
+                if (d < bestD)
+                    (best, bestD) = (p, d);
+            }
+            if (bestD < float.MaxValue)
+                return best;
+        }
+        return s;
+    }
+
     /// <summary>Does the segment from a to b pass through the ring's inside?</summary>
     private static bool Crosses(Vector2 a, Vector2 b, Vector2 lo, Vector2 hi)
     {
@@ -469,6 +535,8 @@ public static class StationRovers
     /// <summary>The waypoints from a to b round the ring (b last; a left out): at most four corners, the shortest way.</summary>
     public static int Route(in Ground g, in RoverClass rc, Vector2 a, Vector2 b, Span<Vector2> way)
     {
+        if (g.Floor != null)
+            return g.Floor.Route(ClsOf(rc), a, b, way); // (round what is fitted, over the floor the build hasn't reached yet)
         if (!g.Keep)
         {
             way[0] = b;
@@ -574,7 +642,7 @@ public static class StationRovers
             var mouth = MouthOf(dk);
             Leg(p, rc, ref t, ref at, ref h, mouth); // (out of the dock straight: it faces its mouth parked)
         }
-        Span<Vector2> way = stackalloc Vector2[6];
+        Span<Vector2> way = stackalloc Vector2[RoverFloor.MaxWay];
         var n = Route(g, rc, at, to, way);
         for (var k = 0; k < n; k++)
             Leg(p, rc, ref t, ref at, ref h, way[k]);
@@ -614,7 +682,7 @@ public static class StationRovers
             p.AddBase(t, at.X, at.Y, h);
         }
         var mouth = MouthOf(dk);
-        Span<Vector2> way = stackalloc Vector2[6];
+        Span<Vector2> way = stackalloc Vector2[RoverFloor.MaxWay];
         var n = Route(g, rc, at, mouth, way);
         for (var k = 0; k < n; k++)
             Leg(p, rc, ref t, ref at, ref h, way[k]);
@@ -641,7 +709,7 @@ public static class StationRovers
         var tgtUp = place with { Y = up };
         // Swinging beats driving: stay put when this spot reaches both; else one stop that reaches both; drive twice only when it must.
         bool Both(Vector2 b) => Reaches(rc, b, srcUp) && Reaches(rc, b, tgtUp) && Reaches(rc, b, src) && Reaches(rc, b, place);
-        if (!parked && shift == 0 && Both(at))
+        if (!parked && shift == 0 && Both(at) && g.Floor?.Covered(ClsOf(rc), at) != true)
             s1 = s2 = at;
         else
         {
@@ -656,6 +724,18 @@ public static class StationRovers
                 s2 = s1;
             else if (Both(s2))
                 s1 = s2;
+            // (off what is already fitted, where a spot near that still reaches: Sean 2026-11-28)
+            if (s1 == s2)
+            {
+                var f = FreeStand(g, rc, s1, src, place);
+                if (Both(f))
+                    s1 = s2 = f;
+            }
+            else
+            {
+                s1 = FreeStand(g, rc, s1, src, srcUp);
+                s2 = FreeStand(g, rc, s2, place, tgtUp);
+            }
         }
         if (!Reaches(rc, s1, src) || !Reaches(rc, s2, place) || !Reaches(rc, s1, srcUp) || !Reaches(rc, s2, tgtUp))
             return false;
