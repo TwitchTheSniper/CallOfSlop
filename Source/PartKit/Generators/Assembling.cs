@@ -1363,9 +1363,9 @@ public sealed class Assembling : IPartGenerator
     /// <summary>The Assembler parts moved to the press on 2026-11-22 (Sean: "where they make sense"; PressParts.ToPress.cs says which and why).</summary>
     private static readonly HashSet<string> ToPress = new(PressParts.MovedToPress(), StringComparer.Ordinal);
 
-    /// <summary>A recipe that leaves the plain Assembler for a press: one of <see cref="Moved"/>; a Barrel or Engine die preset with at most one kind of part input (sized parts phase 6: every barrel, the plain three and the builder ones, and every engine piece but the Capital Smokestack, past the dies; receivers are assemblies by the sort and keep theirs beside their presets); or a Housing (the Housing die presses all 21).</summary>
+    /// <summary>A recipe that leaves the plain Assembler for a press: one of <see cref="Moved"/>; a Barrel or Engine die preset with at most one kind of part input (sized parts phase 6: every barrel, the plain three and the builder ones, and every engine piece but the Capital Smokestack, past the dies; receivers are assemblies by the sort and keep theirs beside their presets); or a Housing (the Housing die presses all 21). A tool row goes too where its part is a ToPress one (the Decoupler, retiring the Assembler phase 4).</summary>
     private static bool PressedNow(string output, PyDict r, HashSet<string> sized) =>
-        r.Get("machine") == null && (ArmKitParts.PressedPieces.Contains(output) || Moved.Contains(output) || ToPress.Contains(output) || sized.Contains(output) && ((r.Get("parts") as PyDict)?.Count ?? 0) <= 1 ||output.EndsWith(" m", StringComparison.Ordinal) && output.Contains("Housing ", StringComparison.Ordinal));
+        (r.Get("machine") == null || ToPress.Contains(output)) && (ArmKitParts.PressedPieces.Contains(output) || Moved.Contains(output) || ToPress.Contains(output) || sized.Contains(output) && ((r.Get("parts") as PyDict)?.Count ?? 0) <= 1 ||output.EndsWith(" m", StringComparison.Ordinal) && output.Contains("Housing ", StringComparison.Ordinal));
 
     /// <summary>The weapon builder's parts (Parts/*/*.json outside _*, Builds and Tables): made into Sandbox items at load, so a hand
     /// recipe may name one with no file in Constructs/Parts.</summary>

@@ -203,13 +203,15 @@ public static class BakeKits
     }
 
     /// <summary>
-    /// Is this part baked by the rule (Assembler retirement phase 3): a placed part (welded on, never in the hands) with an Assembler row,
-    /// no press preset (a die makes it) and no tool block (the Thruster Jig and Sewing Table rows are phase 4)? Its kit is worked out from
-    /// its own boxes, its components and its rubber or concrete (<see cref="Make"/>).
+    /// Is this part baked by the rule (Assembler retirement phase 3): a placed part (welded on, never in the hands) with an Assembler row
+    /// and no press preset (a die makes it)? Phase 4 (2026-11-28) gave the Thruster Jig's placed parts kits too (their Turbine Stages,
+    /// Thrust Chambers and Field Coils as kit pieces), and the Sewing Table's Lift Cells, the small one an item: no die shapes a gas bag,
+    /// so it bakes with its cloth as a sheet piece. Its kit is worked out from its own boxes, its components and its rubber, concrete or
+    /// cloth (<see cref="Make"/>).
     /// </summary>
     public static bool ByRule(ConstructPartDef d) =>
-        d.PhysicsOnly && !d.IsNamedRuntime && !d.IsExtrusion && AssemblingTable.Current.Problem.Length == 0
-        && AssemblingTable.Current.Of((ushort)d.Id) is { Tool.Length: 0 } && PressTable.Current.PresetKeyOf(d) == null;
+        !d.IsNamedRuntime && !d.IsExtrusion && AssemblingTable.Current.Problem.Length == 0
+        && AssemblingTable.Current.Of((ushort)d.Id) is { } r && (d.PhysicsOnly || r.Tool == "tailor") && PressTable.Current.PresetKeyOf(d) == null;
 
     /// <summary>Is this part made from a kit BakeKits.json or Constructs/BakeKits/ lists (an Assembler never builds it, as before phase 3)?</summary>
     public static bool ListedKit(ConstructPartDef made) => Has(made) && IsNamed(made.Name);
@@ -400,7 +402,7 @@ public static class BakeKits
     /// <summary>
     /// One extrusion a box: its longest side the length (5 cm steps), the thinner of the others its height (a Sheet under 10 cm). A part by
     /// the rule (<paramref name="r"/>: its Assembler row, the bill) is extruded in its row's main material where an Extruder takes it,
-    /// keeps a lone box as one piece (a one-piece bake), and adds its row's components as kit pieces and its rubber or concrete as a sheet
+    /// keeps a lone box as one piece (a one-piece bake), and adds its row's components as kit pieces and its rubber, concrete or cloth as a sheet
     /// piece (Sean, 2026-11-28), laid on the part's top face; the oven consumes them, so they still count.
     /// </summary>
     private static Piece[]? Make(ConstructPartDef d, AssembleRecipe? r = null)
@@ -511,19 +513,20 @@ public static class BakeKits
         return [.. pieces];
     }
 
-    /// <summary>A row's main material: the one it takes most units of (0: none).</summary>
+    /// <summary>A row's main material: the one it takes most units of (0: none). Never cloth: a Lift Cell's envelope is a sheet over its frame (phase 4).</summary>
     private static byte MainMaterial(AssembleRecipe r)
     {
         byte best = 0;
         var most = 0;
+        var cloth = RecyclingTable.Current.IdOf("cloth");
         foreach (var (m, u) in r.Materials)
-            if (u > most)
+            if (u > most && m != cloth)
                 (best, most) = (m, u);
         return best;
     }
 
     /// <summary>
-    /// A rule kit's extra pieces: a rubber or concrete sheet for each of those its row takes that isn't the kit's own material, then its
+    /// A rule kit's extra pieces: a rubber, concrete or cloth sheet for each of those its row takes that isn't the kit's own material, then its
     /// component parts (each batch's count), laid in rows on the part's top face, a layer over the last when one is full. Null: one can't be
     /// made (the log says which).
     /// </summary>
@@ -539,7 +542,7 @@ public static class BakeKits
         // The sheets: as wide as the part's top face is (0.1 to 32 m), as long as it (5 cm steps), 1 cm thick, along its longer side.
         foreach (var (m, _) in r.Materials)
         {
-            if (m == mat || RecyclingTable.Current.NameOf(m) is not ("rubber" or "concrete"))
+            if (m == mat || RecyclingTable.Current.NameOf(m) is not ("rubber" or "concrete" or "cloth"))
                 continue;
             var alongX = size.X >= size.Z;
             var w = Math.Clamp((int)MathF.Round((alongX ? size.Z : size.X) * 100), Extrusion.MinSectionCm, Extrusion.MaxSectionCm);

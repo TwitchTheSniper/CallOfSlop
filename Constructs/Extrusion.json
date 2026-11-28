@@ -17,7 +17,8 @@
     { "material": "stone", "unitsPerM3": 250, "healthPerM3": 2400, "armourPerCm": 1.5, "maxArmour": 40, "class": "concrete" },
     { "material": "concrete", "unitsPerM3": 250, "healthPerM3": 3000, "armourPerCm": 2, "maxArmour": 50, "class": "concrete" },
     { "material": "glass", "unitsPerM3": 160, "healthPerM3": 900, "armourPerCm": 0, "maxArmour": 0, "class": "glass" },
-    { "material": "rubber", "unitsPerM3": 120, "healthPerM3": 1800, "armourPerCm": 1, "maxArmour": 12, "class": "rubber" }
+    { "material": "rubber", "unitsPerM3": 120, "healthPerM3": 1800, "armourPerCm": 1, "maxArmour": 12, "class": "rubber" },
+    { "material": "cloth", "unitsPerM3": 267, "healthPerM3": 730, "armourPerCm": 0, "maxArmour": 0, "class": "cloth" }
   ],
   "airfoils": [
     { "id": "airfoil", "label": "Airfoil", "cl0": 0.3, "stall": 15, "cd0": 0.012, "cells": ["........", "........", "..###...", ".#####..", "#######.", "########", "........", "........"] },

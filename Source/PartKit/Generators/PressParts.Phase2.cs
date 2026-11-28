@@ -112,6 +112,9 @@ public sealed partial class PressParts
         ("Computer", "control", "computer", "hollow", "steel", "Circuit Board", true, 4),
         ("Turret Module", "button", "turretmodule", "plate", "steel", "rubber", false, 1),
         ("Driving Module", "button", "drivingmodule", "plate", "steel", "rubber", false, 1),
+        // Phase 4 (2026-11-28): the Thruster Jig's one item, the Decoupler, a bolted plate with its charge's board: on the Button die. Its
+        // placed rows (jets, lift fans, rockets, repulsors) and the Sewing Table's Lift Cells bake from kits instead (BakeKits.ByRule).
+        ("Decoupler", "button", "decoupler", "plate", "steel", "Circuit Board", true, 1),
     ];
 
     private static DieSpec RangeOf(string die) =>

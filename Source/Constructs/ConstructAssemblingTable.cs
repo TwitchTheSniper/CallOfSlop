@@ -68,10 +68,10 @@ public sealed class AssemblingTable
     /// back (<see cref="LegacyChoice"/>). A row only ever goes at the end of a family's list (.claude/rules/production.md); if one
     /// is ever taken out again, its place is kept here the same way, under a new mark.
     /// </summary>
-    public const string RowsMark = "asm-rows-2026-11-28-press-phase2";
+    public const string RowsMark = "asm-rows-2026-11-28-tools-phase4";
 
     /// <summary>Every rows mark there has been, oldest first (<see cref="RowsMark"/> is the last): a file's level is the newest one it names.</summary>
-    public static readonly string[] Marks = ["asm-rows-2026-11-24", "asm-rows-2026-11-24-arms", "asm-rows-2026-11-26-servo", "asm-rows-2026-11-28-control-unit", RowsMark];
+    public static readonly string[] Marks = ["asm-rows-2026-11-24", "asm-rows-2026-11-24-arms", "asm-rows-2026-11-26-servo", "asm-rows-2026-11-28-control-unit", "asm-rows-2026-11-28-press-phase2", RowsMark];
 
     /// <summary>
     /// The rows taken out, by the mark that took them (its place in <see cref="Marks"/>): each group stood right after its After row, and
@@ -87,6 +87,8 @@ public sealed class AssemblingTable
     /// Assembler's first row, so its group and those of marks 3 and 2 (once keyed on it) stand at the start of the list: an After of "" is
     /// before the plain family's first row, and their old choices become no recipe (the part is pressed). The start groups go in the old
     /// list's order: Bearing (4), Control Unit (3), Servo Motor (2).
+    /// Mark 5 (2026-11-28; retiring the Assembler, phase 4): the Decoupler, the Thruster Jig's one item, pressed on the Button die. It stood
+    /// after the Capital Rocket Engine (a kit row now, still in the list); an old choice of it builds the Medium Decoupler, its nearest row.
     /// </summary>
     private static readonly (int Mark, string After, string[] Gone, string? To)[] Removed =
     [
@@ -120,6 +122,7 @@ public sealed class AssemblingTable
         (4, "Ship Mess Table", ["Ship Toilet"], null),
         (4, "Parts Shelf", ["Requisition Crate"], null),
         (4, "Deck Speed Dial", ["Fire Director", "Long Range Sensor"], null),
+        (5, "Capital Rocket Engine", ["Decoupler"], "Medium Decoupler"),
     ];
 
     private Dictionary<(int, int), int[]>? _legacy; // per (family, file level): an old choice (1 + its place in the old list) to this table's choice

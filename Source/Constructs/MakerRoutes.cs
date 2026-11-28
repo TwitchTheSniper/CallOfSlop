@@ -39,7 +39,7 @@ public static class MakerRoutes
             return Route.PressedNow;
         if (!d.PhysicsOnly)
             return Route.Press; // (an item: a hand carries it, so a press line's pieces size it; not yet sorted die by die)
-        return Route.Assembler; // (a tool block's row, phase 4, or a part whose boxes make no kit: the log says why)
+        return Route.Assembler; // (a part whose boxes make no kit: the log says why; the tool rows bake since phase 4)
     }
 
     /// <summary>How many extrusions its box kit would hold: its solid, drawn boxes (BakeKits.Make's rule).</summary>
@@ -131,7 +131,7 @@ public static class MakerRoutes
         summary.AppendLine("  placed parts by the smallest oven that holds them whole (a big one is made as sub-assemblies where it splits):");
         for (var k = 0; k <= Ovens.Length; k++)
             summary.AppendLine($"    {OvenName(k)}: {byOven[k]}");
-        summary.AppendLine($"  rows needing a tool block (Thruster Jig, Sewing Table): {tools}");
+        summary.AppendLine($"  rows naming a tool block (Thruster Jig, Sewing Table: an Assembler's fallback where no oven serves): {tools}");
         summary.AppendLine($"  baked parts split into sub-kits for smaller ovens: {split}");
         ShareLines(summary, "every baked part, one of each", wholeShare, splitShare);
         if (Arg("--build") is { } build)
