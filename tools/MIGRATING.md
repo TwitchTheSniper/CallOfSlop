@@ -79,7 +79,7 @@ The game's built-in sound levels are now the **SeabMix2** mix: your own gun, oth
 
 ### Control Units fold into Circuit Boards; no Gear Sets in guns or thrusters (2026-11-28)
 
-The **Control Unit** is no longer made: everything that took one now takes 2 **Circuit Boards** instead. A world saved before this update has its Assemblers' recipe choices moved to match when it loads (an Assembler that was set to build Control Units builds **Circuit Boards** instead). Control Units you already hold stay in your stores but nothing uses them: recycle them. Guns, gun receivers and thrusters no longer take **Gear Sets**; gearboxes, differentials, shafts and other drivetrain parts still do.
+The **Control Unit** is no longer made: everything that took one now takes 2 **Circuit Boards** instead. A world saved before this update has its Assemblers' recipe choices moved to match when it loads (Circuit Boards are pressed, so an Assembler that was set to build Control Units builds **Bearings** instead: pick its recipe again). Control Units you already hold stay in your stores but nothing uses them: recycle them. Guns, gun receivers and thrusters no longer take **Gear Sets**; gearboxes, differentials, shafts and other drivetrain parts still do.
 
 ### Servo Motors and the Zero Day Works II in a saved world (2026-11-26)
 

@@ -78,9 +78,10 @@ public sealed class AssemblingTable
     /// an old choice of a gone row becomes its To row's (null: After's). Mark 0: the refiner block machines' Workshop to Plasma tiers.
     /// Mark 1 (2026-11-24): the fixed loader arms, now kit presets (an old choice builds an Arm Core; MIGRATING.md).
     /// Mark 2 (2026-11-26): the Servo Motor, now pressed (an Actuator Die round a Copper Coil; an old choice built the Control Unit before it,
-    /// and builds the Circuit Board since mark 3 took that row).
-    /// Mark 3 (2026-11-28, Sean): the Control Unit, folded into 2 Circuit Boards (an old choice builds the Circuit Board before it). Its
-    /// tuple stands before mark 2's: in the old list the Servo Motor came after the Control Unit, and a group inserts in this order.
+    /// and builds the Bearing since mark 3 took that row).
+    /// Mark 3 (2026-11-28, Sean): the Control Unit, folded into 2 Circuit Boards (pressed, so no Assembler row: an old choice builds the
+    /// Bearing before it). Both groups key on the Bearing, the row left before them, mark 3's first: in the old list the Servo Motor came
+    /// after the Control Unit, and groups after one row insert in this order.
     /// </summary>
     private static readonly (int Mark, string After, string[] Gone, string? To)[] Removed =
     [
@@ -91,8 +92,8 @@ public sealed class AssemblingTable
         (1, "Lifter Cab", ["Loader Arm", "Military Loader Arm", "Plasma Loader Arm", "Workshop Loader Arm"], "Arm Core"),
         (1, "Half Shell", ["Module Fitter S"], "Arm Core"),
         (1, "Press Bed Block", ["Heavy Loader Arm", "Shipyard Loader Arm", "Long Loader Arm"], "Arm Core"),
-        (3, "Circuit Board", ["Control Unit"], null),
-        (2, "Circuit Board", ["Servo Motor"], null),
+        (3, "Bearing", ["Control Unit"], null),
+        (2, "Bearing", ["Servo Motor"], null),
     ];
 
     private Dictionary<(int, int), int[]>? _legacy; // per (family, file level): an old choice (1 + its place in the old list) to this table's choice
