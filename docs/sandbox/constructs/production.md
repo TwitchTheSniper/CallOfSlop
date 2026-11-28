@@ -2878,6 +2878,6 @@ the work spreads over every oven size instead of everything waiting on the big o
 - **Trying it.** `--bake-kit split:N` builds every Nth split part's sub-kits from their blueprints and at a turn, bakes each into its baked
   part, then builds the split kit with them and bakes it into the part (2026-11-28: all 103 split parts with a big-oven whole pass).
   `--station-check SITE --oven-order PART` lists every oven's answer and the Extruders when the order is refused; `--fill-extruder
-  X,Z,MATERIAL,N` fills the nearest Extruder's hopper. On Zero Day Works II the frigate's 300 s run fitted 19, 16 and 16 of 346 in three runs (main 19): none of
+  X,Z,MATERIAL,N` fills the nearest Extruder's hopper. On Zero Day Works II the frigate's 300 s run fits 19 of 346, as main does (twice each); none of
   its oven kits splits (they fit the small oven, or are listed). The split candidates there all carry a concrete, rubber or cloth sheet
   or pieces wider than its lines make, so the chain station, small oven, lifter, station, big oven hasn't run on a shipped works yet.
