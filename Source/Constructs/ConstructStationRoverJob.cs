@@ -593,6 +593,7 @@ public static partial class ConstructStation
     {
         var g = GroundOf(c, t, j);
         var looks = 0;
+        var blocked = 0;
         for (var i = 0; i < j.PartOf.Length && looks < AssignLooks; i++)
         {
             var k = order != null ? order[i] : i;
@@ -649,7 +650,14 @@ public static partial class ConstructStation
             var turn = Quaternion.Normalize(Quaternion.Conjugate(BayRot(c, t)) * j.Rot * (j.Plan is { } lp && k < lp.Rot.Length ? lp.Rot[k] : Quaternion.Identity));
             var planned = Plan(world, c, t, j, docks, n, best, bestPick, place, d, g, turn);
             if (planned == PlanBlocked)
-                return false; // (no clear trip yet: it waits for the way to clear, and the next look tries again; one blocked step a look)
+            {
+                // (no clear trip yet: this step waits for the way to clear and the next look tries it again; meanwhile the steps after it
+                // still go, or one rover mid-trip held every idle one: Works II's frigate fitted 10 of 346 in 300 s against 19. Bounded:
+                // BlockedLooks blocked plans a look)
+                if (++blocked >= BlockedLooks)
+                    return false;
+                continue;
+            }
             if (planned != PlanOk)
                 continue;
             Begin(world, c, j, best, k, (ushort)d.Id, bestFrom >= 0 ? (ushort)bestFrom : None);
@@ -665,6 +673,7 @@ public static partial class ConstructStation
         return rot;
     }
 
+    public const int BlockedLooks = 4; // blocked plans (each up to PlanTries clash checks) one look may make before it waits for the next
     private const int PlanOk = 0, PlanNoReach = 1, PlanBlocked = 2;
     public const int PlanShifts = 6; // stands slid along the lane at once (1 to 3 rover widths each way), before any later start
     public const int PlanTries = 48, PlanTriesMany = 24; // clash checks one plan may make: the slides, then later starts (more than 4 rovers: fewer, each costs more)
