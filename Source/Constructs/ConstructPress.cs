@@ -1527,6 +1527,8 @@ public static partial class ConstructPress
             card.Add(1, "Cuts: ").Add(1, row == null ? "nothing" : row.Output.Name);
         else
             card.Add(1, "Die: ").Add(1, die >= 0 ? c.Parts[die].D.Name : "none");
+        if (!d.IsLathe && d.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var sasm) && sasm.W > 0)
+            card.Add(0, " x").AddFixed(0, Speed(c, part), 1); // (its speed from its blocks: the look line leaves it out)
         if (!d.IsLathe && SizedDieOf(PressTable.Current, c, part) is { } sized)
         {
             // The Pattern: the set one's label, or on Auto what the ready blank makes.
@@ -1594,15 +1596,13 @@ public static partial class ConstructPress
             state += $", tray {st.Items}";
         if (!d.IsLathe && SizeText(c, part) is { Length: > 0 } size)
             state += ", " + size; // (a Press Core: its bed, daylight and speed from its blocks)
-        if (ConstructConveyor.Out(c, part) >= 0)
-            state += ", what it makes leaves on its Piece out conveyor";
         string? problem = p.Broken ? "wrecked"
             : st.Held ? "held off by its Run wire"
             : st.Busy ? null
             : (PressStall)st.Refused switch
             {
                 PressStall.None => null,
-                PressStall.Bay2Short when sized != null && KitWanted(sized, c, part, out var need, out _) is { } kit => $"needs {need} {kit.What} in bay 2, holds {KitHeld(st, kit)}",
+                PressStall.Bay2Short when sized != null && KitWanted(sized, c, part, out var need, out _) is { } kit => KitHeld(st, kit) is var kh and > 0 ? $"needs {need} {kit.What} in bay 2, holds {kh}" : $"needs {need} {kit.What} in bay 2",
                 PressStall.Wants when sized != null => $"needs a blank in a bay: {SectionName(sized.Blanks[0]).ToLowerInvariant()}{(sized.Blanks.Length > 1 ? " or another" : "")}, {sized.AcrossMin / 100f:0.00} to {Math.Min(sized.AcrossMax, MaxCm(c, part)) / 100f:0.00} m across",
                 PressStall.Wants when row != null => "needs " + Wants(row, c, part),
                 var s => StallText(s).ToLowerInvariant(),
@@ -1615,7 +1615,7 @@ public static partial class ConstructPress
         else if (why != BayRefuse.None)
             problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && SpecFor(row, bay) is { } want ? ", wants " + Spec(want) : "");
         if (!p.Broken && !st.Busy && DieWanted(c, part) is { } wanted)
-            problem = $"its order needs the {wanted.Family} Die: waits for it from a Die Rack (a chute, or a Loader Arm)"; // (PressDieSwap.cs, PressDieArm.cs: from the rack, or given back by a press sharing it)
+            problem = $"waiting for the {wanted.Family} Die from a Die Rack"; // (PressDieSwap.cs, PressDieArm.cs: from the rack, or given back by a press sharing it)
         string? action = null;
         if (near)
         {
@@ -1634,7 +1634,7 @@ public static partial class ConstructPress
         var h = 17;
         for (var b = 0; b < c.Parts[part].D.PressBays.Length; b++)
             h = h * 31 + (PieceIn(c, part, b) is var i and >= 0 ? (int)c.Parts[i].D.ExKey.Stable() : 0);
-        return (h * 31 + (DieIn(c, part) is var k and >= 0 ? c.Parts[k].Def : 0)) * 2 + (ConstructConveyor.Out(c, part) >= 0 ? 1 : 0); // (and whether a Piece out conveyor leads away)
+        return h * 31 + (DieIn(c, part) is var k and >= 0 ? c.Parts[k].Def : 0);
     }
 
     private static string Spec(PressBaySpec s) => $"{RecyclingTable.Current.NameOf(s.Materials[0])} {SectionName(s.Sections[0]).ToLowerInvariant()}";

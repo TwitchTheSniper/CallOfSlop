@@ -382,7 +382,7 @@ public static partial class ConstructLaserCutter
         ExtrudeStall.ConveyorSmall => $" - conveyor too narrow for the cut part - aim the linking tool at it: wheel or {SandboxKeys.Reload} to widen",
         ExtrudeStall.ConveyorFull => " - blocked: its conveyor is full",
         ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
-        ExtrudeStall.NoOrders => ", waiting for orders (a cut part's order: a designer, a terminal or a bill)",
+        ExtrudeStall.NoOrders => ", waiting for orders",
         _ => st.Busy ? ", cutting" : ", waiting",
     };
 

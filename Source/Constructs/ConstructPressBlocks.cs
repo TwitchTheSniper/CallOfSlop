@@ -97,13 +97,13 @@ public static partial class ConstructPress
             : $"too big: this press has {day:0.0} m of daylight and a {width / 100f:0} m bed, widen the bed";
     }
 
-    /// <summary>What the screen and the look line say of the press's size: "bed 3 x 2, 1.6 m of daylight, speed x1.3".</summary>
+    /// <summary>What the look line says of the press's size: "bed 3 x 2 (6.0 x 4.0 m), 1.60 m of daylight" (its speed is on its screen: FillDie).</summary>
     public static string SizeText(Construct c, int part)
     {
         if (c.Parts[part].D.BlockRole != BlockRole.Core || !MachineBlocks.TryOf(c, part, out var asm))
             return "";
         var s = asm.W == 0 ? MachineBlocks.Describe(c, asm) : $"{MachineBlocks.Describe(c, asm)}, {MaxCm(c, part) / 100f:0.00} m of daylight";
         var swing = SwingText(c, part);
-        return swing.Length > 0 ? $"{s}, speed x{Speed(c, part):0.0}, {swing}" : $"{s}, speed x{Speed(c, part):0.0}";
+        return swing.Length > 0 ? $"{s}, {swing}" : s;
     }
 }

@@ -214,7 +214,7 @@ public static partial class ConstructPress
             return "";
         var b = asm.Blocker;
         if (MachineBlocks.AsmOf(c, b) == MachineBlocks.AsmOf(c, part))
-            return $"a {c.Parts[b].D.Name} stacked on the bed stands where the lid shuts: take the blocks off the bed (the press has no walls now)";
+            return $"a {c.Parts[b].D.Name} stacked on the bed stands where the lid shuts: take the blocks off the bed";
         return $"the lid's swing hits the {c.Parts[b].D.Name}: keep {SwingReach(asm, c.Parts[part].D.BlockCell):0.#} m out from the hinge side clear, from the frame's top up";
     }
 

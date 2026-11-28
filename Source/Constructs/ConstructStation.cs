@@ -432,7 +432,7 @@ public static partial class ConstructStation
         else
             sb.Append(StateText(j));
         if (!ConstructRecycler.Powered(world, c, t))
-            sb.Append(" - NO POWER: it waits");
+            sb.Append(" - no power");
         if (st.ItemCount > 0)
             sb.Append($", {st.ItemCount} in the hold");
         if (j is { Note.Length: > 0 })

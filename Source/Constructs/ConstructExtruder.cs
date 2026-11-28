@@ -1125,7 +1125,7 @@ public static partial class ConstructExtruder
                 ExtrudeStall.ConveyorFull => FormerOutFull(c, part),
                 ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
                 ExtrudeStall.OrderTooLong => " - " + (WorkOrders.HeadOf(c.Parts[part], out var bh) && bh.Name != null && ConstructParts.Find(bh.Name) is { } bp ? ConstructPanelFormer.BedRefusal(c, part, bp) ?? "its bed changed" : "its bed changed") + ", or Cancel it",
-                ExtrudeStall.NoOrders => ", waiting for orders (Queue on its screen, or a Line Console's bill)",
+                ExtrudeStall.NoOrders => ", waiting for orders",
                 _ => st.Busy ? ", forming" : ", waiting",
             };
         var wheel = d.IsWheelFormer;
@@ -1146,7 +1146,7 @@ public static partial class ConstructExtruder
             ExtrudeStall.ConveyorSmall => $" - conveyor too narrow{ConveyorSize(c, part)} - aim the linking tool at it: wheel or {SandboxKeys.Reload} to widen",
             ExtrudeStall.ConveyorFull => " - blocked: its conveyor is full",
             ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
-            ExtrudeStall.NoOrders => ", waiting for orders (Clear on its screen: back to its own settings)",
+            ExtrudeStall.NoOrders => ", waiting for orders",
             ExtrudeStall.OrderMaterial => $" - needs {(c.Parts[part].Orders is { Count: > 0 } q ? RecyclingTable.Current.NameOf(q.Head.Key.Material) : "another material")} for its order, holds {RecyclingTable.Current.NameOf(st.Material)}",
             ExtrudeStall.OrderTooLong => c.Parts[part].Orders is { Count: > 0 } lq ? $" - its order is {lq.Head.Key.L / 100f:0.##} m long, it makes {MaxLengthCm(c, part) / 100f:0.##} m now: {LongFix(d, lq.Head.Key.L, lq.Head.Key.W, lq.Head.Key.H)}, or Cancel it" : " - its order is longer than it makes now",
             _ => st.Busy ? (wheel ? ", forming" : IsPress(c, part) ? ", " + PhaseName(PhaseOf(st)) : ", extruding") : ", waiting",
@@ -1230,8 +1230,6 @@ public static partial class ConstructExtruder
                 sb.Append($" - {SandboxKeys.Use}: tip in {Math.Max(0, Math.Min(inv.Materials[tip], ConstructStorage.Capacity(c, part) - st.Amount))} {names.NameOf(tip)}");
             else if (st.Amount > 0)
                 sb.Append($" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}");
-            if (ExtruderPicks.Pickable(d) && ConstructEdits.HasRecipeButton(d))
-                sb.Append(" - Recipe on its screen: section and size");
         }
         return sb.ToString();
     }
