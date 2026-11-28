@@ -35,7 +35,7 @@ public static partial class SelfTest
         var table = ExtrusionTable.Current;
         var names = RecyclingTable.Current;
         want(table.Problem.Length == 0 && table.Find(names.IdOf("metal")) != null && table.Find(names.IdOf("planks")) != null, $"the shipped table (\"{table.Problem}\")");
-        want(table.Find(names.IdOf("rubber")) == null && table.Find(0) == null, "rubber or nothing can be extruded");
+        want(table.Find(names.IdOf("circuits")) == null && table.Find(0) == null, "circuits or nothing can be extruded"); // (rubber can since phase 3: a rule kit's sheets, 2026-11-28)
         (string Json, string Want)[] bad =
         [
             ("{", "depth"), ("{\"format\": \"nope\"}", "format"), ("{\"format\": \"call-of-slop-extrusion/1\"}", "materials"),

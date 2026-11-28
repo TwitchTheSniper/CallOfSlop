@@ -2803,7 +2803,9 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   one that fits has `SpillAt` (4) more orders queued (`ConstructBakeOven.Rank`, used by a station's ask and by chains). **Assemblers:** the
   Assembler stays a fallback until phase 6. A listed kit's part no Assembler builds, as before; a rule kit's part an Assembler refuses
   only while a Bake Oven on its construct takes the order (`BakeKits.OvenServes`: `OrderRefusal`, the kit's pieces made on a station's
-  line, its tunnel big enough; worked out once a second a construct and part, and the log says once which way each part went), else its
+  line, its tunnel big enough; asked quietly, with no text made, and kept in the world (`ConstructWorld.OvenServed`) a construct and part:
+  again when the body is rebuilt or every 2 s of `SealTick`, which both peers advance, staggered by the key, at most `ServeBudget` (8)
+  work-outs a quarter second; the log says once which way each part went), else its
   row builds it (orders, chains, the catalogue, `MachineMakes`). A component a station asks for a bake kit it builds ranks Low at its
   maker (`ConstructCrafting.AskRank`), so the fittings' Bearings never hold the ship's own pressed parts. **`--maker-report`** prints each baked part's tree (its
   pieces, sub-kits and the oven each bakes on) and the work per oven size, whole kits against split ones: a kit too big for the small oven

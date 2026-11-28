@@ -26,6 +26,7 @@ public static class StationCheck
             return 1;
         }
         var place = VehicleDriveCheck.Place(1);
+        BakeKits.Warm(); // (as a match's start does: every kit made here, not in the first ticks; the log says its cost)
         var w = new ConstructWorld { CreativeRecycling = true };
         var q = new SelfTest.DriveWorld();
         var job = new ConstructBuild.GroundJob(w, bp, null);
