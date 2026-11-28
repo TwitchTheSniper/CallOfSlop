@@ -630,7 +630,7 @@ public static partial class SelfTest
             w.FeedPart(bay, asm, piston);
             w.FeedPart(bay, asm, ConstructParts.Need("Wiring Loom"));
             w.FeedAssembler(bay, asm, 8, steel);
-            if (!Await(() => Store(a) is { Blocked: not 0 } && Store(late) is { Blocked: not 0 }, 16, [a, late]))
+            if (!Await(() => Store(a) is { Blocked: not 0 } && Store(late) is { Blocked: not 0 }, 30, [a, late])) // (an Engine batch is 20 s since the Assembly Bay lost its Overdrive Unit, phase 6)
                 Fail($"assembling network: nobody heard the blocked output (host {st.Blocked}, client \"{LookOf(a)}\")");
             else if (!LookOf(late).Contains("in the way of its output"))
                 Fail($"assembling network: the joiner's look line: \"{LookOf(late)}\"");

@@ -286,7 +286,7 @@ public static class WorkOrders
     public static string CatalogueMaker(in WorkOrder o) =>
         o.IsMade ? (ConstructParts.Get(o.Part) is { } md && md.Name == o.Name && BakeKits.Has(md) ? "a Bake Oven" : "an Assembler")
         : o.IsPiece || o.Name != null ? "another machine"
-        : ConstructParts.Get(o.Part) is { } d && BakeKits.Has(d) ? "a Bake Oven"
+        : ConstructParts.Get(o.Part) is { } d && BakeKits.Has(d) && BakeKits.OffAssembler(d) ? "a Bake Oven" // (a giant part no oven holds is still an Assembler's: phase 6)
         : Pressed.SpecOf(o) != null ? "a Press"
         : "an Assembler";
 
