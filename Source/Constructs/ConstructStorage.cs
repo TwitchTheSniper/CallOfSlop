@@ -388,7 +388,7 @@ public static class ConstructStorage
 
     /// <summary>
     /// A shelf that holds a physics-only part all the same: an Assembler's tool block on a rack (a Block Rack, or a Die Rack it fits), so a
-    /// chute can swap it into a Tool Bay (AssemblerToolBay). Taken out by hand, it leaves as a body, as every physics-only part does.
+    /// chute could swap it into an Assembler's Tool Bay, retired in phase 6 of retiring the Assembler). Taken out by hand, it leaves as a body, as every physics-only part does.
     /// </summary>
     public static bool RackHolds(in CSlotDef s, ConstructPartDef d) => s.Rack && d.BlockRole == BlockRole.Tool;
 

@@ -189,19 +189,17 @@ public static class WorkOrders
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} parts";
         if (BakeKits.AssemblerRefuses(world, c, made))
-            return $"the {made.Name} is baked from a kit of extrusions: a Bake Oven's order (Sean, 2026-11-23; every placed part, 2026-11-28)";
+            return PressTable.Current.PresetKeyOf(made) != null ? $"the {made.Name} is pressed: a Press's order (the Assembler builds only what no press or oven makes, 2026-11-28)"
+                : $"the {made.Name} is baked from a kit of extrusions: a Bake Oven's order (the Assembler builds only what no press or oven makes, 2026-11-28)";
         if (AssemblingTable.Current.Of(o.Part) is not { } r)
             return FormerPresets.Line(made) ?? $"no recipe makes the {made.Name}";
         if (r.Machine != d.AsmMachine)
             return $"the {made.Name} is made by a {FamilyName(r.Machine)}, not the {d.Name}";
         if (r.MinTier > d.Tier)
             return $"the {made.Name} needs a tier {r.MinTier} {FamilyName(r.Machine)} (this is tier {d.Tier})";
-        // A block Assembler builds only what its bed and clear height hold, and only with the modules a recipe needs: taken, such an
-        // order would sit at the head of the queue as Too big or Needs module for good (a 17 m frigate deck on an 8 x 8 m bed). A tool
-        // block isn't checked: a chute from a Block Rack swaps it in (AssemblerToolBay).
+        // A block Assembler builds only what its bed and clear height hold: taken, such an order would sit at the head of the queue as Too
+        // big for good (a 17 m frigate deck on an 8 x 8 m bed). (No upgrade modules or tool blocks since phase 6, 2026-11-28.)
         var fit = ConstructAssembling.FitOf(c, part);
-        if (fit.Missing(r) is var missing and not 0)
-            return $"the {made.Name} needs {AsmFit.ModuleWords(missing)} on the {d.Name}";
         if (fit.AtOnce(made) <= 0)
         {
             fit.Footprint(made, out var fx, out var fz, out _);

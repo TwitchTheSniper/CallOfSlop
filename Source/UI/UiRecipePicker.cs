@@ -297,6 +297,8 @@ public sealed partial class Ui
             for (var k = 0; k < list.Length; k++)
             {
                 var r = list[k];
+                if (BakeKits.OffAssembler(r.Output))
+                    continue; // (a press or an oven makes it: the row is its bill, not the Assembler's: retiring the Assembler, phase 6)
                 var g = SandboxCatalogue.Classify(r.Output).Group;
                 if (!groupOf.TryGetValue(g, out var gi))
                 {
@@ -320,7 +322,7 @@ public sealed partial class Ui
                 Inputs(t, ins);
                 t.Search = $"{r.Name} {r.Batch} {g}".ToLowerInvariant();
                 t.Tip = ok
-                    ? $"{r.Name}{(r.Count > 1 ? $" x{r.Count}" : "")}: {r.Batch}, {Secs(r.Seconds / speed)} a batch on this {d.Name}.{(r.Needs != 0 ? $" Needs {AsmFit.ModuleWords(r.Needs)} on the Core." : "")}"
+                    ? $"{r.Name}{(r.Count > 1 ? $" x{r.Count}" : "")}: {r.Batch}, {Secs(r.Seconds / speed)} a batch on this {d.Name}."
                     : $"{r.Name}: needs a tier {r.MinTier} assembler; this one is tier {d.Tier}.";
                 tiles.Add(t);
             }

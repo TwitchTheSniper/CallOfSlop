@@ -1001,12 +1001,9 @@ public sealed class Assembling : IPartGenerator
         // (the Assembler on the block system, Sean 2026-11-21: AssemblerParts; the Overdrive Unit and Feed Buffer by hand, as the tier pieces)
         ("Assembler", "Assembler", null),
         ("Assembler", "Assembly Bed Block", null),
-        ("Assembler", "Gantry Carriage", null),
-        (null, null, Rec("Overdrive Unit", 60, 1, m: [("steel", 40), ("copper", 30), ("rubber", 6)], p: [("Gear Set", 2), ("Wiring Loom", 1)])),
-        (null, null, Rec("Feed Buffer", 30, 1, m: [("steel", 45), ("rubber", 4)], p: [("Gear Set", 1)])),
-        // (Assembler PR 3: its tool blocks and the Block Rack, the Die Rack at 2 m bays)
-        ("Assembler", "Thruster Jig Block", null),
-        ("Assembler", "Sewing Table Block", null),
+        // (retiring the Assembler, phase 6: the Gantry Carriage, Overdrive Unit, Feed Buffer, Thruster Jig Block and Sewing Table Block are
+        // retired stand-ins, rows mark 7: AssemblingTable.Removed)
+        // (Assembler PR 3: the Block Rack, the Die Rack at 2 m bays)
         ("Assembler", "Block Rack", null),
         // (the Cloche, the farmers' greenhouse ship, Karl 2026-11-21: ClocheParts; in the folder's file order of 2026-11-21)
         ("Cloche", "Cloche Aft Bulkhead", null),
@@ -1259,26 +1256,13 @@ public sealed class Assembling : IPartGenerator
         o.File("Constructs/Assembling.json", Layout(recipes));
     }
 
-    // ---- Upgrade modules in place of tiers (the Assembler on the block system, Sean 2026-11-21: no tiers on the Assembler)
-
-    // What each input asks of the Assembler's Core: the upgrade module that unlocks it (MachineBlocks.TierPieceNames).
-    private static readonly Dictionary<string, string> ModuleOf = new(StringComparer.Ordinal)
-    {
-        ["copper"] = "Power Coupling", ["Copper Coil"] = "Power Coupling", ["Wiring Loom"] = "Power Coupling", ["Servo Motor"] = "Power Coupling",
-        ["bronze"] = "Coolant Loop", ["Bearing"] = "Coolant Loop", ["Piston Set"] = "Coolant Loop", ["Turbine Stage"] = "Coolant Loop",
-        ["gold"] = "Servo Rack", ["circuits"] = "Servo Rack", ["Circuit Board"] = "Servo Rack",
-        ["levite"] = "Plasma Conditioner", ["Field Coil"] = "Plasma Conditioner", ["Levite Core"] = "Plasma Conditioner",
-    };
-
-    private static readonly string[] ModuleOrder = ["Power Coupling", "Coolant Loop", "Servo Rack", "Plasma Conditioner"];
-
-    // The modules themselves need none (a bare Core makes its first ones), and so do the Assembler's own pieces' modules' inputs' makers.
-    private static readonly HashSet<string> NeedsNothing = new(StringComparer.Ordinal) { "Power Coupling", "Coolant Loop", "Servo Rack", "Plasma Conditioner", "Overdrive Unit", "Feed Buffer" };
+    // ---- No tiers, no upgrade modules, no Tool Bay (retiring the Assembler, phase 6, 2026-11-28: the Assembler on the block system had
+    // upgrade modules in place of tiers, Sean 2026-11-21, and a Tool Bay from Assembler PR 3; both went with its retired pieces)
 
     /// <summary>
-    /// Each recipe's "needs" from its inputs, in place of "minTier" (size no longer gates anything: the bed sets it), anti-grav to the Plasma
-    /// Conditioner; and the thruster and tailor families' rows, folded into the one Assembler, go to the end of the list (saved recipe
-    /// numbers before them keep), each naming the tool block it will need ("tool", the Tool Bay of Assembler PR 3).
+    /// Each recipe's old tier as "techTier" (how advanced the part is: faction vehicles and loot tables read it), and the thruster and tailor
+    /// families' rows, folded into the one Assembler, at the end of the list (saved recipe numbers before them keep). A row names no "needs"
+    /// (upgrade modules) and no "tool" (a Tool Bay block) since phase 6.
     /// </summary>
     private static void Modules(List<PyDict> recipes)
     {
@@ -1293,21 +1277,8 @@ public sealed class Assembling : IPartGenerator
             if (tech > 1)
                 r["techTier"] = tech;
             var output = (string)r["output"]!;
-            var needs = new HashSet<string>(StringComparer.Ordinal);
-            if (!NeedsNothing.Contains(output))
-            {
-                foreach (var key in ((r.Get("materials") as PyDict)?.Keys ?? []).Concat((r.Get("parts") as PyDict)?.Keys ?? []))
-                    if (ModuleOf.TryGetValue(key, out var m))
-                        needs.Add(m);
-                if (output.Contains("Anti-Grav", StringComparison.Ordinal))
-                    needs.Add("Plasma Conditioner");
-            }
-            var tool = r.Get("machine") as string;
+            var tool = r.Get("machine") as string; // (its old family: where its row stands in the list)
             r.Remove("machine");
-            if (!string.IsNullOrEmpty(tool))
-                r["tool"] = tool;
-            if (needs.Count > 0)
-                r["needs"] = ModuleOrder.Where(needs.Contains).Select(m => (object?)m).ToList();
             if (!string.IsNullOrEmpty(tool))
             {
                 folded.Add(r);

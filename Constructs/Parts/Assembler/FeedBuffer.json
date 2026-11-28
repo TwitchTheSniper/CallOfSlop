@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Feed Buffer",
-  "description": "An Assembler's upgrade module: bolt it on an upgrade slot on the Core's back. Its Assembler's hopper holds twice as many batches, for each one fitted (4 count at most). It does nothing on another machine.",
+  "description": "Retired Assembler part (was the Feed Buffer): it does nothing now. Recycle it for its materials.",
   "group": "Production",
   "section": "Extrusion",
   "role": "frame",
@@ -12,12 +12,9 @@
   "material": "steel",
   "color": "#5a6470",
   "attachSeconds": 8,
-  "machineBlock": {
-    "role": "tier",
-    "module": "buffer"
-  },
   "centreSockets": false,
   "collider": "boxes",
+  "retired": true,
   "boxes": [
     {
       "min": [

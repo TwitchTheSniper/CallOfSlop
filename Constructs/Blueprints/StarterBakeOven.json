@@ -1,0 +1,94 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Starter Bake Oven",
+  "description": "A survival world's first Bake Oven: its Core beside a 4 x 3 bed of Oven Bed Blocks (8 x 6 m, 3 m clear), with a Small Genset on a Fuel Tank at the Core's back. Set a part's kit of extrusions on the hearth (from the Starter Building Station, or welded by hand) and it bakes into the part; a one-piece kit is a single extrusion laid on the bed.",
+  "steps": [
+    {
+      "part": "Bake Oven"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 0,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 1,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 2,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 3,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 1,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 1,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 2,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 2,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 3,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 3,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 4,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Oven Bed Block",
+      "on": 4,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Small Genset",
+      "on": 0,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 13,
+      "socket": "-x",
+      "by": "+x"
+    }
+  ]
+}

@@ -238,6 +238,19 @@ public static partial class SelfTest
         }
         AssemblingTableChecks(Want);
         BigMachineChecks(Want);
+        BakeKits.TestKeep = "Engine"; // (a Bake Oven makes the Engine since phase 6 of retiring the Assembler; this section drives an Assembler's chain on it)
+        try
+        {
+            CheckAssemblingOn(yard, Want, problems);
+        }
+        finally
+        {
+            BakeKits.TestKeep = null;
+        }
+    }
+
+    private static void CheckAssemblingOn(Map yard, Action<bool, string> Want, List<string> problems)
+    {
         var names = RecyclingTable.Current;
         byte ore = names.IdOf("iron ore"), metal = names.IdOf("metal"), stone = names.IdOf("stone"), steel = names.IdOf("steel"), wood = names.IdOf("wood");
         yard.RestoreProps();
@@ -275,6 +288,8 @@ public static partial class SelfTest
             Want(line.Contains(text) && line.All(ch => ch is >= ' ' and <= '~'), $"the look line \"{line}\" should say \"{text}\"");
         }
         var engine = AssemblingTable.Current.Recipes.First(r => r.Name == "Engine");
+        Want(Recipe()?.Name == "Wheel", $"the Assembly Bay's recipe is {Recipe()?.Name}, not the Wheel");
+        ConstructConfig.Set(ref bay.Parts[asm], def, (byte)def.CfgSlot[(int)CfgKey.Recipe], engine.Choice); // (the Engine's chain: kept on the Assembler for this section, BakeKits.TestKeep)
         Want(Recipe() == engine && bay.HasAssembler && bay.RouteCount == 3 && bay.HasBattery && bay.Anchored, $"the Assembly Bay (recipe {Recipe()?.Name}, {bay.RouteCount} chutes, battery {bay.HasBattery})");
         Want(station.RouteCount == 2 && works.RouteCount == 3, $"the chutes reach the machines' ports ({station.RouteCount}, {works.RouteCount})");
 
@@ -364,26 +379,21 @@ public static partial class SelfTest
         if (Made() is { } left)
             w.Remove(left);
 
-        // ---- The module gate: an Engine needs a Power Coupling and a Coolant Loop; an Assembler with no modules refuses it and says so.
+        // ---- Retiring the Assembler, phase 6 (was the module gate, whose modules went): a part an oven or a press makes is no
+        // Assembler's, whichever recipe it is set to, and a work order for one names its maker.
         Run(0.1f);
-        var plain = ModFit(w, bay, "Assembler", "bottom", "assembling");
-        if (plain >= 0)
+        if (AssemblingTable.Current.Recipes.FirstOrDefault(r => r.Output.PhysicsOnly && r.Name != "Engine" && BakeKits.OffAssembler(r.Output)) is { } baked)
         {
             var cfg = (byte)ConstructParts.Need("Assembler").CfgSlot[(int)CfgKey.Recipe];
-            var choice = Array.IndexOf(AssemblingTable.Current.Choices, "Engine");
-            ConstructConfig.Set(ref bay.Parts[plain], bay.DefOf(plain), cfg, choice);
-            var ps = w.StoreOf(bay, plain)!;
-            Want(w.FeedAssembler(bay, plain, 20, steel) == 0 && ps.Refused == steel, $"an Assembler with no modules took steel for an Engine (refused {ps.Refused})");
-            var line = ConstructAssembling.Look(bay.DefOf(plain), ps, engine, ConstructAssembling.FitOf(bay, plain), false, inv, null);
-            Want(line.Contains("needs a Power Coupling and a Coolant Loop on the Core"), $"the module gate's look line: \"{line}\"");
-            w.RemovePart(bay, plain);
-            bay.Rebuild();
-            asm = PartNamed(bay, "Assembler");
-            steelBin = PartNamed(bay, "Materials Bin");
-            shelf = PartNamed(bay, "Parts Shelf");
+            var was = ConstructConfig.Get(bay.Parts[asm], def, CfgKey.Recipe, 0);
+            ConstructConfig.Set(ref bay.Parts[asm], def, cfg, baked.Choice);
+            Want(Recipe() == null, $"an Assembler set to the {baked.Name} (a Bake Oven's) builds it");
+            Want(WorkOrders.Queue(w, bay, asm, new WorkOrder { Part = (ushort)baked.Output.Id, Count = 1 }) is { } refusal && refusal.Contains("Bake Oven"), $"an Assembler took an order for the {baked.Name}");
+            ConstructConfig.Set(ref bay.Parts[asm], def, cfg, was);
+            Run(0.1f);
         }
         else
-            Want(false, "no room for a second Assembler on the bay");
+            Want(false, "no placed part is baked: phase 6 has nothing to refuse");
 
         // ---- A refused chute: what the recipe doesn't use stays in the source, and the look line says so.
         w.Withdraw(bay, steelBin, 100000);
@@ -496,6 +506,19 @@ public static partial class SelfTest
     /// parts, the flags, the look line, a blocked output and the mass reach everyone, and a body built reaches all of them.
     /// </summary>
     private static void CheckAssemblingNet()
+    {
+        BakeKits.TestKeep = "Engine"; // (a Bake Oven makes the Engine since phase 6 of retiring the Assembler; this section drives an Assembler on it)
+        try
+        {
+            CheckAssemblingNetOn();
+        }
+        finally
+        {
+            BakeKits.TestKeep = null;
+        }
+    }
+
+    private static void CheckAssemblingNetOn()
     {
         if (Maps.Find(ConstructYardMap) is not { } yard || yard.Sandbox is not { } sb)
         {

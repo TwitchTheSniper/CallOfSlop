@@ -62,10 +62,11 @@ public readonly struct AsmFit
     public float DrawScale => Limited ? MathF.Pow(1.8f, Overdrive) : 1f;
 
     /// <summary>The modules a recipe needs that this one hasn't got (bits), 0 when it has them all.</summary>
-    public byte Missing(AssembleRecipe r) => Limited ? (byte)(r.Needs & ~Modules) : (byte)0;
+    /// Retiring the Assembler, phase 6 (2026-11-28): the upgrade modules went, so a recipe needs none (a run-time Ord Rack's Needs is ignored too).
+    public byte Missing(AssembleRecipe r) => 0;
 
-    /// <summary>Does a recipe need a tool block this one hasn't docked?</summary>
-    public bool LacksTool(AssembleRecipe r) => Limited && r.ToolId != 0 && r.ToolId != Tool;
+    /// <summary>Does a recipe need a tool block this one hasn't docked? Never since phase 6: the Tool Bay and its blocks went.</summary>
+    public bool LacksTool(AssembleRecipe r) => false;
 
     /// <summary>The tool block that gives a tool (AssemblingTable.Machines index).</summary>
     public static string ToolBlockName(int tool) => tool switch
@@ -201,8 +202,6 @@ public static class ConstructAssembling
 
     public static void Step(ConstructWorld world, IWorldQuery query)
     {
-        if (world.ToolSwaps.Count > 0)
-            AssemblerToolBay.Deliver(world); // (a tool block a chute took from a rack last tick docks now)
         if (++world.AssembleTicks < ConstructRefining.Every)
             return;
         world.AssembleTicks = 0;
@@ -231,7 +230,7 @@ public static class ConstructAssembling
             return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine ? r : null;
         var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
         var list = table.ByMachine[d.AsmMachine];
-        return k >= 0 && k < list.Length && !BakeKits.ListedKit(list[k].Output) ? list[k] : null; // (a part made from a listed kit is baked, never assembled: BakeKits.cs; its row stays for saved settings. A rule kit's part an Assembler still builds when no oven takes it: BakeKits.OvenServes)
+        return k >= 0 && k < list.Length && !BakeKits.OffAssembler(list[k].Output) ? list[k] : null; // (a part a press or an oven makes is never assembled since phase 6: BakeKits.OffAssembler; its row stays as its bill and for saved settings)
     }
 
     private static void Work(ConstructWorld world, IWorldQuery query, AssemblingTable table, Construct c, int part, CStore st)
