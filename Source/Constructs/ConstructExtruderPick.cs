@@ -4,9 +4,10 @@ namespace CallOfSlop;
 
 /// <summary>
 /// What the Extruder's recipe picker sends (CActKind.ExtruderSection, protocol 284): its Profile choice, the section's width and height
-/// in cm (a Round's or a Pipe's diameter is <see cref="W"/>), a Pipe's wall in cm, and a Custom section's cells.
+/// in cm (a Round's or a Pipe's diameter is <see cref="W"/>), a Pipe's wall in cm, and a Custom section's cells; since protocol 490 also
+/// its Cut every (<see cref="L"/>, cm; 0: only on a signal) and its Order count (<see cref="Count"/>), which the picker's Queue asks for.
 /// </summary>
-public readonly record struct ExtruderPick(byte Profile, ushort W, ushort H, ushort Wall, ulong Mask);
+public readonly record struct ExtruderPick(byte Profile, ushort W, ushort H, ushort Wall, ulong Mask, ushort L = 0, ushort Count = 1);
 
 /// <summary>
 /// The Extruder's recipe picker's rules (docs/sandbox/design/recipe-select-notes.md, option A; UiRecipePickerExtruder.cs draws it): which
@@ -30,6 +31,9 @@ public static class ExtruderPicks
         return (Cm(size.X), Cm(size.Y));
     }
 
+    /// <summary>The longest piece this machine makes now (its Run-out Tables counted), in cm on the 5 cm step: the picker's Length range.</summary>
+    public static int LongestCm(Construct c, int part) => Math.Max(Extrusion.StepCm, ConstructExtruder.MaxLengthCm(c, part) / Extrusion.StepCm * Extrusion.StepCm);
+
     /// <summary>The thickest wall a Pipe of <paramref name="across"/> cm takes (it leaves a bore of <see cref="Extrusion.MinBoreCm"/>).</summary>
     public static int MaxWallCm(int across) => Math.Max(1, Math.Min(Extrusion.MaxWallCm, (across - Extrusion.MinBoreCm) / 2));
 
@@ -51,7 +55,9 @@ public static class ExtruderPicks
         var wall = (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100);
         var custom = (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskA, 0) | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskB, 0) << 16
             | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskC, 0) << 32 | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskD, 0) << 48;
-        return new ExtruderPick((byte)Math.Clamp(profile, 0, Profiles(d) - 1), (ushort)w, (ushort)h, (ushort)Math.Clamp(wall, 1, Extrusion.MaxWallCm), custom);
+        var len = Math.Clamp(Cm(ConstructConfig.Get(p, d, CfgKey.CutLength, 0)), 0, LongestCm(c, part));
+        var count = Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.OrderCount, 1), 1, WorkOrders.MaxCount);
+        return new ExtruderPick((byte)Math.Clamp(profile, 0, Profiles(d) - 1), (ushort)w, (ushort)h, (ushort)Math.Clamp(wall, 1, Extrusion.MaxWallCm), custom, (ushort)len, (ushort)count);
     }
 
     /// <summary>A Profile choice's section on the grid, for drawing and for the Custom grid's start (a Round's or a Pipe's as it shows).</summary>
@@ -88,6 +94,10 @@ public static class ExtruderPicks
         var foil = pick.Profile - Extrusion.AirfoilProfile(0);
         if (foil >= 0 && shape == ExShape.Section && foil >= ExtrusionTable.Current.Airfoils.Length && pick.Profile != Extrusion.SheetProfile)
             return $"the {d.Name} has no such profile";
+        if (pick.L % Extrusion.StepCm != 0 || pick.L > LongestCm(c, part))
+            return $"a piece's length goes in {Extrusion.StepCm} cm steps up to {LongestCm(c, part) / 100f:0.##} m" + (ConstructExtruder.LengthenWith(d) is { } longer && LongestCm(c, part) < (int)MathF.Round(ConstructExtruder.MostLength(d) * 100) ? $" ({longer} make them longer)" : "");
+        if (pick.Count is < 1 or > WorkOrders.MaxCount)
+            return $"an order is for 1 to {WorkOrders.MaxCount} pieces";
         var (dw, dh) = DieCm(c, part);
         if (shape != ExShape.Section)
             dw = dh = Math.Min(dw, dh);
@@ -131,6 +141,8 @@ public static class ExtruderPicks
             Put(ref p, CfgKey.Wall, pick.Wall / 100f);
         if (sheet)
             Put(ref p, CfgKey.Wall, pick.H / 100f); // (a Sheet's thickness is its Wall setting: whole cm, which Height's 5 cm step can't hold)
+        Put(ref p, CfgKey.CutLength, pick.L / 100f);
+        Put(ref p, CfgKey.OrderCount, pick.Count);
         if (pick.Profile == Extrusion.Presets.Length)
         {
             Put(ref p, CfgKey.MaskA, (ushort)pick.Mask);
@@ -146,9 +158,10 @@ public sealed partial class ConstructEdits
 {
     /// <summary>
     /// Server: the Extruder's recipe picker (CActKind.ExtruderSection) sets machine <paramref name="machine"/>'s section and size at once,
-    /// under a finger on its Recipe button's rule (reach, power, who may) and the die's sizes (<see cref="ExtruderPicks.Refusal"/>).
+    /// under a finger on its Recipe button's rule (reach, power, who may) and the die's sizes (<see cref="ExtruderPicks.Refusal"/>), with its
+    /// Cut every and Order count; <paramref name="queue"/> then queues one order of those settings, as its screen's Queue button does.
     /// </summary>
-    public string? ExtruderSection(ConstructWorld world, byte player, Vector3 eye, ushort body, ushort machine, in ExtruderPick pick, string? refusal)
+    public string? ExtruderSection(ConstructWorld world, byte player, Vector3 eye, ushort body, ushort machine, in ExtruderPick pick, bool queue, string? refusal)
     {
         if (world.Get(body) is not { } c || machine >= c.PartCount)
             return "that machine is gone";
@@ -166,11 +179,18 @@ public sealed partial class ConstructEdits
             return $"the {d.Name} has no power";
         if (ExtruderPicks.Refusal(c, machine, pick) is { } why)
             return why;
-        if (!ExtruderPicks.Apply(ref p, d, pick))
+        if (ExtruderPicks.Apply(ref p, d, pick))
+        {
+            world.StructureDirty.Add(c.Id);
+            c.Wake();
+            Done.Add($"player {player}: section {ExtruderPicks.Label(pick)}, cut every {pick.L} cm, on part {machine} of construct {c.Id}");
+        }
+        if (!queue)
             return null;
-        world.StructureDirty.Add(c.Id);
+        if (WorkOrders.QueueHere(world, c, machine) is { } no)
+            return no;
         c.Wake();
-        Done.Add($"player {player}: section {ExtruderPicks.Label(pick)} on part {machine} of construct {c.Id}");
+        Done.Add($"player {player}: queued {pick.Count} of {ExtruderPicks.Label(pick)} at {pick.L} cm on part {machine} of construct {c.Id}");
         return null;
     }
 }

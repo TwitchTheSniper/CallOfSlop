@@ -1930,7 +1930,7 @@ public static unsafe partial class Program
                 }
                 else if (arg.Length > 0 && char.IsLetter(arg[0]))
                 {
-                    // An Extruder's picker (UiRecipePickerExtruder.cs): "picker size W H [WALL]" (cm), "picker cell N", "picker set".
+                    // An Extruder's picker (UiRecipePickerExtruder.cs): "picker size W H [WALL]" (cm), "picker length CM", "picker count N", "picker cell N", "picker set", "picker queue".
                     WsSay($"picker: {Ui.ExtruderPickerDo(arg) ?? "no Extruder picker open"}");
                     _wsWait = 3;
                 }

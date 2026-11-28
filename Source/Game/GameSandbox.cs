@@ -99,7 +99,7 @@ public enum CActKind : byte
     CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 260; ConstructCrafting.Place)
     PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 260; PanelDesigns.cs)
     Celebrate, // server -> one client: text title, text name, text line: a moment in the middle of their screen (protocol 274; GameCelebrate.cs)
-    ExtruderSection, // u16 body, u16 machine, u8 profile, u16 width, height, wall (cm), u64 mask: the Extruder's picker sets its section at once (protocol 284; ConstructExtruderPick.cs)
+    ExtruderSection, // u16 body, u16 machine, u8 profile, u16 width, height, wall (cm), u64 mask, u16 cut every (cm), u16 order count, u8 queue: the Extruder's picker sets its section at once (protocol 284, length/count/queue 490; ConstructExtruderPick.cs)
     TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 299; docs/sandbox/design/inventory-run-time-parts.md phase 2)
     Lifter, // u16 body, u16 part, u8 LiftOrderOp, u8 order id, the kind (PartRef), u8 count, from and to (u16 body, u16 part, u8 kind, u8 bay): a hand order at a lifter's panel (protocol 312; GameSandboxLifter.cs)
     ErrandDrop, // nothing: drop the errand under way (protocol 314; GameErrands.cs)
@@ -1359,7 +1359,10 @@ public sealed partial class Game
                 var eh = r.U16();
                 var ewall = r.U16();
                 var mask = (ulong)r.U32() | (ulong)r.U32() << 32;
-                return hands.ExtruderSection(Constructs, p.Id, eye, body, machine, new ExtruderPick(profile, ew, eh, ewall, mask), Constructs.Get(body) is { } ec ? SandboxConfigRefusal(ec, p.Id) : null);
+                var elen = r.U16();
+                var ecount = r.U16();
+                var equeue = r.U8() != 0;
+                return hands.ExtruderSection(Constructs, p.Id, eye, body, machine, new ExtruderPick(profile, ew, eh, ewall, mask, elen, ecount), equeue, Constructs.Get(body) is { } ec ? SandboxConfigRefusal(ec, p.Id) : null);
             }
             case CActKind.CraftOrder:
             {
@@ -1902,11 +1905,11 @@ public sealed partial class Game
     /// Client (or the host itself): the Extruder's picker sets machine <paramref name="machine"/>'s Profile, Width, Height, Pipe wall and (Custom)
     /// cells in one act. The server checks it as a finger on the machine's Recipe button, and the sizes against its die.
     /// </summary>
-    public void SandboxExtruderSection(ushort body, int machine, in ExtruderPick pick)
+    public void SandboxExtruderSection(ushort body, int machine, in ExtruderPick pick, bool queue = false)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.ExtruderSection).U16(body).U16((ushort)machine).U8(pick.Profile).U16(pick.W).U16(pick.H).U16(pick.Wall)
-            .U32((uint)pick.Mask).U32((uint)(pick.Mask >> 32));
+            .U32((uint)pick.Mask).U32((uint)(pick.Mask >> 32)).U16(pick.L).U16(pick.Count).U8(queue ? (byte)1 : (byte)0);
         if (IsServer)
         {
             if (Local is { } me)
