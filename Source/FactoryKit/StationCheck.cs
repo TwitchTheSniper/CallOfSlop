@@ -215,10 +215,11 @@ public static class StationCheck
         }
         if (Arg("--why") is { } whyParts) // (--why "PART;PART": each machine's answer to an order for it)
             foreach (var wn in whyParts.Split(';', StringSplitOptions.RemoveEmptyEntries))
-                if (ConstructParts.Find(wn.Trim()) is { } wd)
+                if ((ConstructParts.Find(wn.Trim()) ?? Extrusion.Parse(wn.Trim())) is { } wd) // (an extrusion by its name too: "Extrusion solid 50x1x50 rubber")
                     for (var i = 0; i < c.PartCount; i++)
                         if (WorkOrders.TakesOrders(c.DefOf(i)) && !c.DefOf(i).IsBakeOven)
-                            Console.WriteLine($"  why {wd.Name}: {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0}: {WorkOrders.Refusal(w, c, i, ConstructStation.OrderFor(wd, 1)) ?? "takes it"}");
+                            Console.WriteLine($"  why {wd.Name}: {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0}: {WorkOrders.Refusal(w, c, i, ConstructStation.OrderFor(wd, 1)) ?? "takes it"}"
+                                + (wd.IsExtrusion && c.DefOf(i).IsExtruder && !c.DefOf(i).IsPanelFormer ? (ConstructExtruder.Feeds(w, c, i, wd.ExKey.Material) ? ", fed" : ", NOT fed its material") : ""));
         if (t < 0)
         {
             Console.WriteLine("  no Building Station in it");

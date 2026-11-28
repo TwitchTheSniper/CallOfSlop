@@ -11,7 +11,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// <list type="bullet">
 /// <item>Each back row grows outward past its Sawmill (layout |x| 64 to 88): an Ore Silo of sand into a Smelter (glass), a Foundry on
 /// planks and glass (laminate), a Foundry on copper and metal (bronze) and a Sawmill on planks (cloth), each into a Materials Bin in the
-/// bins' row (|x| 61 to 76). Every Assembler is chuted from the glass, bronze and cloth bins too.</item>
+/// bins' row (|x| 61 to 76). Every kit line's Extruder is chuted from the cloth bin too (ZeroDayWorks2.NoAssembler.cs).</item>
 /// <item>Each small press line gets a one-die Extruder east (west) of its turntables (|x| 66, flowing north), chuted straight from the back
 /// row's laminate and copper bins: it makes either in turn, handing what it holds back to its bin when the next order wants the other
 /// (<see cref="ConstructExtruder.HandBack"/>). Its Run-out Table ends on a tile into a Turntable Tile at the head of a row along z 18, and a conveyor
