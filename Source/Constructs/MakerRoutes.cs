@@ -65,6 +65,24 @@ public static class MakerRoutes
         return Ovens.Length;
     }
 
+    /// <summary>
+    /// What an oven's walls and doors take off its bed's two sides (m): Zero Day Works II's 20 x 6 m small bed has a 19.1 x 5.1 m hearth
+    /// (ConstructBakeOven.BedLacks). A split (BakeKits.Split) sizes its sub-kits to the hearth, so a sub-kit that fits the size on paper also
+    /// lies in a real small oven's tunnel.
+    /// </summary>
+    public const float HearthMargin = 0.95f;
+
+    /// <summary>The smallest oven whose hearth (its bed less <see cref="HearthMargin"/> each way) and tunnel hold these sides, or Ovens.Length: none.</summary>
+    public static int HearthFor(Vector3 size)
+    {
+        Span<float> s = [size.X, size.Y, size.Z];
+        s.Sort();
+        for (var k = 0; k < Ovens.Length; k++)
+            if (s[2] <= Ovens[k].Along - HearthMargin && s[1] <= Ovens[k].Across - HearthMargin && s[0] <= Ovens[k].High)
+                return k;
+        return Ovens.Length;
+    }
+
     public static string OvenName(int k) => k < Ovens.Length ? Ovens[k].Name : "bigger bed (split it, or a bigger oven)";
 
     /// <summary>The longest side of each kit piece, m (one a solid drawn box): what an Extruder must reach.</summary>

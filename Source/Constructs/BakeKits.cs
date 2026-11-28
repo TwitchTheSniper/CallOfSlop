@@ -14,7 +14,7 @@ namespace CallOfSlop;
 /// <c>Baked (#hash)</c>), so a ship's blueprint, its saves and its fittings know the part as before. The kit's design is matched at any of
 /// the 24 grid turns. Docs: production.md "Bake kits".
 /// </summary>
-public static class BakeKits
+public static partial class BakeKits
 {
     public const string Format = "call-of-slop-bake-kits/1";
     public const string KitSuffix = " kit";
@@ -283,7 +283,7 @@ public static class BakeKits
     }
 
     /// <summary>
-    /// A kit split along its boxes until every sub-kit fits the smallest oven, or is one piece (a piece no small bed holds, a railgun
+    /// A kit split along its boxes until every sub-kit fits the smallest oven's hearth (MakerRoutes.HearthFor), or is one piece (a piece no small bed holds, a railgun
     /// barrel's, needs its own bigger bed). Each cut is the gap between pieces along the bounds' longest side that leaves the smaller
     /// halves' ovens (then the more even halves). Null: no kit.
     /// </summary>
@@ -300,40 +300,79 @@ public static class BakeKits
     private static SplitNode SplitOf(Piece[] kit, List<int> set, int depth)
     {
         var (lo, hi) = Bounds(kit, 0, 0, set);
-        var node = new SplitNode { Pieces = set, Size = hi - lo, Oven = MakerRoutes.OvenFor(hi - lo) };
+        var node = new SplitNode { Pieces = set, Size = hi - lo, Oven = MakerRoutes.HearthFor(hi - lo) };
         if (node.Oven == 0 || set.Count < 2 || depth > 16)
             return node;
         // Along the bounds' longest side, the pieces by their middles; each gap between two is a cut.
         var size = hi - lo;
         var ax = size.X >= size.Y && size.X >= size.Z ? 0 : size.Y >= size.Z ? 1 : 2;
         var mids = new float[set.Count];
+        var plo = new Vector3[set.Count];
+        var phi = new Vector3[set.Count];
         for (var k = 0; k < set.Count; k++)
         {
-            var (plo, phi) = Bounds(kit, 0, 0, [set[k]]);
-            mids[k] = Axis((plo + phi) * 0.5f, ax);
+            (plo[k], phi[k]) = PieceBounds(kit[set[k]]);
+            mids[k] = Axis((plo[k] + phi[k]) * 0.5f, ax);
         }
-        var order = set.ToArray();
-        Array.Sort(mids, order);
-        int best = -1, bestOven = int.MaxValue, bestEven = int.MaxValue;
-        for (var cut = 1; cut < order.Length; cut++)
+        var order = new int[set.Count];
+        for (var k = 0; k < order.Length; k++)
+            order[k] = k;
+        Array.Sort((float[])mids.Clone(), order);
+        // (each half's bounds as running mins and maxes over the sorted order, the same as a walk over its pieces)
+        var n = order.Length;
+        var sm = new float[n];
+        for (var k = 0; k < n; k++)
+            sm[k] = mids[order[k]];
+        var preLo = new Vector3[n];
+        var preHi = new Vector3[n];
+        var sufLo = new Vector3[n];
+        var sufHi = new Vector3[n];
+        Vector3 rl = new(float.MaxValue), rh = new(float.MinValue);
+        for (var k = 0; k < n; k++)
         {
-            if (mids[cut] - mids[cut - 1] < 1e-3f)
+            if (kit[set[order[k]]].Def != null)
+                (rl, rh) = (Vector3.Min(rl, plo[order[k]]), Vector3.Max(rh, phi[order[k]]));
+            (preLo[k], preHi[k]) = (rl, rh);
+        }
+        (rl, rh) = (new(float.MaxValue), new(float.MinValue));
+        for (var k = n - 1; k >= 0; k--)
+        {
+            if (kit[set[order[k]]].Def != null)
+                (rl, rh) = (Vector3.Min(rl, plo[order[k]]), Vector3.Max(rh, phi[order[k]]));
+            (sufLo[k], sufHi[k]) = (rl, rh);
+        }
+        static Vector3 Side(Vector3 l, Vector3 h) => l.X > h.X ? Vector3.Zero : h - l;
+        int best = -1, bestOven = int.MaxValue, bestEven = int.MaxValue;
+        for (var cut = 1; cut < n; cut++)
+        {
+            if (sm[cut] - sm[cut - 1] < 1e-3f)
                 continue;
-            var (alo, ahi) = Bounds(kit, 0, 0, [.. order[..cut]]);
-            var (blo, bhi) = Bounds(kit, 0, 0, [.. order[cut..]]);
-            var ov = Math.Max(MakerRoutes.OvenFor(ahi - alo), MakerRoutes.OvenFor(bhi - blo));
-            var even = Math.Abs(order.Length - 2 * cut);
+            var ov = Math.Max(MakerRoutes.HearthFor(Side(preLo[cut - 1], preHi[cut - 1])), MakerRoutes.HearthFor(Side(sufLo[cut], sufHi[cut])));
+            var even = Math.Abs(n - 2 * cut);
             if (ov < bestOven || ov == bestOven && even < bestEven)
                 (best, bestOven, bestEven) = (cut, ov, even);
         }
+        var ids = new int[n];
+        for (var k = 0; k < n; k++)
+            ids[k] = set[order[k]];
         if (best < 0)
             return node; // (every piece's middle in one place: it doesn't split)
-        node.Kids.Add(SplitOf(kit, [.. order[..best]], depth + 1));
-        node.Kids.Add(SplitOf(kit, [.. order[best..]], depth + 1));
+        node.Kids.Add(SplitOf(kit, [.. ids[..best]], depth + 1));
+        node.Kids.Add(SplitOf(kit, [.. ids[best..]], depth + 1));
         // (a halving that frees nothing, both halves on this node's own oven, is no help: kept whole)
         if (node.Kids.TrueForAll(k => k.Oven >= node.Oven && k.Kids.Count == 0))
             node.Kids.Clear();
         return node;
+    }
+
+    /// <summary>One piece's solid bounds in the part's frame (as <see cref="Bounds"/> takes it; zero sides: no def).</summary>
+    private static (Vector3 Lo, Vector3 Hi) PieceBounds(in Piece p)
+    {
+        if (p.Def is not { } pd)
+            return (Vector3.Zero, Vector3.Zero);
+        var c = p.Pos + Rot24.Apply(p.Rot, (pd.BoundsMin + pd.BoundsMax) * 0.5f);
+        var h = Rot24.ApplyHalf(p.Rot, (pd.BoundsMax - pd.BoundsMin) * 0.5f);
+        return (c - h, c + h);
     }
 
     private static readonly HashSet<ExtrusionKey> OnePieceKeys = [];
@@ -692,46 +731,53 @@ public static class BakeKits
         {
             if (Prints.TryGetValue(d.Name, out var have))
                 return have;
-            var root = kit[0];
-            var sb = new StringBuilder();
-            sb.Append("{ \"format\": \"call-of-slop-construct-blueprint/1\", \"name\": ").Append(JsonSerializer.Serialize(d.Name + KitSuffix)).Append(", \"steps\": [\n");
-            for (var i = 0; i < kit.Length; i++)
-            {
-                var p = kit[i];
-                sb.Append("  { \"part\": ").Append(JsonSerializer.Serialize(p.PartName));
-                if (ConstructPaint.IsSet(p.Paint))
-                    sb.Append(", \"paint\": \"").Append(ConstructPaint.ToHex(p.Paint)).Append('"');
-                if (p.Finish.Length > 0)
-                    sb.Append(", \"finish\": ").Append(JsonSerializer.Serialize(p.Finish));
-                if (i > 0)
-                {
-                    // (in the root's frame: the root is unturned, else every place turns back by it)
-                    var inv = Rot24.Inverse(root.Rot);
-                    var at = Rot24.Apply(inv, p.Pos - root.Pos);
-                    var q = Rot24.Quat(Rot24.Compose(inv, p.Rot));
-                    sb.Append(string.Create(CultureInfo.InvariantCulture,
-                        $", \"weld\": {{\"on\": 0, \"pos\": [{at.X:0.###}, {at.Y:0.###}, {at.Z:0.###}], \"rot\": [{q.X:0.####}, {q.Y:0.####}, {q.Z:0.####}, {q.W:0.####}]}}"));
-                }
-                sb.Append(i + 1 < kit.Length ? " },\n" : " }\n");
-            }
-            sb.Append("] }\n");
-            ConstructBuild.Blueprint? bp = null;
-            try
-            {
-                bp = ConstructBuild.ParseBlueprint(sb.ToString(), d.Name + KitSuffix);
-            }
-            catch (ConstructPartException e)
-            {
-                Console.WriteLine($"[bake kits] REFUSED {d.Name}{KitSuffix}: {e.Message}");
-            }
+            var bp = PrintOf(d.Name + KitSuffix, kit);
             Prints[d.Name] = bp;
             return bp;
         }
     }
 
+    /// <summary>A kit's blueprint text parsed: the first piece the root, every other one welded on it freeform at its place and turn (null: refused, said in the log).</summary>
+    private static ConstructBuild.Blueprint? PrintOf(string name, Piece[] kit)
+    {
+        var root = kit[0];
+        var sb = new StringBuilder();
+        sb.Append("{ \"format\": \"call-of-slop-construct-blueprint/1\", \"name\": ").Append(JsonSerializer.Serialize(name)).Append(", \"steps\": [\n");
+        for (var i = 0; i < kit.Length; i++)
+        {
+            var p = kit[i];
+            sb.Append("  { \"part\": ").Append(JsonSerializer.Serialize(p.PartName));
+            if (ConstructPaint.IsSet(p.Paint))
+                sb.Append(", \"paint\": \"").Append(ConstructPaint.ToHex(p.Paint)).Append('"');
+            if (p.Finish.Length > 0)
+                sb.Append(", \"finish\": ").Append(JsonSerializer.Serialize(p.Finish));
+            if (i > 0)
+            {
+                // (in the root's frame: the root is unturned, else every place turns back by it)
+                var inv = Rot24.Inverse(root.Rot);
+                var at = Rot24.Apply(inv, p.Pos - root.Pos);
+                var q = Rot24.Quat(Rot24.Compose(inv, p.Rot));
+                sb.Append(string.Create(CultureInfo.InvariantCulture,
+                    $", \"weld\": {{\"on\": 0, \"pos\": [{at.X:0.###}, {at.Y:0.###}, {at.Z:0.###}], \"rot\": [{q.X:0.####}, {q.Y:0.####}, {q.Z:0.####}, {q.W:0.####}]}}"));
+            }
+            sb.Append(i + 1 < kit.Length ? " },\n" : " }\n");
+        }
+        sb.Append("] }\n");
+        try
+        {
+            return ConstructBuild.ParseBlueprint(sb.ToString(), name);
+        }
+        catch (ConstructPartException e)
+        {
+            Console.WriteLine($"[bake kits] REFUSED {name}: {e.Message}");
+            return null;
+        }
+    }
+
     /// <summary>A kit's blueprint by its name, <c>{part} kit</c> (null: not a kit's name).</summary>
     public static ConstructBuild.Blueprint? FindPrint(string name) =>
-        name.EndsWith(KitSuffix, StringComparison.OrdinalIgnoreCase) && Names.Length > 0 && ConstructParts.Find(name[..^KitSuffix.Length]) is { } d ? BlueprintOf(d) : null;
+        !name.EndsWith(KitSuffix, StringComparison.OrdinalIgnoreCase) ? null
+        : FindSubPrint(name) ?? (Names.Length > 0 && !name.StartsWith(BakedParts.Prefix, StringComparison.Ordinal) && ConstructParts.Find(name[..^KitSuffix.Length]) is { } d ? BlueprintOf(d) : null);
 
     /// <summary>
     /// The part whose kit a design's hash is, at the turn it was baked (null: none). Every kit at every turn, worked out once. Two parts can
@@ -754,8 +800,10 @@ public static class BakeKits
         for (var k = 0; k < all.Count; k++)
             if (all[k] is { } d && Has(d) && !IsNamed(d.Name))
                 kits++;
+        var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+        WarmSubs(); // (the split kits and their sub-kits' designs: BakeKits.Subs.cs)
         _warmTable = table;
-        Console.WriteLine($"[bake kits] warmed: {kits} rule kits of {all.Count} parts in {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms");
+        Console.WriteLine($"[bake kits] warmed: {kits} rule kits of {all.Count} parts in {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms (their splits {System.Diagnostics.Stopwatch.GetElapsedTime(t1).TotalMilliseconds:0} ms)");
     }
 
     private static AssemblingTable? _warmTable;
@@ -852,6 +900,8 @@ public static class BakeKitCheck
         var names = list.Equals("all", StringComparison.OrdinalIgnoreCase) ? BakeKits.Names
             : list.StartsWith("rule:", StringComparison.OrdinalIgnoreCase) && int.TryParse(list.AsSpan(5), out var every) && every > 0
                 ? [.. ConstructParts.All.Where(p => BakeKits.ByRule(p) && BakeKits.Has(p)).Where((_, i) => i % every == 0).Select(p => p.Name)]
+                : list.StartsWith("split:", StringComparison.OrdinalIgnoreCase) && int.TryParse(list.AsSpan(6), out var sev) && sev > 0
+                ? [.. ConstructParts.All.Where(p => BakeKits.ByRule(p) && BakeKits.Has(p) && BakeKits.SplitOf(p) != null).Where((_, i) => i % sev == 0).Select(p => p.Name)]
                 : list.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var fails = 0;
         void Fail(string why)
@@ -891,6 +941,52 @@ public static class BakeKitCheck
                 c2.Rebuild();
                 Expect(w2, c2, d, t, Vector3.Zero, $"laid at turn {t}");
             }
+            // Split (BakeKits.Subs.cs): each sub-kit built from its blueprint and laid at a turn bakes into its baked part, and the split kit
+            // of those and the leftover pieces bakes into the part.
+            if (BakeKits.SplitOf(d) is not { } sk)
+                continue;
+            if (BakeKits.SplitPrint(d) is not { } sp)
+            {
+                Fail($"{d.Name}: its split kit's blueprint didn't parse");
+                continue;
+            }
+            Console.WriteLine($"  split: {sk.Subs.Length} sub-kits, {sk.Items.Length} items, the whole on the {MakerRoutes.OvenName(sk.Oven)}");
+            foreach (var sub in sk.Subs)
+            {
+                if (BakedParts.Parse(sub.Key) is not { } sd || BakeKits.SubPrint(sub) is not { } sbp)
+                {
+                    Fail($"{d.Name}: sub-kit {sub.Key} has no part or blueprint");
+                    continue;
+                }
+                Console.WriteLine(FormattableString.Invariant($"  sub-kit {sub.Key}: {sub.Pieces.Length} pieces, {sub.Size.X:0.##} x {sub.Size.Y:0.##} x {sub.Size.Z:0.##} m, {MakerRoutes.OvenName(sub.Oven)}"));
+                var ws = new ConstructWorld();
+                if (ConstructBuild.Build(ws, sbp, new Vector3(0, 20, 0), Quaternion.Identity, out var swhy) is not { } cs)
+                {
+                    Fail($"{d.Name}: sub-kit {sub.Key}'s blueprint didn't build: {swhy}");
+                    continue;
+                }
+                var r0 = sub.Pieces[0];
+                Expect(ws, cs, sd, Rot24.Inverse(r0.Rot), Rot24.Apply(Rot24.Inverse(r0.Rot), sub.Origin - r0.Pos), "sub-kit built from its blueprint");
+                const byte st = 7;
+                var w3 = new ConstructWorld();
+                var c3 = w3.Create(new Vector3(0, 20, 0), Quaternion.Identity)!;
+                foreach (var p in sub.Pieces)
+                {
+                    var i = w3.AddPart(c3, p.Def!, Rot24.Apply(st, p.Pos), Rot24.Compose(st, p.Rot));
+                    c3.Parts[i].Paint = p.Paint;
+                    c3.Parts[i].Finish = ConstructFinish.Of(p.Finish);
+                }
+                c3.Rebuild();
+                Expect(w3, c3, sd, st, Rot24.Apply(st, sub.Origin), $"sub-kit laid at turn {st}");
+            }
+            var wf = new ConstructWorld();
+            if (ConstructBuild.Build(wf, sp, new Vector3(0, 20, 0), Quaternion.Identity, out var fwhy) is not { } cf)
+            {
+                Fail($"{d.Name}: the split kit's blueprint didn't build: {fwhy}");
+                continue;
+            }
+            var f0 = sk.Items[0];
+            Expect(wf, cf, d, Rot24.Inverse(f0.Rot), Rot24.Apply(Rot24.Inverse(f0.Rot), -f0.Pos), "split kit built from its blueprint");
         }
         Console.WriteLine(fails == 0 ? "bake kit check: passed" : $"bake kit check: {fails} failure(s)");
         return fails;
@@ -901,7 +997,7 @@ public static class BakeKitCheck
             // its solids the voids behind them), so the part's origin is held to the kit frame's origin instead (both in the body's frame).
             // (a rule kit too: its pieces are the boxes rounded to whole sections and 5 cm lengths, with components and sheets on top, so
             // its bounds aren't the part's; the part's origin is held to the kit frame's)
-            var listed = c.DefOf(0).IsNamedRuntime || !BakeKits.Names.Contains(d.Name, StringComparer.OrdinalIgnoreCase);
+            var listed = c.DefOf(0).IsNamedRuntime || !BakeKits.Names.Contains(d.Name, StringComparer.OrdinalIgnoreCase) || BakeKits.IsSub(d);
             var (lo, hi) = Solid(c);
             if (BakedParts.Bake(world, c, (ushort)d.Id) is not { } b)
             {
@@ -912,8 +1008,6 @@ public static class BakeKitCheck
             if (i < 0)
             {
                 Fail($"{d.Name} {how}: baked into {b.DefOf(0).Name}, not the part");
-                if (BakedParts.DesignOf(b.DefOf(0)) is { } got)
-                    Console.Write(got.Text);
                 return;
             }
             var (lo2, hi2) = Solid(b);
