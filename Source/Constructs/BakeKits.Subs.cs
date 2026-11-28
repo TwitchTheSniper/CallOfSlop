@@ -162,7 +162,7 @@ public static partial class BakeKits
                 if (all[k] is not { } d || d.IsNamedRuntime || IsNamed(d.Name) || !Has(d) || KitOf(d, true) is not { } kit || kit.Length < 3)
                     continue;
                 var (lo, hi) = Bounds(kit, 0, kit.Length, null);
-                var whole = MakerRoutes.OvenFor(hi - lo);
+                var whole = MakerRoutes.HearthFor(hi - lo);
                 if (whole == 0)
                     continue;
                 if (whole >= MakerRoutes.Ovens.Length)
@@ -206,7 +206,7 @@ public static partial class BakeKits
         foreach (var g in groups)
         {
             var (glo, ghi) = Bounds(kit, 0, 0, g);
-            if (g.Count < 2 || MakerRoutes.OvenFor(ghi - glo) >= whole)
+            if (g.Count < 2 || MakerRoutes.HearthFor(ghi - glo) >= whole)
             {
                 foreach (var i in g)
                     items.Add(kit[i]);
@@ -263,7 +263,7 @@ public static partial class BakeKits
         var key = BakedParts.KeyOf(hash);
         if (SubsByKey.TryGetValue(key, out var have))
             return have; // (two parts alike in a corner: one sub-kit)
-        var sub = new SubKit { Key = key, Hash = hash, Text = text, Pieces = pieces, Origin = origin, Size = size, Oven = MakerRoutes.OvenFor(size), Of = d };
+        var sub = new SubKit { Key = key, Hash = hash, Text = text, Pieces = pieces, Origin = origin, Size = size, Oven = MakerRoutes.HearthFor(size), Of = d };
         SubsByKey[key] = sub;
         return sub;
     }

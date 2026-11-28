@@ -283,7 +283,7 @@ public static partial class BakeKits
     }
 
     /// <summary>
-    /// A kit split along its boxes until every sub-kit fits the smallest oven, or is one piece (a piece no small bed holds, a railgun
+    /// A kit split along its boxes until every sub-kit fits the smallest oven's hearth (MakerRoutes.HearthFor), or is one piece (a piece no small bed holds, a railgun
     /// barrel's, needs its own bigger bed). Each cut is the gap between pieces along the bounds' longest side that leaves the smaller
     /// halves' ovens (then the more even halves). Null: no kit.
     /// </summary>
@@ -300,7 +300,7 @@ public static partial class BakeKits
     private static SplitNode SplitOf(Piece[] kit, List<int> set, int depth)
     {
         var (lo, hi) = Bounds(kit, 0, 0, set);
-        var node = new SplitNode { Pieces = set, Size = hi - lo, Oven = MakerRoutes.OvenFor(hi - lo) };
+        var node = new SplitNode { Pieces = set, Size = hi - lo, Oven = MakerRoutes.HearthFor(hi - lo) };
         if (node.Oven == 0 || set.Count < 2 || depth > 16)
             return node;
         // Along the bounds' longest side, the pieces by their middles; each gap between two is a cut.
@@ -347,7 +347,7 @@ public static partial class BakeKits
         {
             if (sm[cut] - sm[cut - 1] < 1e-3f)
                 continue;
-            var ov = Math.Max(MakerRoutes.OvenFor(Side(preLo[cut - 1], preHi[cut - 1])), MakerRoutes.OvenFor(Side(sufLo[cut], sufHi[cut])));
+            var ov = Math.Max(MakerRoutes.HearthFor(Side(preLo[cut - 1], preHi[cut - 1])), MakerRoutes.HearthFor(Side(sufLo[cut], sufHi[cut])));
             var even = Math.Abs(n - 2 * cut);
             if (ov < bestOven || ov == bestOven && even < bestEven)
                 (best, bestOven, bestEven) = (cut, ov, even);
@@ -1008,18 +1008,6 @@ public static class BakeKitCheck
             if (i < 0)
             {
                 Fail($"{d.Name} {how}: baked into {b.DefOf(0).Name}, not the part");
-                if (Environment.GetEnvironmentVariable("COS_FLATDBG") is { } dbg && BakeKits.KitOf(d) is { } wk)
-                {
-                    var subs = wk.Select(p => (p.Def!, Rot24.Apply(turn, p.Pos), Rot24.Compose(turn, p.Rot), p.Paint, p.Finish)).ToArray();
-                    File.AppendAllText(dbg, "WHOLE at " + turn + "\n" + BakedParts.DesignText(subs, out _) + "\n");
-                    for (var q = 0; q < c.PartCount; q++)
-                        File.AppendAllText(dbg, $"PART {c.DefOf(q).Name} {c.Parts[q].Pos} rot {c.Parts[q].Rot} seg {c.Parts[q].Seg}\n");
-                    if (BakeKits.SplitOf(d) is { } dk)
-                        foreach (var it in dk.Items)
-                            File.AppendAllText(dbg, $"ITEM {it.PartName} {it.Pos} rot {it.Rot}\n");
-                }
-                if (BakedParts.DesignOf(b.DefOf(0)) is { } got)
-                    Console.Write(got.Text);
                 return;
             }
             var (lo2, hi2) = Solid(b);

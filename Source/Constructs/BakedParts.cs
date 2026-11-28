@@ -578,8 +578,6 @@ public static partial class BakedParts
             world.KeepBaked(sk.Hash);
             return Swap(world, c, sub.Part, matchOrigin + sub.Offset, sub.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
         }
-        if (Environment.GetEnvironmentVariable("COS_FLATDBG") is { } dbg && matchText != text)
-            File.AppendAllText(dbg, "FLAT want " + want + "\n" + matchText + "\n");
         if (parts.Count < 2)
         {
             LastRefusal = "one piece bakes only into a part it is the whole kit of, and no order of this oven's is that part";

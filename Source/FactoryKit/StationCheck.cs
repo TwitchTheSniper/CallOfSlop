@@ -78,6 +78,15 @@ public static class StationCheck
             w.AddInput(st, m, add);
             return add;
         }
+        // (--fill-extruder X,Z,MATERIAL,N;...: the Extruder nearest the point given N units into its hopper, a material no bin on the site feeds it)
+        foreach (var f in (Arg("--fill-extruder") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries))
+            if (f.Split(',') is [var ex, var ez, var em, var en] && float.TryParse(ex, out var epx) && float.TryParse(ez, out var epz) && int.TryParse(en, out var epn))
+            {
+                var exm = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i) is { IsExtruder: true, IsPanelFormer: false } && w.StoreOf(c, i) != null)
+                    .OrderBy(i => Vector2.Distance(new Vector2(c.Parts[i].Pos.X, c.Parts[i].Pos.Z), new Vector2(epx, epz))).FirstOrDefault(-1);
+                var eput = exm >= 0 ? w.Deposit(c, exm, epn, RecyclingTable.Current.IdOf(em)) : 0;
+                Console.WriteLine($"  fill: {eput} {em} into the {(exm < 0 ? "nothing" : c.DefOf(exm).Name + " " + exm)} at {(exm < 0 ? "-" : $"{c.Parts[exm].Pos.X:0}, {c.Parts[exm].Pos.Z:0}")}");
+            }
         foreach (var f in (Arg("--fill") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries))
             if (f.Split(',') is [var fx, var fz, var fm, var fn] && float.TryParse(fx, out var px) && float.TryParse(fz, out var pz) && int.TryParse(fn, out var pn))
             {
@@ -736,7 +745,16 @@ public static class StationCheck
             why = WorkOrders.Queue(w, c, oven, ConstructStation.OrderFor(d, 1));
         Console.WriteLine($"  the Bake Oven at {c.Parts[oven].Pos.X:0}, {c.Parts[oven].Pos.Z:0} (part {oven}): order for the {d.Name}: {why ?? "taken"}");
         if (why != null)
+        {
+            // (every oven on the site and its answer: which would take it)
+            for (var m = 0; m < c.PartCount; m++)
+                if (c.DefOf(m).IsBakeOven)
+                    Console.WriteLine($"    the Bake Oven at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0} (part {m}, {MakerRoutes.OvenName(ConstructBakeOven.SizeClass(c, m))}): {WorkOrders.Refusal(w, c, m, ConstructStation.OrderFor(d, 1)) ?? "takes it"}");
+            for (var m = 0; m < c.PartCount; m++)
+                if (c.DefOf(m) is { IsExtruder: true, IsPanelFormer: false } xd)
+                    Console.WriteLine($"    {xd.Name} {m} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}: holds {(w.StoreOf(c, m) is { Amount: > 0 } xst ? $"{xst.Amount} {RecyclingTable.Current.NameOf(xst.Material)}" : "nothing")}");
             return 1;
+        }
         var made = -1;
         var lastStall = (byte)255;
         var loose = Environment.GetCommandLineArgs().Contains("--kit-loose");

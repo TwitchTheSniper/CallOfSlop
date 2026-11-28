@@ -2812,9 +2812,7 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   is split along its boxes (`BakeKits.Split`: the gap along its longest side that leaves the smallest ovens) until each sub-kit fits it
   or is one piece. 2026-11-28: 140 one-piece bakes, 2,104 station kits, 70 listed, 38 still Assembler (the tool rows); 326 parts split;
   every baked part's subparts, whole 69% small oven, split 82%. The frigate: 1 one-piece and 46 station-kit kinds (its fittings carry
-  Circuit Boards or rubber), its oven work 96% small whole, 97% split. **Not yet:** the split is planned and reported, not built: the
-  factory still bakes a big kit whole on the oven that holds it (sub-kits as their own orders, baked pieces fitted as the next level's
-  kit, need an order for a baked sub-assembly: the next phase). `--bake-kit rule:N` checks every Nth rule kit. A one-piece kit's direct
+  Circuit Boards or rubber), its oven work 96% small whole, 97% split. The split is built since 2026-11-28 ([Sub-kits](#sub-kits-2026-11-28)). `--bake-kit rule:N` checks every Nth rule kit. A one-piece kit's direct
   feed needs an Extruder whose conveyor reaches a run into the oven, which no shipped works has yet. On Zero Day Works II (300 s,
   `--station-check ... --build "Zero Day Frigate" --dies`) the frigate fitted 16 of 346 parts (main 17; the leg pod parts come off the presses in another
   order): its kits with a rubber or concrete sheet (Lift, Retro and Drive Jets, Heavy RCS Thrusters, ladders, lockers) fall back to its
@@ -2843,3 +2841,38 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   cloth, rubber or concrete sheet nothing brings it, and the Assembler that could build the part refused it for good. The station
   line check (`LineLacks`) and the one-piece feed (`DirectExtruder`) both ask it, so the Assembler fallback stands until the material comes. The capital
   thrusters and the Capital Lift Cell (16 m) need a bigger bed. Works II's frigate: 17 of 346 in 300 s, as main (no tool row is in it).
+
+### Sub-kits (2026-11-28)
+
+Sean: bigger oven beds only for parts that can't be split; everything else is built as sub-assemblies on the smallest oven that fits, so
+the work spreads over every oven size instead of everything waiting on the big oven. Code: `BakeKits.Subs.cs`; the oven's side in
+`ConstructBakeOvenOrders.cs` (`PrintFor`). Protocol 489.
+
+- **The split.** A rule kit (not a listed one: the decks and the keel bake as listed) of three pieces or more whose bounds need more than
+  the small oven is split along its boxes (`BakeKits.Split`, sized to the hearth: `MakerRoutes.HearthFor`, the bed less 0.95 m each way,
+  as Works II's 20 x 6 m bed has a 19.1 x 5.1 m hearth). Each group of two or more pieces the split leaves on an oven smaller than the
+  whole kit's is a **sub-kit**; the rest stay pieces. Worked out once a process at the match's start (`WarmSubs`, with `Warm`: about
+  40 ms; 150 kits into 310 sub-kits, 249 designs), the same on every peer.
+- **Keys, not ids.** A sub-kit's baked part is `Baked (#hash)`, its canonical design the sub-kit's pieces where they stand in the part
+  (registered at the warm, so every peer makes it from its key; kept in the world, `KeepBaked`, with its first order). Its blueprint is
+  `Baked (#hash) kit`; the part's **split kit** is `{part} split kit`: the baked sub-assemblies and the leftover pieces at their places,
+  the biggest the root (`BakeKits.FindPrint` finds both). Two parts with a sub-kit alike share it, each placing it where its own kit puts it.
+- **Orders.** A station building a split kit asks for each sub-assembly by its key (`ConstructStation.OrderFor`: a `WorkOrder` whose
+  `Name` is the key and `Part` this peer's id, `IsSub`, kind 1; saved and sent by key in the named-order shape, as a rack's is). Only an oven
+  takes it, and only one of the size class the sub-kit needs (`OrderRefusal`: never a bigger one, which may hold the split kit's own order
+  at its head). That oven builds the sub-kit at its station like any kit, bakes it, and the bake comes out as the canonical part at the
+  turn it lay (`BakeKits.SubTarget`, 24 turns hashed at its first bake); a lifter takes it off the bed to the station that asked.
+- **The final bake.** `BakedParts.Bake` reads every baked subpart as its design's subparts before it asks `BakeKits.Target` (`Flat`), so
+  the split kit's design is the whole kit's and comes out as the part; anything else still bakes as before (a baked part of baked parts).
+- **Which kit an oven builds** (`ConstructBakeOven.PrintFor`, worked out again about every 20 s an oven and part): the split kit when every
+  sub-kit of it is taken by another oven on the construct of a smaller size class than this one, else the whole kit as before; the log says
+  which, once. A station's kit of either print counts as the order's (`BakeKits.IsKitOf`), so a change between them never starts a second.
+- **Not split:** a kit that fits no oven whole (184 parts at the warm, the Zero Day Railgun's 32.9 m among them, the capital drive
+  shafts and axles): the split kit's last bake holds the whole kit as its own does, so splitting can't bring it onto any oven, and its
+  Assembler row stays its maker. 56 more split into nothing smaller.
+- **Trying it.** `--bake-kit split:N` builds every Nth split part's sub-kits from their blueprints and at a turn, bakes each into its baked
+  part, then builds the split kit with them and bakes it into the part (2026-11-28: all 103 split parts with a big-oven whole pass).
+  `--station-check SITE --oven-order PART` lists every oven's answer and the Extruders when the order is refused; `--fill-extruder
+  X,Z,MATERIAL,N` fills the nearest Extruder's hopper. On Zero Day Works II the frigate's 300 s run fitted 19 of 346 (as before): none of
+  its oven kits splits (they fit the small oven, or are listed). The split candidates there all carry a concrete, rubber or cloth sheet
+  or pieces wider than its lines make, so the chain station, small oven, lifter, station, big oven hasn't run on a shipped works yet.
