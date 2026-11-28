@@ -16,7 +16,7 @@ public sealed class RoverFloor
 {
     public const float Cell = 1f;
     public const float Penalty = 25f; // a metre over a fitted part costs this many metres of free floor
-    public const int MaxWay = 8; // waypoints a route keeps (the trip's keys are counted: RoverPlan.MaxBase)
+    public const int MaxWay = 6; // waypoints a route keeps: a carry from the dock with two full routes takes 36 of RoverPlan.MaxBase's 40 keys
     private const int CacheSize = 24;
 
     public int W, H; // cells across (x) and along (z)
@@ -199,22 +199,27 @@ public sealed class RoverFloor
             return 1;
         }
         // The cells back from the goal, then pulled straight: from each corner, on to the furthest cell of the path it reaches with no
-        // more steps over fitted parts than the path itself takes there.
+        // more steps over fitted parts than the path itself takes there (counted from the path's cells, two half-metre steps a cell, so
+        // a corner costs one look along the line per cell of the path, never a walk of the path for each).
         Span<int> path = stackalloc int[Math.Min(W * H, 2048)];
+        Span<int> cum = stackalloc int[path.Length + 1];
         var pn = 0;
         for (var c = goal; c >= 0 && pn < path.Length; c = _from[c])
             path[pn++] = c;
         path[..pn].Reverse();
+        cum[0] = 0;
+        for (var q = 0; q < pn; q++)
+            cum[q + 1] = cum[q] + (cover[path[q]] != 0 ? 2 : 0);
         var n = 0;
         var from = a;
         var at = 0;
         while (n < way.Length - 1)
         {
-            if (Over(cls, from, b) <= OverPath(cls, path, at, pn - 1, from, b))
+            if (Over(cls, from, b) <= cum[pn] - cum[at] + 1)
                 break;
             var best = at + 1;
             for (var q = pn - 2; q > at; q--)
-                if (Over(cls, from, Mid(path[q])) <= OverPath(cls, path, at, q, from, Mid(path[q])))
+                if (Over(cls, from, Mid(path[q])) <= cum[q + 1] - cum[at] + 1)
                 {
                     best = q;
                     break;
@@ -226,20 +231,6 @@ public sealed class RoverFloor
             at = best;
         }
         way[n++] = b;
-        return n;
-    }
-
-    /// <summary>How many half-metre steps over fitted parts the path takes from cell index <paramref name="i"/> to <paramref name="k"/> (its ends at the given points).</summary>
-    private int OverPath(int cls, ReadOnlySpan<int> path, int i, int k, Vector2 a, Vector2 b)
-    {
-        var n = 0;
-        var prev = a;
-        for (var q = i + 1; q <= k; q++)
-        {
-            var p = q == k ? b : Mid(path[q]);
-            n += Over(cls, prev, p);
-            prev = p;
-        }
         return n;
     }
 
