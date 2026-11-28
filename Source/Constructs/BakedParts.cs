@@ -568,10 +568,12 @@ public static partial class BakedParts
         var text = DesignText(group, out var origin);
         // A bake kit's design (BakeKits.cs) comes out as the part it is the kit of, turned as the kit was. A baked subpart is read as its own
         // subparts for this (a split kit's baked sub-assemblies: BakeKits.Subs.cs), so a split kit matches its whole kit's design.
+        if (BakeKits.Target(HashOf(text), want, queue) is { } kit) // (want: the oven's order, when two parts share a kit; queue: a rule kit is matched by the oven's orders)
+            return Swap(world, c, kit.Part, origin + kit.Offset, kit.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
         var (matchText, matchOrigin) = Flat(group) is { } flat ? (DesignText(flat, out var fo), fo) : (text, origin);
         var matchHash = HashOf(matchText);
-        if (BakeKits.Target(matchHash, want, queue) is { } kit) // (want: the oven's order, when two parts share a kit; queue: a rule kit is matched by the oven's orders)
-            return Swap(world, c, kit.Part, matchOrigin + kit.Offset, kit.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
+        if (!ReferenceEquals(matchText, text) && BakeKits.Target(matchHash, want, queue) is { } split) // (a split kit: its baked sub-assemblies read as their pieces)
+            return Swap(world, c, split.Part, matchOrigin + split.Offset, split.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
         // A sub-kit's design at any turn comes out as its own baked part, its canonical design turned (the split kit's station wants that key).
         if (BakeKits.SubTarget(matchHash, want, queue) is { } sub && BakeKits.SubOf(sub.Part) is { } sk)
         {

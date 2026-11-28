@@ -2862,8 +2862,9 @@ the work spreads over every oven size instead of everything waiting on the big o
   takes it, and only one of the size class the sub-kit needs (`OrderRefusal`: never a bigger one, which may hold the split kit's own order
   at its head). That oven builds the sub-kit at its station like any kit, bakes it, and the bake comes out as the canonical part at the
   turn it lay (`BakeKits.SubTarget`, 24 turns hashed at its first bake); a lifter takes it off the bed to the station that asked.
-- **The final bake.** `BakedParts.Bake` reads every baked subpart as its design's subparts before it asks `BakeKits.Target` (`Flat`), so
-  the split kit's design is the whole kit's and comes out as the part; anything else still bakes as before (a baked part of baked parts).
+- **The final bake.** `BakedParts.Bake` asks `BakeKits.Target` for the group as it stands, then with every baked subpart read as its
+  design's subparts (`Flat`), so the split kit's design is the whole kit's and comes out as the part; anything else still bakes as before
+  (a baked part of baked parts).
 - **Which kit an oven builds** (`ConstructBakeOven.PrintFor`, worked out again about every 20 s an oven and part): the split kit when every
   sub-kit of it is taken by another oven on the construct of a smaller size class than this one, else the whole kit as before; the log says
   which, once. A station's kit of either print counts as the order's (`BakeKits.IsKitOf`), so a change between them never starts a second.
@@ -2873,6 +2874,6 @@ the work spreads over every oven size instead of everything waiting on the big o
 - **Trying it.** `--bake-kit split:N` builds every Nth split part's sub-kits from their blueprints and at a turn, bakes each into its baked
   part, then builds the split kit with them and bakes it into the part (2026-11-28: all 103 split parts with a big-oven whole pass).
   `--station-check SITE --oven-order PART` lists every oven's answer and the Extruders when the order is refused; `--fill-extruder
-  X,Z,MATERIAL,N` fills the nearest Extruder's hopper. On Zero Day Works II the frigate's 300 s run fitted 19 of 346 (as before): none of
+  X,Z,MATERIAL,N` fills the nearest Extruder's hopper. On Zero Day Works II the frigate's 300 s run fitted 19, 16 and 16 of 346 in three runs (main 19): none of
   its oven kits splits (they fit the small oven, or are listed). The split candidates there all carry a concrete, rubber or cloth sheet
   or pieces wider than its lines make, so the chain station, small oven, lifter, station, big oven hasn't run on a shipped works yet.
