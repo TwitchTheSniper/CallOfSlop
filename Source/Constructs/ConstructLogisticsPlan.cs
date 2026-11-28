@@ -520,7 +520,8 @@ public static class ConstructLogisticsPlan
         for (var i = 0; i < net.MachineN; i++)
         {
             var mk = net.Machines[i];
-            if (mk == e.Dest && ConstructCrafting.RouteTo(c, mk, mk) < 0 || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null) && !(what.IsPanel && !what.IsPressed && c.DefOf(mk).IsPanelFormer))
+            var self = mk == e.Dest && MakesInPlace(c, mk, what); // (an Assembler builds its own order's input into its hopper: no way out and back needed)
+            if (mk == e.Dest && !self && ConstructCrafting.RouteTo(c, mk, mk) < 0 || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null) && !(what.IsPanel && !what.IsPressed && c.DefOf(mk).IsPanelFormer))
                 continue; // (a piece is an Extruder's or a Former's; a part an Assembler's, a Press's or, a preset wing or rotor, a Fan or Airframe Former's; a formed or cut panel a Panel Former's or a Laser Cutter's: Refusal says which)
             var why = WorkOrders.Refusal(world, c, mk, what);
             if (why != null)
@@ -533,7 +534,7 @@ public static class ConstructLogisticsPlan
                 continue;
             }
             var score = (c.Parts[mk].Orders is { Bill: false } q ? q.Count * 2 + (Making(q, e.Kind) ? 0 : 1) : 1) * 256;
-            if (ConstructCrafting.RouteTo(c, mk, e.Dest) == -1)
+            if (!self && ConstructCrafting.RouteTo(c, mk, e.Dest) == -1)
             {
                 // No plain conveyor way through joins and Routers: a Splitter's line, a bed it rolls through or an arm may still bring it
                 // (last). A maker nothing at all leads from is never asked: its pieces could never arrive, the link asked it again each
@@ -596,6 +597,14 @@ public static class ConstructLogisticsPlan
         if (e.Reason != reason)
             e.Reason = reason; // (made only when it changes)
     }
+
+    /// <summary>
+    /// Does Assembler <paramref name="m"/> make <paramref name="what"/> for its own order in place (<see cref="ConstructAssembling.ToOwnHopper"/>)?
+    /// A catalogue part only: Zero Day Works II's Assemblers each roll their beds out to the station's pick pads, so a Deck Hatch's Bearings,
+    /// a locker's Control Unit and a couch's Tyre Carcass had no way from any Assembler to the one that needed them (Sean, 2026-11-28).
+    /// </summary>
+    internal static bool MakesInPlace(Construct c, int m, in WorkOrder what) =>
+        c.DefOf(m).IsAssembler && !what.IsPiece && what.Name == null && what.Part != ConstructParts.None;
 
     private static int[] _reach = [];
     private static int _reachStamp;
@@ -775,7 +784,7 @@ public static class ConstructLogisticsPlan
                 Remove(world, i);
                 continue;
             }
-            if (e.Maker != NoPart && e.Maker < c!.PartCount && (world.ChainStepNo + e.Id) % LeadsEvery == 0 && !Leads(c, e.Maker, e.Dest))
+            if (e.Maker != NoPart && e.Maker != e.Dest && e.Maker < c!.PartCount && (world.ChainStepNo + e.Id) % LeadsEvery == 0 && !Leads(c, e.Maker, e.Dest))
             {
                 // (asked before nothing-leads was a refusal, or its way was cut since: a saved world's line Extruders kept making
                 // Housing blanks for a Press they never reach. Its lines there stop; asked again of a maker with a way, or it says why)
@@ -1115,7 +1124,7 @@ public static class ConstructLogisticsPlan
         var key = ((uint)f.Kind * 31 + f.Made) * 65599u ^ (uint)f.Asked << 16 ^ f.Maker ^ (uint)c.StructStamp * 2654435761u ^ (uint)(held + 1) << 24; // (the note is made again only when one of these changes: phase 5; the links too, for the short line's warning)
         if (f.NoteText == null || f.NoteKey != key)
         {
-            var end = f.Maker == NoPart || f.Dest >= c.PartCount ? -1 : EndsShort(c, f.Maker, f.Dest);
+            var end = f.Maker == NoPart || f.Maker == f.Dest || f.Dest >= c.PartCount ? -1 : EndsShort(c, f.Maker, f.Dest); // (made in place: it never leaves)
             (f.NoteText, f.NoteKey) = ($"{ConstructParts.Get(f.Kind)?.Name} {f.Made}/{f.Asked} {(f.Maker == NoPart ? "from stock" : $"from the {c.DefOf(f.Maker).Name}")}{(held >= 0 ? $"; the {c.DefOf(held).Name} is held off: press Start on its line console" : "")}{(end >= 0 ? "; " + NoWayText(c, end, f.Dest) : "")}", key);
         }
         return f.NoteText;
