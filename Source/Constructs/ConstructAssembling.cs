@@ -62,10 +62,11 @@ public readonly struct AsmFit
     public float DrawScale => Limited ? MathF.Pow(1.8f, Overdrive) : 1f;
 
     /// <summary>The modules a recipe needs that this one hasn't got (bits), 0 when it has them all.</summary>
-    public byte Missing(AssembleRecipe r) => Limited ? (byte)(r.Needs & ~Modules) : (byte)0;
+    /// Retiring the Assembler, phase 6 (2026-11-28): the upgrade modules went, so a recipe needs none (a run-time Ord Rack's Needs is ignored too).
+    public byte Missing(AssembleRecipe r) => 0;
 
-    /// <summary>Does a recipe need a tool block this one hasn't docked?</summary>
-    public bool LacksTool(AssembleRecipe r) => Limited && r.ToolId != 0 && r.ToolId != Tool;
+    /// <summary>Does a recipe need a tool block this one hasn't docked? Never since phase 6: the Tool Bay and its blocks went.</summary>
+    public bool LacksTool(AssembleRecipe r) => false;
 
     /// <summary>The tool block that gives a tool (AssemblingTable.Machines index).</summary>
     public static string ToolBlockName(int tool) => tool switch
@@ -201,8 +202,6 @@ public static class ConstructAssembling
 
     public static void Step(ConstructWorld world, IWorldQuery query)
     {
-        if (world.ToolSwaps.Count > 0)
-            AssemblerToolBay.Deliver(world); // (a tool block a chute took from a rack last tick docks now)
         if (++world.AssembleTicks < ConstructRefining.Every)
             return;
         world.AssembleTicks = 0;
@@ -228,10 +227,19 @@ public static class ConstructAssembling
     public static AssembleRecipe? RecipeOf(AssemblingTable table, in CPart p, ConstructPartDef d)
     {
         if (p.Orders is { Bill: false } q)
-            return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine ? r : null;
+            return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine && !BakeKits.OffAssembler(r.Output) ? r : null;
         var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
         var list = table.ByMachine[d.AsmMachine];
-        return k >= 0 && k < list.Length && !BakeKits.ListedKit(list[k].Output) ? list[k] : null; // (a part made from a listed kit is baked, never assembled: BakeKits.cs; its row stays for saved settings. A rule kit's part an Assembler still builds when no oven takes it: BakeKits.OvenServes)
+        return k >= 0 && k < list.Length && !BakeKits.OffAssembler(list[k].Output) ? list[k] : null; // (a part a press or an oven makes is never assembled since phase 6: BakeKits.OffAssembler; its row stays as its bill and for saved settings)
+    }
+
+    /// <summary>The Assemblers (body, part) whose set recipe left the Assembler that the log has named once (server; a saved world's).</summary>
+    private static readonly HashSet<long> SaidOff = new();
+
+    private static bool SayOff(int body, int part)
+    {
+        lock (SaidOff)
+            return SaidOff.Add((long)body << 16 | (uint)part);
     }
 
     private static void Work(ConstructWorld world, IWorldQuery query, AssemblingTable table, Construct c, int part, CStore st)
@@ -246,15 +254,19 @@ public static class ConstructAssembling
         }
         var d = c.Parts[part].D;
         var recipe = RecipeOf(table, c.Parts[part], d);
-        if (recipe == null && table.Recipes.Length > 0 && c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Part != ConstructParts.None && table.Of(q.Head.Part)?.Machine != d.AsmMachine)
+        if (recipe == null && table.Recipes.Length > 0 && c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Part != ConstructParts.None
+            && (table.Of(q.Head.Part) is not { } hr || hr.Machine != d.AsmMachine || BakeKits.OffAssembler(hr.Output)))
         {
-            // A head order no Assembler of this kind makes (a world saved before its part moved to a press: retiring the Assembler,
-            // 2026-11-28) would hold the whole queue for good: it goes, said once, and whoever asked for it asks its maker again.
+            // A head order no Assembler of this kind makes (a world saved before its part moved to a press or an oven: retiring the Assembler,
+            // 2026-11-28, phase 6's BakeKits.OffAssembler too) would hold the whole queue for good: it goes, said once, and whoever asked for it asks its maker again.
             Console.WriteLine($"[assembler] body {c.Id} part {part}: dropped an order for {q.Head.Count} {(q.Head.Part < Extrusion.RuntimeBase ? ConstructParts.Def(q.Head.Part).Name : "a run-time part")}: no Assembler recipe makes it now");
             q.RemoveAt(0);
             world.OrdersChanged(c);
             return;
         }
+        if (recipe == null && c.Parts[part].Orders is not { Bill: false } && (int)ConstructConfig.Get(c.Parts[part], d, CfgKey.Recipe, 0) - 1 is var k and >= 0
+            && k < table.ByMachine[d.AsmMachine].Length && BakeKits.OffAssembler(table.ByMachine[d.AsmMachine][k].Output) && SayOff(c.Id, part))
+            Console.WriteLine($"[assembler] body {c.Id} part {part}: its recipe {table.ByMachine[d.AsmMachine][k].Name} left the Assembler for a press or an oven (retiring the Assembler, phase 6): it builds nothing until another recipe is set");
         var id = recipe?.Choice ?? 0;
         if (st.JobAmount != id)
         {

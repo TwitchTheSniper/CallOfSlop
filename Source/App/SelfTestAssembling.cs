@@ -238,6 +238,35 @@ public static partial class SelfTest
         }
         AssemblingTableChecks(Want);
         BigMachineChecks(Want);
+        CheckAssemblingOn(yard, Want, problems);
+    }
+
+    /// <summary>
+    /// A recipe an Assembler still builds since phase 6 of retiring the Assembler, for the sections that drive one: a production
+    /// machine's own part (BakeKits.Bootstrap) a plain Assembler of this tier builds as a body at its output point, from steel alone and
+    /// a few pressed parts a shelf holds, the least steel first. Null: none (the caller fails).
+    /// </summary>
+    internal static AssembleRecipe? KeptRecipe(ConstructPartDef asm)
+    {
+        var steel = RecyclingTable.Current.IdOf("steel");
+        return AssemblingTable.Current.Recipes.Where(r => r.Machine == asm.AsmMachine && r.MinTier <= asm.Tier && r.Output.PhysicsOnly && BakeKits.Bootstrap(r.Output)
+                && !BakeKits.OffAssembler(r.Output) && r.Materials.Length > 0 && r.Materials.All(m => m.Material == steel) && r.Parts.Length is > 0 and <= 2
+                && r.Parts.Sum(p => p.Count) <= 4 && r.Parts.All(p => PressTable.Current.PresetKeyOf(p.Part) != null)) // (a few parts, as the Engine's three: the Assembly Bay's shelf holds them)
+            .OrderBy(r => r.Materials.Sum(m => m.Units)).ThenBy(r => r.Name, StringComparer.Ordinal).FirstOrDefault();
+    }
+
+    /// <summary>A kept recipe's steel units and its parts, one def a part.</summary>
+    private static (int Steel, List<ConstructPartDef> Parts) InputsOf(AssembleRecipe r)
+    {
+        var parts = new List<ConstructPartDef>();
+        foreach (var (p, n) in r.Parts)
+            for (var k = 0; k < n; k++)
+                parts.Add(p);
+        return (r.Materials.Sum(m => m.Units), parts);
+    }
+
+    private static void CheckAssemblingOn(Map yard, Action<bool, string> Want, List<string> problems)
+    {
         var names = RecyclingTable.Current;
         byte ore = names.IdOf("iron ore"), metal = names.IdOf("metal"), stone = names.IdOf("stone"), steel = names.IdOf("steel"), wood = names.IdOf("wood");
         yard.RestoreProps();
@@ -274,7 +303,16 @@ public static partial class SelfTest
             var line = Look();
             Want(line.Contains(text) && line.All(ch => ch is >= ' ' and <= '~'), $"the look line \"{line}\" should say \"{text}\"");
         }
-        var engine = AssemblingTable.Current.Recipes.First(r => r.Name == "Engine");
+        if (KeptRecipe(def) is not { } engine) // (named for the Engine this section drove before phase 6: now a machine's part the Assembler still builds)
+        {
+            Fail("assembling: no recipe an Assembler still builds from steel and pressed parts (BakeKits.Bootstrap)");
+            return;
+        }
+        var (steelNeed, needParts) = InputsOf(engine);
+        var full = steelNeed + needParts.Count;
+        var scale = Math.Max(1, (steelNeed + 19) / 20); // (the chain's ore and stone made the Engine's 20 steel)
+        Want(Recipe()?.Name == "Wheel", $"the Assembly Bay's recipe is {Recipe()?.Name}, not the Wheel");
+        ConstructConfig.Set(ref bay.Parts[asm], def, (byte)def.CfgSlot[(int)CfgKey.Recipe], engine.Choice); // (a production machine's part: still the Assembler's, BakeKits.Bootstrap)
         Want(Recipe() == engine && bay.HasAssembler && bay.RouteCount == 3 && bay.HasBattery && bay.Anchored, $"the Assembly Bay (recipe {Recipe()?.Name}, {bay.RouteCount} chutes, battery {bay.HasBattery})");
         Want(station.RouteCount == 2 && works.RouteCount == 3, $"the chutes reach the machines' ports ({station.RouteCount}, {works.RouteCount})");
 
@@ -285,31 +323,30 @@ public static partial class SelfTest
         var none = ReadOnlySpan<WNode>.Empty;
         Want(w.AddWorldLink(q, RouteType.Chute, station, metalOut, 255, none, works, metalBin, 255) >= 0, $"a chute from the Smelting Station to the Foundry Works: {w.CheckWorldLink(q, RouteType.Chute, station, metalOut, 255, none, works, metalBin, 255)}");
         Want(w.AddWorldLink(q, RouteType.Chute, works, steelOut, 255, none, bay, steelBin, 255) >= 0, $"a chute from the Foundry Works to the Assembly Bay: {w.CheckWorldLink(q, RouteType.Chute, works, steelOut, 255, none, bay, steelBin, 255)}");
-        var piston = ConstructParts.Need("Piston Set");
-        var loom = ConstructParts.Need("Wiring Loom");
-        foreach (var p in (ConstructPartDef[])[piston, piston, loom])
+        foreach (var p in needParts)
             Want(SlotStore.Instance.PutPart(w, bay, shelf, p, false) || SlotStore.Instance.PutPart(w, bay, shelf, p, true), $"a {p.Name} on the shelf");
         Run(0.3f);
         WantLook("needs");
-        w.Deposit(station, oreBin, 44, ore);
-        w.Deposit(works, stoneBin, 12, stone);
+        w.Deposit(station, oreBin, 44 * scale, ore);
+        w.Deposit(works, stoneBin, 12 * scale, stone);
         var known = w.Bodies.Select(b => b.Id).ToHashSet();
         Construct? Made() => w.Bodies.FirstOrDefault(b => !known.Contains(b.Id) && b.PartCount == 1 && b.Parts[0].D == engine.Output);
         var waited = 0f;
-        for (; waited < 70 && Made() == null; waited += 1)
+        for (; waited < 70 * scale && Made() == null; waited += 1)
             Run(1);
         var smelter = w.StoreOf(station, PartNamed(station, "Smelter"))!;
         var foundry = w.StoreOf(works, PartNamed(works, "Foundry"))!;
-        Line($"assembling: the chain made an Engine in {waited} s: steel {st.MixOf(steel)}, {st.KindN} kinds left, Smelter {smelter.InAmount} in, Foundry holds {foundry.MixN}");
+        Line($"assembling: the chain made a {engine.Name} in {waited} s: steel {st.MixOf(steel)}, {st.KindN} kinds left, Smelter {smelter.InAmount} in, Foundry holds {foundry.MixN}");
         if (Made() is not { } built)
         {
-            Fail($"assembling: no Engine after {waited} s: \"{Look()}\"; Smelter in {smelter.InAmount}, Foundry \"{ConstructRefining.Look(works, PartNamed(works, "Foundry"), foundry, false, inv)}\"");
+            Fail($"assembling: no {engine.Name} after {waited} s: \"{Look()}\"; Smelter in {smelter.InAmount}, Foundry \"{ConstructRefining.Look(works, PartNamed(works, "Foundry"), foundry, false, inv)}\"");
             return;
         }
-        Want(Inputs(st) <= 2, $"the batch used its inputs: \"{Look()}\"");
+        Want(Inputs(st) - st.MixOf(steel) <= 2, $"the batch used its inputs: \"{Look()}\"");
+        var spare = Inputs(st); // (the chain's steel past the batch's, when it made more than one batch's worth)
         bay.WorldFrame(bay.Parts[asm].Seg, out var fq, out var ft);
         var outPoint = ft + Vector3.Transform(bay.Parts[asm].Pos + Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutAt), fq);
-        Want(Vector3.Distance(built.WorldCom with { Y = 0 }, outPoint with { Y = 0 }) < 2f && built.Owner == bay.Owner, $"the Engine left at {built.WorldCom}, not at the output point {outPoint}");
+        Want(Vector3.Distance(built.WorldCom with { Y = 0 }, outPoint with { Y = 0 }) < 2f && built.Owner == bay.Owner, $"the {engine.Name} left at {built.WorldCom}, not at the output point {outPoint}");
         w.Remove(built);
 
         // ---- A missing input: it says which, and waits.
@@ -319,17 +356,16 @@ public static partial class SelfTest
         // ---- A full batch, then each thing that stops it: power, Run, a blocked output.
         void Fill()
         {
-            for (var k = 0; k < 2; k++)
-                w.FeedPart(bay, asm, piston);
-            w.FeedPart(bay, asm, loom);
-            w.FeedAssembler(bay, asm, 20, steel);
+            foreach (var p in needParts)
+                w.FeedPart(bay, asm, p);
+            w.FeedAssembler(bay, asm, steelNeed, steel);
         }
         void WantInputsFor(string what) => Want(!ConstructAssemblingShort(st, engine), $"{what}: \"{Look()}\"");
         Fill();
         WantInputsFor("filled");
         bay.Charge = 0;
         Run(1);
-        Want(!st.Busy && Look().Contains("no power") && Inputs(st) >= 23, $"no power: \"{Look()}\"");
+        Want(!st.Busy && Look().Contains("no power") && Inputs(st) >= full, $"no power: \"{Look()}\"");
         bay.Charge = bay.ChargeCapacity;
         Run(0.5f);
         Want(st.Busy && bay.PowerUse >= def.PowerDraw, $"powered it works and draws ({st.Busy}, {bay.PowerUse} W)");
@@ -343,7 +379,7 @@ public static partial class SelfTest
         var heldJob = st.JobTicks;
         Want(st.Held && !st.Busy, $"a Run wire off holds it (held {st.Held}, busy {st.Busy})");
         Run(1);
-        Want(st.JobTicks == heldJob && Inputs(st) >= 23, $"held off it worked ({st.JobTicks} from {heldJob})");
+        Want(st.JobTicks == heldJob && Inputs(st) >= full, $"held off it worked ({st.JobTicks} from {heldJob})");
         w.RemoveWires(bay, sw);
         bay.Rebuild();
 
@@ -356,34 +392,29 @@ public static partial class SelfTest
         known = w.Bodies.Select(b => b.Id).ToHashSet();
         for (var t = 0; t < 30 && st.Blocked == 0; t++)
             Run(1);
-        Want(st.Blocked == (byte)AsmBlock.OutputBlocked && Made() == null && Inputs(st) >= 23 && !st.Busy, $"a blocked output: blocked {st.Blocked}, \"{Look()}\"");
+        Want(st.Blocked == (byte)AsmBlock.OutputBlocked && Made() == null && Inputs(st) >= full && !st.Busy, $"a blocked output: blocked {st.Blocked}, \"{Look()}\"");
         WantLook("something is in the way of its output");
         w.Remove(block);
         Run(1.5f);
-        Want(st.Blocked == 0 && Made() is { } after && Inputs(st) <= 2, $"cleared, the Engine leaves: blocked {st.Blocked}, \"{Look()}\"");
+        Want(st.Blocked == 0 && Made() is { } after && Inputs(st) <= spare + 2, $"cleared, the {engine.Name} leaves: blocked {st.Blocked}, \"{Look()}\"");
         if (Made() is { } left)
             w.Remove(left);
 
-        // ---- The module gate: an Engine needs a Power Coupling and a Coolant Loop; an Assembler with no modules refuses it and says so.
+        // ---- Retiring the Assembler, phase 6 (was the module gate, whose modules went): a part an oven or a press makes is no
+        // Assembler's, whichever recipe it is set to, and a work order for one names its maker.
         Run(0.1f);
-        var plain = ModFit(w, bay, "Assembler", "bottom", "assembling");
-        if (plain >= 0)
+        if (AssemblingTable.Current.Recipes.FirstOrDefault(r => r.Output.PhysicsOnly && r != engine && BakeKits.OffAssembler(r.Output)) is { } baked)
         {
             var cfg = (byte)ConstructParts.Need("Assembler").CfgSlot[(int)CfgKey.Recipe];
-            var choice = Array.IndexOf(AssemblingTable.Current.Choices, "Engine");
-            ConstructConfig.Set(ref bay.Parts[plain], bay.DefOf(plain), cfg, choice);
-            var ps = w.StoreOf(bay, plain)!;
-            Want(w.FeedAssembler(bay, plain, 20, steel) == 0 && ps.Refused == steel, $"an Assembler with no modules took steel for an Engine (refused {ps.Refused})");
-            var line = ConstructAssembling.Look(bay.DefOf(plain), ps, engine, ConstructAssembling.FitOf(bay, plain), false, inv, null);
-            Want(line.Contains("needs a Power Coupling and a Coolant Loop on the Core"), $"the module gate's look line: \"{line}\"");
-            w.RemovePart(bay, plain);
-            bay.Rebuild();
-            asm = PartNamed(bay, "Assembler");
-            steelBin = PartNamed(bay, "Materials Bin");
-            shelf = PartNamed(bay, "Parts Shelf");
+            var was = ConstructConfig.Get(bay.Parts[asm], def, CfgKey.Recipe, 0);
+            ConstructConfig.Set(ref bay.Parts[asm], def, cfg, baked.Choice);
+            Want(Recipe() == null, $"an Assembler set to the {baked.Name} (a Bake Oven's) builds it");
+            Want(WorkOrders.Queue(w, bay, asm, new WorkOrder { Part = (ushort)baked.Output.Id, Count = 1 }) is { } refusal && refusal.Contains("Bake Oven"), $"an Assembler took an order for the {baked.Name}");
+            ConstructConfig.Set(ref bay.Parts[asm], def, cfg, was);
+            Run(0.1f);
         }
         else
-            Want(false, "no room for a second Assembler on the bay");
+            Want(false, "no placed part is baked: phase 6 has nothing to refuse");
 
         // ---- A refused chute: what the recipe doesn't use stays in the source, and the look line says so.
         w.Withdraw(bay, steelBin, 100000);
@@ -463,7 +494,7 @@ public static partial class SelfTest
         bay.Charge = bay.ChargeCapacity;
 
         // ---- Nothing allocates: a machine working and a blocked one, over 240 steady ticks.
-        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Engine"));
+        ConstructConfig.Set(ref bay.Parts[asm], def, slot, engine.Choice);
         Run(0.5f);
         var alloc0 = GC.GetAllocatedBytesForCurrentThread();
         for (var t = 0; t < 240; t++)
@@ -496,6 +527,11 @@ public static partial class SelfTest
     /// parts, the flags, the look line, a blocked output and the mass reach everyone, and a body built reaches all of them.
     /// </summary>
     private static void CheckAssemblingNet()
+    {
+        CheckAssemblingNetOn();
+    }
+
+    private static void CheckAssemblingNetOn()
     {
         if (Maps.Find(ConstructYardMap) is not { } yard || yard.Sandbox is not { } sb)
         {
@@ -582,13 +618,20 @@ public static partial class SelfTest
             if (!Await(() => Store(a) is { Items: >= 2 } || w.StoreOf(bay, PartNamed(bay, "Chest")) is { Items: >= 1 }, 8, [a]))
                 Fail($"assembling network: no Fuel Canisters on the tray (\"{LookOf(a)}\", host tray {st.Items})");
 
-            // An Engine, part way: three stores' worth of state: materials and parts in the input, seen by a late joiner too.
-            a.SandboxConfigure(bay.Id, [(byte)asm], [(byte)def.CfgSlot[(int)CfgKey.Recipe]], [Array.IndexOf(recipes.Choices, "Engine")]);
-            Await(() => RecipeOn(server)?.Name == "Engine", 3, [a]);
+            // A machine's part the Assembler still builds (an Engine before phase 6), part way: three stores' worth of state: materials and
+            // parts in the input, seen by a late joiner too.
+            if (KeptRecipe(def) is not { } kept)
+            {
+                Fail("assembling network: no recipe an Assembler still builds from steel and pressed parts (BakeKits.Bootstrap)");
+                return;
+            }
+            var (steelNeed, needParts) = InputsOf(kept);
+            a.SandboxConfigure(bay.Id, [(byte)asm], [(byte)def.CfgSlot[(int)CfgKey.Recipe]], [Array.IndexOf(recipes.Choices, kept.Name)]);
+            Await(() => RecipeOn(server)?.Name == kept.Name, 3, [a]);
             Pump(server, [a], 0.4, ref now, clock);
-            var piston = ConstructParts.Need("Piston Set");
-            w.FeedAssembler(bay, asm, 12, steel);
-            w.FeedPart(bay, asm, piston);
+            var firstSteel = Math.Max(1, steelNeed / 2);
+            w.FeedAssembler(bay, asm, firstSteel, steel);
+            w.FeedPart(bay, asm, needParts[0]);
             bool Same(Game g) => Store(g) is { } s && s.MixOf(steel) == st.MixOf(steel) && s.KindN == st.KindN && s.ItemCount == st.ItemCount && g.Constructs.Get(bay.Id) is { } cc && MathF.Abs(cc.Mass - bay.Mass) < 0.01f;
             if (!Await(() => Same(a), 4, [a]))
                 Fail($"assembling network: the client's copy (\"{LookOf(a)}\") isn't the server's ({st.MixOf(steel)} steel, {st.KindN} kinds, {bay.Mass} kg)");
@@ -604,22 +647,23 @@ public static partial class SelfTest
             var block = ConstructEdits.DropLoose(w, blocker, outAt + new Vector3(0, (blocker.BoundsMax.Y - blocker.BoundsMin.Y) * 0.5f + 0.15f, 0), Quaternion.Identity)!;
             block.Pinned = true;
             block.Rebuild();
-            w.FeedPart(bay, asm, piston);
-            w.FeedPart(bay, asm, ConstructParts.Need("Wiring Loom"));
-            w.FeedAssembler(bay, asm, 8, steel);
-            if (!Await(() => Store(a) is { Blocked: not 0 } && Store(late) is { Blocked: not 0 }, 16, [a, late]))
+            for (var k = 1; k < needParts.Count; k++)
+                w.FeedPart(bay, asm, needParts[k]);
+            if (steelNeed > firstSteel)
+                w.FeedAssembler(bay, asm, steelNeed - firstSteel, steel);
+            if (!Await(() => Store(a) is { Blocked: not 0 } && Store(late) is { Blocked: not 0 }, 30 + kept.Seconds * 1.5, [a, late])) // (a batch has no Overdrive Unit since phase 6)
                 Fail($"assembling network: nobody heard the blocked output (host {st.Blocked}, client \"{LookOf(a)}\")");
             else if (!LookOf(late).Contains("in the way of its output"))
                 Fail($"assembling network: the joiner's look line: \"{LookOf(late)}\"");
             var ids = w.Bodies.Select(b => b.Id).ToHashSet();
             w.Remove(block);
-            if (!Await(() => w.Bodies.Any(b => !ids.Contains(b.Id) && b.PartCount == 1 && b.Parts[0].D.Name == "Engine"), 3, [a, late]))
-                Fail("assembling network: the Engine didn't leave when the way cleared");
+            if (!Await(() => w.Bodies.Any(b => !ids.Contains(b.Id) && b.PartCount == 1 && b.Parts[0].D == kept.Output), 3, [a, late]))
+                Fail($"assembling network: the {kept.Name} didn't leave when the way cleared");
             else
             {
                 var body = w.Bodies.First(b => !ids.Contains(b.Id) && b.PartCount == 1);
                 if (!Await(() => a.Constructs.Get(body.Id) != null && late.Constructs.Get(body.Id) != null && Store(a) is { Blocked: 0 } && Store(late) is { Blocked: 0 }, 3, [a, late]))
-                    Fail("assembling network: a peer never got the Engine's body");
+                    Fail($"assembling network: a peer never got the {kept.Name}'s body");
             }
         }
         finally

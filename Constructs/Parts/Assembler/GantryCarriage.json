@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gantry Carriage",
-  "description": "Weld it on an Assembly Bed Block's rail edge (the yellow rail): one more arm, so its Assembler builds one more part at once when the bed has room for them. One a bed block, 32 on a machine at most. Each working arm draws power.",
+  "description": "Retired Assembler part (was the Gantry Carriage): it does nothing now. Recycle it for its materials.",
   "group": "Production",
   "section": "Assemblers",
   "role": "frame",
@@ -12,12 +12,10 @@
   "material": "steel",
   "color": "#f2b01e",
   "attachSeconds": 4,
-  "machineBlock": {
-    "role": "carriage"
-  },
   "centreSockets": false,
   "collider": "boxes",
   "power": 0,
+  "retired": true,
   "boxes": [
     {
       "min": [

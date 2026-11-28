@@ -1,15 +1,11 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Sewing Table Block",
-  "description": "An Assembler's tool block for lift cells and other cloth work: dock it on a free side of an Assembler Core (its Tool Bay: the dock face against the Core) and the Core builds the recipes that need a sewing table. Store tool blocks on a Block Rack: a chute from the rack into the Core swaps in the one its recipe needs.",
+  "description": "Retired Assembler part (was the Sewing Table Block): it does nothing now. Recycle it for its materials.",
   "group": "Production",
   "section": "Assemblers",
   "role": "frame",
   "tool": "welder",
-  "machineBlock": {
-    "role": "tool",
-    "tool": "tailor"
-  },
   "centreSockets": false,
   "collider": "boxes",
   "mass": 380.0,
@@ -18,6 +14,7 @@
   "material": "steel",
   "color": "#4a5a4c",
   "attachSeconds": 6,
+  "retired": true,
   "boxes": [
     {
       "min": [

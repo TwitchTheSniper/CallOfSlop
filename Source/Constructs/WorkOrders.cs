@@ -189,19 +189,17 @@ public static class WorkOrders
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} parts";
         if (BakeKits.AssemblerRefuses(world, c, made))
-            return $"the {made.Name} is baked from a kit of extrusions: a Bake Oven's order (Sean, 2026-11-23; every placed part, 2026-11-28)";
+            return PressTable.Current.PresetKeyOf(made) != null ? $"the {made.Name} is pressed: a Press's order (the Assembler builds only what no press or oven makes, 2026-11-28)"
+                : $"the {made.Name} is baked from a kit of extrusions: a Bake Oven's order (the Assembler builds only what no press or oven makes, 2026-11-28)";
         if (AssemblingTable.Current.Of(o.Part) is not { } r)
             return FormerPresets.Line(made) ?? $"no recipe makes the {made.Name}";
         if (r.Machine != d.AsmMachine)
             return $"the {made.Name} is made by a {FamilyName(r.Machine)}, not the {d.Name}";
         if (r.MinTier > d.Tier)
             return $"the {made.Name} needs a tier {r.MinTier} {FamilyName(r.Machine)} (this is tier {d.Tier})";
-        // A block Assembler builds only what its bed and clear height hold, and only with the modules a recipe needs: taken, such an
-        // order would sit at the head of the queue as Too big or Needs module for good (a 17 m frigate deck on an 8 x 8 m bed). A tool
-        // block isn't checked: a chute from a Block Rack swaps it in (AssemblerToolBay).
+        // A block Assembler builds only what its bed and clear height hold: taken, such an order would sit at the head of the queue as Too
+        // big for good (a 17 m frigate deck on an 8 x 8 m bed). (No upgrade modules or tool blocks since phase 6, 2026-11-28.)
         var fit = ConstructAssembling.FitOf(c, part);
-        if (fit.Missing(r) is var missing and not 0)
-            return $"the {made.Name} needs {AsmFit.ModuleWords(missing)} on the {d.Name}";
         if (fit.AtOnce(made) <= 0)
         {
             fit.Footprint(made, out var fx, out var fz, out _);
@@ -288,7 +286,7 @@ public static class WorkOrders
     public static string CatalogueMaker(in WorkOrder o) =>
         o.IsMade ? (ConstructParts.Get(o.Part) is { } md && md.Name == o.Name && BakeKits.Has(md) ? "a Bake Oven" : "an Assembler")
         : o.IsPiece || o.Name != null ? "another machine"
-        : ConstructParts.Get(o.Part) is { } d && BakeKits.Has(d) ? "a Bake Oven"
+        : ConstructParts.Get(o.Part) is { } d && BakeKits.Has(d) && BakeKits.OffAssembler(d) ? "a Bake Oven" // (a giant part no oven holds is still an Assembler's: phase 6)
         : Pressed.SpecOf(o) != null ? "a Press"
         : "an Assembler";
 
@@ -1107,9 +1105,10 @@ public static class ConstructBill
             bill.Pieces[b] = bill.Pieces[b] with { Count = (ushort)Math.Min(bill.Pieces[b].Count + 1, WorkOrders.MaxCount) };
     }
 
-    /// <summary>A catalogue part no Assembler makes but a die presses (a preset, Press phase 4), as its press order's spec; else null.</summary>
+    /// <summary>A catalogue part a die presses (a preset, Press phase 4), as its press order's spec; else null. Whether or not it keeps an
+    /// Assembler row (its bill: the Differential, the Proximity Sensor, the receivers): since phase 6 no Assembler builds a preset.</summary>
     public static Pressed.OrderSpec? PresetOf(ConstructPartDef? d) =>
-        d != null && RecipeOf(d) == null && PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
+        d != null && PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
 
     private static void AddPressed(Bill bill, string key, Pressed.OrderSpec spec)
     {

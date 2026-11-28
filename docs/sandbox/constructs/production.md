@@ -928,6 +928,13 @@ run from "Gathering", "Gathering network", "Refining" and "Refining network".
 
 The step after refining: an **Assembler** builds parts from what the chains make. Code: `Source/Constructs/ConstructAssembling.cs`, `ConstructAssemblingTable.cs`; generator: the part kit's `--gen-parts assembling`.
 
+**Since phase 6 of retiring the Assembler (2026-11-28, [below](#retiring-the-assembler-2026-11-28))** an Assembler builds only what no
+press and no oven makes (`BakeKits.OffAssembler`): the hand-held items no die presses yet, the giant parts no oven holds whole, and
+(as well as their kits) the production machines' own parts (`BakeKits.Bootstrap`), so an old world with only an Assembler can build
+its first oven or press. Its
+upgrade modules, Gantry Carriages and Tool Bay are gone (retired stand-ins), so the bullets below on them are history; the table stays
+whole as the bill of materials.
+
 - **The machine** (block system, Sean 2026-11-21; design doc "Assembler on the block system"; parts `Constructs/Parts/Assembler`, generator `AssemblerParts.cs`; `MachineBlocks` family `assembler`). It has **no tiers**. The **Assembler** is its Core: a 2 m cell with the hopper on its top (Chute in), four tray cubbies on its front, Chute out on its side, its screen on -x, its own arm over a deck on its front half, and six **upgrade slots** on its back (sockets `module1` to `module6`, kind `tier`). **Assembly Bed Blocks** (2 x 2 x 0.4 m) welded beside it make the bed: the largest full rectangle next to the Core, up to 16 x 16 cells. **Mast Blocks** stand on the floor just *outside* the bed's four corners, welded to a corner block's side by their low sockets (`+x.low` ...), and stack: the shortest corner column sets the clear height, 2 m a mast block, 2 m with none (`CMachineAsm.Masts`). A **Gantry Carriage** welded on a bed block's `carriage` socket (its yellow rail edge) is one more arm: a bare Core has its own one, and the bed takes one a block, 32 a machine at most (`CMachineAsm.Carriages`, `MachineBlocks.MaxCarriages`). `storage.assemble` holds `capacity` (the fill's scale), `speed`, `chuteLoad`, `batches` (how many batches of each input it buffers an arm: 4), and `outAt`, `outDir`, where a body leaves a bare Core. Its `slots` are the tray.
 - **Upgrade modules** bolt on the upgrade slots, any mix, any order (`AsmFit`, `ConstructAssembling.FitOf`): the tier pieces are its unlocking modules, each unlocking one kind of work whatever else is fitted: **Power Coupling** (copper, Copper Coils, Wiring Looms, Servo Motors), **Coolant Loop** (bronze, Bearings, Piston Sets, Turbine Stages), **Servo Rack** (gold, circuits, Circuit Boards, Control Units), **Plasma Conditioner** (levite, Field Coils, Levite Cores, anti-grav). Two more stack, 4 at most: the **Overdrive Unit** (build speed x2, draw x1.8, each) and the **Feed Buffer** (the hopper holds twice the batches, each). A module's own recipe needs no module, so a bare Core starts the ladder.
 - **Fit.** A recipe's part has a footprint: its plan sides rounded up to whole cells (2 cm slack), either way round. The bed packs as many as fit (its **places**); the part's height must stand under the clear height. A bare Core builds a part up to 2 m a side (an Assembly Bed Block, so survival can start a bed). **Parts at once** = the smaller of its arms and the places: a wave of the recipe's seconds (divided by the Overdrive speed) builds one part an arm that has its batch in, every arm the head order's part. Each working arm draws the Core's 1.5 kW (x1.8 an Overdrive Unit). A part that doesn't fit says what to weld ("needs a 1 x 3 bed, this one is 2 x 2", "needs 4 m clear, this one has 2 m: stack 2 Mast Blocks on each mast column"); a missing module says which ("needs a Servo Rack on the Core"). A work order (a terminal's, a chain's, a station's) is refused by the same rules, so it never sits at the head of the queue for good: a part the bed or clear height can't hold now says what to weld, one bigger than any bed of its Core can grow (`BlockMaxSide`, `BlockMaxCells`) says so, and a missing module names it (`WorkOrders.AssemblerRefusal`, 2026-11-22: the frigate test run's 17 m decks and 33 m railgun were taken by an 8 x 8 m bed). A tool block isn't checked there: a chute from a Block Rack swaps it in. A body built on a bed is set down at its place on the bed for a crane, a Loader Arm or a Piece out conveyor (from an Out Table) to take; a place still holding the last one waits. `--machine-blocks BLUEPRINT` prints a machine's arms, masts and modules and what a few parts fit.
@@ -2868,6 +2875,52 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
    an ordnance round's sections among them; kept by its key, never its id), as a named oven order (`WorkOrder.IsMade`). The station
    check's start report lists oven orders as "NOTHING MAKES" before the line's bins fill, though they queue and bake. A saved works keeps
    its Assemblers (tools/MIGRATING.md).
+
+- **Phase 6 (this change: the machine retires, Sean's card, the recommended option).** The Assembler stays only for what no oven
+  (the Bake Oven XL included) and no press makes: `BakeKits.OffAssembler` (worked out once a part, either peer) is true for a part with a
+  press preset (whether or not it keeps a row: the Differential, the Proximity Sensor and the Rifle, Heavy and Shell Receivers do, and
+  route to presses, carry their blanks on bills and show in the picker's Pressed group: `ConstructBill.PresetOf`,
+  `AssemblingTable.PressedSpec`), or a baked part (listed or by the rule) whose kit some oven's hearth holds (`MakerRoutes.OvenFor`;
+  a part whose bounds already lie in a hearth is taken as fitting without its kit's size). **Bootstrap** (merge review): every part of the
+  Production group and every machine block (the Bake Oven, Press, Extruder, Building Station, Smelter, Foundry, Sawmill and their blocks,
+  pads, rollers, racks, dies, modules: `BakeKits.Bootstrap`, from the parts' `group` and `machineBlock`) stays on the Assembler too; a
+  station asks a net's oven for one first, else its Assembler (`MachineMakes`); `--maker-report` marks them "the Assembler too" (101 rows,
+  563 left on the Assembler in all). `BakeKits.Warm` asks every row's answer at a match's start (the log's "rows off the Assembler"
+  time), so a picker or terminal catalogue makes no kits. A saved Assembler set to a row that left says so once in the log and builds
+  nothing; a saved queued order for one is dropped with the "[assembler] dropped an order" line. Such a part's row
+  stays in Assembling.json as its bill (costs, loot, the market, `--bill`, the bake rule's own test), but no Assembler builds it, whatever
+  it is set to (`ConstructAssembling.RecipeOf`), a work order for it is refused with its maker named (`WorkOrders.AssemblerRefusal`), a
+  station never asks one (`ConstructCrafting`), and the recipe picker leaves it out. The phase 3 fallback (`OvenServes`: an Assembler
+  built a rule kit's part where no oven on its construct took the order) is gone. `--maker-report` 2026-11-28 (its new line "left on the
+  Assembler"): 2,720 rows, of which 367 press chain items (the Lift Cell among them now), 2 still Assembler (the Dibber Mid Deck and Roof,
+  whose kits are past a part's boxes) and 93 placed parts no oven holds whole stay the Assembler's (462); the 2,253 baked rows and 5
+  pressed ones are bill only. The numbering of the recipe setting is unchanged (a row
+  that left the Assembler keeps its place, so no saved choice moves for it). **Retired stand-ins:** the Gantry Carriage, Overdrive Unit,
+  Feed Buffer, Thruster Jig Block and Sewing Table Block keep their files, names, boxes and sockets, so old saves and blueprints load them
+  where they stood, but each is `"retired"` (not offered, no recipe) with no `machineBlock` (no machine counts it), its description
+  "Retired Assembler part (was the ...)"; it recycles by its mass (`AssemblerParts.Retire`). Their five rows went under rows mark 7
+  (`asm-rows-2026-11-28-retired-phase6`: after the Assembly Bed Block and after the Small Solid Booster; an old choice of one builds the
+  row before it). No row names `needs` or `tool` now; `AsmFit.Missing` and `LacksTool` are always nothing, and `AssemblerToolBay.cs`
+  went (its chute swap, dock and look line). The Block Rack stays as a die rack at 2 m bays (the Die Rack's piece). The **Assembler
+  Core**'s bed grows to `GridHalf` (32 cells, 64 m) a side and `MaxCellsAny` (512) blocks, so the giant rows up to 64 m a side have a
+  bed (the 128 m and 144 m ones still need more than any Core may ask: the refusal says so). Its render, recipe setting, orders and
+  hazards stay. **Blueprints:** the Production Showcase's two Assemblers lost their upgrade modules (generator); the hand-written
+  **Assembly Bay** builds Wheels, with no modules (the "Assembling" self-tests drive its chain on a machine's part the Assembler still
+  builds, from steel and a few pressed parts: `SelfTestAssembling.KeptRecipe`, the Cargo Port today; the old module gate check became one
+  that a baked part is refused). **Survival start**
+  (`Constructs/SurvivalStart.json`, the Ground start's kit): the Starter Assembler stays (items) and three hand-written blueprints join
+  it: **Starter Press** (the Press Line with a Small Genset on a Fuel Tank in place of its Battery, hand-written) and **Starter
+  Works** (generator `starter_works`, `Source/PartKit/Generators/StarterWorks.cs`, 30 x 14 m): an Extruder with a Die Block fed by two
+  Materials Bins (steel; a kit's rubber, concrete or cloth sheet), its pieces on a conveyor onto two Pad Tiles beside a Building Station's
+  4 x 3 bay, a Line Console wiring the Extruder into the station's Orders, two Roller Tiles from the bay into a 4 x 3 Bake Oven bed, and a
+  Small Genset on two Fuel Tanks with a Battery; south of the pad three Press Cores with the Piston, Cable and Ring Dies fitted (Piston
+  Sets, Wiring Looms, Bearings, Turbine Stages), each fed by its own orders-only Extruder, on the console's Run, their Piece out onto the
+  pad, bay 2's bronze from a bin of its own (an Extruder's hopper drew a shared bin dry and the Ring press starved). Proven headless with
+  `--station-check "Starter Works" --oven-order PART --fill "-0.5,-10,steel,500;-0.5,-8,rubber,200;3.5,-19.5,bronze,300;14.5,-14,bronze,300;15.5,-19.5,copper,300"`:
+  Engine 63 s, Small Jet 214 s, Chassis Tub 2 m 75 s, Bolt Deck 1 m 65 s (the console first stood in the Die Block's run, so 2 m pieces
+  stuck as "Blocked"). A pressed part is its press's at a station's ask, never an oven's
+  (`ConstructCrafting.MachineMakes` asks `BakeKits.Has` with `OffAssembler`). Works II's frigate: 16 of 346 in 300 s (main 16 to 19).
+  Protocol 494.
 
 ### Sub-kits (2026-11-28)
 

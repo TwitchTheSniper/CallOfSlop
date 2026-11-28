@@ -1,18 +1,15 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Assembly Bay",
-  "description": "An Assembler building Engines (a Power Coupling, a Coolant Loop and an Overdrive Unit on its back), fed by a bin and a shelf.",
+  "description": "An Assembler building Wheels (steel and a Tyre Carcass), fed by a bin and a shelf, filling a Chest; a Battery powers it. The Assembler builds what no press or oven makes: hand-held items no die presses yet, and the giant parts.",
   "steps": [
     { "part": "Concrete Foundation 4x4 m" },
-    { "part": "Assembler", "on": 0, "socket": "t7_7", "by": "bottom", "config": { "recipe": "Engine" } },
+    { "part": "Assembler", "on": 0, "socket": "t7_7", "by": "bottom", "config": { "recipe": "Wheel" } },
     { "part": "Concrete Foundation 4x4 m", "on": 0, "socket": "r7", "by": "l7" },
     { "part": "Materials Bin", "on": 2, "socket": "t7_0", "by": "bottom" },
     { "part": "Parts Shelf", "on": 2, "socket": "t7_7", "by": "bottom" },
     { "part": "Chest", "on": 2, "socket": "t7_15", "by": "bottom" },
-    { "part": "Battery", "on": 2, "socket": "t15_15", "by": "-y" },
-    { "part": "Power Coupling", "on": 1, "socket": "module1", "by": "mount" },
-    { "part": "Coolant Loop", "on": 1, "socket": "module2", "by": "mount" },
-    { "part": "Overdrive Unit", "on": 1, "socket": "module3", "by": "mount" }
+    { "part": "Battery", "on": 2, "socket": "t15_15", "by": "-y" }
   ],
   "links": [
     { "type": "chute", "from": 3, "to": 1, "toPort": "Chute in" },

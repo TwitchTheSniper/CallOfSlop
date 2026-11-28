@@ -114,7 +114,6 @@ public static class MakerRoutes
         var summary = new StringBuilder();
         var byRoute = new int[RouteNames.Length];
         var byOven = new int[Ovens.Length + 1];
-        var tools = 0;
         var split = 0;
         var wholeShare = new int[Ovens.Length + 1];
         var splitShare = new int[Ovens.Length + 1];
@@ -122,6 +121,13 @@ public static class MakerRoutes
         for (var k = 0; k < lines.Length; k++)
             lines[k] = new List<string>();
         var noOven = new List<string>(); // (placed parts no oven's hearth holds whole: still the Assembler's)
+        var cold = System.Diagnostics.Stopwatch.StartNew(); // (OffAssembler's first look at every row, as a picker or a terminal's catalogue makes it)
+        var offN = 0;
+        foreach (var r in asm.Recipes)
+            if (BakeKits.OffAssembler(r.Output))
+                offN++;
+        var coldMs = cold.Elapsed.TotalMilliseconds;
+        var differ = asm.Recipes.Where(r => BakeKits.Off(r.Output, fast: true) != BakeKits.Off(r.Output, fast: false)).Select(r => r.Name).ToList();
         foreach (var r in asm.Recipes)
         {
             var d = r.Output;
@@ -135,13 +141,11 @@ public static class MakerRoutes
                 var ks = BakeKits.KitSize(d) is { X: > 0 } kz ? kz : d.BoundsMax - d.BoundsMin;
                 noOven.Add(FormattableString.Invariant($"{r.Name} {ks.X:0.#} x {ks.Y:0.#} x {ks.Z:0.#} m"));
             }
-            if (r.Tool.Length > 0)
-                tools++;
             var size = d.BoundsMax - d.BoundsMin;
             var parts = r.Parts.Length == 0 ? "" : "; fits " + string.Join(" + ", r.Parts.Select(p => $"{p.Count} {p.Part.Name}"));
             var kitN = BakeKits.KitOf(d)?.Length ?? Pieces(d);
             lines[(int)route].Add(FormattableString.Invariant(
-                $"  {r.Name} ({size.X:0.##} x {size.Y:0.##} x {size.Z:0.##} m, {d.Mass:0.#} kg, {kitN} pieces{(oven >= 0 ? ", " + OvenName(oven) : "")}{(r.Tool.Length > 0 ? ", needs the " + r.Tool + " tool" : "")}{parts})"));
+                $"  {r.Name} ({size.X:0.##} x {size.Y:0.##} x {size.Z:0.##} m, {d.Mass:0.#} kg, {kitN} pieces{(oven >= 0 ? ", " + OvenName(oven) : "")}{(route != Route.Assembler && BakeKits.Bootstrap(d) && !BakeKits.OffAssembler(d) ? ", the Assembler too (a production machine's part: bootstrap)" : "")}{(r.Tool.Length > 0 ? ", needs the " + r.Tool + " tool" : "")}{parts})"));
             if (oven >= 0 && BakeKits.Split(d) is { } tree)
             {
                 if (tree.Kids.Count > 0)
@@ -158,7 +162,11 @@ public static class MakerRoutes
         for (var k = 0; k <= Ovens.Length; k++)
             summary.AppendLine($"    {OvenName(k)}: {byOven[k]}");
         summary.AppendLine($"  placed parts no oven holds whole, still the Assembler's: {noOven.Count}{(noOven.Count > 0 ? " (" + string.Join(", ", noOven.Take(8)) + (noOven.Count > 8 ? ", ..." : "") + ")" : "")}");
-        summary.AppendLine($"  rows naming a tool block (Thruster Jig, Sewing Table: an Assembler's fallback where no oven serves): {tools}");
+        var kept = asm.Recipes.Count(r => !BakeKits.OffAssembler(r.Output));
+        summary.AppendLine($"  left on the Assembler (phase 6: no press or oven makes them; the rest are bill only): {kept}");
+        var boot = asm.Recipes.Count(r => BakeKits.Bootstrap(r.Output) && BakeKits.Has(r.Output) && !BakeKits.OffAssembler(r.Output));
+        summary.AppendLine($"    of them production machines' parts that are baked too (bootstrap: an old world's first oven or press): {boot}");
+        summary.AppendLine(FormattableString.Invariant($"  OffAssembler's first look at the {asm.Recipes.Length} rows: {coldMs:0.#} ms ({offN} off); its bounds-first way and the kit's differ on {differ.Count}{(differ.Count > 0 ? ": " + string.Join(", ", differ.Take(8)) : "")}"));
         summary.AppendLine($"  baked parts split into sub-kits for smaller ovens: {split}");
         ShareLines(summary, "every baked part, one of each", wholeShare, splitShare);
         if (Arg("--build") is { } build)

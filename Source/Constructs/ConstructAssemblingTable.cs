@@ -68,10 +68,10 @@ public sealed class AssemblingTable
     /// back (<see cref="LegacyChoice"/>). A row only ever goes at the end of a family's list (.claude/rules/production.md); if one
     /// is ever taken out again, its place is kept here the same way, under a new mark.
     /// </summary>
-    public const string RowsMark = "asm-rows-2026-11-28-works-phase5";
+    public const string RowsMark = "asm-rows-2026-11-28-retired-phase6";
 
     /// <summary>Every rows mark there has been, oldest first (<see cref="RowsMark"/> is the last): a file's level is the newest one it names.</summary>
-    public static readonly string[] Marks = ["asm-rows-2026-11-24", "asm-rows-2026-11-24-arms", "asm-rows-2026-11-26-servo", "asm-rows-2026-11-28-control-unit", "asm-rows-2026-11-28-press-phase2", "asm-rows-2026-11-28-tools-phase4", RowsMark];
+    public static readonly string[] Marks = ["asm-rows-2026-11-24", "asm-rows-2026-11-24-arms", "asm-rows-2026-11-26-servo", "asm-rows-2026-11-28-control-unit", "asm-rows-2026-11-28-press-phase2", "asm-rows-2026-11-28-tools-phase4", "asm-rows-2026-11-28-works-phase5", RowsMark];
 
     /// <summary>
     /// The rows taken out, by the mark that took them (its place in <see cref="Marks"/>): each group stood right after its After row, and
@@ -92,6 +92,9 @@ public sealed class AssemblingTable
     /// Mark 6 (2026-11-28; retiring the Assembler, phase 5: the Zero Day Works have no Assemblers): the Server Rack, Robot Shell and Manned
     /// Manoeuvring Unit, pressed round their Circuit Boards (PressParts.Phase2.cs); an old choice of one builds the row before it, as mark 4's.
     /// The Robot Shell's group goes after mark 4's on the Laser Seeker: it stood after the Remote Fuse in that list.
+    /// Mark 7 (2026-11-28; retiring the Assembler, phase 6): the Assembler's retired pieces, stand-ins now with no recipe (AssemblerParts.Retire):
+    /// the Gantry Carriage, Overdrive Unit and Feed Buffer after the Assembly Bed Block, the Thruster Jig and Sewing Table Blocks after the
+    /// Small Solid Booster; an old choice of one builds the row before it, as mark 4's.
     /// </summary>
     private static readonly (int Mark, string After, string[] Gone, string? To)[] Removed =
     [
@@ -129,6 +132,8 @@ public sealed class AssemblingTable
         (6, "Fax Machine", ["Server Rack"], null),
         (6, "Laser Seeker", ["Robot Shell"], null),
         (6, "MMU Dock", ["Manned Manoeuvring Unit"], null),
+        (7, "Assembly Bed Block", ["Gantry Carriage", "Overdrive Unit", "Feed Buffer"], null),
+        (7, "Small Solid Booster", ["Thruster Jig Block", "Sewing Table Block"], null),
     ];
 
     /// <summary>
@@ -209,8 +214,8 @@ public sealed class AssemblingTable
     /// <summary>The die that presses such a part ("Gear Die"), or null.</summary>
     public static string? PressedDieOf(ConstructPartDef d) => PressedSpec(d) is { } s ? $"{s.Die.Family} Die" : null;
 
-    private static Pressed.OrderSpec? PressedSpec(ConstructPartDef d) =>
-        Current.Of((ushort)d.Id) == null && PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
+    private static Pressed.OrderSpec? PressedSpec(ConstructPartDef d) => // (row or none: a row a preset keeps is its bill, phase 6)
+        PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Assembling.json");
 

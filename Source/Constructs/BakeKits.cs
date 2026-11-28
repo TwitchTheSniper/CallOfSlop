@@ -249,12 +249,68 @@ public static partial class BakeKits
     public static bool ListedKit(ConstructPartDef made) => Has(made) && IsNamed(made.Name);
 
     /// <summary>
-    /// Does an Assembler refuse to build this part, on construct <paramref name="c"/>? A listed kit's part always (as before); a rule kit's
-    /// part only while an oven on the construct takes its order (<see cref="OvenServes"/>): the Assembler stays a fallback until phase 6
-    /// (the plan: nothing stalls halfway), so a works whose lines can't make a kit's pieces (no Extruder fed rubber) still gets the part.
+    /// Does an Assembler refuse to build this part, on construct <paramref name="c"/>? Since phase 6 (2026-11-28) the construct no longer
+    /// matters: the Assembler is no fallback, it builds only what nothing else makes (<see cref="OffAssembler"/>).
     /// </summary>
-    public static bool AssemblerRefuses(ConstructWorld world, Construct c, ConstructPartDef made) =>
-        Has(made) && (IsNamed(made.Name) || OvenServes(world, c, made));
+    public static bool AssemblerRefuses(ConstructWorld world, Construct c, ConstructPartDef made) => OffAssembler(made);
+
+    private static readonly Dictionary<ConstructPartDef, bool> _off = new(ReferenceEqualityComparer.Instance);
+    private static readonly object _offLock = new();
+    private static (AssemblingTable?, PressTable?) _offFor;
+
+    /// <summary>
+    /// Retiring the Assembler, phase 6 (2026-11-28; Sean's card, the recommended option): is this part made by another machine, so its
+    /// Assembler row is only its bill (costs, loot, the market, <c>--bill</c>) and no Assembler builds it? A part a die presses (a press
+    /// preset), and a part baked from a kit (listed or by the rule) whose kit, or the part whole, some oven's hearth holds
+    /// (<see cref="MakerRoutes.OvenFor(ConstructPartDef)"/>, the Bake Oven XL's the largest). Left on the Assembler: the hand-held items no
+    /// die presses yet (MakerRoutes' press chain), the giant parts no oven holds whole, and the parts whose boxes make no kit. Worked out once
+    /// a part and kept (per table: a reload starts again); either peer.
+    /// </summary>
+    public static bool OffAssembler(ConstructPartDef made)
+    {
+        lock (_offLock)
+        {
+            var at = (AssemblingTable.Current, PressTable.Current);
+            if (!ReferenceEquals(_offFor.Item1, at.Item1) || !ReferenceEquals(_offFor.Item2, at.Item2))
+            {
+                _off.Clear();
+                _offFor = at;
+            }
+            if (_off.TryGetValue(made, out var off))
+                return off;
+        }
+        var v = Off(made, fast: true);
+        lock (_offLock)
+            _off[made] = v;
+        return v;
+    }
+
+    /// <summary>
+    /// <see cref="OffAssembler"/>'s rule. A production machine's own part (<see cref="Bootstrap"/>) stays the Assembler's too. With
+    /// <paramref name="fast"/> a part whose bounds lie in an oven's hearth is taken as fitting with no kit made (its kit's pieces are its own
+    /// solid boxes, inside those bounds), so a picker or catalogue's first look at ~2,700 rows makes no kits; only a part too big that way
+    /// has its kit's size asked (<c>--maker-report</c> counts where the two ways differ).
+    /// </summary>
+    internal static bool Off(ConstructPartDef made, bool fast)
+    {
+        if (PressTable.Current.PresetKeyOf(made) != null)
+            return true;
+        if (Bootstrap(made) || !Has(made))
+            return false;
+        if (IsNamed(made.Name))
+            return true;
+        if (fast && MakerRoutes.HearthFor(made.BoundsMax - made.BoundsMin) < MakerRoutes.Ovens.Length)
+            return true;
+        return MakerRoutes.OvenFor(made) < MakerRoutes.Ovens.Length;
+    }
+
+    /// <summary>
+    /// A production machine's own part (the review of phase 6, 2026-11-28): every part of the Production group (the Bake Oven, Press,
+    /// Extruder, Building Station, Smelter, Foundry, Sawmill, Assembler and their blocks, pads, rollers, racks, dies, modules) and every machine
+    /// block. An old world with only an Assembler must still build its first oven or press, so these stay on the Assembler as well as
+    /// being baked from their kits.
+    /// </summary>
+    public static bool Bootstrap(ConstructPartDef d) => d.BlockRole != BlockRole.None || d.Group.Equals("Production", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>The oven work-outs <see cref="OvenServes"/> may redo in one SealTick (a quarter second), past the first look of each.</summary>
     public const int ServeBudget = 8;
@@ -833,8 +889,13 @@ public static partial class BakeKits
                 kits++;
         var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
         WarmSubs(); // (the split kits and their sub-kits' designs: BakeKits.Subs.cs)
+        var t2 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var off = 0; // (every row's OffAssembler answer, so a picker's or a terminal catalogue's first look at ~2,700 rows makes none: phase 6 review)
+        foreach (var r in table.Recipes)
+            if (OffAssembler(r.Output))
+                off++;
         _warmTable = table;
-        Console.WriteLine($"[bake kits] warmed: {kits} rule kits of {all.Count} parts in {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms (their splits {System.Diagnostics.Stopwatch.GetElapsedTime(t1).TotalMilliseconds:0} ms)");
+        Console.WriteLine($"[bake kits] warmed: {kits} rule kits of {all.Count} parts in {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms (their splits {System.Diagnostics.Stopwatch.GetElapsedTime(t1, t2).TotalMilliseconds:0} ms; {off} of {table.Recipes.Length} rows off the Assembler in {System.Diagnostics.Stopwatch.GetElapsedTime(t2).TotalMilliseconds:0.#} ms)");
     }
 
     private static AssemblingTable? _warmTable;

@@ -53,7 +53,7 @@ public sealed class AssemblerParts : IPartGenerator
     private static Part Core()
     {
         var p = new Part("Assembler", Small, Section,
-            "An Assembler Core: builds parts from a recipe or work orders. Alone it builds parts up to 1.5 m on its deck. Weld Assembly Bed Blocks beside it for a bed (up to 16 x 16, 32 x 32 m): the bed sets how big a part it builds and how many fit side by side. Each Gantry Carriage on the bed is one more part at once (32 at most), and Mast Blocks beside the bed's four corners give 2 m more clear height each. Upgrade modules on its back unlock electrical, hot, precision and field work, speed and capacity. Needs power.",
+            "An Assembler Core: builds what no press or oven makes, from a recipe or work orders: the hand-held items no die presses yet, and the giant parts no Bake Oven holds. Alone it builds parts up to 1.5 m on its deck. Weld Assembly Bed Blocks beside it for a bed (up to 32 x 32 cells, 64 x 64 m, 512 blocks): the bed sets how big a part it builds and how many fit side by side. Mast Blocks beside the bed's four corners give 2 m more clear height each. Needs power.",
             role: "storage", group: "Production", color: Body);
         const double back = -0.92, front = 0.0, shelf = 1.0, top = 1.6; // (the cabinet's back plate, its front face, the cubbies' shelf, the hopper's floor)
         // Solid: the plinth (the bed's height), the cabinet's back plate, walls, shelf and hopper floor, the arm's column.
@@ -78,7 +78,7 @@ public sealed class AssemblerParts : IPartGenerator
                 p.Sock($"module{row * SlotX.Length + k + 1}", [SlotX[k], SlotFoot[row] + MachineTierParts.MountY, -1], "-z", kind: "tier"); // (any module in any slot)
         p.Stats(2200, 3000, 8, 10);
         const double c0 = 0.04, c1 = 0.89; // (a cubby's inner edges across)
-        p.Set(("power", 1500), ("machineBlock", BlockKey("core")),
+        p.Set(("power", 1500), ("machineBlock", BlockKey("core").Update(("maxSide", MachineBlocks.GridHalf), ("maxCells", MachineBlocks.MaxCellsAny))), // (retiring the Assembler, phase 6: the giant parts no oven holds are its own, so its bed grows as far as a Core may)
             ("storage", Kw(
                 ("slots", Py.L(
                     Kw(("min", Py.L(-c1, BedTop + 0.02, back + 0.02)), ("max", Py.L(-c0, shelf - 0.04, front - 0.06)), ("stack", 12), ("label", "tray")),
@@ -397,7 +397,7 @@ public sealed class AssemblerParts : IPartGenerator
     private static Part BlockRack()
     {
         var p = PressParts.Rack(Medium, 5, 3, 3, "Block Rack",
-            "Holds an Assembler's tool blocks (Thruster Jig Block, Sewing Table Block) and press dies, two bays side by side, one kind a bay: the Die Rack at 2 m bays. A chute from it into an Assembler Core brings the tool block its recipe needs and takes the old one back; a chute into a press brings it a die.",
+            "Holds press dies, two bays side by side, one kind a bay: the Die Rack at 2 m bays. A chute from it into a press brings it a die.",
             bays: 2, label: "Tools and dies", folder: Section);
         // Its dressing (the rack's own geometry: Medium cells, 5 x 3 x 3, posts 0.14 m, a 0.12 m board; PressParts.Rack): top rails between the
         // posts, a steel plate on each bay's floor with hazard edges and four locating pins, a bay number plate and lifting eyes.
@@ -423,5 +423,22 @@ public sealed class AssemblerParts : IPartGenerator
         return p;
     }
 
-    public void Make(PartOutput o) => WriteParts(o, Out, [("", Core()), ("", BedBlock()), ("", Carriage()), ("", Overdrive()), ("", Buffer()), ("", ThrusterJig()), ("", SewingTable()), ("", BlockRack())]);
+    public void Make(PartOutput o) => WriteParts(o, Out, [("", Core()), ("", BedBlock()), ("", Retire(Carriage())), ("", Retire(Overdrive())), ("", Retire(Buffer())), ("", Retire(ThrusterJig())), ("", Retire(SewingTable())), ("", BlockRack())]);
+
+    /// <summary>The Assembler's retired pieces (retiring the Assembler, phase 6): every Assembler part but the Core, its bed and the Block Rack.</summary>
+    public static readonly string[] RetiredNames = ["Gantry Carriage", "Overdrive Unit", "Feed Buffer", "Thruster Jig Block", "Sewing Table Block"];
+
+    /// <summary>
+    /// Retiring the Assembler, phase 6 (2026-11-28): the Gantry Carriage, the Overdrive Unit, the Feed Buffer and the Tool Bay's tool blocks
+    /// stay as files so old saves and blueprints load them where they stood (their names, boxes and sockets unchanged), but each is a
+    /// Retired Assembler stand-in: "retired" (not offered in the inventory, no recipe) and no "machineBlock", so no machine counts it, and
+    /// it recycles by its mass as any part.
+    /// </summary>
+    private static Part Retire(Part p)
+    {
+        p.D["description"] = $"Retired Assembler part (was the {p.D["name"]}): it does nothing now. Recycle it for its materials.";
+        p.D.Remove("machineBlock");
+        p.Set(("retired", true));
+        return p;
+    }
 }

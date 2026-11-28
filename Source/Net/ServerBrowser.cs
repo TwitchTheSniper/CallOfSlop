@@ -839,7 +839,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      the die's end (an Assembler's recipe choice, sent as a value, numbers its list anew past each; press pattern numbers keep).
     // 493: the Bake Oven XL is a new part file, which moves part ids; kits that fit only the XL oven are split (their sub-kit
     //      keys go on the wire since 489).
-    public const ushort ProtocolVersion = 493;
+    // 494: retiring the Assembler, phase 6: the Gantry Carriage, Overdrive Unit, Feed Buffer and the Tool Bay's blocks are retired
+    //      stand-ins (no machine block, no recipe: rows mark 7), an Assembler builds only what no press or oven makes, and three new
+    //      start blueprints move the blueprint indices a spawn sends.
+    public const ushort ProtocolVersion = 494;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -229,8 +229,7 @@ public sealed class ProductionShowcase : IPartGenerator
             Sign(54.75f, Posts1, Wheels, "Narrow this conveyor (linking tool, wheel): a refusal");
 
             // ---- 6b. The assembling line: an Assembler fed steel, its Piece out onto a conveyor to a Piece Rack (catalogue parts). --
-            var asm = On("Assembler", 50.25f, Row2, Flow, paint: Assembly);
-            Modules(asm);
+            var asm = On("Assembler", 50.25f, Row2, Flow, paint: Assembly); // (no upgrade modules since phase 6 of retiring the Assembler)
             Feed(StockOf("steel", 52.25f, -13.25f), asm);
             Feed(StockOf("rubber", 47.25f, -13.25f), asm); // (an Ammo Container, a switch, an Assembler: steel and rubber. Steel alone left those orders "needs 1 rubber": verification 2026-11-13c)
             var partRack = On("Piece Rack", 56.25f, -10.75f, Flow, "-y.0.0", Assembly);
@@ -318,14 +317,6 @@ public sealed class ProductionShowcase : IPartGenerator
         /// part rack (storage), its way 3 along the back of the rack to a Join before the Crafting Terminal's side (CraftingCorner). A
         /// part ordered at the terminal rides straight to its tray; a part nobody ordered (the bill's) goes to the rack. The Router.
         /// </summary>
-        /// <summary>An Assembler's upgrade modules for the catalogue's parts (copper, bronze and circuits: Assembler block system, Sean 2026-11-21).</summary>
-        private void Modules(VPart asm)
-        {
-            Onto(asm, "module1", "Power Coupling", "mount");
-            Onto(asm, "module2", "Coolant Loop", "mount");
-            Onto(asm, "module3", "Servo Rack", "mount");
-        }
-
         private VPart SmartCorner(VPart asm, VPart partRack)
         {
             var o = PortAt(asm, "Piece out");
@@ -345,7 +336,6 @@ public sealed class ProductionShowcase : IPartGenerator
         private void ChainCorner(VPart asm)
         {
             var asm2 = On("Assembler", 46.25f, -15.25f, Flow, paint: Assembly);
-            Modules(asm2);
             Feed(StockOf("steel", 43.25f, -15.25f), asm2);
             var o = PortAt(asm2, "Piece out");
             var i = PortAt(asm, "Piece in");

@@ -1,0 +1,70 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Starter Press",
+  "description": "A survival world's first Press and Extruder on three slabs, with a Materials Bin and a Small Genset on a Fuel Tank: the bin feeds the Extruder, the Extruder's pieces feed the Press. Fit one of the start kit's dies, tip steel into the bin and queue its parts. The Extruder also cuts the pieces a Bake Oven's kits are made of.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Extruder",
+      "on": 0,
+      "socket": "top11",
+      "by": "bottom",
+      "config": {
+        "profile": 1,
+        "width": 0.3,
+        "height": 0.3,
+        "cutLength": 2
+      }
+    },
+    {
+      "part": "Foundation",
+      "on": 0,
+      "socket": "z-1",
+      "by": "z+1"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 2,
+      "socket": "top01",
+      "by": "bottom"
+    },
+    {
+      "part": "Small Genset",
+      "on": 2,
+      "socket": "top22",
+      "by": "-y"
+    },
+    {
+      "part": "Foundation",
+      "on": 0,
+      "socket": "x+1",
+      "by": "x-1"
+    },
+    {
+      "part": "Press",
+      "on": 5,
+      "socket": "top00",
+      "by": "-y.0.0"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 4,
+      "socket": "-z",
+      "by": "+z"
+    }
+  ],
+  "links": [
+    {
+      "type": "chute",
+      "from": 3,
+      "to": 1
+    },
+    {
+      "type": "chute",
+      "from": 1,
+      "to": 6
+    }
+  ]
+}

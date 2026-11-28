@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Assembler",
-  "description": "An Assembler Core: builds parts from a recipe or work orders. Alone it builds parts up to 1.5 m on its deck. Weld Assembly Bed Blocks beside it for a bed (up to 16 x 16, 32 x 32 m): the bed sets how big a part it builds and how many fit side by side. Each Gantry Carriage on the bed is one more part at once (32 at most), and Mast Blocks beside the bed's four corners give 2 m more clear height each. Upgrade modules on its back unlock electrical, hot, precision and field work, speed and capacity. Needs power.",
+  "description": "An Assembler Core: builds what no press or oven makes, from a recipe or work orders: the hand-held items no die presses yet, and the giant parts no Bake Oven holds. Alone it builds parts up to 1.5 m on its deck. Weld Assembly Bed Blocks beside it for a bed (up to 32 x 32 cells, 64 x 64 m, 512 blocks): the bed sets how big a part it builds and how many fit side by side. Mast Blocks beside the bed's four corners give 2 m more clear height each. Needs power.",
   "group": "Production",
   "section": "Assemblers",
   "role": "storage",
@@ -20,7 +20,9 @@
       0,
       0.2,
       0
-    ]
+    ],
+    "maxSide": 32,
+    "maxCells": 512
   },
   "storage": {
     "slots": [

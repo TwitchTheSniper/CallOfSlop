@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Block Rack",
-  "description": "Holds an Assembler's tool blocks (Thruster Jig Block, Sewing Table Block) and press dies, two bays side by side, one kind a bay: the Die Rack at 2 m bays. A chute from it into an Assembler Core brings the tool block its recipe needs and takes the old one back; a chute into a press brings it a die.",
+  "description": "Holds press dies, two bays side by side, one kind a bay: the Die Rack at 2 m bays. A chute from it into a press brings it a die.",
   "group": "Production",
   "section": "Assemblers",
   "role": "storage",

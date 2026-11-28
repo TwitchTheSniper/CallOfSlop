@@ -4,7 +4,7 @@ namespace CallOfSlop;
 /// A press swaps its die for its orders (the Zero Day works: four Presses, ten die families): when the head order of a press's queue
 /// needs a die the press doesn't hold, a chute into the press from a store that holds that die (a Die Rack, a Block Rack) brings it, and
 /// the old die goes back onto the rack the new one came from, as an Assembler Core's Tool Bay swaps tool blocks
-/// (<see cref="AssemblerToolBay"/>). So a press with a chute from a rack of dies takes an order for any die on that rack
+/// (the retired Assembler Tool Bay's). So a press with a chute from a rack of dies takes an order for any die on that rack
 /// (<see cref="WorkOrders.Refusal"/>). The take happens at the chute's move, the swap at the start of the next step (a chute moves inside
 /// the routes' own loop, where parts can't come and go: <see cref="Feed"/>). A swap starts only while no stroke is running: the head
 /// order's die isn't fitted, so no bay is ready. Server only; nothing allocates.

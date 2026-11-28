@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Starter Assembler",
-  "description": "A survival world's first Assembler on a 4 m slab, with a second slab for a Materials Bin and a Parts Shelf that feed it, a Chest it fills, and a Small Genset on a Fuel Tank. Pick a recipe with the configure tool. A part too big for the tray leaves at its open front.",
+  "description": "A survival world's first Assembler on a 4 m slab, with a second slab for a Materials Bin and a Parts Shelf that feed it, a Chest it fills, and a Small Genset on a Fuel Tank. Pick a recipe with the configure tool: it builds the hand-held items no die presses yet (seats, tyres, receivers, logic); a Press or a Bake Oven makes the rest.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"
