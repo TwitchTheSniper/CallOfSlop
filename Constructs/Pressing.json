@@ -4345,7 +4345,7 @@
      "id": "fieldcoil",
      "like": "Field Coil",
      "label": "field coil",
-     "preset": "round 25x25x25 copper",
+     "preset": "round 25x25x15 copper",
      "auto": false,
      "blanks": [
       "round"
@@ -4774,10 +4774,10 @@
      "id": "firedirector",
      "like": "Fire Director",
      "label": "fire director",
-     "preset": "solid 50x40x50 steel",
+     "preset": "hollow 50x40x50 steel",
      "auto": false,
      "blanks": [
-      "solid"
+      "hollow"
      ],
      "bay2": {
       "part": "Circuit Board",
@@ -4792,10 +4792,10 @@
      "id": "rangesensor",
      "like": "Long Range Sensor",
      "label": "long range sensor",
-     "preset": "solid 25x65x25 steel",
+     "preset": "hollow 25x65x25 steel",
      "auto": false,
      "blanks": [
-      "solid"
+      "hollow"
      ],
      "bay2": {
       "part": "Circuit Board",
@@ -4810,10 +4810,10 @@
      "id": "computer",
      "like": "Computer",
      "label": "computer",
-     "preset": "solid 80x110x60 steel",
+     "preset": "hollow 80x110x60 steel",
      "auto": false,
      "blanks": [
-      "solid"
+      "hollow"
      ],
      "bay2": {
       "part": "Circuit Board",
@@ -7843,7 +7843,7 @@
      "id": "bearing",
      "like": "Bearing",
      "label": "bearing",
-     "preset": "round 15x15x15 bronze",
+     "preset": "round 15x15x5 bronze",
      "blanks": [
       "round"
      ],
@@ -7853,7 +7853,7 @@
      "id": "turbine",
      "like": "Turbine Stage",
      "label": "turbine stage",
-     "preset": "round 30x30x30 steel",
+     "preset": "round 30x30x15 steel",
      "blanks": [
       "round"
      ],
@@ -8409,7 +8409,7 @@
      "id": "canards",
      "like": "Canards",
      "label": "canards",
-     "preset": "round 25x25x30 steel",
+     "preset": "round 30x30x25 steel",
      "blanks": [
       "round"
      ],
@@ -8477,7 +8477,7 @@
      "id": "commandlink",
      "like": "Command Link",
      "label": "command link",
-     "preset": "round 25x25x30 steel",
+     "preset": "round 30x30x25 steel",
      "blanks": [
       "round"
      ],
@@ -8494,7 +8494,7 @@
      "id": "gps",
      "like": "GPS Unit",
      "label": "gps unit",
-     "preset": "round 25x25x30 steel",
+     "preset": "round 30x30x25 steel",
      "blanks": [
       "round"
      ],
@@ -8511,7 +8511,7 @@
      "id": "radiohomer",
      "like": "Radio Homer",
      "label": "radio homer",
-     "preset": "round 25x25x30 steel",
+     "preset": "round 30x30x25 steel",
      "blanks": [
       "round"
      ],
@@ -8528,7 +8528,7 @@
      "id": "beaconhomer",
      "like": "Beacon Homer",
      "label": "beacon homer",
-     "preset": "round 25x25x30 steel",
+     "preset": "round 30x30x25 steel",
      "blanks": [
       "round"
      ],
@@ -11068,13 +11068,13 @@
    "part": "Bearing",
    "die": "ring",
    "pattern": "bearing",
-   "blank": "round 15x15x15 bronze"
+   "blank": "round 15x15x5 bronze"
   },
   {
    "part": "Turbine Stage",
    "die": "ring",
    "pattern": "turbine",
-   "blank": "round 30x30x30 steel"
+   "blank": "round 30x30x15 steel"
   },
   {
    "part": "Thrust Chamber",
@@ -11260,7 +11260,7 @@
    "part": "Canards",
    "die": "shell",
    "pattern": "canards",
-   "blank": "round 25x25x30 steel"
+   "blank": "round 30x30x25 steel"
   },
   {
    "part": "Gimbal Mount",
@@ -11284,25 +11284,25 @@
    "part": "Command Link",
    "die": "shell",
    "pattern": "commandlink",
-   "blank": "round 25x25x30 steel"
+   "blank": "round 30x30x25 steel"
   },
   {
    "part": "GPS Unit",
    "die": "shell",
    "pattern": "gps",
-   "blank": "round 25x25x30 steel"
+   "blank": "round 30x30x25 steel"
   },
   {
    "part": "Radio Homer",
    "die": "shell",
    "pattern": "radiohomer",
-   "blank": "round 25x25x30 steel"
+   "blank": "round 30x30x25 steel"
   },
   {
    "part": "Beacon Homer",
    "die": "shell",
    "pattern": "beaconhomer",
-   "blank": "round 25x25x30 steel"
+   "blank": "round 30x30x25 steel"
   },
   {
    "part": "Cluster Dispenser",
@@ -11356,7 +11356,7 @@
    "part": "Field Coil",
    "die": "cable",
    "pattern": "fieldcoil",
-   "blank": "round 25x25x25 copper"
+   "blank": "round 25x25x15 copper"
   },
   {
    "part": "Levite Core",
@@ -11410,19 +11410,19 @@
    "part": "Fire Director",
    "die": "control",
    "pattern": "firedirector",
-   "blank": "solid 50x40x50 steel"
+   "blank": "hollow 50x40x50 steel"
   },
   {
    "part": "Long Range Sensor",
    "die": "control",
    "pattern": "rangesensor",
-   "blank": "solid 25x65x25 steel"
+   "blank": "hollow 25x65x25 steel"
   },
   {
    "part": "Computer",
    "die": "control",
    "pattern": "computer",
-   "blank": "solid 80x110x60 steel"
+   "blank": "hollow 80x110x60 steel"
   },
   {
    "part": "Turret Module",

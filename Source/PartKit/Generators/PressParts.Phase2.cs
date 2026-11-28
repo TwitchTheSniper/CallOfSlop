@@ -107,9 +107,9 @@ public sealed partial class PressParts
         ("Medicine Cabinet", "housing", "medcabinet", "hollow", "steel", "rubber", false, 1),
         ("Ship Toilet", "housing", "shiptoilet", "hollow", "steel", "concrete", false, 1),
         ("Ship Basin", "housing", "shipbasin", "hollow", "steel", "concrete", false, 1),
-        ("Fire Director", "control", "firedirector", "solid", "steel", "Circuit Board", true, 1),
-        ("Long Range Sensor", "control", "rangesensor", "solid", "steel", "Circuit Board", true, 1),
-        ("Computer", "control", "computer", "solid", "steel", "Circuit Board", true, 4),
+        ("Fire Director", "control", "firedirector", "hollow", "steel", "Circuit Board", true, 1),
+        ("Long Range Sensor", "control", "rangesensor", "hollow", "steel", "Circuit Board", true, 1),
+        ("Computer", "control", "computer", "hollow", "steel", "Circuit Board", true, 4),
         ("Turret Module", "button", "turretmodule", "plate", "steel", "rubber", false, 1),
         ("Driving Module", "button", "drivingmodule", "plate", "steel", "rubber", false, 1),
     ];
@@ -118,8 +118,8 @@ public sealed partial class PressParts
         Phase2Dies.FirstOrDefault(d => d.Family.ToLowerInvariant() == die).Spec ?? OlderDieRanges.GetValueOrDefault(die)
         ?? throw new InvalidOperationException($"press_parts: phase 2 has no ranges for the {die} die");
 
-    /// <summary>A part's standard blank: its bounds on the 5 cm lattice (a round's across its larger side across, a plate's width its smaller
-    /// side, its length the larger), held to its die's across, length and aspect.</summary>
+    /// <summary>A part's standard blank: its bounds on the 5 cm lattice (a round bar along a long part, or a slice of one for a disc; a plate's
+    /// width its smaller side, its length the larger; a box its bounds, hollow for the big fittings), held to its die's across, length and aspect.</summary>
     private static string Phase2Blank(string part, string die, string section, string material)
     {
         var d = CallOfSlop.ConstructParts.Find(part) ?? throw new InvalidOperationException($"press_parts: phase 2 names {part}, which isn't a part");
@@ -134,9 +134,15 @@ public sealed partial class PressParts
         switch (section)
         {
             case "round" or "pipe":
-                w = h = Math.Max(Math.Max(r.Across[0], section == "pipe" ? 20 : 10), Lat(Math.Max(size.X, size.Y)));
-                len = Lat(size.Z);
+            {
+                // (a long part, a motor or a fuse, is a bar as long as it; a disc or a block, a Bearing or a coil, a slice of a bar as wide as
+                // it and as thick as its thinnest side, so the blank costs about what the part weighs)
+                var sides = new[] { size.X, size.Y, size.Z }.OrderBy(v => v).ToArray();
+                var lengthwise = sides[2] > sides[1] * 1.2f;
+                w = h = Math.Max(Math.Max(r.Across[0], section == "pipe" ? 20 : 10), Lat(lengthwise ? sides[1] : sides[2]));
+                len = Lat(lengthwise ? sides[2] : sides[0]);
                 break;
+            }
             case "plate":
                 w = Math.Max(r.Across[0], Math.Max(10, Lat(Math.Min(size.X, size.Z))));
                 h = 10;
