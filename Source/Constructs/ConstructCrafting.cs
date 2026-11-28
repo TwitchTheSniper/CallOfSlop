@@ -754,10 +754,10 @@ public static class ConstructCrafting
 
     private static string? MachineMakes(ConstructWorld world, Construct c, CraftNet net, ushort part)
     {
-        if (ConstructParts.Get(part) is { } kd && (BakeKits.AssemblerRefuses(world, c, kd) || BakeKits.IsSub(kd)))
+        if (ConstructParts.Get(part) is { } kd && (BakeKits.Has(kd) && BakeKits.OffAssembler(kd) || BakeKits.IsSub(kd)))
         {
-            // (a part made from a kit: an oven on the net bakes it, a station builds its kit: BakeKits.cs; a rule kit's part no oven here
-            // takes falls back to its Assembler row, below: phase 3)
+            // (a part made from a kit: an oven on the net bakes it, a station builds its kit: BakeKits.cs; since phase 6 a kit's part some
+            // oven holds is never an Assembler's, and a pressed part goes on to its press below)
             for (var i = 0; i < net.MachineN; i++)
                 if (c.DefOf(net.Machines[i]) is { IsBakeOven: true } od)
                     return od.Name;

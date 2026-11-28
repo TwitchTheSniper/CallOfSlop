@@ -2880,9 +2880,10 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   stays in Assembling.json as its bill (costs, loot, the market, `--bill`, the bake rule's own test), but no Assembler builds it, whatever
   it is set to (`ConstructAssembling.RecipeOf`), a work order for it is refused with its maker named (`WorkOrders.AssemblerRefusal`), a
   station never asks one (`ConstructCrafting`), and the recipe picker leaves it out. The phase 3 fallback (`OvenServes`: an Assembler
-  built a rule kit's part where no oven on its construct took the order) is gone. `--maker-report` 2026-11-28: 2,725 rows, of which 366
-  press chain items, 3 still Assembler (the Lift Cell, the Dibber Mid Deck and Roof) and 93 placed parts no oven holds whole stay the
-  Assembler's (462); the 2,351 baked rows and 5 pressed ones are bill only. The numbering of the recipe setting is unchanged (a row
+  built a rule kit's part where no oven on its construct took the order) is gone. `--maker-report` 2026-11-28 (its new line "left on the
+  Assembler"): 2,720 rows, of which 367 press chain items (the Lift Cell among them now), 2 still Assembler (the Dibber Mid Deck and Roof,
+  whose kits are past a part's boxes) and 93 placed parts no oven holds whole stay the Assembler's (462); the 2,253 baked rows and 5
+  pressed ones are bill only. The numbering of the recipe setting is unchanged (a row
   that left the Assembler keeps its place, so no saved choice moves for it). **Retired stand-ins:** the Gantry Carriage, Overdrive Unit,
   Feed Buffer, Thruster Jig Block and Sewing Table Block keep their files, names, boxes and sockets, so old saves and blueprints load them
   where they stood, but each is `"retired"` (not offered, no recipe) with no `machineBlock` (no machine counts it), its description
