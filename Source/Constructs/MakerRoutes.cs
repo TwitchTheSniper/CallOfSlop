@@ -38,7 +38,7 @@ public static class MakerRoutes
         if (PressTable.Current.PresetKeyOf(d) != null)
             return Route.PressedNow;
         if (!d.PhysicsOnly)
-            return Route.Press; // (an item: a hand carries it, so a press line's pieces size it; not yet sorted die by die)
+            return AssemblingTable.Current.Of((ushort)d.Id) is { Tool.Length: > 0 } ? Route.Assembler : Route.Press; // (the 20 kg Lift Cell: its Sewing Table row, phase 4 review) // (an item: a hand carries it, so a press line's pieces size it; not yet sorted die by die)
         return Route.Assembler; // (a part whose boxes make no kit: the log says why; the tool rows bake since phase 4)
     }
 

@@ -205,13 +205,14 @@ public static class BakeKits
     /// <summary>
     /// Is this part baked by the rule (Assembler retirement phase 3): a placed part (welded on, never in the hands) with an Assembler row
     /// and no press preset (a die makes it)? Phase 4 (2026-11-28) gave the Thruster Jig's placed parts kits too (their Turbine Stages,
-    /// Thrust Chambers and Field Coils as kit pieces), and the Sewing Table's Lift Cells, the small one an item: no die shapes a gas bag,
-    /// so it bakes with its cloth as a sheet piece. Its kit is worked out from its own boxes, its components and its rubber, concrete or
-    /// cloth (<see cref="Make"/>).
+    /// Thrust Chambers and Field Coils as kit pieces), and the Sewing Table's placed Lift Cells, their cloth as a sheet piece. Items stay
+    /// off it: an oven puts out a body, and nothing yet takes a baked item into a store, so the 20 kg Lift Cell stays the Sewing Table
+    /// Assembler's (phase 4 review). Its kit is worked out from its own boxes, its components and its rubber, concrete or cloth
+    /// (<see cref="Make"/>).
     /// </summary>
     public static bool ByRule(ConstructPartDef d) =>
         !d.IsNamedRuntime && !d.IsExtrusion && AssemblingTable.Current.Problem.Length == 0
-        && AssemblingTable.Current.Of((ushort)d.Id) is { } r && (d.PhysicsOnly || r.Tool == "tailor") && PressTable.Current.PresetKeyOf(d) == null;
+        && AssemblingTable.Current.Of((ushort)d.Id) is not null && d.PhysicsOnly && PressTable.Current.PresetKeyOf(d) == null;
 
     /// <summary>Is this part made from a kit BakeKits.json or Constructs/BakeKits/ lists (an Assembler never builds it, as before phase 3)?</summary>
     public static bool ListedKit(ConstructPartDef made) => Has(made) && IsNamed(made.Name);

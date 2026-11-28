@@ -2824,10 +2824,11 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
 - **Phase 4 (this change).** The 38 tool rows (Thruster Jig, Sewing Table). `BakeKits.ByRule` no longer leaves out a row with a
   tool block: the 33 placed thruster rows (jets, lift fans, turbojets, rocket engines, solid boosters, repulsors, anti-grav generators,
   the Medium, Large and Capital Decouplers) bake from rule kits, their Turbine Stages, Bearings, Thrust Chambers, Field Coils, Levite
-  Cores, Wiring Looms and Circuit Boards as kit pieces (6 to 61 pieces). The four Lift Cells bake too, the 20 kg one though it is an
-  item (a row with the `tailor` tool: no die shapes a gas bag): a steel frame cored to the part's mass and a 1 cm **cloth sheet** over
-  its top. Cloth is never a kit's own material (`MainMaterial` skips it): a rule kit whose row takes cloth gets a cloth sheet, as rubber
-  and concrete do (Tyre Carcass, Seat, Bunk and the other cloth rows). The Extruder takes cloth (Extrusion.json's `materials`: 267
+  Cores, Wiring Looms and Circuit Boards as kit pieces (6 to 61 pieces). The Medium, Large and Capital Lift Cells bake too: a steel
+  frame cored to the part's mass and a 1 cm **cloth sheet** over its top. The 20 kg Lift Cell is an item and stays the Sewing Table
+  Assembler's: an oven puts out a body and nothing yet takes a baked item into a store, so items stay off the rule. Cloth is never a
+  kit's own material (`MainMaterial` skips it): a placed rule part whose row takes cloth gets a cloth sheet, as rubber and concrete do
+  (the Bunk, the Space Suit Locker and the like; items such as the Seat and Tyre Carcass aren't rule kits). The Extruder takes cloth (Extrusion.json's `materials`: 267
   units a cubic metre, the wing row's; it recycles and colours as cloth already did). The Thruster Jig's one item, the 10 kg
   **Decoupler**, is a Button die pattern (a 50 x 10 x 50 cm steel plate, a Circuit Board in bay 2; `PressParts.Phase2.cs`, appended)
   and its row left the list (`Assembling.PressedNow` takes a tool row whose part is pressed). No Bell die preset was added: every
@@ -2835,6 +2836,10 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   Rocket Engine, and an old choice of it builds the Medium Decoupler; an Assembler's queued Decoupler orders drop as phase 2's do
   (every row is in the plain family now). Protocol 488. The tool rows stay in Assembling.json as the bill, and an Assembler with the
   tool block stays the fallback where no oven on its construct serves (`OvenServes`), as for phase 3's kits; the Thruster Jig and
-  Sewing Table blocks still load (phase 6). `--maker-report`: 369 press chain, 165 one-piece bakes, 2,141 station kits, 70 listed,
-  2 still Assembler (the Dibber Mid Deck and Roof, whose kits are past a part's boxes); 37 rows still name a tool. The capital
+  Sewing Table blocks still load (phase 6). `--maker-report`: 369 press chain, 165 one-piece bakes, 2,140 station kits, 70 listed,
+  3 still Assembler (the Lift Cell, and the Dibber Mid Deck and Roof, whose kits are past a part's boxes); 37 rows still name a tool.
+  **An Extruder serves a kit piece only if it can get the material** (`ConstructExtruder.Feeds`: its hopper holds it, or a chute from a
+  bin that does): an Extruder takes an order in any material its table lists, so an idle empty one made `OvenServes` say yes to a
+  cloth, rubber or concrete sheet nothing brings it, and the Assembler that could build the part refused it for good. The station
+  line check (`LineLacks`) and the one-piece feed (`DirectExtruder`) both ask it, so the Assembler fallback stands until the material comes. The capital
   thrusters and the Capital Lift Cell (16 m) need a bigger bed. Works II's frigate: 17 of 346 in 300 s, as main (no tool row is in it).

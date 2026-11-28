@@ -143,6 +143,26 @@ public static partial class ConstructExtruder
         world.Withdraw(c, part, st.Amount);
     }
 
+    /// <summary>
+    /// Can this Extruder get <paramref name="material"/> now: its hopper holds it, or a chute into it comes from a bin that does? What a
+    /// maker refusal that moves work off the Assembler asks (BakeKits.OvenServes through the oven's line and one-piece checks, retiring the
+    /// Assembler phase 4 review): an Extruder takes an order in any material its table lists, so an idle empty one would "serve" a cloth or
+    /// rubber sheet nothing ever brings it, and the Assembler that could build the part would refuse it for good. Allocates nothing.
+    /// </summary>
+    public static bool Feeds(ConstructWorld world, Construct c, int part, byte material)
+    {
+        if (world.StoreOf(c, part) is { Amount: > 0 } st && st.Material == material)
+            return true;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type == RouteType.Chute && r.To == part && r.Source < c.PartCount && r.Source != part && c.DefOf(r.Source) is { IsBin: true, Role: PartRole.Storage }
+                && world.StoreOf(c, r.Source) is { Amount: > 0 } src && src.Material == material)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>Does a chute into this Extruder on orders come from a store that holds <paramref name="material"/> (<see cref="HandBack"/>)?</summary>
     public static bool ChutedWith(ConstructWorld world, Construct c, int part, byte material)
     {
