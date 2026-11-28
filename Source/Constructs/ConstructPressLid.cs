@@ -39,6 +39,12 @@ public static partial class ConstructPress
     public const int CreativeStrokeSteps = StrokeMinSteps + 2;
     /// <summary>Press steps after a stroke before its part leaves and the next may start: the lid opens and the ejector lifts the part out.</summary>
     public const int LidOpenSteps = (int)((UnlatchSec + OpenSec + EjectSec) * 10) + 1;
+    /// <summary>A repeat stroke (another blank the same size waiting: ConstructPress.SameWaiting): the shut lid lifts off the made part (s), then stamps again.</summary>
+    public const double ReleaseSec = 0.4;
+    /// <summary>The shortest repeat stroke, in press steps: the lid stays shut and latched; it lifts off the last part and squeezes the next.</summary>
+    public const int RepeatMinSteps = (int)((ReleaseSec + SqueezeSec + 0.2) * 10) + 1;
+    /// <summary>Press steps the shut lid waits for the same-size blank on its way in before it opens after all.</summary>
+    public const byte RepeatHoldSteps = 20;
     /// <summary>How long the drawn part shows on the die once it is lifted out (s): until the real one leaves (LidOpenSteps rounds up a step).</summary>
     public const double MadeShows = 0.1;
 
@@ -107,6 +113,7 @@ public static partial class ConstructPress
         {
             LidAt(st, now, false, out var was); // (the lid as it stands: open, or still opening when a stroke came early)
             st.StrokeLidFrom = st.StrokeOn ? 0 : was.Angle; // (back to back with no fall of Busy: still shut)
+            st.StrokeRepeat = st.StrokeOn; // (Busy never fell: a repeat, the lid kept shut and latched, the stamp alone)
             st.StrokeSince = now;
             st.StrokeLast = st.StrokeMade;
             var lastBlank = st.StrokeBlank;
@@ -152,6 +159,13 @@ public static partial class ConstructPress
         {
             var t = now - st.StrokeSince;
             p.Show = BedShow.Blank;
+            if (st.StrokeRepeat)
+            {
+                // A repeat: shut and latched throughout; the lid lifts off the part it made, then squeezes the next blank.
+                p.Latch = 1;
+                p.Drop = t < ReleaseSec ? 1 - Smooth(t / ReleaseSec) : Smooth((t - ReleaseSec) / SqueezeSec);
+                return;
+            }
             p.Jaws = Smooth(t / 1.2); // (the fences and the die run to this blank's size as the lid comes over)
             if (t < ShutSec)
             {
