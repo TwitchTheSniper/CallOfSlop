@@ -2899,7 +2899,9 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   (`Constructs/SurvivalStart.json`, the Ground start's kit): the Starter Assembler stays (items) and three hand-written blueprints join
   it: **Starter Press** (the Press Line with a Small Genset on a Fuel Tank in place of its Battery), **Starter Bake Oven** (the 4 x 3 bed
   oven, 8 x 6 m, a Small Genset and Fuel Tank on the Core's back) and **Starter Building Station** (a 4 x 3 bay, one more Bay Block past
-  its end carrying a Small Genset and Fuel Tank). Protocol 494.
+  its end carrying a Small Genset and Fuel Tank). A pressed part is its press's at a station's ask, never an oven's
+  (`ConstructCrafting.MachineMakes` asks `BakeKits.Has` with `OffAssembler`). Works II's frigate: 16 of 346 in 300 s (main 16 to 19).
+  Protocol 494.
 
 ### Sub-kits (2026-11-28)
 
