@@ -49,7 +49,8 @@ public sealed partial class ConstructWorld
 /// rectangle). The machine draws a tunnel over the whole bed (BakeOvenRender.cs): ceramic hearth rollers with their tops at the roll line
 /// (<see cref="ConstructPartDef.BakeRollTop"/>, a Roller Tile's, so a kit rolls in level), fixed side walls and a roof lined with
 /// firebrick, ribbon windows on both walls and a pair of swing doors at each end. The tunnel runs along the bed's side the Core is
-/// welded to; its in end is the end nearer the Core, its out end the other (<see cref="Bed"/>). The clear height over the rollers is
+/// welded to; its in end is the end nearer the Core, its out end the other (<see cref="Bed"/>), unless a roller run leads in or out of
+/// one end: then the runs lay the tunnel and the Core may stand anywhere round the bed (ConstructRollOut.OvenWays). The clear height over the rollers is
 /// the Core's Tunnel height setting.
 /// <para>
 /// A kit comes in on a Roller Tile run that meets the in end (ConstructRollOut.cs), or is set in from above by a crane or an arm. With
@@ -121,9 +122,19 @@ public static partial class ConstructBakeOven
             (X0, Z0, W, L, Cell, Top, Roll) = (asm.X0, asm.Z0, asm.W, asm.L, d.BlockCell, d.BakeBedTop, d.BakeRollTop);
             Blocks = W * L;
             Clear = W > 0 ? Math.Clamp(ConstructConfig.Get(c.Parts[asm.Core], d, CfgKey.Height, DefaultClear), 1f, 16f) : 0;
-            // Beside the bed across x (the Core's cell 0 within the bed's rows): the tunnel runs along z, and the other way round.
-            AlongZ = W == 0 || 0 >= Z0 && 0 <= Z0 + L - 1 || !(0 >= X0 && 0 <= X0 + W - 1);
-            Reversed = AlongZ ? -Z0 > Z0 + L - 1 : -X0 > X0 + W - 1; // (the Core nearer the bed's high end: that is the in end)
+            if (asm.OvenWay != 0)
+            {
+                // Its roller runs lay it (ConstructRollOut.OvenWays): the Core may stand anywhere round the bed (Sean, 2026-11-28).
+                AlongZ = (asm.OvenWay & 2) == 0;
+                Reversed = (asm.OvenWay & 4) != 0;
+            }
+            else
+            {
+                // No run in or out: beside the bed across x (the Core's cell 0 within the bed's rows) the tunnel runs along z, and the
+                // other way round; the in end is the one nearer the Core.
+                AlongZ = W == 0 || 0 >= Z0 && 0 <= Z0 + L - 1 || !(0 >= X0 && 0 <= X0 + W - 1);
+                Reversed = AlongZ ? -Z0 > Z0 + L - 1 : -X0 > X0 + W - 1; // (the Core nearer the bed's high end: that is the in end)
+            }
             var o = d.BlockOrigin ?? Vector3.Zero;
             var half = Cell * 0.5f;
             float minX = o.X + X0 * Cell - half, maxX = minX + W * Cell, minZ = o.Z + Z0 * Cell - half, maxZ = minZ + L * Cell;
