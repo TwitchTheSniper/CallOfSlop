@@ -24,6 +24,9 @@ public sealed class RoverFloor
     public int Fitted = -1; // the job's fitted count it was made for
     public Vector4[]? Feet; // the job's step footprints it was made from
     private readonly byte[][] _cover = new byte[4][]; // per class (1..3): 1 where its rover would stand over a fitted part
+    private float[] _top = []; // per cell: the highest top of a fitted part over it (bay floor up; a carry's height over its path)
+    public Vector2 KLo, KHi; // the fitted parts' footprint (the rovers' keep-out ring grows with the build: Sean 2026-11-28)
+    public bool Any; // anything fitted
     private float[] _g = [], _hf = [];
     private int[] _from = [], _seen = [], _heap = [];
     private int _stamp;
@@ -49,6 +52,7 @@ public sealed class RoverFloor
             var n = w * h;
             for (var c = 1; c < 4; c++)
                 _cover[c] = new byte[n];
+            _top = new float[n];
             _g = new float[n];
             _from = new int[n];
             _seen = new int[n];
@@ -59,6 +63,8 @@ public sealed class RoverFloor
         (W, H) = (w, h);
         for (var c = 1; c < 4; c++)
             Array.Clear(_cover[c]);
+        Array.Fill(_top, float.MinValue);
+        (KLo, KHi, Any) = (new Vector2(float.MaxValue), new Vector2(float.MinValue), false);
         for (var k = 0; k < _cache.Length; k++)
             _cache[k].N = -1;
         var feet = j.StepFoot;
@@ -69,6 +75,9 @@ public sealed class RoverFloor
             var f = feet[k];
             if (f.Z <= f.X && f.W <= f.Y)
                 continue;
+            (KLo, KHi, Any) = (Vector2.Min(KLo, new Vector2(f.X, f.Y)), Vector2.Max(KHi, new Vector2(f.Z, f.W)), true);
+            if (k < j.StepHi.Length)
+                Top(f.X, f.Y, f.Z, f.W, j.StepHi[k]);
             for (var c = 1; c < 4; c++)
             {
                 var m = StationRovers.Classes[c].HalfWid + 0.1f;
@@ -85,6 +94,29 @@ public sealed class RoverFloor
         for (var k = k0; k <= k1; k++)
             for (var i = i0; i <= i1; i++)
                 cover[k * W + i] = 1;
+    }
+
+    private void Top(float x0, float z0, float x1, float z1, float top)
+    {
+        int i0 = Math.Max(0, (int)MathF.Floor((x0 + Hx) / Cell)), i1 = Math.Min(W - 1, (int)MathF.Ceiling((x1 + Hx) / Cell) - 1);
+        int k0 = Math.Max(0, (int)MathF.Floor((z0 + Hz) / Cell)), k1 = Math.Min(H - 1, (int)MathF.Ceiling((z1 + Hz) / Cell) - 1);
+        for (var k = k0; k <= k1; k++)
+            for (var i = i0; i <= i1; i++)
+                _top[k * W + i] = MathF.Max(_top[k * W + i], top);
+    }
+
+    /// <summary>The highest top of a fitted part within <paramref name="r"/> of <paramref name="p"/> (a square of cells; float.MinValue: none).</summary>
+    public float TopNear(Vector2 p, float r)
+    {
+        if (W == 0)
+            return float.MinValue;
+        int i0 = Math.Max(0, (int)MathF.Floor((p.X - r + Hx) / Cell)), i1 = Math.Min(W - 1, (int)MathF.Floor((p.X + r + Hx) / Cell));
+        int k0 = Math.Max(0, (int)MathF.Floor((p.Y - r + Hz) / Cell)), k1 = Math.Min(H - 1, (int)MathF.Floor((p.Y + r + Hz) / Cell));
+        var best = float.MinValue;
+        for (var k = k0; k <= k1; k++)
+            for (var i = i0; i <= i1; i++)
+                best = MathF.Max(best, _top[k * W + i]);
+        return best;
     }
 
     private int CellOf(Vector2 p)
