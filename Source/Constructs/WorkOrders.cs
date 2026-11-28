@@ -1105,9 +1105,10 @@ public static class ConstructBill
             bill.Pieces[b] = bill.Pieces[b] with { Count = (ushort)Math.Min(bill.Pieces[b].Count + 1, WorkOrders.MaxCount) };
     }
 
-    /// <summary>A catalogue part no Assembler makes but a die presses (a preset, Press phase 4), as its press order's spec; else null.</summary>
+    /// <summary>A catalogue part a die presses (a preset, Press phase 4), as its press order's spec; else null. Whether or not it keeps an
+    /// Assembler row (its bill: the Differential, the Proximity Sensor, the receivers): since phase 6 no Assembler builds a preset.</summary>
     public static Pressed.OrderSpec? PresetOf(ConstructPartDef? d) =>
-        d != null && RecipeOf(d) == null && PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
+        d != null && PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
 
     private static void AddPressed(Bill bill, string key, Pressed.OrderSpec spec)
     {

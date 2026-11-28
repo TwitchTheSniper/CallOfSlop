@@ -754,19 +754,23 @@ public static class ConstructCrafting
 
     private static string? MachineMakes(ConstructWorld world, Construct c, CraftNet net, ushort part)
     {
-        if (ConstructParts.Get(part) is { } kd && (BakeKits.Has(kd) && BakeKits.OffAssembler(kd) || BakeKits.IsSub(kd)))
+        if (ConstructParts.Get(part) is { } kd && (BakeKits.Has(kd) && (BakeKits.OffAssembler(kd) || BakeKits.Bootstrap(kd)) || BakeKits.IsSub(kd)))
         {
             // (a part made from a kit: an oven on the net bakes it, a station builds its kit: BakeKits.cs; since phase 6 a kit's part some
-            // oven holds is never an Assembler's, and a pressed part goes on to its press below)
+            // oven holds is never an Assembler's, and a pressed part goes on to its press below; a machine's own part, with no oven on the
+            // net, goes on to its Assembler row: BakeKits.Bootstrap)
             for (var i = 0; i < net.MachineN; i++)
                 if (c.DefOf(net.Machines[i]) is { IsBakeOven: true } od)
                     return od.Name;
-            return null;
+            if (BakeKits.OffAssembler(kd) || BakeKits.IsSub(kd))
+                return null;
         }
-        if (AssemblingTable.Current.Of(part) is not { } r)
+        // (Press phase 5: a part a die presses, the Gear Set, the Circuit Board: a linked press with that die fitted makes it; since phase 6
+        // whether or not it keeps an Assembler row, which is then its bill only: the Differential, the receivers)
+        var pressed = ConstructBill.PresetOf(ConstructParts.Get(part));
+        if (pressed != null || AssemblingTable.Current.Of(part) is not { } r)
         {
-            // (Press phase 5: a part a die presses, the Gear Set, the Circuit Board: a linked press with that die fitted makes it)
-            if (ConstructBill.PresetOf(ConstructParts.Get(part)) is not { } spec)
+            if (pressed is not { } spec)
             {
                 // (formers' work orders: a catalogue wing or rotor that is a Fan or Airframe Former's preset, at a former it fits)
                 if (FormerPresets.KeyOf(part) is { } fk)

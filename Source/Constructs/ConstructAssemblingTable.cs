@@ -214,8 +214,8 @@ public sealed class AssemblingTable
     /// <summary>The die that presses such a part ("Gear Die"), or null.</summary>
     public static string? PressedDieOf(ConstructPartDef d) => PressedSpec(d) is { } s ? $"{s.Die.Family} Die" : null;
 
-    private static Pressed.OrderSpec? PressedSpec(ConstructPartDef d) =>
-        Current.Of((ushort)d.Id) == null && PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
+    private static Pressed.OrderSpec? PressedSpec(ConstructPartDef d) => // (row or none: a row a preset keeps is its bill, phase 6)
+        PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Assembling.json");
 
