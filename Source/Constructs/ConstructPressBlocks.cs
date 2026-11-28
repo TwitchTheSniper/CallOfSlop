@@ -97,7 +97,7 @@ public static partial class ConstructPress
             : $"too big: this press has {day:0.0} m of daylight and a {width / 100f:0} m bed, widen the bed";
     }
 
-    /// <summary>What the look line says of the press's size: "bed 3 x 2 (6.0 x 4.0 m), 1.60 m of daylight" (its speed is on its screen, not here).</summary>
+    /// <summary>What the look line says of the press's size: "bed 3 x 2 (6.0 x 4.0 m), 1.60 m of daylight" (its speed is on its screen: FillDie).</summary>
     public static string SizeText(Construct c, int part)
     {
         if (c.Parts[part].D.BlockRole != BlockRole.Core || !MachineBlocks.TryOf(c, part, out var asm))

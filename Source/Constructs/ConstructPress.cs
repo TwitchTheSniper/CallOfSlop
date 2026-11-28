@@ -1527,6 +1527,8 @@ public static partial class ConstructPress
             card.Add(1, "Cuts: ").Add(1, row == null ? "nothing" : row.Output.Name);
         else
             card.Add(1, "Die: ").Add(1, die >= 0 ? c.Parts[die].D.Name : "none");
+        if (!d.IsLathe && d.BlockRole == BlockRole.Core && MachineBlocks.TryOf(c, part, out var sasm) && sasm.W > 0)
+            card.Add(0, " x").AddFixed(0, Speed(c, part), 1); // (its speed from its blocks: the look line leaves it out)
         if (!d.IsLathe && SizedDieOf(PressTable.Current, c, part) is { } sized)
         {
             // The Pattern: the set one's label, or on Auto what the ready blank makes.
