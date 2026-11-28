@@ -2348,7 +2348,11 @@ tunnel with swing doors): a Recuperator Core (the Oven Core's part, still named 
 Masts are gone. A welded group rolled or set on the hearth bakes into one part, or a baked part un-bakes back into its subparts (the
 Core's Mode setting: Bake or Un-bake). The code is `BakedParts.cs`; the looks are `BakeOvenRender.cs`.
 
-- **The tunnel.** It runs along the bed's edge the Core stands beside; its in end is the end nearer the Core. `ConstructBakeOven.Bed`
+- **The tunnel.** Its Roller Tile runs lay it (Sean, 2026-11-28: a Core may stand anywhere round its bed, so a layout puts it where
+  nothing else needs the floor): a run whose line meets one end of the bed heading along it makes that end the way in, else a run that
+  leaves one end makes that end the way out (`ConstructRollOut.OvenWays`, at the rebuild, into `CMachineAsm.OvenWay`; the first run in
+  link order wins, runs along the way the Core's place would give first: a run onto the bed's side turns the tunnel only when no run meets an end that way). An oven with no run in or out falls back to its Core's place: the tunnel runs along the bed's edge the Core stands
+  beside, its in end the end nearer the Core. `--station-check` prints each oven's way ("tunnel laid by its runs", its way out). `ConstructBakeOven.Bed`
   gives its frame (`ToCore`: x across, z along from the in end, y up from the foot; a turn about y, never a mirror): 0.4 m walls on the
   bed's outer cells, a swing door zone 0.45 m deep at each end, the hearth's roll line at 1.0 m (`rollTop`, an Out Table's work height:
   the Bed Block is solid to it, so a kit rests on the rollers) and a clear height from the Core's Tunnel height setting (1.5 to 12 m,
