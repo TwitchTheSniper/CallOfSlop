@@ -308,7 +308,11 @@ public static partial class ConstructStation
                 if (b == a || moving && j.ArmTicks[b] == 0)
                     continue;
                 PoseAt(j, docks[b], b, u, out var ob, out _);
-                if (StationRovers.Clash(docks[a], me, docks[b], ob, 0.3f))
+                // (a rover parked on its dock is its body's box there, not a circle: one leaving the dock beside it, 2 m off, passes it, and
+                // with no going through any more it waited for good, Sean 2026-11-28)
+                if (j.ArmTicks[b] == 0 && !j.RovSet[b]
+                        ? StationRovers.ParkedClash(docks[b], me, StationRovers.Classes[docks[a].Cls].HalfWid + 0.15f)
+                        : StationRovers.Clash(docks[a], me, docks[b], ob, 0.3f))
                     return b;
                 var other = PieceAt(j, b, u, ob, out var op, out var oy, out var oReach, out var oHang);
                 var parked = j.ArmTicks[b] == 0 && !j.RovSet[b]; // (on its dock, off the bay: a piece swung past it is no clash)
@@ -649,8 +653,8 @@ public static partial class ConstructStation
     }
 
     private const int PlanOk = 0, PlanNoReach = 1, PlanBlocked = 2;
-    public const int PlanShifts = 6; // stands slid along the lane a try (1 to 3 rover widths each way) while the start waits less than 20 s
-    public const int PlanTries = 40, PlanTriesMany = 16; // clash checks one plan may make (more than 4 rovers: fewer, each costs more)
+    public const int PlanShifts = 6; // stands slid along the lane at once (1 to 3 rover widths each way), before any later start
+    public const int PlanTries = 48; // clash checks one plan may make: the slides, then every later start up to MaxWait
 
     /// <summary>
     /// Rover <paramref name="a"/>'s carry into <c>j.Try</c>, clear of the others: an idle rover standing in its way is sent home first;
@@ -690,15 +694,17 @@ public static partial class ConstructStation
                 up = MathF.Max(MathF.Min(PathTop(j.Try, g.Floor, half, j.BuiltTop) + hang + 0.6f, cap), low);
             var tries = 0;
             var sent = 0;
-            var limit = n > 4 ? PlanTriesMany : PlanTries;
+            var limit = PlanTries;
             for (var w = 0f; w <= StationRovers.MaxWait; w += w < 20 ? 2 : w < 80 ? 5 : 12)
-                for (var shift = 0; shift <= (w < 20 ? PlanShifts : 0); shift++)
+                for (var shift = 0; shift <= (w == 0 ? PlanShifts : 0); shift++)
                 {
                     var off = shift == 0 ? 0 : (shift + 1) / 2 * ((shift & 1) == 1 ? 1 : -1);
                     if (!StationRovers.PlanCarry(j.Try, g, dk, at, h, hook, pick, place, up, weld, w, off))
                         continue;
                     if (++tries > limit)
+                    {
                         return PlanBlocked;
+                    }
                     var hit = FirstClash(j, docks, n, a, reach: half, hang: hang);
                     if (hit < 0)
                         return PlanOk;
@@ -817,6 +823,7 @@ public static partial class ConstructStation
             w.U8((byte)p.NB);
             for (var k = 0; k < p.NB; k++)
                 w.U16(Ticks(p.Bt[k])).Cm(p.Bx[k]).Cm(p.Bz[k]).U16(Angle(p.Bh[k]));
+            w.U64(p.Smooth); // (protocol 490: the keys it drives on through, a curve's)
             w.U8((byte)p.NH);
             for (var k = 0; k < p.NH; k++)
                 w.U16(Ticks(p.Ht[k])).CmVec(p.Ho[k]);
@@ -867,6 +874,7 @@ public static partial class ConstructStation
             int nb = r.U8();
             for (var k = 0; k < nb; k++)
                 p.AddBase(r.U16() / (float)World.TickRate, r.Cm(), r.Cm(), FromAngle(r.U16()));
+            p.Smooth = r.U64() & (p.NB >= 64 ? ulong.MaxValue : (1UL << p.NB) - 1);
             int nh = r.U8();
             for (var k = 0; k < nh; k++)
                 p.AddHook(r.U16() / (float)World.TickRate, r.CmVec());

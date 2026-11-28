@@ -831,7 +831,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      and cloth extrudes (a piece's material byte may be cloth).
     // 489: sub-kits (Assembler retirement): a work order or a crafting line may name a baked sub-assembly by its key ("Baked (#hash)",
     //      a Bake Oven's order; the named-order shape, its id this peer's own), and a split kit's bake reads its baked subparts as their designs.
-    public const ushort ProtocolVersion = 489;
+    // 490: a Building Station rover's trip sends which body keys it drives on through (a curve through a corner: a U64 after its keys),
+    //      and a trip keeps up to 64 body keys.
+    public const ushort ProtocolVersion = 490;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
