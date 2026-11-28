@@ -97,6 +97,8 @@ public sealed partial class StationJob
     public Vector2 KeepLo, KeepHi; // the build's footprint in the bay's frame (the rovers' keep-out ring)
     public RoverFloor? Floor; // server: the cells over fitted parts the rovers keep off (ConstructStationRoverFloor.cs; made again at each fit)
     public Vector4[] StepFoot = []; // each step's footprint in the bay's frame (x0, z0, x1, z1): a fitted step's is ground the rovers keep off
+    public float[] StepLo = [], StepHi = []; // each step's bottom and top over the bay's floor (the carry height over a path; what a step would cover)
+    public int OpenRank; // the lowest rank with a step still to fit (Gate): a step past it never goes on over an unfitted step of a lower rank
     public float BuiltTop; // the highest part fitted so far over the bay's floor
 
     private static int[] Filled(int v)

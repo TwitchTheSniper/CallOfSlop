@@ -18,8 +18,9 @@ public readonly record struct RoverClass(string Name, float Reach, float Kg, flo
 /// </summary>
 public sealed class RoverPlan
 {
-    public const int MaxBase = 40, MaxHook = 14; // (protocol 486: 40 keys, for drives round what is fitted)
+    public const int MaxBase = 64, MaxHook = 14; // (protocol 486: 40 keys, for drives round what is fitted; 491: 64, for curves through corners, Smooth's bits)
     public int NB, NH;
+    public ulong Smooth; // bit k: the body drives on through key k without a stop (a curve's point: Sean 2026-11-28, curve through corners)
     public readonly float[] Bt = new float[MaxBase], Bx = new float[MaxBase], Bz = new float[MaxBase], Bh = new float[MaxBase];
     public readonly float[] Ht = new float[MaxHook];
     public readonly Vector3[] Ho = new Vector3[MaxHook];
@@ -30,6 +31,7 @@ public sealed class RoverPlan
     public void Clear()
     {
         NB = NH = 0;
+        Smooth = 0;
         Total = GripT = FitT = Up = 0;
         Home = false;
         Turn = Quaternion.Identity;
@@ -37,7 +39,7 @@ public sealed class RoverPlan
 
     public void CopyFrom(RoverPlan o)
     {
-        (NB, NH, Total, GripT, FitT, Up, Home, Turn) = (o.NB, o.NH, o.Total, o.GripT, o.FitT, o.Up, o.Home, o.Turn);
+        (NB, NH, Total, GripT, FitT, Up, Home, Turn, Smooth) = (o.NB, o.NH, o.Total, o.GripT, o.FitT, o.Up, o.Home, o.Turn, o.Smooth);
         Array.Copy(o.Bt, Bt, NB);
         Array.Copy(o.Bx, Bx, NB);
         Array.Copy(o.Bz, Bz, NB);
@@ -46,19 +48,20 @@ public sealed class RoverPlan
         Array.Copy(o.Ho, Ho, NH);
     }
 
-    public bool AddBase(float t, float x, float z, float h)
+    public bool AddBase(float t, float x, float z, float h, bool smooth = false)
     {
         if (NB > 0 && t < Bt[NB - 1])
             t = Bt[NB - 1];
-        if (NB >= MaxBase)
-        {
-            (Bt[NB - 1], Bx[NB - 1], Bz[NB - 1], Bh[NB - 1]) = (t, x, z, h); // (full: the last key moves, so the trip still ends where it goes)
+        var k = NB >= MaxBase ? NB - 1 : NB; // (full: the last key moves, so the trip still ends where it goes)
+        (Bt[k], Bx[k], Bz[k], Bh[k]) = (t, x, z, h);
+        Smooth = smooth ? Smooth | 1UL << k : Smooth & ~(1UL << k);
+        if (k < NB)
             return false;
-        }
-        (Bt[NB], Bx[NB], Bz[NB], Bh[NB]) = (t, x, z, h);
         NB++;
         return true;
     }
+
+    private bool On(int k) => (Smooth >> k & 1) != 0;
 
     public void AddHook(float t, Vector3 off)
     {
@@ -94,6 +97,38 @@ public sealed class RoverPlan
         var k = 1;
         while (k < NB - 1 && Bt[k] < t)
             k++;
+        // A curve (keys it drives on through): eased once over the whole run, by distance along it, so it keeps its speed round the
+        // corners and stops only at the run's ends.
+        int s = k - 1, e = k;
+        while (s > 0 && On(s))
+            s--;
+        while (e < NB - 1 && On(e))
+            e++;
+        if (s < k - 1 || e > k)
+        {
+            var len = 0f;
+            for (var q = s + 1; q <= e; q++)
+                len += MathF.Sqrt((Bx[q] - Bx[q - 1]) * (Bx[q] - Bx[q - 1]) + (Bz[q] - Bz[q - 1]) * (Bz[q] - Bz[q - 1]));
+            var span = Bt[e] - Bt[s];
+            if (len > 1e-3f && span > 1e-4f)
+            {
+                var go = StationRovers.Ease((t - Bt[s]) / span) * len;
+                for (var q = s + 1; q <= e; q++)
+                {
+                    var seg = MathF.Sqrt((Bx[q] - Bx[q - 1]) * (Bx[q] - Bx[q - 1]) + (Bz[q] - Bz[q - 1]) * (Bz[q] - Bz[q - 1]));
+                    if (go > seg && q < e)
+                    {
+                        go -= seg;
+                        continue;
+                    }
+                    var f = seg > 1e-4f ? Math.Clamp(go / seg, 0f, 1f) : 1f;
+                    x = Bx[q - 1] + (Bx[q] - Bx[q - 1]) * f;
+                    z = Bz[q - 1] + (Bz[q] - Bz[q - 1]) * f;
+                    h = Bh[q - 1] + StationRovers.Wrap(Bh[q] - Bh[q - 1]) * f;
+                    return;
+                }
+            }
+        }
         var dt = Bt[k] - Bt[k - 1];
         var u = dt > 1e-4f ? (t - Bt[k - 1]) / dt : 1f;
         u = StationRovers.Ease(u);
@@ -216,11 +251,12 @@ public static class StationRovers
         new("Large rover", 26f, 120000f, 1.5f, 0.6f, 13f, 5.0f, 3.25f, 3.6f, 4.0f, 12f, 8f, 8),
     ];
 
+    public const float HandSpeed = 2f; // the hand swings round the mast this many times its rover's drive speed (Sean 2026-11-28)
     public const float VSpeed = 1.5f; // m/s the hook rises and falls
     public const float DropSpeed = 4f; // m/s the hook goes down onto a piece or its place and back up (Sean 2026-11-27: the drive is the time, the drop in is quick)
     public const float DropSeconds = 0.5f; // s a rover holds a piece on its place before it lets go (the fit; a crane's weld time is the station's own)
     public const float GripSeconds = 0.4f, ReleaseSeconds = 0.3f;
-    public const float ClassPenalty = 90f; // s: a piece taken by the wrong class costs this a class (the lab's rule)
+    public const float ClassPenalty = 5f; // s: a piece taken by an idle rover of another class costs this a class (a near tie's breaker: Sean 2026-11-28, any idle rover that lifts it goes; the lab's rule was 90 s, and a step waited for its busy class)
     public const float MaxWait = 300f; // s a trip waits for its way to clear before it goes anyway
     public const float HomeAfter = 15f; // s idle in the bay before a rover drives home (at once when no ready step is its: RoverJob JobSoon)
     public const float PickClear = 0.6f; // m between a rover's body and a pad's edge
@@ -283,7 +319,7 @@ public static class StationRovers
     {
         float ra = MathF.Sqrt(a.X * a.X + a.Z * a.Z), rb = MathF.Sqrt(b.X * b.X + b.Z * b.Z);
         var arc = MathF.Abs(Wrap(MathF.Atan2(b.X, b.Z) - MathF.Atan2(a.X, a.Z))) * MathF.Max(1f, (ra + rb) * 0.5f);
-        return 0.4f + (arc + MathF.Abs(rb - ra)) / rc.Speed + MathF.Abs(b.Y - a.Y) / VSpeed;
+        return 0.4f + (arc + MathF.Abs(rb - ra)) / (rc.Speed * HandSpeed) + MathF.Abs(b.Y - a.Y) / VSpeed;
     }
 
     /// <summary>
@@ -463,6 +499,20 @@ public static class StationRovers
         return p;
     }
 
+    /// <summary>
+    /// Where a rover stands to work at <paramref name="q"/>: <see cref="SpotFor"/>, off the ring round what is fitted; when that spot
+    /// doesn't reach (the ring grew past its reach), the nearest point on the bay inside the ring (a stand over what is fitted is moved
+    /// off it after by <see cref="FreeStand"/>), so a piece inside the build is never left for nobody.
+    /// </summary>
+    public static Vector2 StandFor(in Ground g, in RoverClass rc, Vector3 q)
+    {
+        var s = SpotFor(g, rc, q);
+        if (!g.Keep || Reaches(rc, s, q))
+            return s;
+        g.Inset(rc, out var ix, out var iz);
+        return new Vector2(Math.Clamp(q.X, -ix, ix), Math.Clamp(q.Z, -iz, iz));
+    }
+
     /// <summary>The class number of <paramref name="rc"/> (1 small, 2 medium, 3 large).</summary>
     public static int ClsOf(in RoverClass rc)
     {
@@ -620,6 +670,100 @@ public static class StationRovers
         p.AddBase(t, at.X, at.Y, h);
     }
 
+    public const float CurveAngle = 2.1f; // rad: a corner sharper than this (about 120 degrees) is a stop and a turn on the spot, not a curve
+
+    /// <summary>
+    /// Drive through the points <paramref name="pts"/> (keys into <paramref name="p"/>), curving through the corners (Sean 2026-11-28):
+    /// a turn on the spot to face the first, then each corner rounded in an arc of about one and a half body lengths' radius (less where
+    /// the legs are short), keeping its speed through it; a stop only at the end, or at a corner sharper than <see cref="CurveAngle"/>,
+    /// where it turns on the spot. A run's time is its length at the rover's speed and 0.4 s for its start and stop. Allocates nothing.
+    /// </summary>
+    public static void Path(RoverPlan p, in RoverClass rc, ref float t, ref Vector2 at, ref float h, ReadOnlySpan<Vector2> pts)
+    {
+        Span<Vector2> q = stackalloc Vector2[pts.Length + 1];
+        var m = 0;
+        var last = at;
+        foreach (var v in pts)
+            if (Vector2.Distance(v, last) >= 0.05f)
+                q[m++] = last = v;
+        if (m == 0)
+            return;
+        var d0 = q[0] - at;
+        TurnTo(p, rc, ref t, at, ref h, MathF.Atan2(d0.X, d0.Y));
+        Span<Vector2> run = stackalloc Vector2[3 * m + 1];
+        Span<float> head = stackalloc float[3 * m + 1];
+        var rn = 0;
+        var prev = at;
+        for (var i = 0; i < m; i++)
+        {
+            var a = Vector2.Normalize(q[i] - prev);
+            if (i == m - 1)
+            {
+                (run[rn], head[rn]) = (q[i], MathF.Atan2(a.X, a.Y));
+                rn++;
+                break;
+            }
+            var b = Vector2.Normalize(q[i + 1] - q[i]);
+            var th = MathF.Acos(Math.Clamp(Vector2.Dot(a, b), -1f, 1f));
+            float ha = MathF.Atan2(a.X, a.Y), hb = MathF.Atan2(b.X, b.Y);
+            if (th > CurveAngle)
+            {
+                // (a sharp corner: the run ends there and it turns on the spot)
+                (run[rn], head[rn]) = (q[i], ha);
+                rn++;
+                Run(p, rc, ref t, ref at, ref h, run[..rn], head[..rn]);
+                rn = 0;
+                TurnTo(p, rc, ref t, at, ref h, hb);
+            }
+            else if (th < 0.02f)
+            {
+                (run[rn], head[rn]) = (q[i], ha);
+                rn++;
+            }
+            else
+            {
+                var tan = MathF.Tan(th * 0.5f);
+                var d = MathF.Min(rc.HalfLen * 3f * tan, 0.45f * MathF.Min(Vector2.Distance(prev, q[i]), Vector2.Distance(q[i], q[i + 1])));
+                var r = d / tan;
+                var mid = q[i] + Vector2.Normalize(b - a) * (r / MathF.Cos(th * 0.5f) - r);
+                (run[rn], head[rn]) = (q[i] - a * d, ha);
+                (run[rn + 1], head[rn + 1]) = (mid, ha + Wrap(hb - ha) * 0.5f);
+                (run[rn + 2], head[rn + 2]) = (q[i] + b * d, hb);
+                rn += 3;
+            }
+            prev = q[i];
+        }
+        Run(p, rc, ref t, ref at, ref h, run[..rn], head[..rn]);
+    }
+
+    /// <summary>One run of a drive: its points keyed by distance at the rover's speed, driven on through all but the last.</summary>
+    private static void Run(RoverPlan p, in RoverClass rc, ref float t, ref Vector2 at, ref float h, ReadOnlySpan<Vector2> pts, ReadOnlySpan<float> heads)
+    {
+        if (pts.Length == 0)
+            return;
+        var len = 0f;
+        var from = at;
+        foreach (var v in pts)
+        {
+            len += Vector2.Distance(from, v);
+            from = v;
+        }
+        if (len < 0.05f)
+            return;
+        var span = len / rc.Speed + 0.4f; // (its start and stop)
+        var go = 0f;
+        from = at;
+        for (var k = 0; k < pts.Length; k++)
+        {
+            go += Vector2.Distance(from, pts[k]);
+            from = pts[k];
+            p.AddBase(t + span * go / len, pts[k].X, pts[k].Y, heads[k], smooth: k < pts.Length - 1);
+        }
+        t += span;
+        at = pts[^1];
+        h = heads[^1];
+    }
+
     /// <summary>Turn on the spot to <paramref name="want"/>.</summary>
     public static void TurnTo(RoverPlan p, in RoverClass rc, ref float t, Vector2 at, ref float h, float want)
     {
@@ -637,15 +781,13 @@ public static class StationRovers
     /// </summary>
     public static void Drive(RoverPlan p, in Ground g, in RoverClass rc, in StationDock dk, ref float t, ref Vector2 at, ref float h, Vector2 to, Vector2 face)
     {
+        Span<Vector2> pts = stackalloc Vector2[RoverFloor.MaxWay + 1];
+        var m = 0;
+        var from = at;
         if (Vector2.Distance(at, dk.Mid) < 0.6f && Vector2.Distance(to, at) > 0.3f)
-        {
-            var mouth = MouthOf(dk);
-            Leg(p, rc, ref t, ref at, ref h, mouth); // (out of the dock straight: it faces its mouth parked)
-        }
-        Span<Vector2> way = stackalloc Vector2[RoverFloor.MaxWay];
-        var n = Route(g, rc, at, to, way);
-        for (var k = 0; k < n; k++)
-            Leg(p, rc, ref t, ref at, ref h, way[k]);
+            pts[m++] = from = MouthOf(dk); // (out of the dock straight first: it faces its mouth parked)
+        m += Route(g, rc, from, to, pts[m..]);
+        Path(p, rc, ref t, ref at, ref h, pts[..m]);
         var f = face - at;
         if (f.LengthSquared() > 0.25f)
             TurnTo(p, rc, ref t, at, ref h, MathF.Atan2(f.X, f.Y));
@@ -684,8 +826,7 @@ public static class StationRovers
         var mouth = MouthOf(dk);
         Span<Vector2> way = stackalloc Vector2[RoverFloor.MaxWay];
         var n = Route(g, rc, at, mouth, way);
-        for (var k = 0; k < n; k++)
-            Leg(p, rc, ref t, ref at, ref h, way[k]);
+        Path(p, rc, ref t, ref at, ref h, way[..n]);
         TurnTo(p, rc, ref t, at, ref h, MathF.Atan2(dk.Dir.X, dk.Dir.Y));
         Leg(p, rc, ref t, ref at, ref h, dk.Mid, reverse: true);
         p.AddHook(t, stow);
@@ -713,8 +854,8 @@ public static class StationRovers
             s1 = s2 = at;
         else
         {
-            s1 = SpotFor(g, rc, src);
-            s2 = SpotFor(g, rc, place);
+            s1 = StandFor(g, rc, src);
+            s2 = StandFor(g, rc, place);
             if (shift != 0)
             {
                 s1 = Slide(g, rc, s1, shift);
@@ -818,6 +959,17 @@ public static class StationRovers
             alongZ = g.Hz >= g.Hx;
         var n = alongZ ? s with { Y = s.Y + d } : s with { X = s.X + d };
         return new Vector2(Math.Clamp(n.X, -ix, ix), Math.Clamp(n.Y, -iz, iz));
+    }
+
+    /// <summary>Does a rover's middle at <paramref name="p"/> come within <paramref name="r"/> of the body of the rover parked on dock <paramref name="dk"/> (its box on the pad)?</summary>
+    public static bool ParkedClash(in StationDock dk, Vector2 p, float r)
+    {
+        var rc = Classes[dk.Cls];
+        var o = p - dk.Mid;
+        var along = MathF.Abs(Vector2.Dot(o, dk.Dir)) - rc.HalfLen;
+        var across = MathF.Abs(o.X * dk.Dir.Y - o.Y * dk.Dir.X) - rc.HalfWid;
+        float dx = MathF.Max(0, along), dy = MathF.Max(0, across);
+        return dx * dx + dy * dy < r * r;
     }
 
     /// <summary>Do two rovers' bodies meet (circles; two rovers each parked on its own pad never do)?</summary>

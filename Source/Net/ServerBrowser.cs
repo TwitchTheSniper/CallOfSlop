@@ -833,7 +833,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      a Bake Oven's order; the named-order shape, its id this peer's own), and a split kit's bake reads its baked subparts as their designs.
     // 490: CActKind.ExtruderSection carries the piece's Cut every (u16 cm) and Order count (u16) after the mask, and a u8 that also queues
     //      one order of them (the Extruder picker's Length, Quantity and Queue).
-    public const ushort ProtocolVersion = 490;
+    // 491: a Building Station rover's trip sends which body keys it drives on through (a curve through a corner: a U64 after its keys),
+    //      and a trip keeps up to 64 body keys.
+    public const ushort ProtocolVersion = 491;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

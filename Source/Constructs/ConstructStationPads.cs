@@ -229,11 +229,16 @@ public static partial class ConstructStation
     // ---- The arms' carries off a pad (server) -------------------------------------------------------------------------------
 
     /// <summary>
-    /// Where an arm picks a step's part of kind <paramref name="def"/> from: the hold (-1) when it has more of it than the arms already
-    /// carry from it, else the first pick pad that does and whose piece the crane lifts; -2: nowhere.
+    /// Where rover class <paramref name="rc"/> standing at <paramref name="at"/> picks a step's part of kind <paramref name="kind"/> from:
+    /// the hold (-1) when it has more of it than the arms already carry from it, else the pick pad holding one that makes its trip
+    /// shortest (to the piece, then on to <paramref name="place"/>; Sean 2026-11-28: the nearest pad to that rover, not the first pad in
+    /// the list), with <paramref name="pick"/> where its hook takes it (the piece where the pad draws it, or the pad's edge when that is
+    /// past its reach); -2: nowhere it lifts and reaches. Allocates nothing.
     /// </summary>
-    private static int PickFrom(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, int kind, ConstructPartDef d, float maxKg)
+    private static int PickNear(ConstructWorld world, Construct c, int t, StationJob j, CStore tray, int kind, ConstructPartDef d, in RoverClass rc,
+        in StationRovers.Ground g, Vector2 at, Vector3 place, out Vector3 pick)
     {
+        pick = default;
         var def = j.KindDef[kind];
         var fromHold = 0;
         for (var a = 0; a < MaxArms; a++)
@@ -241,10 +246,13 @@ public static partial class ConstructStation
                 fromHold++;
         if (ConstructCrafting.Holds(tray, def) > fromHold)
             return -1;
-        if (d.Mass > MathF.Min(maxKg, LiftKg(c, t)))
+        if (d.Mass > MathF.Min(rc.Kg, LiftKg(c, t)))
             return -2;
         Span<ushort> pads = stackalloc ushort[MaxOwnPads];
         var n = OwnPads(c, t, pads);
+        var best = -2;
+        var bestD = float.MaxValue;
+        var to = new Vector2(place.X, place.Z);
         for (var p = 0; p < n; p++)
         {
             if (world.StoreOf(c, pads[p]) is not { } st)
@@ -253,10 +261,21 @@ public static partial class ConstructStation
             for (var a = 0; a < MaxArms; a++)
                 if (j.ArmStep[a] >= 0 && j.StepKind[j.ArmStep[a]] == kind && j.ArmPad[a] == pads[p])
                     carried++;
-            if (ConstructCrafting.Holds(st, def) > carried)
-                return pads[p];
+            if (ConstructCrafting.Holds(st, def) <= carried)
+                continue;
+            var q = PadPickAt(world, c, t, j, pads[p], d);
+            if (!StationRovers.Reaches(rc, StationRovers.StandFor(g, rc, q), q))
+            {
+                q = PadEdgeAt(c, t, pads[p], d); // (its place on the pad past this rover's reach: taken at the pad's edge)
+                if (!StationRovers.Reaches(rc, StationRovers.StandFor(g, rc, q), q))
+                    continue;
+            }
+            var qq = new Vector2(q.X, q.Z);
+            var dist = Vector2.Distance(at, qq) + Vector2.Distance(qq, to);
+            if (dist < bestD)
+                (best, bestD, pick) = (pads[p], dist, q);
         }
-        return -2;
+        return best;
     }
 
     /// <summary>

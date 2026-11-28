@@ -1802,15 +1802,22 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
   stations' edges is the first station's.
 - **Classes** (`StationRovers.Classes`): Small 9 m reach, 8 t, 5 m/s, 4 wheels, 5 m mast; Medium 15 m, 52 t, 3 m/s, 6 wheels, 9 m;
   Large 26 m, 120 t, 1.5 m/s, 8 wheels, 13 m. A piece up to 8 t and 3 m wants a small rover, up to 52 t and 10 m a medium, the rest a
-  large; another class takes it only when it would be 90 s per class sooner (`ClassPenalty`).
-- **Trips**: a rover drives (it never teleports): it turns on the spot, then drives straight, round the parts already fitted (Sean
+  large. Any idle rover that lifts a piece and reaches its place takes it (Sean 2026-11-28): a step never waits for a busy rover of a
+  better size, and the size only breaks near ties between idle ones (5 s a class, `ClassPenalty`; it was 90 s). The hand swings round
+  the mast at twice the drive speed (`HandSpeed`). Of the pick pads that hold the piece, a rover takes it off the one that makes its trip
+  (to the piece, then to its place) shortest (`PickNear`).
+- **Trips**: a rover drives (it never teleports): it turns on the spot to face its way, then drives on through its corners in arcs of
+  about one and a half body lengths (Sean 2026-11-28, `StationRovers.Path`: the keys it drives on through are `RoverPlan.Smooth`'s bits,
+  protocol 491, eased once over a run by distance), stopping only at the end or at a corner sharper than 120 degrees; round the parts already fitted (Sean
   2026-11-28: `RoverFloor`, the bay in 1 m cells marked where the class's body would be over a fitted step's footprint; the cheapest
   way over the cells, a metre over a fitted part costing 25 of free floor, pulled straight between corners; over the build only when
-  there is no room, as a large rover in Works II's 24 m bay). It stands at the nearest spot off the build's footprint (its ring) that
-  reaches, moved off fitted parts when a spot within half its reach still reaches (`StationRovers.FreeStand`); out of and into its dock straight by the mouth; it
+  there is no room, as a large rover in Works II's 24 m bay). It stands at the nearest spot off the ring round what is fitted so far
+  (Sean 2026-11-28; it was the finished build's whole footprint) that reaches, inside it when that doesn't (`StandFor`), moved off fitted parts when a spot within half its reach still reaches (`StationRovers.FreeStand`); out of and into its dock straight by the mouth; it
   squares up with its short end to the work, never drives onto a pick pad (a piece lies against the pad's bay-side edge) and swings its
-  arm rather than drive. A piece swings round the mast in an arc. Rovers keep apart: a spot beside along the lane first, then a later
-  start, waiting up to 300 s. An idle rover drives home at once when no ready step is its own (a piece it lifts, of no nearer class at another dock), else after 15 s; its arm folds as it sets off, and a rover standing in its way doesn't hold it back (Sean 2026-11-27). On a home trip, and on an empty drive over 6 m to a pick (`StationRovers.TuckDrive`), the hook tucks in by the mast and the rover is drawn in its driving pose: mast down, lower arm up, forearm hung beside it. Plans are sent whole (keys of base and hook), and both peers
+  arm rather than drive. A piece swings round the mast in an arc. Rovers keep apart, and never go through one another (Sean
+  2026-11-28): an idle rover standing in the way goes home first, then a spot beside along the lane (1 to 3 widths), then a later start up
+  to 300 s, each try checked a second apart and, clear at that, a quarter second apart (`FirstClash`); a rover parked on its dock is its
+  box there. With no clear trip in 48 tries the step waits for the next look (`PlanBlocked`). An idle rover drives home at once when no ready step is its own (a piece it lifts, of no nearer class at another dock), else after 15 s; its arm folds as it sets off, and a rover standing in its way doesn't hold it back (Sean 2026-11-27). On a home trip, and on an empty drive over 6 m to a pick (`StationRovers.TuckDrive`), the hook tucks in by the mast and the rover is drawn in its driving pose: mast down, lower arm up, forearm hung beside it. Plans are sent whole (keys of base and hook), and both peers
   play them from the start time; the mast rises as a rover leaves its dock and folds down with its arm when parked.
 - **The drop** (Sean 2026-11-27: "moving over there is the time; once there it can drop the piece quickly"): the hook goes down onto a
   piece and onto its place at 4 m/s (`DropSpeed`; it lifts at 1.5 m/s), grips in 0.4 s and holds the piece on its place 0.5 s
@@ -1827,11 +1834,14 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
   come from the trip's hook keys (`RoverPlan.CarryTimes`), so a client draws the same with nothing more on the wire.
 - **Clearance** (Sean 2026-11-28, "keep their pieces from clipping through the floor and each other"): the carry height puts the
   piece's lowest point, as it hangs turned and tilted at the top of its swing (`StationRovers.HangDepth`, `TiltOf`), 0.6 m over the
-  highest fitted part, as high as the arm lifts it; a piece drawn where its arm can't lift it that high hangs flatter, never tilted
+  highest fitted part under its way (Sean 2026-11-28: the way sampled a quarter second apart, the piece's half length and 0.5 m round
+  each point, `PathTop`, `RoverFloor.TopNear`), as high as the arm lifts it; a piece drawn where its arm can't lift it that high hangs flatter, never tilted
   into the floor. A trip's tries (a spot beside, a later start) also keep its piece apart from another rover's carried piece at a
   height they share, and low pieces off another rover's chassis (`FirstClash`, `PieceAt`).
 - **The build order** (`BuildOrder`): Keel pieces first, then what lies wholly under the lowest deck, then deck by deck (structure, then
-  fittings); a step never goes before its parent's rank. With nothing fitted for 30 s the next rank may go (`StallTicks`).
+  fittings); a step never goes before its parent's rank. With nothing fitted for 30 s the next rank may go (`StallTicks`), but a step past
+  the lowest open rank never goes on over a lower rank's step still to fit (its footprint overlapping, its top under the step's bottom:
+  a deck over a missing chair, Sean 2026-11-28, `Covers`), so no arm has to reach in under it later.
 - **Zero Day Works**: every station keeps its Core's Small rover; the yard has two Large Dock Expansions between and east of its pick
   pads (where two Shipyard Loader Arms stood). `--station-check SITE --build NAME` lists the riders on the station's conveyors.
 
