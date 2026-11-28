@@ -65,8 +65,97 @@ public static partial class ConstructExtruder
             return 0;
         if (q.Head.Key.Shape is ExShape.Wheel or ExShape.Fan or ExShape.Wing)
             return int.MaxValue; // (a former pays a whole growth step at once, which a big wheel's or fan's can pass any cap: its whole bin)
+        if (OtherMaterialQueued(q, want))
+            return RunNeed(c, part, q, want) - st.Amount; // (another material comes next: only what this one's run takes, so little is left to hand back)
         var steps = ExtrusionTable.Current.Find(material) is { } row ? Extrusion.AreaM2(q.Head.Key) * Extrusion.StepCm / 100f * row.UnitsPerM3 * 8 : 0;
         return (int)Math.Max(OrderFill, MathF.Min(ConstructStorage.MaxBulk, steps)) - st.Amount;
+    }
+
+    /// <summary>Does a piece order in another material than <paramref name="want"/> wait in the queue?</summary>
+    private static bool OtherMaterialQueued(OrderList q, byte want)
+    {
+        for (var k = 1; k < q.Count; k++)
+            if (q.Items[k].IsPiece && q.Items[k].Key.Material != want)
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// The units the head's run of orders in <paramref name="want"/> still takes: each piece's section by its length, less what the piece on
+    /// the die already holds, and one over for the steps' rounding.
+    /// </summary>
+    private static int RunNeed(Construct c, int part, OrderList q, byte want)
+    {
+        if (ExtrusionTable.Current.Find(want) is not { } row)
+            return 0;
+        var need = 1f;
+        for (var k = 0; k < q.Count && q.Items[k].IsPiece && q.Items[k].Key.Material == want; k++)
+            need += q.Items[k].Left * Extrusion.AreaM2(q.Items[k].Key) * q.Items[k].Key.L / 100f * row.UnitsPerM3;
+        var sock = c.Parts[part].D.ExtDieSocket;
+        for (var e = c.FirstLink(part); e >= 0; e = c.NextLink(e))
+        {
+            ref var l = ref c.Links[e >> 1];
+            if (((e & 1) == 0 ? l.SA : l.SB) == sock && c.OtherEnd(e) is var on && on < c.PartCount && c.DefOf(on) is { IsExtrusion: true } pd
+                && pd.ExKey.Material == want)
+                need -= Extrusion.AreaM2(pd.ExKey) * pd.ExKey.L / 100f * row.UnitsPerM3; // (the piece growing on the die, paid for so far)
+        }
+        return (int)MathF.Ceiling(MathF.Max(0, need));
+    }
+
+    private const int PurgeUnits = 10; // what an Extruder may purge from its chamber when it changes material and no bin takes it (its last steps' rounding)
+
+    /// <summary>
+    /// An Extruder on orders whose head order is in another material than it holds puts what it holds back into a bin its chutes come from
+    /// that holds the same (never an empty one: that may be another material's bin, which would then be blocked), so a chute brings the
+    /// order's material next (<see cref="ChuteRoom"/>): one Extruder fed copper and laminate by two chutes makes both in turn (Zero Day Works
+    /// II's electronics Extruders, 2026-11-28). Its chutes bring only a run's need while another material waits (<see cref="RunNeed"/>), so
+    /// what is left is a few units of the steps' rounding: purged, with a log line, when no bin has room (<see cref="PurgeUnits"/>), and only
+    /// on an Extruder chuted from bins. False: it still holds the old material.
+    /// </summary>
+    private static bool HandBack(ConstructWorld world, Construct c, int part, CStore st)
+    {
+        var chuted = false;
+        for (var k = 0; k < c.RouteCount && st.Amount > 0; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type != RouteType.Chute || r.To != part || r.Source >= c.PartCount || r.Source == part || c.DefOf(r.Source) is not { IsBin: true, Role: PartRole.Storage }
+                || world.StoreOf(c, r.Source) is not { } src)
+                continue;
+            chuted = true;
+            if (src.Amount <= 0 || src.Material != st.Material)
+                continue;
+            var put = world.Deposit(c, r.Source, st.Amount, st.Material);
+            if (put > 0)
+                world.Withdraw(c, part, put);
+        }
+        if (st.Amount > 0 && (!chuted || st.Amount > PurgeUnits))
+            return false;
+        if (st.Amount > 0)
+            Purge(world, c, part, st);
+        st.JobAmount = 0;
+        return true;
+    }
+
+    /// <summary>The few units left over a run, purged from the chamber as a real press purges between materials (logged: never silent).</summary>
+    private static void Purge(ConstructWorld world, Construct c, int part, CStore st)
+    {
+        Console.WriteLine($"[extruder] body {c.Id} part {part}: purged {st.Amount} {RecyclingTable.Current.NameOf(st.Material)} to change material (no chuted bin of it had room)");
+        world.Withdraw(c, part, st.Amount);
+    }
+
+    /// <summary>Does a chute into this Extruder on orders come from a store that holds <paramref name="material"/> (<see cref="HandBack"/>)?</summary>
+    public static bool ChutedWith(ConstructWorld world, Construct c, int part, byte material)
+    {
+        if (c.Parts[part].Orders is not { Bill: false })
+            return false;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type == RouteType.Chute && r.To == part && r.Source < c.PartCount && r.Source != part && c.DefOf(r.Source) is { IsBin: true, Role: PartRole.Storage }
+                && world.StoreOf(c, r.Source) is { Amount: > 0 } src && src.Material == material)
+                return true;
+        }
+        return false;
     }
 
     private static readonly List<Construct> _near = new(32);
@@ -399,7 +488,7 @@ public static partial class ConstructExtruder
             if (st.Amount <= 0)
                 return ExtrudeStall.NoMaterial;
             if (order && st.Material != head.Key.Material)
-                return ExtrudeStall.OrderMaterial;
+                return HandBack(world, c, part, st) ? ExtrudeStall.NoMaterial : ExtrudeStall.OrderMaterial;
             if (order && head.Key.L > MaxLengthCm(c, part))
                 return ExtrudeStall.OrderTooLong; // (longer than it makes now: its Run-out Tables gone since it was queued)
             if (ExtrusionTable.Current.Find(st.Material) == null)

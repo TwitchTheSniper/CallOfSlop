@@ -95,7 +95,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
                 Group = "Factories",
             };
             using var doc = JsonDocument.Parse(layoutText);
-            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(Restocked).Select(MovedOut).Select(NarrowOut).Select(PadGrown).Concat(Additions.Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
+            var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(Restocked).Select(MovedOut).Select(NarrowOut).Select(PadGrown).Concat(Additions.Concat(ElectronicsAdditions()).Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
             items.AddRange(DeepPads(items));
             items.AddRange(NarrowStrip(items));
             s.Lay(items);
