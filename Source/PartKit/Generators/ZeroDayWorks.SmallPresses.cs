@@ -83,6 +83,8 @@ public sealed partial class ZeroDayWorks
             Belt(_smallPresses[1], "Piece out", join, "Piece in 2", null, General2);
             Belt(_smallPresses[0], "Piece out", join, "Piece in 3", 5.5f, General2); // (east over the Assembler's south masts, north into the Join's north side: under the Line Console's wires at 6 m, over the Block Rack's chute at 5 m)
             Belt(join, "Piece out", firstJoin, "Piece in", 8f, General2, zFirst: true);
+            if (_asmPress != null) // (the press where the block Assembler stood: into the Join's free west side, ZeroDayWorks.NoAssembler.cs)
+                Belt(_asmPress, "Piece out", join, "Piece in", 4.5f, General2);
         }
 
         /// <summary>A small Press: its Core by its "-y.4.4" at (x, z) and a 2-block bed east of it, one row: no walls.</summary>

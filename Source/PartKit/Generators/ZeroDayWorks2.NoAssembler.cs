@@ -10,11 +10,11 @@ namespace CallOfSlop.PartKit.Generators;
 /// |x| 33, z 33), whose bed the line's pressed parts rolled through, and the big one by the main station (2026-11-26). They go, and so do
 /// their chutes, Runs, modules and the big one's arm; nothing else moves.
 /// <list type="bullet">
-/// <item>A press line's Assembler gives way to a third press in the same cells (Sean's plan: the small-parts lines get press pairs): a
-/// 2 x 2 bed of Press Bed Blocks where the Assembler's bed stood and its Press Core beside it on the Assembler's Core row (<see
-/// cref="BridgeCoreX"/>), its own +x into the bed, a Ring Die in its slot (the frigate's 101 Bearings, from bronze rounds: the line's electronics Extruder is chuted from the bronze
+/// <item>A press line's Assembler gives way to a third press (Sean's plan: the small-parts lines get press pairs): a 2 x 3 bed of Press
+/// Bed Blocks over the Assembler's bed cells and the free row beside them, and its Press Core on free floor beside it (<see
+/// cref="Bridges"/>), a Ring Die in its slot (the frigate's 101 Bearings, from bronze rounds: the line's electronics Extruder is chuted from the bronze
 /// bin since). The line's runs meet its bed as they met the Assembler's (a run ends on a bed and starts off one by where the bed lies,
-/// ConstructRollOut, RollerRuns.Butted), so the line's pieces roll through it to the station's pad as before: a run can't end on another
+/// MachineBlocks.BedAt, RollerRuns.Butted), so the line's pieces roll through it to the station's pad as before: a run can't end on another
 /// run (only through a Turntable Tile), and the one-tile run off the second press is half a tile off the two-tile row's grid, and a
 /// conveyor from its end would be shorter than the Leg Pod Housing XL's 5.65 m. Its Run comes from the main station's console.</item>
 /// <item>The fittings the Assemblers built are baked from their kits (BakeKits) at the kit lines' stations (the two big stations by the
@@ -27,23 +27,26 @@ namespace CallOfSlop.PartKit.Generators;
 /// </summary>
 public sealed partial class ZeroDayWorks2
 {
-    /// <summary>The press lines' Assembler beds' cells (layout |x|, z), now a press's bed, and the Assembler's Core cell, now its Press Core.</summary>
-    private static readonly (int X, int Z)[] BridgeCells = [(31, 29), (31, 31), (33, 29), (33, 31)];
-
     /// <summary>
-    /// The third presses' Cores (layout |x|, z): the west one in the Assembler's Core cell; the east one a cell nearer the station, as a
-    /// Press Core's box stands 0.125 m off its cell (toward the site's +x with its +x into the bed), and in the east Assembler's cell it
-    /// met the second press's Core by 0.13 m.
+    /// The third presses (layout x, z; east, then west): a 2 x 3 bed of Press Bed Blocks over the Assembler's bed cells and one more row,
+    /// and the Press Core beside the bed's first row, its own +x into the bed along the line. A Press's bed is low (the line's runs end on
+    /// it and start off it, MachineBlocks.BedAt) only with a row between its two housings' rows, so three rows across the line; and a
+    /// Press Core's box stands 0.125 m off its cell, so each Core takes the one free cell beside its bed that meets nothing: east at
+    /// (29, 33), the bed's rows 33 to 29 (the Assembler's Core cell among them), west at (-29, 27), its rows 27 to 31 (the free row north
+    /// of the Assembler's bed). At the mirror of either the Core met the second press's Core or bed, or a line tile, by 0.13 m.
     /// </summary>
-    private static int BridgeCoreX(float s) => s > 0 ? 31 : 33;
-
-    private const int BridgeCoreZ = 33;
+    private static readonly (int Side, (int X, int Z)[] Cells, (int X, int Z) Core, int Dir)[] Bridges =
+    [
+        (1, [(31, 29), (31, 31), (31, 33), (33, 29), (33, 31), (33, 33)], (29, 33), 1),
+        (-1, [(-31, 27), (-31, 29), (-31, 31), (-33, 27), (-33, 29), (-33, 31)], (-29, 27), -1),
+    ];
 
     /// <summary>The bridge presses' die: Bearings, the most wanted pressed part a line's other presses would swap their dies for.</summary>
     private const string BridgeDie = "Ring Die";
 
+    /// <summary>The bed cells as part items, turned as the press's Core (their own +z its own +x, along the line): a bed block turned otherwise is no part of the press's bed.</summary>
     private static IEnumerable<string> AssemblerBridges() =>
-        new[] { 1, -1 }.SelectMany(s => BridgeCells.Select(c => $$"""{"t": "part", "name": "Press Bed Block", "x": {{s * c.X}}, "z": {{c.Z}}, "rot": {{(s > 0 ? 3 : 1)}}}"""));
+        Bridges.SelectMany(b => b.Cells.Select(c => $$"""{"t": "part", "name": "Press Bed Block", "x": {{c.X}}, "z": {{c.Z}}, "rot": {{(b.Dir > 0 ? 3 : 1)}}}"""));
 
     private sealed partial class Script
     {
@@ -58,11 +61,11 @@ public sealed partial class ZeroDayWorks2
         /// <summary>Each press line's third press: its Core in the old Assembler's Core cell, welded onto the bed cells laid as part items.</summary>
         private void BridgePresses()
         {
-            foreach (var s in new[] { -1f, 1f })
+            foreach (var (side, _, cell, dir) in Bridges)
             {
-                var at = new Vector2(s * BridgeCoreX(s), -BridgeCoreZ);
-                // (its own +x into the bed, the site's +z: the bed's cells are the layout's z 29 and 31, the Core's 33)
-                var c = Piece("Press", at, XFacing(new Vector2(0, 1)), Line, "-y.4.4", new Vector2(1, 1), chainFirst: true);
+                var s = (float)side;
+                var at = new Vector2(cell.X, -cell.Z);
+                var c = Piece("Press", at, XFacing(new Vector2(dir, 0)), Line, "-y.4.4", new Vector2(1, 1), chainFirst: true);
                 if (c == null)
                 {
                     Note($"bridge press on side {s}: its Core is NOT placed");
@@ -71,7 +74,7 @@ public sealed partial class ZeroDayWorks2
                 OrdersOnly(c);
                 Onto(c, "dieslot", BridgeDie, "mount");
                 _bridgePresses.Add(c);
-                Note($"bridge press on side {s}: a Press at ({at.X:0}, {at.Y:0}) with a {BridgeDie}, its 2 x 2 bed where the line's Assembler stood");
+                Note($"bridge press on side {s}: a Press at ({at.X:0}, {at.Y:0}) with a {BridgeDie}, its 2 x 3 bed where the line's Assembler stood");
             }
         }
 
