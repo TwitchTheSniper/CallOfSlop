@@ -153,6 +153,7 @@ public static class MakerRoutes
         var boards = 0;
         var gears = 0;
         var bearings = 0;
+        var pressNames = new List<string>();
         foreach (var (_, d, n) in bill.Parts)
         {
             if (d == null || AssemblingTable.Current.Of(d.Id) is not { } r)
@@ -160,6 +161,8 @@ public static class MakerRoutes
             var route = Of(d);
             kinds[(int)route]++;
             count[(int)route] += n;
+            if (route == Route.Press)
+                pressNames.Add($"{d.Name} x{n}");
             if (route is Route.OneBake or Route.Kit or Route.KitNow)
             {
                 oven[OvenFor(d)] += n;
@@ -191,6 +194,8 @@ public static class MakerRoutes
             sb.AppendLine(FormattableString.Invariant(
                 $"  kit pieces: {sizes.Count}; longest side up to 0.5 m {Upto(0.5f)}, 1 m {Upto(1)}, 2 m {Upto(2)}, 4 m {Upto(4)}, 8 m {Upto(8)}, 16 m {Upto(16)}, longest {sizes[^1]:0.##} m"));
         }
+        if (pressNames.Count > 0)
+            sb.AppendLine($"  press chain kinds: {string.Join(", ", pressNames)}");
         sb.AppendLine($"  components its recipes fit (direct): {gears} Gear Sets, {boards} Circuit Boards, {bearings} Bearings");
     }
 }

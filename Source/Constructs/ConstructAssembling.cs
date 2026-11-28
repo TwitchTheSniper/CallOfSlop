@@ -246,6 +246,15 @@ public static class ConstructAssembling
         }
         var d = c.Parts[part].D;
         var recipe = RecipeOf(table, c.Parts[part], d);
+        if (recipe == null && table.Recipes.Length > 0 && c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Part != ConstructParts.None && table.Of(q.Head.Part)?.Machine != d.AsmMachine)
+        {
+            // A head order no Assembler of this kind makes (a world saved before its part moved to a press: retiring the Assembler,
+            // 2026-11-28) would hold the whole queue for good: it goes, said once, and whoever asked for it asks its maker again.
+            Console.WriteLine($"[assembler] body {c.Id} part {part}: dropped an order for {q.Head.Count} {(q.Head.Part < Extrusion.RuntimeBase ? ConstructParts.Def(q.Head.Part).Name : "a run-time part")}: no Assembler recipe makes it now");
+            q.RemoveAt(0);
+            world.OrdersChanged(c);
+            return;
+        }
         var id = recipe?.Choice ?? 0;
         if (st.JobAmount != id)
         {

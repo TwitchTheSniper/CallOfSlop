@@ -361,6 +361,60 @@
      "use": 0.25
     }
    ]
+  },
+  {
+   "output": "Ring Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Bell Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Shell Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
   }
  ],
  "strength": {
@@ -1273,6 +1327,132 @@
       }
      ],
      "dieFeatures": false
+    },
+    {
+     "id": "bulkheadlight",
+     "like": "Bulkhead Light",
+     "label": "bulkhead light",
+     "preset": "hollow 25x25x15 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "ammocontainer",
+     "like": "Ammo Container",
+     "label": "ammo container",
+     "preset": "hollow 40x40x40 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "ammobox",
+     "like": "Ammo Box",
+     "label": "ammo box",
+     "preset": "hollow 30x20x30 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "material": "bronze",
+      "base": 3.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 3
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "reqcrate",
+     "like": "Requisition Crate",
+     "label": "requisition crate",
+     "preset": "hollow 40x40x40 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "medcabinet",
+     "like": "Medicine Cabinet",
+     "label": "medicine cabinet",
+     "preset": "hollow 80x170x40 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "shiptoilet",
+     "like": "Ship Toilet",
+     "label": "ship toilet",
+     "preset": "hollow 45x85x50 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "shipbasin",
+     "like": "Ship Basin",
+     "label": "ship basin",
+     "preset": "hollow 60x90x40 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
     }
    ]
   },
@@ -1288,7 +1468,8 @@
     "copper",
     "laminate",
     "wood",
-    "planks"
+    "planks",
+    "glass"
    ],
    "across": [
     10,
@@ -1799,6 +1980,24 @@
      "preset": "plate 30x10x180 steel",
      "auto": false,
      "body": "like"
+    },
+    {
+     "id": "lens",
+     "like": "Lens",
+     "label": "lens",
+     "preset": "plate 10x10x25 glass",
+     "auto": false,
+     "blanks": [
+      "plate"
+     ],
+     "bay2": {
+      "material": "bronze",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
     }
    ]
   },
@@ -2059,6 +2258,42 @@
       "by": "length",
       "max": 99
      }
+    },
+    {
+     "id": "turretmodule",
+     "like": "Turret Module",
+     "label": "turret module",
+     "preset": "plate 30x10x30 steel",
+     "auto": false,
+     "blanks": [
+      "plate"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "drivingmodule",
+     "like": "Driving Module",
+     "label": "driving module",
+     "preset": "plate 30x10x30 steel",
+     "auto": false,
+     "blanks": [
+      "plate"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
     }
    ]
   },
@@ -2329,6 +2564,24 @@
       "by": "area",
       "max": 99
      }
+    },
+    {
+     "id": "levitecore",
+     "like": "Levite Core",
+     "label": "levite core",
+     "preset": "plate 20x10x20 laminate",
+     "auto": false,
+     "blanks": [
+      "plate"
+     ],
+     "bay2": {
+      "material": "levite",
+      "base": 4.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 4
+     },
+     "presetsOnly": true
     }
    ]
   },
@@ -4087,6 +4340,24 @@
      "blanks": [
       "round"
      ]
+    },
+    {
+     "id": "fieldcoil",
+     "like": "Field Coil",
+     "label": "field coil",
+     "preset": "round 25x25x15 copper",
+     "auto": false,
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "circuits",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
     }
    ]
   },
@@ -4498,6 +4769,60 @@
       "by": "area",
       "max": 16
      }
+    },
+    {
+     "id": "firedirector",
+     "like": "Fire Director",
+     "label": "fire director",
+     "preset": "hollow 50x40x50 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "rangesensor",
+     "like": "Long Range Sensor",
+     "label": "long range sensor",
+     "preset": "hollow 25x65x25 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "computer",
+     "like": "Computer",
+     "label": "computer",
+     "preset": "hollow 80x110x60 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 4.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 4
+     },
+     "presetsOnly": true
     }
    ]
   },
@@ -7484,6 +7809,858 @@
      "along": "z"
     }
    ]
+  },
+  {
+   "die": "Ring",
+   "blanks": [
+    "round",
+    "pipe"
+   ],
+   "materials": [
+    "bronze",
+    "steel"
+   ],
+   "across": [
+    10,
+    180
+   ],
+   "length": [
+    5,
+    100
+   ],
+   "aspect": [
+    0.1,
+    4.0
+   ],
+   "seconds": {
+    "base": 2.0,
+    "perKg": 0.05
+   },
+   "features": [],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "bearing",
+     "like": "Bearing",
+     "label": "bearing",
+     "preset": "round 15x15x5 bronze",
+     "blanks": [
+      "round"
+     ],
+     "presetsOnly": true
+    },
+    {
+     "id": "turbine",
+     "like": "Turbine Stage",
+     "label": "turbine stage",
+     "preset": "round 30x30x15 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "bronze",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    }
+   ]
+  },
+  {
+   "die": "Bell",
+   "blanks": [
+    "pipe",
+    "round"
+   ],
+   "materials": [
+    "steel",
+    "metal"
+   ],
+   "across": [
+    20,
+    360
+   ],
+   "length": [
+    10,
+    800
+   ],
+   "aspect": [
+    0.25,
+    16.0
+   ],
+   "seconds": {
+    "base": 3.0,
+    "perKg": 0.02
+   },
+   "features": [],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "chamber",
+     "like": "Thrust Chamber",
+     "label": "thrust chamber",
+     "preset": "pipe5 30x30x30 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "solid",
+     "like": "Solid Motor",
+     "label": "solid motor",
+     "preset": "pipe5 25x25x80 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 3.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 3
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "boost",
+     "like": "Boost Motor",
+     "label": "boost motor",
+     "preset": "pipe5 25x25x70 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 4.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 4
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "liquid",
+     "like": "Liquid Motor",
+     "label": "liquid motor",
+     "preset": "pipe5 25x25x60 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "hybrid",
+     "like": "Hybrid Motor",
+     "label": "hybrid motor",
+     "preset": "pipe5 25x25x70 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 3.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 3
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "coldgas",
+     "like": "Cold Gas Thruster",
+     "label": "cold gas thruster",
+     "preset": "pipe5 25x25x40 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "ramjet",
+     "like": "Ramjet",
+     "label": "ramjet",
+     "preset": "pipe5 25x25x100 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "material": "bronze",
+      "base": 4.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 4
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "turbojet",
+     "like": "Turbojet",
+     "label": "turbojet",
+     "preset": "pipe5 25x25x90 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "assist",
+     "like": "Rocket Assist",
+     "label": "rocket assist",
+     "preset": "pipe5 25x25x60 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 3.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 3
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "vanes",
+     "like": "Jet Vanes",
+     "label": "jet vanes",
+     "preset": "pipe5 25x25x15 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "material": "bronze",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    }
+   ]
+  },
+  {
+   "die": "Shell",
+   "blanks": [
+    "round",
+    "pipe",
+    "solid"
+   ],
+   "materials": [
+    "steel",
+    "metal",
+    "bronze"
+   ],
+   "across": [
+    10,
+    180
+   ],
+   "length": [
+    10,
+    400
+   ],
+   "aspect": [
+    0.25,
+    16.0
+   ],
+   "seconds": {
+    "base": 2.0,
+    "perKg": 0.02
+   },
+   "features": [],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "he",
+     "like": "High Explosive Shell",
+     "label": "high explosive shell",
+     "preset": "round 10x10x10 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "bronze",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "siege",
+     "like": "Siege Shell",
+     "label": "siege shell",
+     "preset": "round 10x10x10 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "bronze",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "smoke",
+     "like": "Smoke Shell",
+     "label": "smoke shell",
+     "preset": "round 10x10x10 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "incendiary",
+     "like": "Incendiary Shell",
+     "label": "incendiary shell",
+     "preset": "round 10x10x10 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "warheadhe",
+     "like": "Warhead HE",
+     "label": "warhead he",
+     "preset": "round 25x25x50 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "blast",
+     "like": "Warhead Blast",
+     "label": "warhead blast",
+     "preset": "round 25x25x60 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 3.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 3
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "impactfuse",
+     "like": "Impact Fuse",
+     "label": "impact fuse",
+     "preset": "round 25x25x20 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "delayfuse",
+     "like": "Delay Fuse",
+     "label": "delay fuse",
+     "preset": "round 25x25x25 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "copper",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "timerfuse",
+     "like": "Timer Fuse",
+     "label": "timer fuse",
+     "preset": "round 25x25x20 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "proxfuse",
+     "like": "Proximity Fuse",
+     "label": "proximity fuse",
+     "preset": "round 25x25x20 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "altfuse",
+     "like": "Altitude Fuse",
+     "label": "altitude fuse",
+     "preset": "round 25x25x20 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "airburst",
+     "like": "Airburst Fuse",
+     "label": "airburst fuse",
+     "preset": "round 25x25x20 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "remotefuse",
+     "like": "Remote Fuse",
+     "label": "remote fuse",
+     "preset": "round 25x25x20 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "bombfins",
+     "like": "Bomb Tail Fins",
+     "label": "bomb tail fins",
+     "preset": "round 25x25x40 steel",
+     "blanks": [
+      "round"
+     ],
+     "presetsOnly": true
+    },
+    {
+     "id": "fueltank",
+     "like": "Missile Fuel Tank",
+     "label": "missile fuel tank",
+     "preset": "round 25x25x50 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "separator",
+     "like": "Stage Separator",
+     "label": "stage separator",
+     "preset": "round 25x25x10 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "bodytube",
+     "like": "Body Tube",
+     "label": "body tube",
+     "preset": "round 25x25x50 steel",
+     "blanks": [
+      "round"
+     ],
+     "presetsOnly": true
+    },
+    {
+     "id": "tailfins",
+     "like": "Tail Fins",
+     "label": "tail fins",
+     "preset": "round 25x25x40 steel",
+     "blanks": [
+      "round"
+     ],
+     "presetsOnly": true
+    },
+    {
+     "id": "tandem",
+     "like": "Tandem Spacer",
+     "label": "tandem spacer",
+     "preset": "round 25x25x15 steel",
+     "blanks": [
+      "round"
+     ],
+     "presetsOnly": true
+    },
+    {
+     "id": "ringtail",
+     "like": "Ring Tail",
+     "label": "ring tail",
+     "preset": "round 25x25x35 steel",
+     "blanks": [
+      "round"
+     ],
+     "presetsOnly": true
+    },
+    {
+     "id": "canards",
+     "like": "Canards",
+     "label": "canards",
+     "preset": "round 30x30x25 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Servo Motor",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "gimbal",
+     "like": "Gimbal Mount",
+     "label": "gimbal mount",
+     "preset": "round 25x25x20 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Servo Motor",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "reactionjets",
+     "like": "Reaction Jets",
+     "label": "reaction jets",
+     "preset": "round 25x25x25 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "radarseeker",
+     "like": "Radar Seeker",
+     "label": "radar seeker",
+     "preset": "round 25x25x40 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "commandlink",
+     "like": "Command Link",
+     "label": "command link",
+     "preset": "round 30x30x25 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "gps",
+     "like": "GPS Unit",
+     "label": "gps unit",
+     "preset": "round 30x30x25 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "radiohomer",
+     "like": "Radio Homer",
+     "label": "radio homer",
+     "preset": "round 30x30x25 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "beaconhomer",
+     "like": "Beacon Homer",
+     "label": "beacon homer",
+     "preset": "round 30x30x25 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "cluster",
+     "like": "Cluster Dispenser",
+     "label": "cluster dispenser",
+     "preset": "round 25x25x80 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 3.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 3
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "bomblets",
+     "like": "Fire Bomblets",
+     "label": "fire bomblets",
+     "preset": "round 25x25x80 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "concrete",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "mines",
+     "like": "Mine Dispenser",
+     "label": "mine dispenser",
+     "preset": "round 25x25x90 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "mirv",
+     "like": "MIRV Bus",
+     "label": "mirv bus",
+     "preset": "round 25x25x90 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "glidewings",
+     "like": "Glide Wings",
+     "label": "glide wings",
+     "preset": "round 25x25x80 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "laminate",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "cruisewings",
+     "like": "Cruise Wings",
+     "label": "cruise wings",
+     "preset": "round 25x25x90 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "material": "laminate",
+      "base": 3.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 3
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "popoutwings",
+     "like": "Pop-out Wings",
+     "label": "pop-out wings",
+     "preset": "round 25x25x60 steel",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Servo Motor",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
+    }
+   ]
   }
  ],
  "presets": [
@@ -9886,6 +11063,378 @@
    "die": "actuator",
    "pattern": "turretring",
    "blank": "solid 240x240x200 steel"
+  },
+  {
+   "part": "Bearing",
+   "die": "ring",
+   "pattern": "bearing",
+   "blank": "round 15x15x5 bronze"
+  },
+  {
+   "part": "Turbine Stage",
+   "die": "ring",
+   "pattern": "turbine",
+   "blank": "round 30x30x15 steel"
+  },
+  {
+   "part": "Thrust Chamber",
+   "die": "bell",
+   "pattern": "chamber",
+   "blank": "pipe5 30x30x30 steel"
+  },
+  {
+   "part": "Solid Motor",
+   "die": "bell",
+   "pattern": "solid",
+   "blank": "pipe5 25x25x80 steel"
+  },
+  {
+   "part": "Boost Motor",
+   "die": "bell",
+   "pattern": "boost",
+   "blank": "pipe5 25x25x70 steel"
+  },
+  {
+   "part": "Liquid Motor",
+   "die": "bell",
+   "pattern": "liquid",
+   "blank": "pipe5 25x25x60 steel"
+  },
+  {
+   "part": "Hybrid Motor",
+   "die": "bell",
+   "pattern": "hybrid",
+   "blank": "pipe5 25x25x70 steel"
+  },
+  {
+   "part": "Cold Gas Thruster",
+   "die": "bell",
+   "pattern": "coldgas",
+   "blank": "pipe5 25x25x40 steel"
+  },
+  {
+   "part": "Ramjet",
+   "die": "bell",
+   "pattern": "ramjet",
+   "blank": "pipe5 25x25x100 steel"
+  },
+  {
+   "part": "Turbojet",
+   "die": "bell",
+   "pattern": "turbojet",
+   "blank": "pipe5 25x25x90 steel"
+  },
+  {
+   "part": "Rocket Assist",
+   "die": "bell",
+   "pattern": "assist",
+   "blank": "pipe5 25x25x60 steel"
+  },
+  {
+   "part": "Jet Vanes",
+   "die": "bell",
+   "pattern": "vanes",
+   "blank": "pipe5 25x25x15 steel"
+  },
+  {
+   "part": "High Explosive Shell",
+   "die": "shell",
+   "pattern": "he",
+   "blank": "round 10x10x10 steel"
+  },
+  {
+   "part": "Siege Shell",
+   "die": "shell",
+   "pattern": "siege",
+   "blank": "round 10x10x10 steel"
+  },
+  {
+   "part": "Smoke Shell",
+   "die": "shell",
+   "pattern": "smoke",
+   "blank": "round 10x10x10 steel"
+  },
+  {
+   "part": "Incendiary Shell",
+   "die": "shell",
+   "pattern": "incendiary",
+   "blank": "round 10x10x10 steel"
+  },
+  {
+   "part": "Warhead HE",
+   "die": "shell",
+   "pattern": "warheadhe",
+   "blank": "round 25x25x50 steel"
+  },
+  {
+   "part": "Warhead Blast",
+   "die": "shell",
+   "pattern": "blast",
+   "blank": "round 25x25x60 steel"
+  },
+  {
+   "part": "Impact Fuse",
+   "die": "shell",
+   "pattern": "impactfuse",
+   "blank": "round 25x25x20 steel"
+  },
+  {
+   "part": "Delay Fuse",
+   "die": "shell",
+   "pattern": "delayfuse",
+   "blank": "round 25x25x25 steel"
+  },
+  {
+   "part": "Timer Fuse",
+   "die": "shell",
+   "pattern": "timerfuse",
+   "blank": "round 25x25x20 steel"
+  },
+  {
+   "part": "Proximity Fuse",
+   "die": "shell",
+   "pattern": "proxfuse",
+   "blank": "round 25x25x20 steel"
+  },
+  {
+   "part": "Altitude Fuse",
+   "die": "shell",
+   "pattern": "altfuse",
+   "blank": "round 25x25x20 steel"
+  },
+  {
+   "part": "Airburst Fuse",
+   "die": "shell",
+   "pattern": "airburst",
+   "blank": "round 25x25x20 steel"
+  },
+  {
+   "part": "Remote Fuse",
+   "die": "shell",
+   "pattern": "remotefuse",
+   "blank": "round 25x25x20 steel"
+  },
+  {
+   "part": "Bomb Tail Fins",
+   "die": "shell",
+   "pattern": "bombfins",
+   "blank": "round 25x25x40 steel"
+  },
+  {
+   "part": "Missile Fuel Tank",
+   "die": "shell",
+   "pattern": "fueltank",
+   "blank": "round 25x25x50 steel"
+  },
+  {
+   "part": "Stage Separator",
+   "die": "shell",
+   "pattern": "separator",
+   "blank": "round 25x25x10 steel"
+  },
+  {
+   "part": "Body Tube",
+   "die": "shell",
+   "pattern": "bodytube",
+   "blank": "round 25x25x50 steel"
+  },
+  {
+   "part": "Tail Fins",
+   "die": "shell",
+   "pattern": "tailfins",
+   "blank": "round 25x25x40 steel"
+  },
+  {
+   "part": "Tandem Spacer",
+   "die": "shell",
+   "pattern": "tandem",
+   "blank": "round 25x25x15 steel"
+  },
+  {
+   "part": "Ring Tail",
+   "die": "shell",
+   "pattern": "ringtail",
+   "blank": "round 25x25x35 steel"
+  },
+  {
+   "part": "Canards",
+   "die": "shell",
+   "pattern": "canards",
+   "blank": "round 30x30x25 steel"
+  },
+  {
+   "part": "Gimbal Mount",
+   "die": "shell",
+   "pattern": "gimbal",
+   "blank": "round 25x25x20 steel"
+  },
+  {
+   "part": "Reaction Jets",
+   "die": "shell",
+   "pattern": "reactionjets",
+   "blank": "round 25x25x25 steel"
+  },
+  {
+   "part": "Radar Seeker",
+   "die": "shell",
+   "pattern": "radarseeker",
+   "blank": "round 25x25x40 steel"
+  },
+  {
+   "part": "Command Link",
+   "die": "shell",
+   "pattern": "commandlink",
+   "blank": "round 30x30x25 steel"
+  },
+  {
+   "part": "GPS Unit",
+   "die": "shell",
+   "pattern": "gps",
+   "blank": "round 30x30x25 steel"
+  },
+  {
+   "part": "Radio Homer",
+   "die": "shell",
+   "pattern": "radiohomer",
+   "blank": "round 30x30x25 steel"
+  },
+  {
+   "part": "Beacon Homer",
+   "die": "shell",
+   "pattern": "beaconhomer",
+   "blank": "round 30x30x25 steel"
+  },
+  {
+   "part": "Cluster Dispenser",
+   "die": "shell",
+   "pattern": "cluster",
+   "blank": "round 25x25x80 steel"
+  },
+  {
+   "part": "Fire Bomblets",
+   "die": "shell",
+   "pattern": "bomblets",
+   "blank": "round 25x25x80 steel"
+  },
+  {
+   "part": "Mine Dispenser",
+   "die": "shell",
+   "pattern": "mines",
+   "blank": "round 25x25x90 steel"
+  },
+  {
+   "part": "MIRV Bus",
+   "die": "shell",
+   "pattern": "mirv",
+   "blank": "round 25x25x90 steel"
+  },
+  {
+   "part": "Glide Wings",
+   "die": "shell",
+   "pattern": "glidewings",
+   "blank": "round 25x25x80 steel"
+  },
+  {
+   "part": "Cruise Wings",
+   "die": "shell",
+   "pattern": "cruisewings",
+   "blank": "round 25x25x90 steel"
+  },
+  {
+   "part": "Pop-out Wings",
+   "die": "shell",
+   "pattern": "popoutwings",
+   "blank": "round 25x25x60 steel"
+  },
+  {
+   "part": "Lens",
+   "die": "plate",
+   "pattern": "lens",
+   "blank": "plate 10x10x25 glass"
+  },
+  {
+   "part": "Field Coil",
+   "die": "cable",
+   "pattern": "fieldcoil",
+   "blank": "round 25x25x15 copper"
+  },
+  {
+   "part": "Levite Core",
+   "die": "board",
+   "pattern": "levitecore",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Bulkhead Light",
+   "die": "housing",
+   "pattern": "bulkheadlight",
+   "blank": "hollow 25x25x15 steel"
+  },
+  {
+   "part": "Ammo Container",
+   "die": "housing",
+   "pattern": "ammocontainer",
+   "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Ammo Box",
+   "die": "housing",
+   "pattern": "ammobox",
+   "blank": "hollow 30x20x30 steel"
+  },
+  {
+   "part": "Requisition Crate",
+   "die": "housing",
+   "pattern": "reqcrate",
+   "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Medicine Cabinet",
+   "die": "housing",
+   "pattern": "medcabinet",
+   "blank": "hollow 80x170x40 steel"
+  },
+  {
+   "part": "Ship Toilet",
+   "die": "housing",
+   "pattern": "shiptoilet",
+   "blank": "hollow 45x85x50 steel"
+  },
+  {
+   "part": "Ship Basin",
+   "die": "housing",
+   "pattern": "shipbasin",
+   "blank": "hollow 60x90x40 steel"
+  },
+  {
+   "part": "Fire Director",
+   "die": "control",
+   "pattern": "firedirector",
+   "blank": "hollow 50x40x50 steel"
+  },
+  {
+   "part": "Long Range Sensor",
+   "die": "control",
+   "pattern": "rangesensor",
+   "blank": "hollow 25x65x25 steel"
+  },
+  {
+   "part": "Computer",
+   "die": "control",
+   "pattern": "computer",
+   "blank": "hollow 80x110x60 steel"
+  },
+  {
+   "part": "Turret Module",
+   "die": "button",
+   "pattern": "turretmodule",
+   "blank": "plate 30x10x30 steel"
+  },
+  {
+   "part": "Driving Module",
+   "die": "button",
+   "pattern": "drivingmodule",
+   "blank": "plate 30x10x30 steel"
   }
  ]
 }

@@ -1,0 +1,265 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ring Die",
+  "description": "A press die cassette. Fit it to a press of any size and it presses a standard piece into a ring die's catalogue part, with its kit from bay 2.",
+  "group": "Production",
+  "section": "Dies",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 12.0,
+  "health": 300,
+  "armour": 20,
+  "material": "steel",
+  "color": "#2f363d",
+  "attachSeconds": 2,
+  "pressDie": "Ring",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        0.07,
+        0.25
+      ]
+    },
+    {
+      "min": [
+        -0.23,
+        0.15,
+        -0.23
+      ],
+      "max": [
+        0.23,
+        0.2,
+        0.23
+      ]
+    },
+    {
+      "min": [
+        -0.1375,
+        0.2,
+        -0.1375
+      ],
+      "max": [
+        0.1375,
+        0.25,
+        0.1375
+      ],
+      "color": "#b8864a"
+    },
+    {
+      "min": [
+        -0.22,
+        0.066,
+        -0.22
+      ],
+      "max": [
+        -0.18,
+        0.154,
+        -0.18
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.22,
+        0.066,
+        0.18
+      ],
+      "max": [
+        -0.18,
+        0.154,
+        0.22
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.18,
+        0.066,
+        -0.22
+      ],
+      "max": [
+        0.22,
+        0.154,
+        -0.18
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.18,
+        0.066,
+        0.18
+      ],
+      "max": [
+        0.22,
+        0.154,
+        0.22
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.02,
+        -0.118
+      ],
+      "max": [
+        -0.25,
+        0.05,
+        -0.09
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.3,
+        0.02,
+        0.09
+      ],
+      "max": [
+        -0.25,
+        0.05,
+        0.12
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.315,
+        0.015,
+        -0.12
+      ],
+      "max": [
+        -0.285,
+        0.055,
+        0.118
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.25,
+        0.02,
+        -0.118
+      ],
+      "max": [
+        0.3,
+        0.05,
+        -0.09
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.25,
+        0.02,
+        0.09
+      ],
+      "max": [
+        0.3,
+        0.05,
+        0.12
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.285,
+        0.015,
+        -0.12
+      ],
+      "max": [
+        0.315,
+        0.055,
+        0.118
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.15,
+        0.015,
+        0.246
+      ],
+      "max": [
+        0.15,
+        0.055,
+        0.262
+      ],
+      "color": "#b8864a",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.17,
+        0.162,
+        0.226
+      ],
+      "max": [
+        0.17,
+        0.188,
+        0.242
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y",
+      "kind": "pressdie"
+    }
+  ]
+}

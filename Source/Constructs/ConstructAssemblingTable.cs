@@ -68,20 +68,25 @@ public sealed class AssemblingTable
     /// back (<see cref="LegacyChoice"/>). A row only ever goes at the end of a family's list (.claude/rules/production.md); if one
     /// is ever taken out again, its place is kept here the same way, under a new mark.
     /// </summary>
-    public const string RowsMark = "asm-rows-2026-11-28-control-unit";
+    public const string RowsMark = "asm-rows-2026-11-28-press-phase2";
 
     /// <summary>Every rows mark there has been, oldest first (<see cref="RowsMark"/> is the last): a file's level is the newest one it names.</summary>
-    public static readonly string[] Marks = ["asm-rows-2026-11-24", "asm-rows-2026-11-24-arms", "asm-rows-2026-11-26-servo", RowsMark];
+    public static readonly string[] Marks = ["asm-rows-2026-11-24", "asm-rows-2026-11-24-arms", "asm-rows-2026-11-26-servo", "asm-rows-2026-11-28-control-unit", RowsMark];
 
     /// <summary>
     /// The rows taken out, by the mark that took them (its place in <see cref="Marks"/>): each group stood right after its After row, and
     /// an old choice of a gone row becomes its To row's (null: After's). Mark 0: the refiner block machines' Workshop to Plasma tiers.
     /// Mark 1 (2026-11-24): the fixed loader arms, now kit presets (an old choice builds an Arm Core; MIGRATING.md).
     /// Mark 2 (2026-11-26): the Servo Motor, now pressed (an Actuator Die round a Copper Coil; an old choice built the Control Unit before it,
-    /// and builds the Bearing since mark 3 took that row).
-    /// Mark 3 (2026-11-28, Sean): the Control Unit, folded into 2 Circuit Boards (pressed, so no Assembler row: an old choice builds the
-    /// Bearing before it). Both groups key on the Bearing, the row left before them, mark 3's first: in the old list the Servo Motor came
+    /// then the Bearing once mark 3 took that row, and no recipe since mark 4 took the Bearing).
+    /// Mark 3 (2026-11-28, Sean): the Control Unit, folded into 2 Circuit Boards (pressed, so no Assembler row: an old choice built the
+    /// Bearing before it, and no recipe since mark 4). Both groups keyed on the Bearing, the row left before them, mark 3's first: in the old list the Servo Motor came
     /// after the Control Unit, and groups after one row insert in this order.
+    /// Mark 4 (2026-11-28, Sean; retiring the Assembler, phase 2): 62 rows pressed now (PressParts.Phase2.cs: the Ring, Bell and Shell dies,
+    /// the Lens, Field Coil and Levite Core patterns, the frigate's small fittings), the Bearing among them. The Bearing was the plain
+    /// Assembler's first row, so its group and those of marks 3 and 2 (once keyed on it) stand at the start of the list: an After of "" is
+    /// before the plain family's first row, and their old choices become no recipe (the part is pressed). The start groups go in the old
+    /// list's order: Bearing (4), Control Unit (3), Servo Motor (2).
     /// </summary>
     private static readonly (int Mark, string After, string[] Gone, string? To)[] Removed =
     [
@@ -92,8 +97,29 @@ public sealed class AssemblingTable
         (1, "Lifter Cab", ["Loader Arm", "Military Loader Arm", "Plasma Loader Arm", "Workshop Loader Arm"], "Arm Core"),
         (1, "Half Shell", ["Module Fitter S"], "Arm Core"),
         (1, "Press Bed Block", ["Heavy Loader Arm", "Shipyard Loader Arm", "Long Loader Arm"], "Arm Core"),
-        (3, "Bearing", ["Control Unit"], null),
-        (2, "Bearing", ["Servo Motor"], null),
+        (4, "", ["Bearing"], null),
+        (3, "", ["Control Unit"], null),
+        (2, "", ["Servo Motor"], null),
+        (4, "Tyre Carcass", ["Lens", "Turbine Stage", "Thrust Chamber", "Field Coil", "Levite Core"], null),
+        (4, "Bunk", ["Driving Module", "Turret Module"], null),
+        (4, "Proximity Sensor", ["Ammo Box"], null),
+        (4, "Shell Hoist", ["High Explosive Shell", "Siege Shell", "Smoke Shell", "Incendiary Shell"], null),
+        (4, "Smart Terminal", ["Computer"], null),
+        (4, "Ordnance Bench", ["Impact Fuse", "Delay Fuse", "Warhead HE", "Warhead Blast"], null),
+        (4, "Warhead Bunker", ["Bomb Tail Fins", "Solid Motor", "Boost Motor", "Liquid Motor", "Hybrid Motor", "Cold Gas Thruster", "Ramjet", "Turbojet", "Missile Fuel Tank", "Stage Separator", "Body Tube", "Tail Fins", "Canards", "Gimbal Mount", "Jet Vanes", "Reaction Jets"], null),
+        (4, "Heat Seeker", ["Radar Seeker", "Command Link"], null),
+        (4, "Laser Seeker", ["GPS Unit", "Radio Homer", "Beacon Homer", "Proximity Fuse", "Altitude Fuse", "Timer Fuse", "Airburst Fuse", "Remote Fuse"], null),
+        (4, "Shell Control Chair", ["Cluster Dispenser", "Fire Bomblets", "Mine Dispenser", "MIRV Bus"], null),
+        (4, "Antimatter Warhead", ["Tandem Spacer", "Glide Wings", "Pop-out Wings", "Cruise Wings"], null),
+        (4, "Glide Guidance Kit", ["Rocket Assist"], null),
+        (4, "Ballute", ["Ring Tail"], null),
+        (4, "Cargo Winch 16 m", ["Ammo Container"], null),
+        (4, "Bay Marking", ["Bulkhead Light"], null),
+        (4, "Medical Station", ["Medicine Cabinet"], null),
+        (4, "Rust Bucket Upper Stern", ["Ship Basin"], null),
+        (4, "Ship Mess Table", ["Ship Toilet"], null),
+        (4, "Parts Shelf", ["Requisition Crate"], null),
+        (4, "Deck Speed Dial", ["Fire Director", "Long Range Sensor"], null),
     ];
 
     private Dictionary<(int, int), int[]>? _legacy; // per (family, file level): an old choice (1 + its place in the old list) to this table's choice
@@ -108,14 +134,21 @@ public sealed class AssemblingTable
             return v;
         _legacy ??= new();
         if (!_legacy.TryGetValue((machine, level), out var map))
-            _legacy[(machine, level)] = map = LegacyMap(ByMachine[machine], level);
+            _legacy[(machine, level)] = map = LegacyMap(ByMachine[machine], level, machine);
         var k = (int)v - 1;
         return k < map.Length ? map[k] : v - (map.Length - ByMachine[machine].Length);
     }
 
-    private static int[] LegacyMap(AssembleRecipe[] now, int level)
+    private static int[] LegacyMap(AssembleRecipe[] now, int level, int machine)
     {
-        var map = new List<int>(now.Length + 24);
+        var map = new List<int>(now.Length + 96);
+        foreach (var (mark, after, gone, to) in Removed) // (After "": the plain family's first rows, before every row there is now)
+            if (mark > level && machine == 0 && after.Length == 0)
+            {
+                var target = to == null ? 0 : Array.Find(now, x => x.Name.Equals(to, StringComparison.OrdinalIgnoreCase))?.Choice ?? 0;
+                foreach (var _ in gone)
+                    map.Add(target);
+            }
         foreach (var r in now)
         {
             map.Add(r.Choice);
