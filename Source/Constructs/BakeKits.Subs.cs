@@ -200,7 +200,7 @@ public static partial class BakeKits
                 + $"{_noHelp} don't split into anything smaller, in {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms");
             if (_tooBig > 0)
                 Console.WriteLine($"[bake kits] {_tooBig} rule kits fit no oven whole ({tooBig}{(_tooBig > 6 ? ", ..." : "")}): not split, since the split kit's last bake "
-                    + $"holds the whole kit as its own does; they stay their Assembler rows' until a bigger bed (past the {MakerRoutes.OvenName(MakerRoutes.Ovens.Length - 1)}) is built");
+                    + $"holds the whole kit as its own does; they stay their Assembler rows' (no oven's bed, the {MakerRoutes.Ovens[^1].Name} the biggest, holds them)");
         }
     }
 

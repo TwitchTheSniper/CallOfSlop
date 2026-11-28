@@ -79,6 +79,7 @@ public static partial class ConstructBakeOven
     public const float DoorZone = 0.45f; // m in from each end of the bed: the portal, its sill and the doors' leaves
     public const float SwingDeg = 100f; // how far a leaf swings out, degrees
     public const float DefaultClear = 3f; // m: the Tunnel height setting's default
+    public const float MaxClear = 24f; // m: the most any Core's Tunnel height setting may give (its own "max" limits it: the Bake Oven's 12, the XL's 17)
     private const int SwingDamage = 4, BurnDamage = 1; // per 60 Hz game tick (GameMachineHazards reads the list every tick): a swinging leaf, the heat in the closed tunnel
     private const float Settled = 0.05f; // m/s: a group moving slower than this has settled on the hearth
 
@@ -121,7 +122,7 @@ public static partial class ConstructBakeOven
             var d = c.Parts[asm.Core].D;
             (X0, Z0, W, L, Cell, Top, Roll) = (asm.X0, asm.Z0, asm.W, asm.L, d.BlockCell, d.BakeBedTop, d.BakeRollTop);
             Blocks = W * L;
-            Clear = W > 0 ? Math.Clamp(ConstructConfig.Get(c.Parts[asm.Core], d, CfgKey.Height, DefaultClear), 1f, 16f) : 0;
+            Clear = W > 0 ? Math.Clamp(ConstructConfig.Get(c.Parts[asm.Core], d, CfgKey.Height, DefaultClear), 1f, MaxClear) : 0;
             if (asm.OvenWay != 0)
             {
                 // Its roller runs lay it (ConstructRollOut.OvenWays): the Core may stand anywhere round the bed (Sean, 2026-11-28).
