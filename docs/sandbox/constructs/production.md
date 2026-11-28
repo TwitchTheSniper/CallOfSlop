@@ -943,10 +943,10 @@ The step after refining: an **Assembler** builds parts from what the chains make
 | --- | --- | --- | --- |
 | Tyre Carcass | 4 rubber + 2 cloth | 5 | nothing |
 | Wheel | 2 steel + 1 Tyre Carcass | 5 | nothing |
-| Bearing (2) | 2 bronze | 2 | Coolant Loop |
+| Seat | 3 cloth + 3 steel | 5 | nothing |
 | Engine | 20 steel + 2 Piston Set + 1 Wiring Loom | 20 | Power Coupling, Coolant Loop |
 
-  (Gear Sets, Piston Sets, Wiring Looms and Circuit Boards are pressed: [The Press](#the-press).)
+  (Gear Sets, Piston Sets, Wiring Looms, Circuit Boards and Bearings are pressed: [The Press](#the-press); [Retiring the Assembler](#retiring-the-assembler-2026-11-28).)
 - **Input.** Materials sit in the mixed input, parts in the store's kinds. Chutes bring both, as many at once as you run: a chute from a bin brings a load of a material the recipe uses; a chute from a shelf or a Storage Volume brings one part a second that the recipe wants, passing over others. What it can't use stays in the source, and the look line says so. Each input holds up to `batches` of what a batch asks. F, in order: the held part if the recipe wants it, the materials it wants from what you carry, a part off the tray, then its input back, which clears a machine whose recipe changed.
 - **Output.** An item lands on the tray, in a pile of 12 a slot, and a chute, F or a beacon takes it as from any slots; nothing can be set in. A physics-only part, or one too big for a slot, leaves as a body at the output point, its near side at the point, level, and owned as the machine is. If the world or a player is in the way (or there is no room for another construct) the batch waits with its inputs, draws nothing, looks again twice a second and says why. With a conveyor out of its **Piece out** each batch rides to a rack instead, and with a queue of
   **work orders** its head order sets the recipe ([Work orders](#work-orders), protocol 251); a status lamp stands over its screen, which
@@ -2756,15 +2756,31 @@ no station) or a station kit baked in an oven (its components fitted as kit piec
 had them). Big parts are made as baked sub-assemblies on the smallest oven that holds them, so the work spreads over every oven size;
 only a part that can't be split (a railgun barrel) needs a bigger bed. The Assembler stays a fallback until the last phase.
 
-- **Phase 1 (this change).** No Gear Set in a gun or a thruster: the part kit's role map gives `gun` and `thruster` nothing, the hand
+- **Phase 1.** No Gear Set in a gun or a thruster: the part kit's role map gives `gun` and `thruster` nothing, the hand
   rows for receivers, the Mounted MG, the Shell Hoist and the AA Gun lost theirs, and the Receiver die's bay 2 takes none. Gear Sets
   stay in drivetrain parts (gearboxes, differentials, shafts, hubs, axles, suspension, an Ordnance drum's turning gear). The Zero Day
   Frigate's bill went from 326 Gear Sets to 4. The **Control Unit** row went: every rule and row that gave n Control Units gives 2n
   Circuit Boards (`Assembling.Boards`, at most 20), the run-time Ordnance Rack's too (`AssembledParts`); rows mark
-  `asm-rows-2026-11-28-control-unit` moves an old Assembler's choice of it to the Circuit Board. Loot's Control Units became Circuit
+  `asm-rows-2026-11-28-control-unit` moves an old Assembler's choice of it to the Bearing, the row before it. Loot's Control Units became Circuit
   Boards.
 - **`--maker-report [--build NAME] [--out FILE]`** (`MakerRoutes.cs`): every Assembler row's route (press chain, one-piece bake,
   station kit + bake, kit already, pressed already) and, for a placed part, the smallest oven that holds it whole (small 20 x 6 m, big
   20 x 20 m, the largest bed a Core takes 32 x 16 m, or a bigger bed); with `--build`, a blueprint's Assembler-made parts by route and
   oven, and its kit pieces by length. 2026-11-28: 433 press chain, 1,452 one-piece bake, 830 station kit, 70 kits already; the frigate's
-  76 Assembler-made kinds hold 429 kit pieces, 285 of them 2 m or shorter.
+  76 Assembler-made kinds hold 429 kit pieces, 285 of them 2 m or shorter. With `--build` it also names the blueprint's press chain kinds.
+- **Phase 2 (this change; `PressParts.Phase2.cs`).** 62 rows left the Assembler for press presets, each pattern pressing its
+  catalogue part from one standard blank (the part's bounds on the 5 cm lattice, a slice of a bar for a disc) with the rest of its old
+  row in bay 2 as a kit of one kind, and `"presetsOnly"` (a stretched copy would keep its like's thrust, payload or sensing). Three new
+  dies, appended to the Die Lathe's list: the **Ring** (a Bearing from a bronze round, counts unchanged: the frigate still takes 101;
+  the Turbine Stage, bronze in bay 2), the **Bell** (a tube pressed on it is a thruster bell: the Thrust Chamber and nine ordnance motors
+  and thrusters) and the **Shell** (the four shells and 31 ordnance sections). New patterns on older dies: the **Lens** on the Plate die
+  (glass, now one of its materials), the **Field Coil** on the Cable die, the **Levite Core** on the Board die, and the Zero Day
+  frigate's small fittings (Bulkhead Light, Ammo Box and Container, Requisition Crate, Medicine Cabinet, Ship Toilet and Basin on the
+  Housing die; Fire Director, Long Range Sensor and Computer on the Control die; Turret and Driving Modules on the Button die). The
+  frigate's press chain kinds went from 14 to 3 (Server Rack: Boards and Looms; Robot Shell; MMU). Seats and Flight Couches lost their
+  Tyre Carcass (the role map gives `seat` nothing). Rows mark `asm-rows-2026-11-28-press-phase2`: the Bearing was the plain list's first
+  row, so its group and the groups of marks 3 and 2 that keyed on it stand at the list's start (an After of `""`), and an old choice of one of
+  them is no recipe; the other groups key on the row left before them. A stocked Die Wall takes the Ring after the Board; the survival
+  start kit carries a Ring Die. Left on the Assembler: rows with two kinds of part input (bay 2 takes one kit: Heat, Laser and Seeker
+  Heads, AA Sight, Glide Guidance Kit, Server Rack), assemblies (Robot Shell, MMU, Jetpack), the Thruster Jig rows (phase 4), and the
+  long tail of the press chain list (371 rows) not yet sorted die by die.
