@@ -12,6 +12,14 @@ public sealed class PieceRackParts : IPartGenerator
 {
     public string Name => "piece_rack_parts";
 
+    /// <summary>
+    /// A Roller Tile's and a Turntable Tile's conveyor openings, m: a tile's 2 m and the overhang a run carries past its tiles
+    /// (<see cref="RollerRuns.OverhangCm"/>), so a conveyor linked to a tile's port is as wide as the run it feeds (Sean, 2026-11-28:
+    /// a Fuel Pump M blank, 2.2 m, waited for good at Works II's second press-line Extruder, whose run goes on to the turntable by a
+    /// linked conveyor from its last tile's Piece out, 2 m wide).
+    /// </summary>
+    private const double RollOpening = 2.0 + RollerRuns.OverhangCm / 100.0;
+
     private const string Out = "Constructs/Parts/PieceRacks";
     private const string Frame = "#35556b", Bar = MachineLook.Base; // (the family's body colour takes paint; the rest is MachineLook's tones)
     // The hold: inside the posts and rails, 3 mm over the slats, past the sill and short of the far posts.
@@ -363,13 +371,13 @@ public sealed class PieceRackParts : IPartGenerator
         p.Sock("-z table", [0, RollTop - TableSock, -1], "-z");
         p.Stats(260, 700, 5, 6);
         p.Set(("ports", Py.L(
-                Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, RunY, -e)), ("face", "-z"), ("opening", Py.L(2.0, 2.0))),
+                Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, RunY, -e)), ("face", "-z"), ("opening", Py.L(RollOpening, RollOpening))),
                 // (the run's own ends, laid by the server: its middle, and on the +x edge for a run an even number of tiles wide)
-                Kw(("name", "Run start"), ("type", "conveyor"), ("dir", "out"), ("at", Py.L(0, RunY, -e)), ("face", "-z"), ("opening", Py.L(2.0, 2.0))),
-                Kw(("name", "Run start +x"), ("type", "conveyor"), ("dir", "out"), ("at", Py.L(0.99, RunY, -e)), ("face", "-z"), ("opening", Py.L(2.0, 2.0))),
-                Kw(("name", "Run end"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, RunY, e)), ("face", "+z"), ("opening", Py.L(2.0, 2.0))),
-                Kw(("name", "Run end +x"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0.99, RunY, e)), ("face", "+z"), ("opening", Py.L(2.0, 2.0))),
-                Kw(("name", "Piece out"), ("type", "conveyor"), ("dir", "out"), ("at", Py.L(0, RunY, e)), ("face", "+z"), ("opening", Py.L(2.0, 2.0))))),
+                Kw(("name", "Run start"), ("type", "conveyor"), ("dir", "out"), ("at", Py.L(0, RunY, -e)), ("face", "-z"), ("opening", Py.L(RollOpening, RollOpening))),
+                Kw(("name", "Run start +x"), ("type", "conveyor"), ("dir", "out"), ("at", Py.L(0.99, RunY, -e)), ("face", "-z"), ("opening", Py.L(RollOpening, RollOpening))),
+                Kw(("name", "Run end"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, RunY, e)), ("face", "+z"), ("opening", Py.L(RollOpening, RollOpening))),
+                Kw(("name", "Run end +x"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0.99, RunY, e)), ("face", "+z"), ("opening", Py.L(RollOpening, RollOpening))),
+                Kw(("name", "Piece out"), ("type", "conveyor"), ("dir", "out"), ("at", Py.L(0, RunY, e)), ("face", "+z"), ("opening", Py.L(RollOpening, RollOpening))))),
             ("machineBlock", Kw(("family", "roller"), ("role", "block"), ("cell", 2), ("seed", true), ("origin", Py.L(0, -0.5, 0)))),
             ("centreSockets", false), ("collider", "boxes"));
         return p;
@@ -408,8 +416,8 @@ public sealed class PieceRackParts : IPartGenerator
         var ports = new List<object>();
         foreach (var (face, at) in new[] { ("-z", Py.L(0, RunY, -e)), ("+z", Py.L(0, RunY, e)), ("-x", Py.L(-e, RunY, 0)), ("+x", Py.L(e, RunY, 0)) })
         {
-            ports.Add(Kw(("name", $"In {face}"), ("type", "conveyor"), ("dir", "in"), ("at", at), ("face", face), ("opening", Py.L(2.0, 2.0))));
-            ports.Add(Kw(("name", $"Out {face}"), ("type", "conveyor"), ("dir", "out"), ("at", at), ("face", face), ("opening", Py.L(2.0, 2.0))));
+            ports.Add(Kw(("name", $"In {face}"), ("type", "conveyor"), ("dir", "in"), ("at", at), ("face", face), ("opening", Py.L(RollOpening, RollOpening))));
+            ports.Add(Kw(("name", $"Out {face}"), ("type", "conveyor"), ("dir", "out"), ("at", at), ("face", face), ("opening", Py.L(RollOpening, RollOpening))));
         }
         p.Set(("ports", Py.L(ports.ToArray())), ("turntable", true), ("centreSockets", false), ("collider", "boxes"));
         return p;
