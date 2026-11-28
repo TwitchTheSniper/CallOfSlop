@@ -186,8 +186,8 @@ public static class WorkOrders
         var made = ConstructParts.Def(o.Part);
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} parts";
-        if (BakeKits.Has(made))
-            return $"the {made.Name} is baked from a kit of extrusions: a Bake Oven's order (Sean, 2026-11-23)";
+        if (BakeKits.AssemblerRefuses(made, d))
+            return $"the {made.Name} is baked from a kit of extrusions: a Bake Oven's order (Sean, 2026-11-23; every placed part, 2026-11-28)";
         if (AssemblingTable.Current.Of(o.Part) is not { } r)
             return FormerPresets.Line(made) ?? $"no recipe makes the {made.Name}";
         if (r.Machine != d.AsmMachine)

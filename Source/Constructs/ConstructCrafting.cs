@@ -437,7 +437,7 @@ public static class ConstructCrafting
             {
                 foreach (var r in AssemblingTable.Current.ByMachine[md.AsmMachine])
                 {
-                    if (r.Pressed || r.MinTier > md.Tier || BakeKits.Has(r.Output) || !ConstructAssembling.Takes(c, m, r))
+                    if (r.Pressed || r.MinTier > md.Tier || BakeKits.AssemblerRefuses(r.Output, md) || !ConstructAssembling.Takes(c, m, r))
                         continue; // (a block Assembler lists only what its modules and bed build: WorkOrders refuses the rest)
                     var row = Row(new WorkOrder { Part = (ushort)r.Output.Id }, r.Output);
                     if (row.Make == 1)
@@ -756,10 +756,16 @@ public static class ConstructCrafting
     {
         if (ConstructParts.Get(part) is { } kd && BakeKits.Has(kd))
         {
-            // (a part made from a kit: an oven on the net bakes it, a station builds its kit: BakeKits.cs)
+            // (a part made from a kit: an oven on the net bakes it, a station builds its kit: BakeKits.cs; with no oven, a survival start's
+            // tray Assembler still makes a part by the rule, phase 3: below)
             for (var i = 0; i < net.MachineN; i++)
                 if (c.DefOf(net.Machines[i]) is { IsBakeOven: true } od)
                     return od.Name;
+            if (AssemblingTable.Current.Of(part) is not { } kr)
+                return null;
+            for (var i = 0; i < net.MachineN; i++)
+                if (c.DefOf(net.Machines[i]) is { IsAssembler: true } ad && ad.AsmMachine == kr.Machine && kr.MinTier <= ad.Tier && !BakeKits.AssemblerRefuses(kd, ad))
+                    return ad.Name;
             return null;
         }
         if (AssemblingTable.Current.Of(part) is not { } r)

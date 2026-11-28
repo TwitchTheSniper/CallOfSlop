@@ -303,7 +303,8 @@ public sealed partial class Ui
                     groupOf[g] = gi = groups.Count;
                     groups.Add(g);
                 }
-                var ok = r.MinTier <= d.Tier;
+                var baked = BakeKits.AssemblerRefuses(r.Output, d); // (a Bake Oven's part now: retiring the Assembler, phase 3)
+                var ok = r.MinTier <= d.Tier && !baked;
                 var t = new RpTile
                 {
                     Value = ok ? k + 1 : -1,
@@ -321,6 +322,7 @@ public sealed partial class Ui
                 t.Search = $"{r.Name} {r.Batch} {g}".ToLowerInvariant();
                 t.Tip = ok
                     ? $"{r.Name}{(r.Count > 1 ? $" x{r.Count}" : "")}: {r.Batch}, {Secs(r.Seconds / speed)} a batch on this {d.Name}.{(r.Needs != 0 ? $" Needs {AsmFit.ModuleWords(r.Needs)} on the Core." : "")}"
+                    : baked ? $"{r.Name}: baked in a Bake Oven from a kit of extrusions, not assembled ({r.Batch} is its bill)."
                     : $"{r.Name}: needs a tier {r.MinTier} assembler; this one is tier {d.Tier}.";
                 tiles.Add(t);
             }

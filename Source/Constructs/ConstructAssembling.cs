@@ -228,10 +228,10 @@ public static class ConstructAssembling
     public static AssembleRecipe? RecipeOf(AssemblingTable table, in CPart p, ConstructPartDef d)
     {
         if (p.Orders is { Bill: false } q)
-            return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine ? r : null;
+            return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine && !BakeKits.AssemblerRefuses(r.Output, d) ? r : null; // (a part a Bake Oven bakes: phase 3)
         var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
         var list = table.ByMachine[d.AsmMachine];
-        return k >= 0 && k < list.Length && !BakeKits.Has(list[k].Output) ? list[k] : null; // (a part made from a kit is baked, never assembled: BakeKits.cs; its row stays for saved settings)
+        return k >= 0 && k < list.Length && !BakeKits.AssemblerRefuses(list[k].Output, d) ? list[k] : null; // (a part made from a kit is baked, never assembled: BakeKits.cs; its row stays for saved settings and as its bill)
     }
 
     private static void Work(ConstructWorld world, IWorldQuery query, AssemblingTable table, Construct c, int part, CStore st)
@@ -246,11 +246,13 @@ public static class ConstructAssembling
         }
         var d = c.Parts[part].D;
         var recipe = RecipeOf(table, c.Parts[part], d);
-        if (recipe == null && table.Recipes.Length > 0 && c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Part != ConstructParts.None && table.Of(q.Head.Part)?.Machine != d.AsmMachine)
+        if (recipe == null && table.Recipes.Length > 0 && c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Part != ConstructParts.None
+            && (table.Of(q.Head.Part) is not { } hr || hr.Machine != d.AsmMachine || BakeKits.AssemblerRefuses(hr.Output, d)))
         {
             // A head order no Assembler of this kind makes (a world saved before its part moved to a press: retiring the Assembler,
-            // 2026-11-28) would hold the whole queue for good: it goes, said once, and whoever asked for it asks its maker again.
-            Console.WriteLine($"[assembler] body {c.Id} part {part}: dropped an order for {q.Head.Count} {(q.Head.Part < Extrusion.RuntimeBase ? ConstructParts.Def(q.Head.Part).Name : "a run-time part")}: no Assembler recipe makes it now");
+            // 2026-11-28; or to a Bake Oven, phase 3) would hold the whole queue for good: it goes, said once, and whoever asked for it asks
+            // its maker again.
+            Console.WriteLine($"[assembler] body {c.Id} part {part}: dropped an order for {q.Head.Count} {(q.Head.Part < Extrusion.RuntimeBase ? ConstructParts.Def(q.Head.Part).Name : "a run-time part")}: no Assembler recipe makes it now (a press or a Bake Oven does)");
             q.RemoveAt(0);
             world.OrdersChanged(c);
             return;
