@@ -132,14 +132,27 @@ public static partial class ConstructStation
             return false;
         var f = j.StepFoot[k];
         var lo = j.StepLo[k] + 0.3f;
+        var bp = j.Bp!;
         for (var s = 0; s < j.PartOf.Length; s++)
         {
             if (s == k || j.PartOf[s] != -1 || j.StepRank[s] >= j.StepRank[k] || j.StepHi[s] > lo || ConstructStationTree.External(j, s))
                 continue;
+            if (bp.Steps[s].On == k || HangsOn(bp, s, k))
+                continue; // (it hangs on this step: it can't go first, so it never holds this one back, or the two would wait for each other)
             var e = j.StepFoot[s];
             if (e.X < f.Z - 0.05f && e.Z > f.X + 0.05f && e.Y < f.W - 0.05f && e.W > f.Y + 0.05f)
                 return true;
         }
+        return false;
+    }
+
+    private static bool HangsOn(ConstructBuild.Blueprint bp, int s, int k)
+    {
+        if (s >= bp.StepAlso.Count || bp.StepAlso[s] is not { } also)
+            return false;
+        foreach (var a in also)
+            if (a.On == k)
+                return true;
         return false;
     }
 
@@ -593,11 +606,11 @@ public static partial class ConstructStation
             }
             if (ahead && j.KindLaid[kind])
                 continue; // (laid fittings keep the order)
-            if (Covers(j, k))
-                continue; // (it would go on over a lower piece still to come: a deck over a missing chair, Sean 2026-11-28)
             if (ConstructParts.Get(j.KindDef[kind]) is not { } d)
                 continue;
-            looks++;
+            looks++; // (before Covers, a pass over the steps: AssignLooks bounds it too)
+            if (Covers(j, k))
+                continue; // (it would go on over a lower piece still to come: a deck over a missing chair, Sean 2026-11-28)
             var laid = j.KindLaid[kind];
             if (laid && !LaidReady(world, c, t, d))
                 continue;
@@ -654,7 +667,7 @@ public static partial class ConstructStation
 
     private const int PlanOk = 0, PlanNoReach = 1, PlanBlocked = 2;
     public const int PlanShifts = 6; // stands slid along the lane at once (1 to 3 rover widths each way), before any later start
-    public const int PlanTries = 48; // clash checks one plan may make: the slides, then every later start up to MaxWait
+    public const int PlanTries = 48, PlanTriesMany = 24; // clash checks one plan may make: the slides, then later starts (more than 4 rovers: fewer, each costs more)
 
     /// <summary>
     /// Rover <paramref name="a"/>'s carry into <c>j.Try</c>, clear of the others: an idle rover standing in its way is sent home first;
@@ -694,7 +707,7 @@ public static partial class ConstructStation
                 up = MathF.Max(MathF.Min(PathTop(j.Try, g.Floor, half, j.BuiltTop) + hang + 0.6f, cap), low);
             var tries = 0;
             var sent = 0;
-            var limit = PlanTries;
+            var limit = n > 4 ? PlanTriesMany : PlanTries;
             for (var w = 0f; w <= StationRovers.MaxWait; w += w < 20 ? 2 : w < 80 ? 5 : 12)
                 for (var shift = 0; shift <= (w == 0 ? PlanShifts : 0); shift++)
                 {
