@@ -837,7 +837,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      and a trip keeps up to 64 body keys.
     // 492: retiring the Assembler, phase 5: the Server Rack, Robot Shell and MMU rows went to Housing die patterns appended at
     //      the die's end (an Assembler's recipe choice, sent as a value, numbers its list anew past each; press pattern numbers keep).
-    public const ushort ProtocolVersion = 492;
+    // 493: the Bake Oven XL is a new part file, which moves part ids; kits that fit only the XL oven are split (their sub-kit
+    //      keys go on the wire since 489).
+    public const ushort ProtocolVersion = 493;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
