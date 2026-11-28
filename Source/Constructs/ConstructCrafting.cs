@@ -364,13 +364,13 @@ public static class ConstructCrafting
     }
 
     /// <summary>An order's kind as a def here (a piece's def is made the first time its key is asked for), or null.</summary>
-    public static ConstructPartDef? DefOf(in WorkOrder o) => o.Name != null ? (HullLoft.IsFormedName(o.Name) || HullLoft.IsCutName(o.Name) ? ConstructParts.Find(o.Name) : Pressed.IsName(o.Name) ? Pressed.Parse(o.Name) : o.IsMade ? ConstructParts.Get(o.Part) ?? AssembledParts.Def(o.Name) : null) : o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
+    public static ConstructPartDef? DefOf(in WorkOrder o) => o.Name != null ? (HullLoft.IsFormedName(o.Name) || HullLoft.IsCutName(o.Name) ? ConstructParts.Find(o.Name) : Pressed.IsName(o.Name) ? Pressed.Parse(o.Name) : o.IsMade ? ConstructParts.Get(o.Part) ?? AssembledParts.Def(o.Name) : o.IsSub ? BakedParts.Parse(o.Name) : null) : o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
 
     /// <summary>"Gear Set", "L-angle 0.2 x 0.2 m, 1 m, metal".</summary>
     public static string NameOf(in WorkOrder o)
     {
         if (o.Name != null)
-            return Pressed.IsName(o.Name) ? Pressed.Label(o.Name) : o.IsMade ? o.Name : HullLoft.PanelLabel(o.Name);
+            return Pressed.IsName(o.Name) ? Pressed.Label(o.Name) : o.IsMade ? o.Name : o.IsSub ? "sub-assembly " + o.Name : HullLoft.PanelLabel(o.Name);
         if (!o.IsPiece)
             return ConstructParts.Get(o.Part)?.Name ?? "part";
         var k = o.Key;
@@ -754,7 +754,7 @@ public static class ConstructCrafting
 
     private static string? MachineMakes(ConstructWorld world, Construct c, CraftNet net, ushort part)
     {
-        if (ConstructParts.Get(part) is { } kd && BakeKits.AssemblerRefuses(world, c, kd))
+        if (ConstructParts.Get(part) is { } kd && (BakeKits.AssemblerRefuses(world, c, kd) || BakeKits.IsSub(kd)))
         {
             // (a part made from a kit: an oven on the net bakes it, a station builds its kit: BakeKits.cs; a rule kit's part no oven here
             // takes falls back to its Assembler row, below: phase 3)
@@ -1733,9 +1733,10 @@ public static class ConstructCrafting
                     mat = r.U8();
                     var cnt = r.U16();
                     var nm = r.Text(ConstructParts.MaxRuntimeName);
-                    if (!HullLoft.IsFormedName(nm) && !HullLoft.IsCutName(nm) && !Pressed.IsName(nm) && !AssembledParts.IsName(nm))
+                    var sub = nm.StartsWith(BakedParts.Prefix, StringComparison.Ordinal);
+                    if (!HullLoft.IsFormedName(nm) && !HullLoft.IsCutName(nm) && !Pressed.IsName(nm) && !AssembledParts.IsName(nm) && !sub)
                         throw new MalformedPacketException("a bad panel order");
-                    o = new CraftOrder { What = new WorkOrder { Key = new ExtrusionKey(0, 0, 0, 0, mat, false, ExShape.Section), Part = AssembledParts.IsName(nm) ? (ushort)(AssembledParts.Def(nm)?.Id ?? ConstructParts.None) : ConstructParts.None, Count = cnt, Name = nm } };
+                    o = new CraftOrder { What = new WorkOrder { Key = new ExtrusionKey(0, 0, 0, 0, mat, false, ExShape.Section), Part = AssembledParts.IsName(nm) ? (ushort)(AssembledParts.Def(nm)?.Id ?? ConstructParts.None) : sub ? (ushort)(BakeKits.SubOrder(nm, 1)?.Part ?? ConstructParts.None) : ConstructParts.None, Count = cnt, Name = nm } }; // (a sub-assembly by its baked key, protocol 489)
                     shape = 0;
                 }
                 else
@@ -1836,7 +1837,7 @@ public static class ConstructCrafting
                     var ncnt = r.U16();
                     var nm = r.Str();
                     var (nid, ngot, nasked, nsent) = (r.U16(), r.U16(), r.U16(), r.U16());
-                    var pressedWhat = Pressed.IsName(nm) ? WorkOrders.PressedOrder(nm, ncnt) : AssembledParts.Order(nm, ncnt); // (a pressed part's order, Press phase 4; a rack or a design by its key)
+                    var pressedWhat = Pressed.IsName(nm) ? WorkOrders.PressedOrder(nm, ncnt) : AssembledParts.Order(nm, ncnt) ?? BakeKits.SubOrder(nm, ncnt); // (a sub-assembly by its baked key too) // (a pressed part's order, Press phase 4; a rack or a design by its key)
                     if (ncnt is 0 or > WorkOrders.MaxCount || !HullLoft.IsFormedName(nm) && !HullLoft.IsCutName(nm) && pressedWhat == null || nm.Length > ConstructParts.MaxRuntimeName || q.Count >= MaxOrders)
                         continue;
                     q.Items[q.Count++] = new CraftOrder { What = pressedWhat ?? ConstructPanelFormer.Order(nm, ncnt), Id = nid, Got = Math.Min(ncnt, ngot), Sent = nsent, Asked = nasked, Where = NoPart, Note = "", Def = ConstructParts.None };

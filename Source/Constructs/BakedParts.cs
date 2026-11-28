@@ -566,9 +566,20 @@ public static partial class BakedParts
             group[k] = (c.DefOf(parts[k].Part), parts[k].Pos, parts[k].Rot, p.Paint, ConstructFinish.Name(p.Finish));
         }
         var text = DesignText(group, out var origin);
-        // A bake kit's design (BakeKits.cs) comes out as the part it is the kit of, turned as the kit was.
-        if (BakeKits.Target(HashOf(text), want, queue) is { } kit) // (want: the oven's order, when two parts share a kit; queue: a rule kit is matched by the oven's orders)
-            return Swap(world, c, kit.Part, origin + kit.Offset, kit.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
+        // A bake kit's design (BakeKits.cs) comes out as the part it is the kit of, turned as the kit was. A baked subpart is read as its own
+        // subparts for this (a split kit's baked sub-assemblies: BakeKits.Subs.cs), so a split kit matches its whole kit's design.
+        var (matchText, matchOrigin) = Flat(group) is { } flat ? (DesignText(flat, out var fo), fo) : (text, origin);
+        var matchHash = HashOf(matchText);
+        if (BakeKits.Target(matchHash, want, queue) is { } kit) // (want: the oven's order, when two parts share a kit; queue: a rule kit is matched by the oven's orders)
+            return Swap(world, c, kit.Part, matchOrigin + kit.Offset, kit.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
+        // A sub-kit's design at any turn comes out as its own baked part, its canonical design turned (the split kit's station wants that key).
+        if (BakeKits.SubTarget(matchHash, want, queue) is { } sub && BakeKits.SubOf(sub.Part) is { } sk)
+        {
+            world.KeepBaked(sk.Hash);
+            return Swap(world, c, sub.Part, matchOrigin + sub.Offset, sub.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
+        }
+        if (Environment.GetEnvironmentVariable("COS_FLATDBG") is { } dbg && matchText != text)
+            File.AppendAllText(dbg, "FLAT want " + want + "\n" + matchText + "\n");
         if (parts.Count < 2)
         {
             LastRefusal = "one piece bakes only into a part it is the whole kit of, and no order of this oven's is that part";
@@ -600,6 +611,35 @@ public static partial class BakedParts
         Settle(world, c, nb);
         world.Events.Add($"construct {c.Id}: baked {parts.Count} subparts into {def.Name} -> construct {nb.Id}");
         return nb;
+    }
+
+    /// <summary>
+    /// A group with its baked subparts read as their designs' subparts, each placed and turned where the baked part puts it (null: the group
+    /// holds no baked part whose design is known). A baked part's design places its subparts from its origin, which is the part's.
+    /// </summary>
+    private static List<(ConstructPartDef Def, Vector3 Pos, byte Rot, uint Paint, string Finish)>? Flat(IReadOnlyList<(ConstructPartDef Def, Vector3 Pos, byte Rot, uint Paint, string Finish)> group)
+    {
+        var any = false;
+        foreach (var g in group)
+            any |= IsBaked(g.Def) && DesignOf(g.Def) != null;
+        if (!any)
+            return null;
+        var flat = new List<(ConstructPartDef Def, Vector3 Pos, byte Rot, uint Paint, string Finish)>(group.Count * 4);
+        foreach (var g in group)
+        {
+            if (!IsBaked(g.Def) || DesignOf(g.Def) is not { } design)
+            {
+                flat.Add(g);
+                continue;
+            }
+            foreach (var sub in design.Subs)
+            {
+                if (ConstructParts.Find(sub.Name) is not { } sd)
+                    return null;
+                flat.Add((sd, g.Pos + Rot24.Apply(g.Rot, sub.Pos), Rot24.Compose(g.Rot, sub.Rot), sub.Paint, sub.Finish));
+            }
+        }
+        return flat;
     }
 
     /// <summary>Server: un-bakes body <paramref name="c"/>: a new body of the design's subparts (and the plates) where it stood. Null: it can't (<see cref="LastRefusal"/>).</summary>

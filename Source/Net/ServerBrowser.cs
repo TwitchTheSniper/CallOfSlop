@@ -829,7 +829,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 488: retiring the Assembler, phase 4: the Decoupler's Assembler row went to a Button die pattern appended at the die's end (an
     //      Assembler's recipe choice, sent as a value, numbers its list anew past the Capital Rocket Engine; press pattern numbers keep),
     //      and cloth extrudes (a piece's material byte may be cloth).
-    public const ushort ProtocolVersion = 488;
+    // 489: sub-kits (Assembler retirement): a work order or a crafting line may name a baked sub-assembly by its key ("Baked (#hash)",
+    //      a Bake Oven's order; the named-order shape, its id this peer's own), and a split kit's bake reads its baked subparts as their designs.
+    public const ushort ProtocolVersion = 489;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -15,6 +15,10 @@ public sealed partial class ConstructWorld
     internal readonly Dictionary<int, (int Stamp, int Parts, int Look, bool Takes)> OvenServed = new(64);
     internal readonly HashSet<int> OvenServeTold = new(64); // (what the log said, once a construct and part and way)
     internal int OvenServeTick = int.MinValue, OvenServeLeft; // (the work-outs left in this SealTick: BakeKits.ServeBudget)
+
+    /// <summary>Server: does an oven build a part's kit split ((body, oven, part): ConstructBakeOven.PrintFor), with the oven look and body stamp it was worked out at. Not saved.</summary>
+    internal readonly Dictionary<long, (int Look, int Stamp, bool Split)> OvenSplit = new(16);
+    internal readonly HashSet<long> OvenSplitTold = new(16);
 }
 
 /// <summary>
@@ -37,10 +41,9 @@ public static partial class ConstructBakeOven
     /// <summary>Server: will this oven take the order? Null, or why not (<paramref name="say"/> false: <see cref="No"/>, its own checks making no text).</summary>
     public static string? OrderRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o, bool say = true)
     {
-        if (o.IsPiece || o.Name != null)
+        if (o.IsPiece || o.Name != null && !o.IsSub || BakeKits.OvenDef(o) is not { } made)
             return !say ? No : $"the {d.Name} bakes parts made from kits: {ConstructCrafting.NameOf(o)} isn't one";
-        var made = ConstructParts.Def(o.Part);
-        if (!BakeKits.Has(made) || BakeKits.BlueprintOf(made) == null)
+        if (!BakeKits.Bakes(made) || BakeKits.PrintOfOrder(made) == null)
             return !say ? No : $"the {made.Name} isn't made from a kit: an oven bakes only what Constructs/BakeKits.json and Constructs/BakeKits/ list";
         if (Unbaking(c.Parts[part], d))
             return !say ? No : $"the {d.Name} is set to Un-bake";
@@ -52,14 +55,16 @@ public static partial class ConstructBakeOven
             return !say ? No : $"the {d.Name} has no bed: weld Oven Bed Blocks beside it";
         if (BakeKits.MinBedCells(made) is var least and > 0 && asm.W * asm.L < least)
             return !say ? No : $"the {made.Name} bakes on a bed of {least} cells or more (Constructs/BakeKits.json \"bigBed\"): this one has {asm.W * asm.L}";
-        if (BakeKits.ByRule(made) && !BedFits(c, asm, BakeKits.KitSize(made)))
-            return !say ? No : $"the {made.Name} kit ({BedLacks(c, asm, BakeKits.KitSize(made))}) fits no way in this oven's tunnel";
+        if ((BakeKits.ByRule(made) || o.IsSub) && !BedFits(c, asm, BakeKits.BakeSize(made)))
+            return !say ? No : $"the {made.Name} kit ({BedLacks(c, asm, BakeKits.BakeSize(made))}) fits no way in this oven's tunnel";
         // A one-piece bake (Sean, 2026-11-28: "Yes, skip the station"): an Extruder whose pieces reach the bed makes its piece, no station.
-        if (BakeKits.OnePiece(made) && DirectExtruder(world, c, part, BakeKits.KitOf(made)![0].Key) >= 0)
+        if (o.IsSub && BakeKits.SubOf(made) is { } sk && SizeClass(c, part) > sk.Oven)
+            return !say ? No : $"a sub-assembly bakes on the smallest oven that holds it ({MakerRoutes.OvenName(sk.Oven)}), never a bigger one (the split kit that wants it waits on that)";
+        if (!o.IsSub && BakeKits.OnePiece(made) && DirectExtruder(world, c, part, BakeKits.KitOf(made)![0].Key) >= 0)
             return null;
         // The kit is built at the station nearest the oven whose bay holds it; that station orders the kit's pieces through a Line Console
         // wired into its Orders, so one with none would wait for ever (the works' line A oven took the yard's deck orders, 2026-11-23).
-        var bp = BakeKits.BlueprintOf(made)!;
+        var bp = BakeKits.PrintOfOrder(made)!;
         int near = -1;
         var nearDist = float.MaxValue;
         for (var s = 0; s < c.PartCount; s++)
@@ -363,10 +368,12 @@ public static partial class ConstructBakeOven
         }
         if (world.OvenLooks % KitEvery != part % KitEvery)
             return;
-        if (!WorkOrders.HeadOf(c.Parts[part], out var head) || head.IsPiece || head.Name != null || ConstructParts.Get(head.Part) is not { } d
-            || BakeKits.BlueprintOf(d) is not { } bp)
+        if (!WorkOrders.HeadOf(c.Parts[part], out var head) || BakeKits.OvenDef(head) is not { } d
+            || PrintFor(world, c, part, d) is not { } bp)
             return;
-        if (BakeKits.OnePiece(d) && onWay == 0 && OnePieceFeed(world, c, part, head, d, bedKit))
+        if (head.IsSub)
+            world.KeepBaked(BakeKits.SubOf(d)!.Hash); // (its design goes to every peer and the save with its first kit: once)
+        if (!head.IsSub && BakeKits.OnePiece(d) && onWay == 0 && OnePieceFeed(world, c, part, head, d, bedKit))
             return; // (a one-piece bake: its piece comes from an Extruder, never a station)
         var bedMid = Vector3.Transform(bed.Mid(bed.Along * 0.5f), CoreFrame(c, part));
         // A kit of this order already at a station: building, or done and waiting in its bay for a lifter.
@@ -386,7 +393,7 @@ public static partial class ConstructBakeOven
             var dist = rolls == part ? -1 : Vector3.DistanceSquared(floor, bedMid);
             var sj = c.Parts[s].Station;
             var kit = sj != null && KitUnderWay(world, c, s, sj, onWay);
-            if (kit && sj!.Name.Equals(bp.Name, StringComparison.OrdinalIgnoreCase))
+            if (kit && (sj!.Name.Equals(bp.Name, StringComparison.OrdinalIgnoreCase) || BakeKits.IsKitOf(sj.Name, d)))
             {
                 under++;
                 if (dist < mineDist)
@@ -449,13 +456,63 @@ public static partial class ConstructBakeOven
         }
         // Kits under way: the next order's kit starts ahead, only at a station whose builds roll onto this bed (it waits at the run's end
         // behind the one before; a crane-fed station's kit would wait in its bay and hold the station for another oven's kit).
-        if (ahead < 0 || KitAfter(c, part, under) is not { } next || !ConstructStation.QuickFits(next, ConstructStation.BaySize(c, ahead)))
+        if (ahead < 0 || KitAfter(world, c, part, under) is not { } next || !ConstructStation.QuickFits(next, ConstructStation.BaySize(c, ahead)))
             return;
         if (ConstructStation.Start(world, c, ahead, next.Name, 0) is { } no2)
             Console.WriteLine($"[oven] construct {c.Id} part {part}: the next kit ({next.Name}) can't start ahead: {no2}");
         else
             Console.WriteLine($"[oven] construct {c.Id} part {part}: the {next.Name} started ahead at the {c.DefOf(ahead).Name} {ahead} ({under} under way)");
     }
+
+    /// <summary>
+    /// Server: the blueprint oven <paramref name="part"/> builds for an order of <paramref name="d"/>: a sub-kit's own; a split kit
+    /// (BakeKits.Subs.cs: its baked sub-assemblies and leftover pieces) when every sub-kit of it is taken by another oven on the construct of a
+    /// smaller size than this one (so the split kit never waits on its own oven, nor a sub-kit on a big oven's queue); else the whole kit.
+    /// Worked out again every <see cref="SplitEvery"/> oven looks a part and oven. Allocates nothing past each pair's first.
+    /// </summary>
+    internal static ConstructBuild.Blueprint? PrintFor(ConstructWorld world, Construct c, int part, ConstructPartDef d)
+    {
+        if (BakeKits.IsSub(d) || BakeKits.SplitOf(d) is not { } sk || BakeKits.SplitPrint(d) is not { } split)
+            return BakeKits.PrintOfOrder(d);
+        var key = (long)c.Id << 40 | (long)part << 20 | (uint)d.Id & 0xFFFFF;
+        if (world.OvenSplit.TryGetValue(key, out var got) && world.OvenLooks - got.Look < SplitEvery && got.Stamp == c.RebuildStamp)
+            return got.Split ? split : BakeKits.BlueprintOf(d);
+        var mine = SizeClass(c, part);
+        var takes = true;
+        foreach (var sub in sk.Subs)
+        {
+            if (BakeKits.SubOrder(sub.Key, 1) is not { } o)
+            {
+                takes = false;
+                break;
+            }
+            var any = false;
+            for (var m = 0; m < c.PartCount && !any; m++)
+                if (m != part && c.DefOf(m).IsBakeOven && !c.Parts[m].Broken && SizeClass(c, m) < mine)
+                    any = OrderRefusal(world, c, m, c.DefOf(m), o, say: false) == null;
+            if (!any)
+            {
+                takes = false;
+                break;
+            }
+        }
+        world.OvenSplit[key] = (world.OvenLooks, c.RebuildStamp, takes);
+        if (world.OvenSplitTold.Add(key << 1 | (takes ? 1L : 0L)))
+            Console.WriteLine(takes ? $"[oven] construct {c.Id} part {part}: the {d.Name} is built split ({sk.Subs.Length} sub-kits on smaller ovens, {sk.Items.Length} kit items)"
+                : $"[oven] construct {c.Id} part {part}: the {d.Name} is built whole: no smaller oven here takes all its {sk.Subs.Length} sub-kits");
+        return takes ? split : BakeKits.BlueprintOf(d);
+    }
+
+    /// <summary>An oven's size class (<see cref="MakerRoutes.Ovens"/>, by its bed and tunnel; past the last: bigger), or int.MaxValue with no bed. Allocates nothing.</summary>
+    internal static int SizeClass(Construct c, int m)
+    {
+        if (!MachineBlocks.TryOf(c, m, out var a) || a.W == 0)
+            return int.MaxValue;
+        var bed = new Bed(c, a);
+        return MakerRoutes.OvenFor(new Vector3(bed.Across, bed.Clear, bed.Along));
+    }
+
+    private const int SplitEvery = 200; // oven looks (about 20 s of one oven)
 
     /// <summary>Is station <paramref name="s"/> building a kit, or done with one still in its bay (not the one <paramref name="onWay"/> to the bed)?</summary>
     private static bool KitUnderWay(ConstructWorld world, Construct c, int s, StationJob j, ushort onWay) =>
@@ -476,14 +533,14 @@ public static partial class ConstructBakeOven
     }
 
     /// <summary>The kit of the queue's unit after the first <paramref name="under"/> (the kits under way), in queue order; null when the queue holds no more.</summary>
-    private static ConstructBuild.Blueprint? KitAfter(Construct c, int part, int under)
+    private static ConstructBuild.Blueprint? KitAfter(ConstructWorld world, Construct c, int part, int under)
     {
         if (c.Parts[part].Orders is not { Count: > 0, Bill: false } q)
             return null;
         for (var k = 0; k < q.Count; k++)
         {
             ref readonly var o = ref q.Items[k];
-            if (o.IsPiece || o.Name != null || ConstructParts.Get(o.Part) is not { } d || BakeKits.BlueprintOf(d) is not { } bp)
+            if (BakeKits.OvenDef(o) is not { } d || PrintFor(world, c, part, d) is not { } bp)
                 continue;
             if (under < o.Left)
                 return bp;
@@ -509,7 +566,7 @@ public static partial class ConstructBakeOven
             if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && c.Parts[s].Station is { } j && KitUnderWay(world, c, s, j, onWay)
                 && ConstructRollOut.RunOut(c, s) is var r and >= 0 && ConstructRollOut.OvenOf(c, r) == oven)
                 under++;
-        return KitAfter(c, oven, under + ahead); // (ahead: that many kits further on)
+        return KitAfter(world, c, oven, under + ahead); // (ahead: that many kits further on)
     }
 
     private static void Note(ConstructWorld world, Construct c, int part, string note)

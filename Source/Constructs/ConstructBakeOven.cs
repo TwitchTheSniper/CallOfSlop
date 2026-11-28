@@ -343,7 +343,7 @@ public static partial class ConstructBakeOven
             Console.WriteLine($"[oven] construct {c.Id}: the group in the tunnel (construct {st.JobAmount}) went while the doors were shut");
             return;
         }
-        var want = WorkOrders.HeadOf(c.Parts[part], out var order) && !order.IsPiece && order.Name == null ? order.Part : (ushort)0; // (two parts with one kit: the one ordered)
+        var want = WorkOrders.HeadOf(c.Parts[part], out var order) && BakeKits.OvenDef(order) is { } wd ? (ushort)wd.Id : (ushort)0; // (two parts with one kit: the one ordered)
         var made = unbake ? BakedParts.Unbake(world, group) : BakedParts.Bake(world, group, want, c.Parts[part].Orders);
         if (made == null)
         {
@@ -352,8 +352,8 @@ public static partial class ConstructBakeOven
             return;
         }
         st.JobAmount = made.Id; // (the new body is the one that rolls out or waits to be lifted off)
-        if (!unbake && made.PartCount > 0 && WorkOrders.HeadOf(c.Parts[part], out var head) && !head.IsPiece && head.Name == null
-            && Array.FindIndex(made.Parts, 0, made.PartCount, q => q.Def == head.Part) >= 0)
+        if (!unbake && made.PartCount > 0 && WorkOrders.HeadOf(c.Parts[part], out var head) && BakeKits.OvenDef(head) is { } hd
+            && Array.FindIndex(made.Parts, 0, made.PartCount, q => q.Def == hd.Id) >= 0)
             WorkOrders.Made(world, c, c.Parts[part].Orders); // (a kit of its head order baked into the part: one made, ConstructBakeOvenOrders.cs)
         Console.WriteLine($"[oven] construct {c.Id}: {(unbake ? "un-baked" : "baked")} construct {group.Id} into construct {made.Id} ({made.PartCount} parts)");
     }
