@@ -41,6 +41,11 @@ public static partial class ConstructBakeOven
             return $"the {d.Name} has no bed: weld Oven Bed Blocks beside it";
         if (BakeKits.MinBedCells(made) is var least and > 0 && asm.W * asm.L < least)
             return $"the {made.Name} bakes on a bed of {least} cells or more (Constructs/BakeKits.json \"bigBed\"): this one has {asm.W * asm.L}";
+        if (BakeKits.ByRule(made) && BedLacks(c, asm, BakeKits.KitSize(made)) is { } small)
+            return $"the {made.Name} kit ({small}) fits no way in this oven's tunnel";
+        // A one-piece bake (Sean, 2026-11-28: "Yes, skip the station"): an Extruder whose pieces reach the bed makes its piece, no station.
+        if (BakeKits.OnePiece(made) && DirectExtruder(world, c, part, BakeKits.KitOf(made)![0].Key) >= 0)
+            return null;
         // The kit is built at the station nearest the oven whose bay holds it; that station orders the kit's pieces through a Line Console
         // wired into its Orders, so one with none would wait for ever (the works' line A oven took the yard's deck orders, 2026-11-23).
         var bp = BakeKits.BlueprintOf(made)!;
@@ -66,6 +71,106 @@ public static partial class ConstructBakeOven
         if (PadLacks(world, c, near, bp) is { } wide)
             return $"the {made.Name} kit's {wide} fits none of the pick pads of the Building Station nearest the {d.Name}"; // (a 2.75 m wall plate and a narrow line's 2 m strip pad, 2026-11-26)
         return null;
+    }
+
+    /// <summary>Why a kit of these sides (m) fits no way up in the oven's tunnel (the hearth between its walls and doors, under its roof), or null.</summary>
+    internal static string? BedLacks(Construct c, in CMachineAsm asm, Vector3 kit)
+    {
+        var bed = new Bed(c, asm);
+        var room = bed.InMax - bed.InMin; // (x across, y the clear height, z along)
+        Span<float> s = [kit.X, kit.Y, kit.Z];
+        for (var k = 0; k < 6; k++)
+        {
+            // (each of the six ways a box lies: which side goes across, up and along)
+            var (a, b, l) = k switch { 0 => (0, 1, 2), 1 => (0, 2, 1), 2 => (1, 0, 2), 3 => (1, 2, 0), 4 => (2, 0, 1), _ => (2, 1, 0) };
+            if (s[a] <= room.X + 0.05f && s[b] <= room.Y + 0.05f && s[l] <= room.Z + 0.05f)
+                return null;
+        }
+        return FormattableString.Invariant($"{kit.X:0.#} x {kit.Y:0.#} x {kit.Z:0.#} m, the hearth {room.X:0.#} x {room.Z:0.#} m, {room.Y:0.#} m clear");
+    }
+
+    /// <summary>
+    /// How an oven ranks for an order among the ovens that take it (lower first: Sean, 2026-11-28, "utilize the different oven sizes"): its
+    /// size class (<see cref="MakerRoutes.Ovens"/>), so an order goes to the smallest bed that holds it and a bigger oven takes one only when
+    /// every smaller one has <see cref="SpillAt"/> more orders queued than it; then its queue, then its bed's cells. Allocates nothing.
+    /// </summary>
+    public static int Rank(Construct c, int m)
+    {
+        var score = (c.Parts[m].Orders?.Count ?? 0) * 256;
+        if (MachineBlocks.TryOf(c, m, out var a) && a.W > 0)
+        {
+            var bed = new Bed(c, a);
+            score += Math.Min(255, a.W * a.L) + MakerRoutes.OvenFor(new Vector3(bed.Across, bed.Clear, bed.Along)) * SpillAt * 256;
+        }
+        return score;
+    }
+
+    /// <summary>The orders more a smaller oven holds before a bigger one that also fits takes the next.</summary>
+    public const int SpillAt = 4;
+
+    /// <summary>
+    /// Server: the Extruder on this construct whose pieces reach oven <paramref name="part"/>'s bed (by a conveyor onto a run the oven takes,
+    /// ConstructRollOut) and that takes an order for <paramref name="key"/>, the one with the shortest queue; or -1. Allocates nothing.
+    /// </summary>
+    internal static int DirectExtruder(ConstructWorld world, Construct c, int part, in ExtrusionKey key)
+    {
+        if (!AnyRunInto(c, part))
+            return -1;
+        var o = new WorkOrder { Key = key with { Growing = false }, Part = ConstructParts.None, Count = 1 };
+        int best = -1, bestQ = int.MaxValue;
+        for (var m = 0; m < c.PartCount; m++)
+        {
+            var md = c.DefOf(m);
+            if (!md.IsExtruder || md.IsPanelFormer || c.Parts[m].Broken || md.BlockRole is not (BlockRole.None or BlockRole.Core))
+                continue;
+            var q = c.Parts[m].Orders?.Count ?? 0;
+            if (q < bestQ && ConstructLogisticsPlan.Leads(c, m, part) && WorkOrders.Refusal(world, c, m, o) == null)
+                (best, bestQ) = (m, q);
+        }
+        return best;
+    }
+
+    /// <summary>Does a conveyor run end on oven <paramref name="part"/>'s bed (the oven takes it, ConstructRollOut.OvenOf)?</summary>
+    internal static bool AnyRunInto(Construct c, int part)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == RouteType.Conveyor && ConstructRollOut.OvenOf(c, k) == part)
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Server, once a second an oven: its head order's one-piece kit (BakeKits.OnePiece) ordered of the Extruder whose pieces reach its bed,
+    /// one or two pieces at a time; the piece rolls off its run onto the bed (ConstructRollOut.RiderOnto) and bakes into the part. False:
+    /// no such Extruder (the kit is built at a station as any other).
+    /// </summary>
+    private static bool OnePieceFeed(ConstructWorld world, Construct c, int part, in WorkOrder head, ConstructPartDef d, bool bedKit)
+    {
+        var key = BakeKits.KitOf(d)![0].Key with { Growing = false };
+        var ex = DirectExtruder(world, c, part, key);
+        if (ex < 0)
+            return false;
+        // (its pieces under way: queued at any Extruder, riding the construct's conveyors, and on the bed)
+        var under = bedKit ? 1 : 0;
+        for (var m = 0; m < c.PartCount; m++)
+            if (c.DefOf(m).IsExtruder && c.Parts[m].Orders is { Bill: false } q)
+                for (var k = 0; k < q.Count; k++)
+                    if (q.Items[k].IsPiece && (q.Items[k].Key with { Growing = false }) == key)
+                        under += q.Items[k].Left;
+        for (var i = 0; i < c.ConveyedCount; i++)
+            if (ConstructParts.Get(c.Conveyed[i].Def) is { IsExtrusion: true } rd && (rd.ExKey with { Growing = false }) == key)
+                under++;
+        if (under >= Math.Min(2, head.Left))
+            return true;
+        var o = new WorkOrder { Key = key, Part = ConstructParts.None, Count = 1 };
+        if (WorkOrders.Queue(world, c, ex, o) is { } no)
+            Note(world, c, part, $"the {d.Name}'s piece: {no}");
+        else
+        {
+            Note(world, c, part, "");
+            Console.WriteLine($"[oven] construct {c.Id} part {part}: the {d.Name}'s one piece ordered of the {c.DefOf(ex).Name} {ex} (a one-piece bake, no station)");
+        }
+        return true;
     }
 
     /// <summary>
@@ -236,6 +341,8 @@ public static partial class ConstructBakeOven
         if (!WorkOrders.HeadOf(c.Parts[part], out var head) || head.IsPiece || head.Name != null || ConstructParts.Get(head.Part) is not { } d
             || BakeKits.BlueprintOf(d) is not { } bp)
             return;
+        if (BakeKits.OnePiece(d) && onWay == 0 && OnePieceFeed(world, c, part, head, d, bedKit))
+            return; // (a one-piece bake: its piece comes from an Extruder, never a station)
         var bedMid = Vector3.Transform(bed.Mid(bed.Along * 0.5f), CoreFrame(c, part));
         // A kit of this order already at a station: building, or done and waiting in its bay for a lifter.
         int mine = -1, idle = -1, ahead = -1;

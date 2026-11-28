@@ -335,7 +335,7 @@ public static class StationCheck
                 if (args.Contains("--trace") && k % (5 * World.TickRate) == 0)
                     foreach (var m in makers.Where(m => c.DefOf(m).IsAssembler))
                         Console.WriteLine($"  {k / World.TickRate,4} s: the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0}: queue {c.Parts[m].Orders?.Count ?? -1}, "
-                            + (w.StoreOf(c, m) is { } ast2 ? ConstructAssembling.Look(c.DefOf(m), ast2, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, null) : ""));
+                            + (w.StoreOf(c, m) is { } ast2 ? ConstructAssembling.Look(c.DefOf(m), ast2, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m), ConstructAssembling.HasBed(c, m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, null) : ""));
                 // (and every Press and Extruder with orders: what it waits for, 2026-11-23)
                 if (args.Contains("--trace") && k % (5 * World.TickRate) == 0)
                     foreach (var m in makers.Where(m => (c.DefOf(m).IsPress && !c.DefOf(m).IsLathe || c.DefOf(m).IsExtruder) && c.Parts[m].Orders is { Count: > 0 }))
@@ -387,7 +387,7 @@ public static class StationCheck
         }
         foreach (var m in makers.Where(m => c.DefOf(m).IsAssembler))
             Console.WriteLine($"  the {c.DefOf(m).Name} at {c.Parts[m].Pos.X:0}, {c.Parts[m].Pos.Z:0} holds {Holds(m)}; looks: "
-                + (w.StoreOf(c, m) is { } ast ? ConstructAssembling.Look(c.DefOf(m), ast, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, AssemblerToolBay.HeldIn(w, c, m)) : ""));
+                + (w.StoreOf(c, m) is { } ast ? ConstructAssembling.Look(c.DefOf(m), ast, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[m], c.DefOf(m), ConstructAssembling.HasBed(c, m)), ConstructAssembling.FitOf(c, m), false, new SandboxInventory(), null, c.Parts[m].Orders is { Bill: false }, AssemblerToolBay.HeldIn(w, c, m)) : ""));
         foreach (var f in (Arg("--fill") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries))
             if (f.Split(',') is [var fx, var fz, var fm, _] && float.TryParse(fx, out var px) && float.TryParse(fz, out var pz))
             {
@@ -697,7 +697,7 @@ public static class StationCheck
                 Console.WriteLine($"  {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: {mo.Count} order(s), head x{mo.Items[0].Left}: {mo.Note}" + (c.DefOf(i).IsExtruder && !c.DefOf(i).IsPanelFormer && w.StoreOf(c, i) is { } exs ? $"; looks: {ConstructExtruder.Look(c, i, exs, false, new SandboxInventory())}" : ""));
         for (var i = 0; i < c.PartCount; i++)
             if (c.DefOf(i) is { IsAssembler: true, BlockRole: BlockRole.Core } ad && w.StoreOf(c, i) is { } ast3 && (c.Parts[i].Orders is { Count: > 0 } || ast3.ItemCount > 0))
-                Console.WriteLine($"  Assembler {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: " + ConstructAssembling.Look(ad, ast3, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[i], ad), ConstructAssembling.FitOf(c, i), false, new SandboxInventory(), null, c.Parts[i].Orders is { Bill: false }, null));
+                Console.WriteLine($"  Assembler {i} at {c.Parts[i].Pos.X:0}, {c.Parts[i].Pos.Z:0}: " + ConstructAssembling.Look(ad, ast3, ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[i], ad, ConstructAssembling.HasBed(c, i)), ConstructAssembling.FitOf(c, i), false, new SandboxInventory(), null, c.Parts[i].Orders is { Bill: false }, null));
         Span<ushort> own = stackalloc ushort[ConstructStation.MaxOwnPads];
         for (var i = 0; i < c.PartCount; i++)
             if (c.DefOf(i).IsBuildStation && ConstructStation.OwnPads(c, i, own) is var pn)

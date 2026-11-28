@@ -1060,7 +1060,7 @@ public sealed partial class ConstructEdits
     {
         var d = c.DefOf(part);
         var st = world.StoreOf(c, part)!;
-        var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d);
+        var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d, ConstructAssembling.HasBed(c, part));
         ref var h = ref Hands[player];
         var names = RecyclingTable.Current;
         if (ConstructParts.Get(h.Held) is { } held && world.WantsPart(c, part, held.Id) && world.FeedPart(c, part, held))

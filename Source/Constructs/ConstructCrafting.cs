@@ -437,7 +437,7 @@ public static class ConstructCrafting
             {
                 foreach (var r in AssemblingTable.Current.ByMachine[md.AsmMachine])
                 {
-                    if (r.Pressed || r.MinTier > md.Tier || BakeKits.AssemblerRefuses(r.Output, md) || !ConstructAssembling.Takes(c, m, r))
+                    if (r.Pressed || r.MinTier > md.Tier || BakeKits.AssemblerRefuses(r.Output, ConstructAssembling.HasBed(c, m)) || !ConstructAssembling.Takes(c, m, r))
                         continue; // (a block Assembler lists only what its modules and bed build: WorkOrders refuses the rest)
                     var row = Row(new WorkOrder { Part = (ushort)r.Output.Id }, r.Output);
                     if (row.Make == 1)
@@ -764,7 +764,7 @@ public static class ConstructCrafting
             if (AssemblingTable.Current.Of(part) is not { } kr)
                 return null;
             for (var i = 0; i < net.MachineN; i++)
-                if (c.DefOf(net.Machines[i]) is { IsAssembler: true } ad && ad.AsmMachine == kr.Machine && kr.MinTier <= ad.Tier && !BakeKits.AssemblerRefuses(kd, ad))
+                if (c.DefOf(net.Machines[i]) is { IsAssembler: true } ad && ad.AsmMachine == kr.Machine && kr.MinTier <= ad.Tier && !BakeKits.AssemblerRefuses(kd, ConstructAssembling.HasBed(c, net.Machines[i])))
                     return ad.Name;
             return null;
         }
@@ -1199,7 +1199,7 @@ public static class ConstructCrafting
             var m = net.Machines[i];
             if (net.MachineWay[i] != way || !c.DefOf(m).IsBakeOven || WorkOrders.Refusal(world, c, m, what) != null)
                 continue;
-            var score = (c.Parts[m].Orders?.Count ?? 0) * 256 + (MachineBlocks.TryOf(c, m, out var a) ? Math.Min(255, a.W * a.L) : 0);
+            var score = ConstructBakeOven.Rank(c, m); // (the smallest bed that holds it, then the shortest queue: Sean, 2026-11-28)
             if (score < bestScore)
                 (best, bestScore) = (m, score);
         }

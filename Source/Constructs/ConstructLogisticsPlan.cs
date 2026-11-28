@@ -549,8 +549,8 @@ public static class ConstructLogisticsPlan
             }
             if (c.DefOf(mk) is { IsExtruder: true, IsPanelFormer: false })
                 alike++;
-            if (c.DefOf(mk).IsBakeOven && MachineBlocks.TryOf(c, mk, out var oa))
-                score += Math.Min(255, oa.W * oa.L); // (of ovens alike, the smallest bed that takes it: the works' walls on lines A and B, its decks on line C)
+            if (c.DefOf(mk).IsBakeOven)
+                score += ConstructBakeOven.Rank(c, mk) - (c.Parts[mk].Orders?.Count ?? 0) * 256; // (of ovens alike, the smallest bed that takes it: the works' walls on lines A and B, its decks on line C; a bigger size only past SpillAt, 2026-11-28)
             if (score < bestScore)
                 (best, bestScore) = (mk, score);
         }
@@ -654,6 +654,10 @@ public static class ConstructLogisticsPlan
             return;
         _reach[dest] = _reachStamp;
         queue[tail++] = (ushort)dest;
+        if (c.DefOf(dest).IsBakeOven)
+            for (var k = 0; k < c.RouteCount; k++)
+                if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].FedEnd && ConstructRollOut.OvenOf(c, k) == dest)
+                    Mark(Node(c, c.Routes[k].To), queue, ref tail); // (a run the oven takes: a piece waiting at its end rolls onto the bed, ConstructRollOut.RiderOnto)
         var lifts = ConstructLogistics.Map(c); // (its lifter edges: made with the map)
         while (head < tail)
         {

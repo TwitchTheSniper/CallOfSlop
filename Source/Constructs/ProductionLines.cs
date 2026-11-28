@@ -118,7 +118,7 @@ public static partial class ProductionLines
         if (st.Busy && st.Blocked == 0)
             return LineState.Running;
         ref var p = ref c.Parts[part];
-        return ConstructAssembling.StateOf(p, d, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, p, d), ConstructAssembling.FitOf(c, part)) switch
+        return ConstructAssembling.StateOf(p, d, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, p, d, ConstructAssembling.HasBed(c, part)), ConstructAssembling.FitOf(c, part)) switch
         {
             AsmState.Short => LineState.Starved,
             AsmState.OutputFull or AsmState.Blocked => st.Blocked == (byte)AsmBlock.ConveyorSmall ? LineState.Fault : LineState.Blocked,
@@ -418,7 +418,7 @@ public static partial class ProductionLines
         }
         if (md.IsAssembler)
         {
-            var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, mp, md);
+            var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, mp, md, ConstructAssembling.HasBed(c, m));
             if (why && world.StoreOf(c, m) is { } ast)
             {
                 if (ast.Blocked != 0)

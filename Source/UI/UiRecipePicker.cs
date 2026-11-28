@@ -82,7 +82,8 @@ public sealed partial class Ui
     /// <summary>What a machine's tiles depend on beyond its kind: a press's fitted die (its family), a squares Core's rate ("r4:67": its times), else "".</summary>
     public static string RecipeVariant(Construct c, int part) =>
         c.DefOf(part) is { BlockSquares: true, IsRefiner: true } ? RateVariant(ConstructRefining.RefineOf(c, part).R4)
-        : c.DefOf(part) is { IsPress: true, IsLathe: false } && ConstructPress.DieIn(c, part) is var die and >= 0 ? c.DefOf(die).DieFamily : "";
+        : c.DefOf(part) is { IsPress: true, IsLathe: false } && ConstructPress.DieIn(c, part) is var die and >= 0 ? c.DefOf(die).DieFamily
+        : c.DefOf(part).IsAssembler && !ConstructAssembling.HasBed(c, part) ? "bare" : ""; // (a bare Assembler Core, the survival start's, still builds the parts a Bake Oven bakes)
 
     private static int _rateVariantR4 = -1;
     private static string _rateVariant = "";
@@ -303,7 +304,7 @@ public sealed partial class Ui
                     groupOf[g] = gi = groups.Count;
                     groups.Add(g);
                 }
-                var baked = BakeKits.AssemblerRefuses(r.Output, d); // (a Bake Oven's part now: retiring the Assembler, phase 3)
+                var baked = BakeKits.AssemblerRefuses(r.Output, variant != "bare"); // (a Bake Oven's part now: retiring the Assembler, phase 3)
                 var ok = r.MinTier <= d.Tier && !baked;
                 var t = new RpTile
                 {

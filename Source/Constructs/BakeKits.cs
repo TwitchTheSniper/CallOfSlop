@@ -212,12 +212,13 @@ public static class BakeKits
         && AssemblingTable.Current.Of((ushort)d.Id) is { Tool.Length: 0 } && PressTable.Current.PresetKeyOf(d) == null;
 
     /// <summary>
-    /// Does a block Assembler refuse to build this part (it is a Bake Oven's)? Every part <see cref="Has"/> names; the survival start's tray
-    /// Assembler (no bed: not a block Core) still builds the rule's parts until the start gets its own oven and station (phase 6), so a
-    /// survival world can make its first Bake Oven, Building Station and Extruder. A listed kit's part it refuses as before.
+    /// Does an Assembler refuse to build this part (it is a Bake Oven's)? One with a bed (<paramref name="bed"/>: Assembly Bed Blocks
+    /// welded beside its Core) refuses every part <see cref="Has"/> names; a bare Core, the survival start's Starter Assembler, still builds
+    /// the rule's parts until the start gets its own oven and station (phase 6), so a survival world can make its first Bake Oven, Building
+    /// Station and Extruder. A listed kit's part every Assembler refuses, as before.
     /// </summary>
-    public static bool AssemblerRefuses(ConstructPartDef made, ConstructPartDef assembler) =>
-        Has(made) && (assembler.BlockRole == BlockRole.Core || IsNamed(made.Name));
+    public static bool AssemblerRefuses(ConstructPartDef made, bool bed) =>
+        Has(made) && (bed || IsNamed(made.Name));
 
     /// <summary>
     /// A kit's split into sub-kits (Sean, 2026-11-28: "utilize the different oven sizes in the factory layout"): a node's pieces, its
@@ -461,7 +462,7 @@ public static class BakeKits
             Console.WriteLine($"[bake kits] {(r != null ? "no kit by the rule (its Assembler row stays): " : "REFUSED ")}{d.Name}: its kit is {boxes} boxes, at most {ConstructParts.MaxBoxes} bake into one part");
             return null;
         }
-        Order(pieces);
+        Order(pieces, r != null);
         return [.. pieces];
     }
 
@@ -599,10 +600,11 @@ public static class BakeKits
     }
 
     /// <summary>The biggest piece first: the kit's blueprint stands on it (step 0, unturned when it can be).</summary>
-    private static void Order(List<Piece> pieces)
+    private static void Order(List<Piece> pieces, bool rule = false)
     {
         pieces.Sort((p, q) => Volume(q).CompareTo(Volume(p)));
-        var first = pieces.FindIndex(p => p.Rot == 0);
+        // (a rule kit stands on its biggest extrusion, unturned if one is: never on a component it carries, a Bulkhead Door on a Bearing)
+        var first = rule ? pieces.FindIndex(p => p.Rot == 0 && p.Name == null) : pieces.FindIndex(p => p.Rot == 0);
         if (first > 0)
             (pieces[0], pieces[first]) = (pieces[first], pieces[0]);
     }
@@ -821,7 +823,9 @@ public static class BakeKitCheck
         {
             // A box kit's solid bounds are its part's; a listed kit of formed skins isn't the part box for box (its plates are drawn shapes,
             // its solids the voids behind them), so the part's origin is held to the kit frame's origin instead (both in the body's frame).
-            var listed = c.DefOf(0).IsNamedRuntime || Array.Exists(BakeKits.KitOf(d) ?? [], p => p.Name != null) || BakeKits.KitOf(d)?.Length > MakerRoutes.Pieces(d) + 1; // (a kit with components or a sheet: its bounds aren't the part's)
+            // (a rule kit too: its pieces are the boxes rounded to whole sections and 5 cm lengths, with components and sheets on top, so
+            // its bounds aren't the part's; the part's origin is held to the kit frame's)
+            var listed = c.DefOf(0).IsNamedRuntime || !BakeKits.Names.Contains(d.Name, StringComparer.OrdinalIgnoreCase);
             var (lo, hi) = Solid(c);
             if (BakedParts.Bake(world, c, (ushort)d.Id) is not { } b)
             {

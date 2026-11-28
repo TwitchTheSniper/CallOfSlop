@@ -154,7 +154,7 @@ public static class MachineScreens
 
     private static void Assembler(in CPart p, ConstructPartDef d, CStore st, PanelCard card, in AsmFit fit)
     {
-        var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, p, d);
+        var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, p, d, fit.W > 0);
         var state = ConstructAssembling.StateOf(p, d, st, r, fit);
         var names = RecyclingTable.Current;
         var line = 2;
