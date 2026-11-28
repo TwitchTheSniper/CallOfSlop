@@ -64,7 +64,7 @@ public sealed class CraftList
 /// <summary>What a Crafting Terminal is connected to, worked out when its body's links change (<see cref="ConstructCrafting.NetOf"/>).</summary>
 public sealed class CraftNet
 {
-    public const int MaxMachines = 64, MaxStores = 64, MaxRefiners = 16;
+    public const int MaxMachines = 64, MaxStores = 128, MaxRefiners = 32, MaxSeen = 512; // (2026-11-28: Works II's main station reached 64 stores and 16 refiners and dropped the rest)
 
     public uint Key; // the body's links as they were (0: never worked out)
     public readonly int[] Machines = new int[MaxMachines]; // parts that take orders
@@ -158,7 +158,7 @@ public static class ConstructCrafting
     private static void Build(Construct c, int t, CraftNet net)
     {
         net.MachineN = net.StoreN = net.RefinerN = net.Consoles = 0;
-        Span<int> seen = stackalloc int[256];
+        Span<int> seen = stackalloc int[CraftNet.MaxSeen];
         var n = 0;
         seen[n++] = t;
         // The Line Consoles wired into its Orders port bring their machines.
@@ -190,6 +190,7 @@ public static class ConstructCrafting
             }
             n = ConstructLifters.Joined(c, at, seen, n); // (and what a lifter carries between: lifters phase 5)
         }
+        var full = false;
         for (var q = 1; q < n; q++)
         {
             var d = c.DefOf(seen[q]);
@@ -200,11 +201,15 @@ public static class ConstructCrafting
                     net.MachineWay[net.MachineN] = RouteTo(c, seen[q], t) != -1;
                     net.Machines[net.MachineN++] = seen[q];
                 }
+                else
+                    full = true;
             }
             else if (d.IsRefiner)
             {
                 if (net.RefinerN < CraftNet.MaxRefiners)
                     net.Refiners[net.RefinerN++] = seen[q];
+                else
+                    full = true;
             }
             else if (IsStore(d) && c.Parts[seen[q]].Store != 0 && net.StoreN < CraftNet.MaxStores && !ConstructLifters.LiftOnly(c, seen[q]))
             {
@@ -214,7 +219,11 @@ public static class ConstructCrafting
                 net.Via[net.StoreN] = RouteTo(c, seen[q], t);
                 net.Stores[net.StoreN++] = sq;
             }
+            else if (IsStore(d) && c.Parts[seen[q]].Store != 0 && net.StoreN >= CraftNet.MaxStores)
+                full = true;
         }
+        if (full || n >= seen.Length)
+            Console.WriteLine($"[crafting] body {c.Id} terminal {t}: its network is past a limit ({n}/{CraftNet.MaxSeen} parts walked, {net.MachineN}/{CraftNet.MaxMachines} machines, {net.StoreN}/{CraftNet.MaxStores} stores, {net.RefinerN}/{CraftNet.MaxRefiners} refiners): the rest are left out");
     }
 
     /// <summary>How a part leaves store <paramref name="s"/> for terminal <paramref name="t"/>: its conveyor (through joins), -2 a chute straight in, -1 none.</summary>

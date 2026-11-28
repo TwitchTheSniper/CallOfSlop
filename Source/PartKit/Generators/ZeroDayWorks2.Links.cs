@@ -236,6 +236,7 @@ public sealed partial class ZeroDayWorks2
                 BackRowElectronics(s);
                 Lines(s);
             }
+            CompactCells();
             Orders();
             Note($"links: {_links} laid, {_linkMissed} not; Run-out Tables: {_tables}, {_tablesMet} meeting their run");
         }
@@ -335,7 +336,7 @@ public sealed partial class ZeroDayWorks2
                             .OrderBy(e => Vector2.Distance(e.At, l.At)).Select(e => e.P).FirstOrDefault() is { } con)
                         ownConsole[l.Core] = con;
                 }
-            foreach (var (id, at, core, flow) in _labs.Where(l => l.Id == "extruder" && MathF.Sign(l.At.X) == s && !IsElectronics(l.At)).OrderByDescending(l => l.At.Y))
+            foreach (var (id, at, core, flow) in _labs.Where(l => l.Id == "extruder" && MathF.Sign(l.At.X) == s && !IsElectronics(l.At) && !IsCompactCell(l.At)).OrderByDescending(l => l.At.Y))
             {
                 var bin = Nearest("Materials Bin", at, 20); // (16 m, and 20 since the bins stand BinBack behind the moved Extruder)
                 var console = ownConsole.GetValueOrDefault(core);
@@ -610,6 +611,9 @@ public sealed partial class ZeroDayWorks2
                 if (_items.TryGetValue("Assembler", out var asms))
                     foreach (var (_, asm) in asms)
                         Cable(best.Console, asm, "Run", 7f);
+                // (the compact extruder cells beside the main station's north end: the station nearest the site's middle, ZeroDayWorks2.CompactCells.cs)
+                if (_stations.OrderBy(st => st.At.Length()).First().Core == station)
+                    CompactCellRuns(best.Console);
             }
         }
     }
