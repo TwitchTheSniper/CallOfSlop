@@ -181,9 +181,6 @@ public static class ConstructAssembling
         return new AsmFit(asm.TierPieces, asm.Overdrive, asm.Buffers, carriages, asm.W, asm.L, d.BlockCell, clear, asm.Tool);
     }
 
-    /// <summary>Has this Assembler Core a bed (Assembly Bed Blocks welded beside it)? A bare Core is the survival start's (BakeKits.AssemblerRefuses).</summary>
-    public static bool HasBed(Construct c, int part) => (uint)part < (uint)c.PartCount && MachineBlocks.TryOf(c, part, out var a) && a.W > 0;
-
     /// <summary>Would this Assembler build the recipe as it stands: its modules and its bed (inputs aside)?</summary>
     public static bool Takes(Construct c, int part, AssembleRecipe r)
     {
@@ -228,14 +225,13 @@ public static class ConstructAssembling
     /// The recipe a part works now, or null: with a queue of work orders (WorkOrders.cs) its head order's (none when the queue is empty, so
     /// a finished queue makes nothing more), else the one chosen with the configure tool.
     /// </summary>
-    /// <param name="bed">Has the Assembler a bed (<see cref="HasBed"/>)? One with a bed builds no part a Bake Oven bakes (BakeKits.AssemblerRefuses).</param>
-    public static AssembleRecipe? RecipeOf(AssemblingTable table, in CPart p, ConstructPartDef d, bool bed = true)
+    public static AssembleRecipe? RecipeOf(AssemblingTable table, in CPart p, ConstructPartDef d)
     {
         if (p.Orders is { Bill: false } q)
-            return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine && !BakeKits.AssemblerRefuses(r.Output, bed) ? r : null; // (a part a Bake Oven bakes: phase 3)
+            return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine ? r : null;
         var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
         var list = table.ByMachine[d.AsmMachine];
-        return k >= 0 && k < list.Length && !BakeKits.AssemblerRefuses(list[k].Output, bed) ? list[k] : null; // (a part made from a kit is baked, never assembled: BakeKits.cs; its row stays for saved settings and as its bill)
+        return k >= 0 && k < list.Length && !BakeKits.ListedKit(list[k].Output) ? list[k] : null; // (a part made from a listed kit is baked, never assembled: BakeKits.cs; its row stays for saved settings. A rule kit's part an Assembler still builds when no oven takes it: BakeKits.OvenServes)
     }
 
     private static void Work(ConstructWorld world, IWorldQuery query, AssemblingTable table, Construct c, int part, CStore st)
@@ -249,14 +245,12 @@ public static class ConstructAssembling
             world.StoreDirty.Add(st.Handle);
         }
         var d = c.Parts[part].D;
-        var recipe = RecipeOf(table, c.Parts[part], d, HasBed(c, part));
-        if (recipe == null && table.Recipes.Length > 0 && c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Part != ConstructParts.None
-            && (table.Of(q.Head.Part) is not { } hr || hr.Machine != d.AsmMachine || BakeKits.AssemblerRefuses(hr.Output, HasBed(c, part))))
+        var recipe = RecipeOf(table, c.Parts[part], d);
+        if (recipe == null && table.Recipes.Length > 0 && c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Part != ConstructParts.None && table.Of(q.Head.Part)?.Machine != d.AsmMachine)
         {
             // A head order no Assembler of this kind makes (a world saved before its part moved to a press: retiring the Assembler,
-            // 2026-11-28; or to a Bake Oven, phase 3) would hold the whole queue for good: it goes, said once, and whoever asked for it asks
-            // its maker again.
-            Console.WriteLine($"[assembler] body {c.Id} part {part}: dropped an order for {q.Head.Count} {(q.Head.Part < Extrusion.RuntimeBase ? ConstructParts.Def(q.Head.Part).Name : "a run-time part")}: no Assembler recipe makes it now (a press or a Bake Oven does)");
+            // 2026-11-28) would hold the whole queue for good: it goes, said once, and whoever asked for it asks its maker again.
+            Console.WriteLine($"[assembler] body {c.Id} part {part}: dropped an order for {q.Head.Count} {(q.Head.Part < Extrusion.RuntimeBase ? ConstructParts.Def(q.Head.Part).Name : "a run-time part")}: no Assembler recipe makes it now");
             q.RemoveAt(0);
             world.OrdersChanged(c);
             return;
@@ -992,7 +986,7 @@ public sealed partial class ConstructWorld
         if (StoreOf(c, part) is not { } st || !c.DefOf(part).IsAssembler || amount <= 0 || material == 0)
             return 0;
         var d = c.DefOf(part);
-        var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d, ConstructAssembling.HasBed(c, part));
+        var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d);
         if (r == null || r.MinTier > d.Tier || r.UnitsOf(material) == 0 || !ConstructAssembling.Takes(c, part, r))
         {
             NoteRefused(st, material);
@@ -1011,7 +1005,7 @@ public sealed partial class ConstructWorld
         if (StoreOf(c, part) is not { } st || !c.DefOf(part).IsAssembler)
             return false;
         var d = c.DefOf(part);
-        var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d, ConstructAssembling.HasBed(c, part));
+        var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d);
         if (r == null || r.MinTier > d.Tier || r.CountOf(item.Id) == 0 || !ConstructAssembling.Takes(c, part, r))
         {
             NoteRefusedPart(st, item.Id);
@@ -1068,7 +1062,7 @@ public sealed partial class ConstructWorld
     public bool Keeps(Construct c, int part, ushort item)
     {
         var d = c.DefOf(part);
-        return d.IsAssembler && (UsedByQueue(c, part, item) || ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d, ConstructAssembling.HasBed(c, part)) is { } r && r.CountOf(item) > 0);
+        return d.IsAssembler && (UsedByQueue(c, part, item) || ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d) is { } r && r.CountOf(item) > 0);
     }
 
     public bool WantsPart(Construct c, int part, ushort item)
@@ -1076,7 +1070,7 @@ public sealed partial class ConstructWorld
         if (StoreOf(c, part) is not { } st)
             return false;
         var d = c.DefOf(part);
-        return ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d, ConstructAssembling.HasBed(c, part)) is { } r && r.MinTier <= d.Tier && r.CountOf(item) > 0 && ConstructAssembling.Takes(c, part, r)
+        return ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d) is { } r && r.MinTier <= d.Tier && r.CountOf(item) > 0 && ConstructAssembling.Takes(c, part, r)
             && ConstructAssembling.PartRoom(c.Parts[part], d, st, r, item, ConstructAssembling.FitOf(c, part)) > 0;
     }
 }

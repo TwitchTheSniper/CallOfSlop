@@ -211,14 +211,46 @@ public static class BakeKits
         d.PhysicsOnly && !d.IsNamedRuntime && !d.IsExtrusion && AssemblingTable.Current.Problem.Length == 0
         && AssemblingTable.Current.Of((ushort)d.Id) is { Tool.Length: 0 } && PressTable.Current.PresetKeyOf(d) == null;
 
+    /// <summary>Is this part made from a kit BakeKits.json or Constructs/BakeKits/ lists (an Assembler never builds it, as before phase 3)?</summary>
+    public static bool ListedKit(ConstructPartDef made) => Has(made) && IsNamed(made.Name);
+
     /// <summary>
-    /// Does an Assembler refuse to build this part (it is a Bake Oven's)? One with a bed (<paramref name="bed"/>: Assembly Bed Blocks
-    /// welded beside its Core) refuses every part <see cref="Has"/> names; a bare Core, the survival start's Starter Assembler, still builds
-    /// the rule's parts until the start gets its own oven and station (phase 6), so a survival world can make its first Bake Oven, Building
-    /// Station and Extruder. A listed kit's part every Assembler refuses, as before.
+    /// Does an Assembler refuse to build this part, on construct <paramref name="c"/>? A listed kit's part always (as before); a rule kit's
+    /// part only while an oven on the construct takes its order (<see cref="OvenServes"/>): the Assembler stays a fallback until phase 6
+    /// (the plan: nothing stalls halfway), so a works whose lines can't make a kit's pieces (no Extruder fed rubber) still gets the part.
     /// </summary>
-    public static bool AssemblerRefuses(ConstructPartDef made, bool bed) =>
-        Has(made) && (bed || IsNamed(made.Name));
+    public static bool AssemblerRefuses(ConstructWorld world, Construct c, ConstructPartDef made) =>
+        Has(made) && (IsNamed(made.Name) || OvenServes(world, c, made));
+
+    private static readonly Dictionary<int, (int Look, bool Takes)> Served = new(64);
+    private static readonly HashSet<int> Told = new(64);
+
+    /// <summary>
+    /// Server: does a Bake Oven on <paramref name="c"/> take an order for this part (its kit's pieces made on a station's line or by an Extruder
+    /// into the bed, its tunnel big enough: ConstructBakeOven.OrderRefusal)? Worked out once a second a construct and part; said in the log once
+    /// a construct and part, which way it goes. Allocates only the first time.
+    /// </summary>
+    public static bool OvenServes(ConstructWorld world, Construct c, ConstructPartDef made)
+    {
+        var key = c.Id << 16 | made.Id;
+        var look = world.OvenLooks / 10;
+        if (Served.TryGetValue(key, out var got) && got.Look == look)
+            return got.Takes;
+        var takes = false;
+        var o = new WorkOrder { Part = (ushort)made.Id, Count = 1 };
+        string? why = null;
+        for (var m = 0; m < c.PartCount && !takes; m++)
+            if (c.DefOf(m).IsBakeOven && !c.Parts[m].Broken)
+            {
+                why = ConstructBakeOven.OrderRefusal(world, c, m, c.DefOf(m), o);
+                takes = why == null;
+            }
+        Served[key] = (look, takes);
+        if (Told.Add(key << 1 | (takes ? 1 : 0)))
+            Console.WriteLine(takes ? $"[bake kits] construct {c.Id}: the {made.Name} goes to a Bake Oven (its kit)"
+                : $"[bake kits] construct {c.Id}: the {made.Name} falls back to its Assembler row: {why ?? "no Bake Oven here"}");
+        return takes;
+    }
 
     /// <summary>
     /// A kit's split into sub-kits (Sean, 2026-11-28: "utilize the different oven sizes in the factory layout"): a node's pieces, its

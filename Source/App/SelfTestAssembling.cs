@@ -267,7 +267,7 @@ public static partial class SelfTest
         var edits = new ConstructEdits { Inventory = new SandboxInventories(), InfiniteParts = false };
         var me = (byte)0;
         var inv = edits.Inventory.Of(me);
-        AssembleRecipe? Recipe() => ConstructAssembling.RecipeOf(AssemblingTable.Current, bay.Parts[asm], def, ConstructAssembling.HasBed(bay, asm));
+        AssembleRecipe? Recipe() => ConstructAssembling.RecipeOf(AssemblingTable.Current, bay.Parts[asm], def);
         string Look(bool near = false) => ConstructAssembling.Look(def, st, Recipe(), near, inv, null);
         void WantLook(string text)
         {
@@ -557,7 +557,7 @@ public static partial class SelfTest
                 return done();
             }
             CStore? Store(Game g) => g.Constructs.Get(bay.Id) is { } cc ? g.Constructs.StoreOf(cc, asm) : null;
-            AssembleRecipe? RecipeOn(Game g) => g.Constructs.Get(bay.Id) is { } cc ? ConstructAssembling.RecipeOf(recipes, cc.Parts[asm], def, ConstructAssembling.HasBed(cc, asm)) : null;
+            AssembleRecipe? RecipeOn(Game g) => g.Constructs.Get(bay.Id) is { } cc ? ConstructAssembling.RecipeOf(recipes, cc.Parts[asm], def) : null;
             string LookOf(Game g) => Store(g) is { } s ? ConstructAssembling.Look(def, s, RecipeOn(g), false, g.SandboxInventory(g.LocalId), null) : "(no store)";
 
             // The configure tool over the wire: the recipe is a setting.

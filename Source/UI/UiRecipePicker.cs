@@ -82,8 +82,7 @@ public sealed partial class Ui
     /// <summary>What a machine's tiles depend on beyond its kind: a press's fitted die (its family), a squares Core's rate ("r4:67": its times), else "".</summary>
     public static string RecipeVariant(Construct c, int part) =>
         c.DefOf(part) is { BlockSquares: true, IsRefiner: true } ? RateVariant(ConstructRefining.RefineOf(c, part).R4)
-        : c.DefOf(part) is { IsPress: true, IsLathe: false } && ConstructPress.DieIn(c, part) is var die and >= 0 ? c.DefOf(die).DieFamily
-        : c.DefOf(part).IsAssembler && !ConstructAssembling.HasBed(c, part) ? "bare" : ""; // (a bare Assembler Core, the survival start's, still builds the parts a Bake Oven bakes)
+        : c.DefOf(part) is { IsPress: true, IsLathe: false } && ConstructPress.DieIn(c, part) is var die and >= 0 ? c.DefOf(die).DieFamily : "";
 
     private static int _rateVariantR4 = -1;
     private static string _rateVariant = "";
@@ -304,8 +303,7 @@ public sealed partial class Ui
                     groupOf[g] = gi = groups.Count;
                     groups.Add(g);
                 }
-                var baked = BakeKits.AssemblerRefuses(r.Output, variant != "bare"); // (a Bake Oven's part now: retiring the Assembler, phase 3)
-                var ok = r.MinTier <= d.Tier && !baked;
+                var ok = r.MinTier <= d.Tier;
                 var t = new RpTile
                 {
                     Value = ok ? k + 1 : -1,
@@ -323,7 +321,6 @@ public sealed partial class Ui
                 t.Search = $"{r.Name} {r.Batch} {g}".ToLowerInvariant();
                 t.Tip = ok
                     ? $"{r.Name}{(r.Count > 1 ? $" x{r.Count}" : "")}: {r.Batch}, {Secs(r.Seconds / speed)} a batch on this {d.Name}.{(r.Needs != 0 ? $" Needs {AsmFit.ModuleWords(r.Needs)} on the Core." : "")}"
-                    : baked ? $"{r.Name}: baked in a Bake Oven from a kit of extrusions, not assembled ({r.Batch} is its bill)."
                     : $"{r.Name}: needs a tier {r.MinTier} assembler; this one is tier {d.Tier}.";
                 tiles.Add(t);
             }

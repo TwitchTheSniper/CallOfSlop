@@ -2800,12 +2800,12 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   one-step kit is built at a station as any other. A rule kit is matched by its oven's orders (its head, then its queue: rule kits are
   too many to hash at a match's start). **Which oven:** an order goes to the smallest oven whose tunnel holds the kit
   (`ConstructBakeOven.BedLacks` refuses the rest), by size class (MakerRoutes.Ovens): a bigger oven takes one only when every smaller
-  one that fits has `SpillAt` (4) more orders queued (`ConstructBakeOven.Rank`, used by a station's ask and by chains). **Assemblers:**
-  a block Assembler refuses every baked part (`BakeKits.AssemblerRefuses`: its recipe choice, its orders, the catalogue and the recipe
-  picker, where it shows dimmed "baked in a Bake Oven"); a queued order for one is dropped with a log line and the station that asked
-  orders it from an oven. A bare Assembler Core (no Assembly Bed Blocks: the survival start's Starter Assembler; `ConstructAssembling.HasBed`, passed to
-  `RecipeOf` and its picker as the variant "bare") still builds the rule's parts until the start gets its own station and oven (phase 6),
-  so a survival world can make its first ones. **`--maker-report`** prints each baked part's tree (its
+  one that fits has `SpillAt` (4) more orders queued (`ConstructBakeOven.Rank`, used by a station's ask and by chains). **Assemblers:** the
+  Assembler stays a fallback until phase 6. A listed kit's part no Assembler builds, as before; a rule kit's part an Assembler refuses
+  only while a Bake Oven on its construct takes the order (`BakeKits.OvenServes`: `OrderRefusal`, the kit's pieces made on a station's
+  line, its tunnel big enough; worked out once a second a construct and part, and the log says once which way each part went), else its
+  row builds it (orders, chains, the catalogue, `MachineMakes`). A component a station asks for a bake kit it builds ranks Low at its
+  maker (`ConstructCrafting.AskRank`), so the fittings' Bearings never hold the ship's own pressed parts. **`--maker-report`** prints each baked part's tree (its
   pieces, sub-kits and the oven each bakes on) and the work per oven size, whole kits against split ones: a kit too big for the small oven
   is split along its boxes (`BakeKits.Split`: the gap along its longest side that leaves the smallest ovens) until each sub-kit fits it
   or is one piece. 2026-11-28: 140 one-piece bakes, 2,104 station kits, 70 listed, 38 still Assembler (the tool rows); 326 parts split;
@@ -2814,7 +2814,8 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   factory still bakes a big kit whole on the oven that holds it (sub-kits as their own orders, baked pieces fitted as the next level's
   kit, need an order for a baked sub-assembly: the next phase). `--bake-kit rule:N` checks every Nth rule kit. A one-piece kit's direct
   feed needs an Extruder whose conveyor reaches a run into the oven, which no shipped works has yet. On Zero Day Works II (300 s,
-  `--station-check ... --build "Zero Day Frigate" --dies`) the frigate fitted 14 of 346 parts (main 17): its Lift, Retro and Drive Jets
-  and Heavy RCS Thrusters now wait for a rubber sheet no line's Extruder is fed rubber for, and the fittings' kits order Circuit Boards
-  and Bearings from the same presses as the frigate's own pressed parts; the works rebuild (phase 5) gives them their lines. The
+  `--station-check ... --build "Zero Day Frigate" --dies`) the frigate fitted 16 of 346 parts (main 17; the leg pod parts come off the presses in another
+  order): its kits with a rubber or concrete sheet (Lift, Retro and Drive Jets, Heavy RCS Thrusters, ladders, lockers) fall back to its
+  Assemblers, since no line's Extruder there is fed rubber; its doors and hatches go to the ovens. The works rebuild (phase 5) gives
+  them their lines. The
   Railgun's 32.9 m kit fits no oven (it never fitted an Assembler bed either).

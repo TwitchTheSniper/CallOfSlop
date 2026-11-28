@@ -121,7 +121,7 @@ public static class WorkOrders
         if (o.IsPanel)
             return $"the {d.Name} takes no panels: {o.Name} is a Panel Former's order";
         if (d.IsAssembler)
-            return AssemblerRefusal(c, part, d, o);
+            return AssemblerRefusal(world, c, part, d, o);
         if (IsWholeFormer(d) && !(d.IsGrowFormer && o.IsPiece && o.Key.Shape == ExShape.Wheel))
             return FormerRefusal(world, c, part, d, o); // (a Grow Former's wheel goes on to the wheel's checks below)
         if (!o.IsPiece)
@@ -179,14 +179,14 @@ public static class WorkOrders
     }
 
     /// <summary>An Assembler's side: a catalogue part its family has a recipe for, at its tier, and room in the queue.</summary>
-    private static string? AssemblerRefusal(Construct c, int part, ConstructPartDef d, in WorkOrder o)
+    private static string? AssemblerRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
     {
         if (o.IsPiece)
             return $"the {d.Name} makes catalogue parts: a {Extrusion.Label(o.Key)} is {Maker(o.Key)}'s order";
         var made = ConstructParts.Def(o.Part);
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} parts";
-        if (BakeKits.AssemblerRefuses(made, ConstructAssembling.HasBed(c, part)))
+        if (BakeKits.AssemblerRefuses(world, c, made))
             return $"the {made.Name} is baked from a kit of extrusions: a Bake Oven's order (Sean, 2026-11-23; every placed part, 2026-11-28)";
         if (AssemblingTable.Current.Of(o.Part) is not { } r)
             return FormerPresets.Line(made) ?? $"no recipe makes the {made.Name}";
