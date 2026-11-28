@@ -2519,7 +2519,6 @@
     {"output": "Repulsor", "materials": {"steel": 11}, "seconds": 3.7, "parts": {"Field Coil": 2, "Wiring Loom": 1, "Circuit Board": 2}, "techTier": 3, "tool": "thruster", "needs": ["Power Coupling", "Servo Rack", "Plasma Conditioner"]},
     {"output": "Capital Decoupler", "materials": {"steel": 2000, "copper": 2000}, "parts": {"Circuit Board": 20}, "seconds": 600.0, "techTier": 4, "tool": "thruster", "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Capital Rocket Engine", "materials": {"steel": 2000}, "seconds": 600.0, "parts": {"Thrust Chamber": 20, "Wiring Loom": 10}, "techTier": 4, "tool": "thruster", "needs": ["Power Coupling"]},
-    {"output": "Decoupler", "materials": {"steel": 2, "copper": 3}, "parts": {"Circuit Board": 1}, "seconds": 2.3, "techTier": 3, "tool": "thruster", "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Large Decoupler", "materials": {"steel": 512, "copper": 853}, "parts": {"Circuit Board": 20}, "seconds": 78.8, "techTier": 3, "tool": "thruster", "needs": ["Power Coupling", "Servo Rack"]},
     {"output": "Large Rocket Engine", "materials": {"steel": 2000}, "seconds": 600.0, "parts": {"Thrust Chamber": 20, "Wiring Loom": 10}, "techTier": 3, "tool": "thruster", "needs": ["Power Coupling"]},
     {"output": "Large Solid Booster", "materials": {"steel": 2000}, "seconds": 600.0, "parts": {"Thrust Chamber": 20}, "techTier": 3, "tool": "thruster"},

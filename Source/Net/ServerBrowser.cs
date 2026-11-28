@@ -826,7 +826,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 487: a construct holds up to 1,000 links (Construct.MaxRoutes, was 254): a link's index is a u16 wherever it was a u8 (CBody's
     //      link count and each link's parent, the paint block's painted links, CBodyKind.Riders' link and junction, CActKind.Route's
     //      parent, CActKind.RouteEdit's link, CActKind.Loom's links, CActKind.Rider's conveyor); none is 65535 (CRoute.NoParent).
-    public const ushort ProtocolVersion = 487;
+    // 488: retiring the Assembler, phase 4: the Decoupler's Assembler row went to a Button die pattern appended at the die's end (an
+    //      Assembler's recipe choice, sent as a value, numbers its list anew past the Capital Rocket Engine; press pattern numbers keep),
+    //      and cloth extrudes (a piece's material byte may be cloth).
+    public const ushort ProtocolVersion = 488;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

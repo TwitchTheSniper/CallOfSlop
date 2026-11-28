@@ -145,7 +145,7 @@ public static partial class ConstructBakeOven
             if (!md.IsExtruder || md.IsPanelFormer || c.Parts[m].Broken || md.BlockRole is not (BlockRole.None or BlockRole.Core))
                 continue;
             var q = c.Parts[m].Orders?.Count ?? 0;
-            if (q < bestQ && ConstructLogisticsPlan.Leads(c, m, part) && WorkOrders.Refusal(world, c, m, o) == null)
+            if (q < bestQ && ConstructLogisticsPlan.Leads(c, m, part) && WorkOrders.Refusal(world, c, m, o) == null && ConstructExtruder.Feeds(world, c, m, key.Material))
                 (best, bestQ) = (m, q);
         }
         return best;
@@ -301,7 +301,9 @@ public static partial class ConstructBakeOven
             var o = ConstructStation.OrderFor(pd, 1);
             var any = false;
             for (var m = 0; m < mn && !any; m++)
-                any = WorkOrders.Refusal(world, c, mine[m], o) == null;
+                any = WorkOrders.Refusal(world, c, mine[m], o) == null
+                    && (!pd.IsExtrusion || !c.DefOf(mine[m]).IsExtruder || c.DefOf(mine[m]).IsPanelFormer || pd.ExKey.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe)
+                        || ConstructExtruder.Feeds(world, c, mine[m], pd.ExKey.Material)); // (an empty Extruder nothing brings the piece's material to: phase 4 review)
             if (!any)
                 return pd.Name;
         }

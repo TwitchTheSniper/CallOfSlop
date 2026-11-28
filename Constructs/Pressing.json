@@ -2294,6 +2294,24 @@
       "max": 1
      },
      "presetsOnly": true
+    },
+    {
+     "id": "decoupler",
+     "like": "Decoupler",
+     "label": "decoupler",
+     "preset": "plate 50x10x50 steel",
+     "auto": false,
+     "blanks": [
+      "plate"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 1
+     },
+     "presetsOnly": true
     }
    ]
   },
@@ -11435,6 +11453,12 @@
    "die": "button",
    "pattern": "drivingmodule",
    "blank": "plate 30x10x30 steel"
+  },
+  {
+   "part": "Decoupler",
+   "die": "button",
+   "pattern": "decoupler",
+   "blank": "plate 50x10x50 steel"
   }
  ]
 }
