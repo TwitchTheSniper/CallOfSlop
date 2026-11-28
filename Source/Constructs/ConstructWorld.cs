@@ -464,6 +464,9 @@ public sealed partial class ConstructWorld
         ClearBaked(); // (and its baked designs' list; the shared table keeps them by hash: BakedParts.cs)
         OvenServed.Clear(); // (and which rule kits its ovens take: the next world's bodies reuse the ids, BakeKits.OvenServes)
         OvenServeTold.Clear();
+        OvenSplit.Clear(); // (and which ovens build their kits split: ConstructBakeOven.PrintFor)
+        OvenSplitTold.Clear();
+        OvenSplitLook = int.MinValue;
         DesignStamp++;
         foreach (var c in Bodies)
             Removed.Add(c.Id);

@@ -952,7 +952,9 @@ public static class WorkOrders
             else if (pc is >= 1 and <= MaxCount && AssembledParts.Order(pn2, pc) is { } byKey)
                 q.Add(byKey with { Made = Math.Min(pm, pc) }); // (a rack or design by its key, its id made again here)
             else if (pc is >= 1 and <= MaxCount && BakeKits.SubOrder(pn2, pc) is { } sub)
-                q.Add(sub with { Made = Math.Min(pm, pc) }); // (a sub-assembly by its baked key: a sub-kit this build no longer splits is left out)
+                q.Add(sub with { Made = Math.Min(pm, pc) }); // (a sub-assembly by its baked key)
+            else if (pn2.StartsWith(BakedParts.Prefix, StringComparison.Ordinal))
+                Console.WriteLine($"[orders] a saved order for the sub-assembly {pn2} is left out: this build splits no kit into it (BakeKits.Subs.cs)");
             return;
         }
         var mask = r.U64();

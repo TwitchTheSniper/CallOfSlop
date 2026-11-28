@@ -1839,7 +1839,11 @@ public static class ConstructCrafting
                     var (nid, ngot, nasked, nsent) = (r.U16(), r.U16(), r.U16(), r.U16());
                     var pressedWhat = Pressed.IsName(nm) ? WorkOrders.PressedOrder(nm, ncnt) : AssembledParts.Order(nm, ncnt) ?? BakeKits.SubOrder(nm, ncnt); // (a sub-assembly by its baked key too) // (a pressed part's order, Press phase 4; a rack or a design by its key)
                     if (ncnt is 0 or > WorkOrders.MaxCount || !HullLoft.IsFormedName(nm) && !HullLoft.IsCutName(nm) && pressedWhat == null || nm.Length > ConstructParts.MaxRuntimeName || q.Count >= MaxOrders)
+                    {
+                        if (pressedWhat == null && nm.StartsWith(BakedParts.Prefix, StringComparison.Ordinal))
+                            Console.WriteLine($"[crafting] a saved line for the sub-assembly {nm} is left out: this build splits no kit into it (BakeKits.Subs.cs)");
                         continue;
+                    }
                     q.Items[q.Count++] = new CraftOrder { What = pressedWhat ?? ConstructPanelFormer.Order(nm, ncnt), Id = nid, Got = Math.Min(ncnt, ngot), Sent = nsent, Asked = nasked, Where = NoPart, Note = "", Def = ConstructParts.None };
                     continue;
                 }

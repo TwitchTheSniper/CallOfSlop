@@ -43,6 +43,7 @@ public static partial class BakeKits
     private static readonly Dictionary<string, SplitKit?> Splits = new(StringComparer.OrdinalIgnoreCase); // by part name
     private static readonly Dictionary<string, SubKit> SubsByKey = new(StringComparer.Ordinal);
     private static AssemblingTable? _subsTable;
+    private static readonly HashSet<string> GoneSplits = new(StringComparer.OrdinalIgnoreCase);
     private static int _splitCount, _noHelp, _tooBig;
 
     /// <summary>
@@ -126,7 +127,17 @@ public static partial class BakeKits
     private static ConstructBuild.Blueprint? FindSubPrint(string name)
     {
         if (name.EndsWith(SplitSuffix, StringComparison.OrdinalIgnoreCase))
-            return ConstructParts.Find(name[..^SplitSuffix.Length]) is { } d ? SplitPrint(d) : null;
+        {
+            if (ConstructParts.Find(name[..^SplitSuffix.Length]) is not { } d)
+                return null;
+            if (SplitPrint(d) is { } sp)
+                return sp;
+            // (a job saved on a split this build no longer makes, a mod's table or a changed generator: its whole kit, said once)
+            lock (Gate)
+                if (GoneSplits.Add(d.Name))
+                    Console.WriteLine($"[bake kits] {name}: this build doesn't split the {d.Name}'s kit: its whole kit stands in");
+            return BlueprintOf(d);
+        }
         if (name.StartsWith(BakedParts.Prefix, StringComparison.Ordinal) && name.EndsWith(KitSuffix, StringComparison.Ordinal))
             return SubOf(name[..^KitSuffix.Length]) is { } s ? SubPrint(s) : null;
         return null;

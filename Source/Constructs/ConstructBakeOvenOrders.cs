@@ -17,8 +17,9 @@ public sealed partial class ConstructWorld
     internal int OvenServeTick = int.MinValue, OvenServeLeft; // (the work-outs left in this SealTick: BakeKits.ServeBudget)
 
     /// <summary>Server: does an oven build a part's kit split ((body, oven, part): ConstructBakeOven.PrintFor), with the oven look and body stamp it was worked out at. Not saved.</summary>
-    internal readonly Dictionary<long, (int Look, int Stamp, bool Split)> OvenSplit = new(16);
+    internal readonly Dictionary<long, (int Look, int Stamp, int Station, bool Split)> OvenSplit = new(16);
     internal readonly HashSet<long> OvenSplitTold = new(16);
+    internal int OvenSplitLook = int.MinValue, OvenSplitLeft; // (PrintFor's work-outs left this oven look: SplitBudget)
 }
 
 /// <summary>
@@ -369,7 +370,7 @@ public static partial class ConstructBakeOven
         if (world.OvenLooks % KitEvery != part % KitEvery)
             return;
         if (!WorkOrders.HeadOf(c.Parts[part], out var head) || BakeKits.OvenDef(head) is not { } d
-            || PrintFor(world, c, part, d) is not { } bp)
+            || BakeKits.PrintOfOrder(d) is not { } bp) // (the whole kit or a sub-kit's: its footprint picks the station; the split kit is chosen at the start, PrintFor)
             return;
         if (head.IsSub)
             world.KeepBaked(BakeKits.SubOf(d)!.Hash); // (its design goes to every peer and the save with its first kit: once)
@@ -445,7 +446,7 @@ public static partial class ConstructBakeOven
                 Note(world, c, part, $"no Building Station free for the {d.Name} kit (idle, powered, its bay big enough)");
                 return;
             }
-            if (ConstructStation.Start(world, c, idle, bp.Name, 0) is { } refused)
+            if (ConstructStation.Start(world, c, idle, (PrintFor(world, c, part, d, idle) ?? bp).Name, 0) is { } refused)
                 Note(world, c, part, $"the {d.Name} kit: {refused}");
             else
             {
@@ -456,7 +457,7 @@ public static partial class ConstructBakeOven
         }
         // Kits under way: the next order's kit starts ahead, only at a station whose builds roll onto this bed (it waits at the run's end
         // behind the one before; a crane-fed station's kit would wait in its bay and hold the station for another oven's kit).
-        if (ahead < 0 || KitAfter(world, c, part, under) is not { } next || !ConstructStation.QuickFits(next, ConstructStation.BaySize(c, ahead)))
+        if (ahead < 0 || KitAfter(world, c, part, under, ahead) is not { } next || !ConstructStation.QuickFits(next, ConstructStation.BaySize(c, ahead)))
             return;
         if (ConstructStation.Start(world, c, ahead, next.Name, 0) is { } no2)
             Console.WriteLine($"[oven] construct {c.Id} part {part}: the next kit ({next.Name}) can't start ahead: {no2}");
@@ -465,43 +466,61 @@ public static partial class ConstructBakeOven
     }
 
     /// <summary>
-    /// Server: the blueprint oven <paramref name="part"/> builds for an order of <paramref name="d"/>: a sub-kit's own; a split kit
-    /// (BakeKits.Subs.cs: its baked sub-assemblies and leftover pieces) when every sub-kit of it is taken by another oven on the construct of a
-    /// smaller size than this one (so the split kit never waits on its own oven, nor a sub-kit on a big oven's queue); else the whole kit.
-    /// Worked out again every <see cref="SplitEvery"/> oven looks a part and oven. Allocates nothing past each pair's first.
+    /// Server: the blueprint oven <paramref name="part"/> builds for an order of <paramref name="d"/> at station <paramref name="station"/>:
+    /// a sub-kit's own; a split kit (BakeKits.Subs.cs: its baked sub-assemblies and leftover pieces) when every sub-kit of it is taken by
+    /// another oven of a smaller size than this one that the station's orders reach (its craft network, as ConstructCrafting.Place asks) and
+    /// whose bed leads to the station (ConstructLogisticsPlan.Leads: the baked piece can come to it), so the split kit never waits on its own
+    /// oven, on a sub-kit queued behind a big oven's order, or on a piece nothing brings; else the whole kit. Kept a part, oven and station,
+    /// worked out again every <see cref="SplitEvery"/> oven looks, at most <see cref="SplitBudget"/> work-outs a look of the world (an
+    /// answer older stands meanwhile; none yet: the whole kit). Allocates nothing past each key's first.
     /// </summary>
-    internal static ConstructBuild.Blueprint? PrintFor(ConstructWorld world, Construct c, int part, ConstructPartDef d)
+    internal static ConstructBuild.Blueprint? PrintFor(ConstructWorld world, Construct c, int part, ConstructPartDef d, int station)
     {
         if (BakeKits.IsSub(d) || BakeKits.SplitOf(d) is not { } sk || BakeKits.SplitPrint(d) is not { } split)
             return BakeKits.PrintOfOrder(d);
         var key = (long)c.Id << 40 | (long)part << 20 | (uint)d.Id & 0xFFFFF;
-        if (world.OvenSplit.TryGetValue(key, out var got) && world.OvenLooks - got.Look < SplitEvery && got.Stamp == c.RebuildStamp)
+        var had = world.OvenSplit.TryGetValue(key, out var got);
+        if (had && got.Station == station && world.OvenLooks - got.Look < SplitEvery && got.Stamp == c.RebuildStamp)
             return got.Split ? split : BakeKits.BlueprintOf(d);
+        if (world.OvenSplitLook != world.OvenLooks)
+            (world.OvenSplitLook, world.OvenSplitLeft) = (world.OvenLooks, SplitBudget);
+        if (world.OvenSplitLeft <= 0)
+            return had && got.Station == station && got.Split ? split : BakeKits.BlueprintOf(d); // (this look's work-outs are spent)
+        world.OvenSplitLeft--;
+        var takes = SplitServed(world, c, part, sk, station);
+        world.OvenSplit[key] = (world.OvenLooks, c.RebuildStamp, station, takes);
+        if (world.OvenSplitTold.Add(key << 1 | (takes ? 1L : 0L)))
+            Console.WriteLine(takes ? $"[oven] construct {c.Id} part {part}: the {d.Name} is built split at station {station} ({sk.Subs.Length} sub-kits on smaller ovens, {sk.Items.Length} kit items)"
+                : $"[oven] construct {c.Id} part {part}: the {d.Name} is built whole: no smaller oven that station {station} orders from and that leads to it takes all its {sk.Subs.Length} sub-kits");
+        return takes ? split : BakeKits.BlueprintOf(d);
+    }
+
+    /// <summary>Does every sub-kit of <paramref name="sk"/> go to a smaller oven than <paramref name="part"/> on station <paramref name="station"/>'s craft network whose bed leads to the station?</summary>
+    private static bool SplitServed(ConstructWorld world, Construct c, int part, BakeKits.SplitKit sk, int station)
+    {
+        if (station < 0 || station >= c.PartCount || !c.DefOf(station).IsCraftTerminal || world.StoreOf(c, station) == null)
+            return false;
+        var net = ConstructCrafting.NetOf(world, c, station);
         var mine = SizeClass(c, part);
-        var takes = true;
         foreach (var sub in sk.Subs)
         {
             if (BakeKits.SubOrder(sub.Key, 1) is not { } o)
-            {
-                takes = false;
-                break;
-            }
+                return false;
             var any = false;
-            for (var m = 0; m < c.PartCount && !any; m++)
-                if (m != part && c.DefOf(m).IsBakeOven && !c.Parts[m].Broken && SizeClass(c, m) < mine)
-                    any = OrderRefusal(world, c, m, c.DefOf(m), o, say: false) == null;
-            if (!any)
+            for (var i = 0; i < net.MachineN && !any; i++)
             {
-                takes = false;
-                break;
+                var m = net.Machines[i];
+                if (m != part && c.DefOf(m).IsBakeOven && !c.Parts[m].Broken && SizeClass(c, m) < mine
+                    && OrderRefusal(world, c, m, c.DefOf(m), o, say: false) == null && ConstructLogisticsPlan.Leads(c, m, station))
+                    any = true;
             }
+            if (!any)
+                return false;
         }
-        world.OvenSplit[key] = (world.OvenLooks, c.RebuildStamp, takes);
-        if (world.OvenSplitTold.Add(key << 1 | (takes ? 1L : 0L)))
-            Console.WriteLine(takes ? $"[oven] construct {c.Id} part {part}: the {d.Name} is built split ({sk.Subs.Length} sub-kits on smaller ovens, {sk.Items.Length} kit items)"
-                : $"[oven] construct {c.Id} part {part}: the {d.Name} is built whole: no smaller oven here takes all its {sk.Subs.Length} sub-kits");
-        return takes ? split : BakeKits.BlueprintOf(d);
+        return true;
     }
+
+    private const int SplitBudget = 4; // work-outs of PrintFor a world's oven look
 
     /// <summary>An oven's size class (<see cref="MakerRoutes.Ovens"/>, by its bed and tunnel; past the last: bigger), or int.MaxValue with no bed. Allocates nothing.</summary>
     internal static int SizeClass(Construct c, int m)
@@ -533,14 +552,14 @@ public static partial class ConstructBakeOven
     }
 
     /// <summary>The kit of the queue's unit after the first <paramref name="under"/> (the kits under way), in queue order; null when the queue holds no more.</summary>
-    private static ConstructBuild.Blueprint? KitAfter(ConstructWorld world, Construct c, int part, int under)
+    private static ConstructBuild.Blueprint? KitAfter(ConstructWorld world, Construct c, int part, int under, int station)
     {
         if (c.Parts[part].Orders is not { Count: > 0, Bill: false } q)
             return null;
         for (var k = 0; k < q.Count; k++)
         {
             ref readonly var o = ref q.Items[k];
-            if (BakeKits.OvenDef(o) is not { } d || PrintFor(world, c, part, d) is not { } bp)
+            if (BakeKits.OvenDef(o) is not { } d || PrintFor(world, c, part, d, station) is not { } bp)
                 continue;
             if (under < o.Left)
                 return bp;
@@ -566,7 +585,7 @@ public static partial class ConstructBakeOven
             if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && c.Parts[s].Station is { } j && KitUnderWay(world, c, s, j, onWay)
                 && ConstructRollOut.RunOut(c, s) is var r and >= 0 && ConstructRollOut.OvenOf(c, r) == oven)
                 under++;
-        return KitAfter(world, c, oven, under + ahead); // (ahead: that many kits further on)
+        return KitAfter(world, c, oven, under + ahead, t); // (ahead: that many kits further on)
     }
 
     private static void Note(ConstructWorld world, Construct c, int part, string note)

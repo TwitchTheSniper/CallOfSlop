@@ -2865,9 +2865,13 @@ the work spreads over every oven size instead of everything waiting on the big o
 - **The final bake.** `BakedParts.Bake` asks `BakeKits.Target` for the group as it stands, then with every baked subpart read as its
   design's subparts (`Flat`), so the split kit's design is the whole kit's and comes out as the part; anything else still bakes as before
   (a baked part of baked parts).
-- **Which kit an oven builds** (`ConstructBakeOven.PrintFor`, worked out again about every 20 s an oven and part): the split kit when every
-  sub-kit of it is taken by another oven on the construct of a smaller size class than this one, else the whole kit as before; the log says
-  which, once. A station's kit of either print counts as the order's (`BakeKits.IsKitOf`), so a change between them never starts a second.
+- **Which kit an oven builds** (`ConstructBakeOven.PrintFor`, at the station it starts the kit at): the split kit when every sub-kit of it
+  is taken by an oven of a smaller size class than this one that the station's orders reach (its craft network, as `ConstructCrafting.Place`
+  asks) and whose bed leads to the station (`ConstructLogisticsPlan.Leads`), else the whole kit as before; the log says which, once. Kept
+  an oven, part and station, worked out again about every 20 s, at most 4 work-outs an oven look of the world. A station's kit of either
+  print counts as the order's (`BakeKits.IsKitOf`), so a change between them never starts a second. A saved `{part} split kit` job whose
+  split this build doesn't make takes the whole kit (said once); a saved sub-assembly order this build has no sub-kit for is left out, said
+  in the log.
 - **Not split:** a kit that fits no oven whole (184 parts at the warm, the Zero Day Railgun's 32.9 m among them, the capital drive
   shafts and axles): the split kit's last bake holds the whole kit as its own does, so splitting can't bring it onto any oven, and its
   Assembler row stays its maker. 56 more split into nothing smaller.
