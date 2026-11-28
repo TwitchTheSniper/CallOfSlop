@@ -288,9 +288,10 @@ public sealed class Assembling : IPartGenerator
     {
         ["engine"] = "Piston Set", ["transmission"] = "Gear Set", ["differential"] = "Gear Set", ["transfer"] = "Gear Set", ["joint"] = "Servo Motor",
         ["battery"] = "Circuit Board", ["alternator"] = "Copper Coil", ["logic"] = "Circuit Board", ["hose"] = "Wiring Loom",
-        ["suspension"] = "Bearing", ["seat"] = "Tyre Carcass", ["hinge"] = "Bearing", ["door"] = "Bearing", ["wheel"] = "Tyre Carcass",
+        ["suspension"] = "Bearing", ["hinge"] = "Bearing", ["door"] = "Bearing", ["wheel"] = "Tyre Carcass",
         ["enginePiece"] = "Piston Set", ["generator"] = "Copper Coil",
         // (no Gear Set in a gun or a thruster, Sean 2026-11-28: they stay in drivetrain parts; a gun's or a thruster's working comes from its die)
+        // (no Tyre Carcass in a seat, Sean 2026-11-28: a Flight Couch needs no tyre; retiring the Assembler, phase 2)
     };
 
     // What a part's class costs: (material, share of the part's mass as units of it per kg, second material or null).

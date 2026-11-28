@@ -288,10 +288,11 @@ public static partial class ConstructLifters
 
     /// <summary>
     /// The die families a stocked wall takes, first what the Zero Day frigate's fittings and their Assembler parts are pressed on (Gear
-    /// Sets, Circuit Boards, Looms and Coils, switches and gates, housings, brackets, plates, hinges, carriages: its bill), then the rest.
+    /// Sets, Circuit Boards, Bearings (the Ring, phase 2 of retiring the Assembler), Looms and Coils, switches and gates, housings, brackets,
+    /// plates, hinges, carriages: its bill), then the rest.
     /// </summary>
-    private static readonly string[] StockOrder = ["Gear", "Board", "Cable", "Button", "Control", "Housing", "Bracket", "Plate", "Actuator", "Beam",
-        "Shaft", "Spring", "Drive", "Arm", "Engine", "Piston", "Cylinder", "Tank", "Barrel", "Receiver"];
+    private static readonly string[] StockOrder = ["Gear", "Board", "Ring", "Cable", "Button", "Control", "Housing", "Bracket", "Plate", "Actuator", "Beam",
+        "Shaft", "Spring", "Drive", "Arm", "Engine", "Piston", "Cylinder", "Tank", "Barrel", "Receiver", "Bell", "Shell"];
 
     /// <summary>Is a die of this kind on wall <paramref name="wall"/>'s shelves? (A family fitted in one press of the pair gets a shelf too: the other press may want it while the first holds it.)</summary>
     private static bool HasDie(ConstructWorld world, Construct c, int wall, ConstructPartDef die)

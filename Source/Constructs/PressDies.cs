@@ -122,6 +122,7 @@ public sealed class PressPattern
     /// <see cref="ByKnot"/> this pattern with each knot's part as its like and its blank as its preset (made at load: a press allocates nothing).
     /// </summary>
     public bool LikeNearest;
+    public bool PresetsOnlyAsked; // its pattern says "presetsOnly" (retiring the Assembler, phase 2: a catalogue part moved off the Assembler)
     public bool PresetsOnly; // a door's pattern (the leg pods, 2026-11-22), a ship works piece's or a capacitor's: its presets' blanks only, since a stretched copy would keep its like's hinge, travel and gear reach, or its thrust, race and charge (set after the presets load)
     public bool Auto = true; // "auto": false: never what a press set to Auto makes, by a preset's blank or the nearest (the Pattern setting or an order picks it: the generated receivers, sized parts phase 6)
     public PressPreset[] Knots = [];
@@ -279,7 +280,7 @@ internal static class PressDies
         }
         foreach (var die in t.Dies)
             foreach (var pat in die.Patterns)
-                pat.PresetsOnly = (pat.Like.Door != null || pat.Like.WorksKind != WorksKind.None && !Pressed.SizesWorks(pat) || pat.Like.CapacitorKJ > 0) && Array.Exists(die.Presets, q => q.Pattern == pat);
+                pat.PresetsOnly = (pat.PresetsOnlyAsked || pat.Like.Door != null || pat.Like.WorksKind != WorksKind.None && !Pressed.SizesWorks(pat) || pat.Like.CapacitorKJ > 0) && Array.Exists(die.Presets, q => q.Pattern == pat);
         // A likeBy-nearest pattern's knots: its presets by size across (one at least; each a part of its like part's kind).
         foreach (var die in t.Dies)
             foreach (var pat in die.Patterns)
@@ -375,7 +376,7 @@ internal static class PressDies
 
     private static PressPattern PatternOf(JsonElement e, string die, PressDie d, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
-        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along", "likeBy", "auto", "dieFeatures");
+        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along", "likeBy", "auto", "dieFeatures", "presetsOnly");
         var id = e.GetProperty("id").GetString() ?? "";
         if (id.Length is 0 or > 16 || !id.All(c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-'))
             throw new FormatException($"{die}: a pattern's id is 1 to 16 of a-z, 0-9 and -");
@@ -397,6 +398,8 @@ internal static class PressDies
             p.LikeBody = body.GetString() switch { "like" => true, "blank" => false, _ => throw new FormatException($"{where}: \"body\" is \"blank\" or \"like\"") };
         if (e.TryGetProperty("dieFeatures", out var df))
             p.NoDieFeatures = df.ValueKind switch { JsonValueKind.False => true, JsonValueKind.True => false, _ => throw new FormatException($"{where}: \"dieFeatures\" is true or false") };
+        if (e.TryGetProperty("presetsOnly", out var po)) // (retiring the Assembler, phase 2: a moved catalogue part is pressed at its preset blanks only)
+            p.PresetsOnlyAsked = po.ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, _ => throw new FormatException($"{where}: \"presetsOnly\" is true or false") };
         if (e.TryGetProperty("auto", out var auto))
             p.Auto = auto.ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, _ => throw new FormatException($"{where}: \"auto\" is true or false") };
         if (e.TryGetProperty("likeBy", out var likeBy))

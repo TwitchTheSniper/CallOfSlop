@@ -303,7 +303,7 @@ public sealed partial class PressParts
 
     /// <summary>The parts whose Assembler rows go with this (Assembling.PressedNow).</summary>
     internal static IEnumerable<string> MovedToPress() =>
-        MorePatterns.Select(m => m.Like).Concat(MoreDrivePatterns.Select(d => d.Like)).Concat(MorePresets.Select(p => p.Part));
+        MorePatterns.Select(m => m.Like).Concat(MoreDrivePatterns.Select(d => d.Like)).Concat(MorePresets.Select(p => p.Part)).Concat(Phase2Moves.Select(m => m.Part));
 }
 
 internal static class PatternListExtensions
