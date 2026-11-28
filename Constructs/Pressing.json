@@ -1453,6 +1453,60 @@
       "max": 1
      },
      "presetsOnly": true
+    },
+    {
+     "id": "serverrack",
+     "like": "Server Rack",
+     "label": "server rack",
+     "preset": "hollow 60x150x55 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 5.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 5
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "robotshell",
+     "like": "Robot Shell",
+     "label": "robot shell",
+     "preset": "hollow 80x185x45 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 2
+     },
+     "presetsOnly": true
+    },
+    {
+     "id": "mmu",
+     "like": "Manned Manoeuvring Unit",
+     "label": "manned manoeuvring unit",
+     "preset": "hollow 70x105x35 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 6.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 6
+     },
+     "presetsOnly": true
     }
    ]
   },
@@ -11459,6 +11513,24 @@
    "die": "button",
    "pattern": "decoupler",
    "blank": "plate 50x10x50 steel"
+  },
+  {
+   "part": "Server Rack",
+   "die": "housing",
+   "pattern": "serverrack",
+   "blank": "hollow 60x150x55 steel"
+  },
+  {
+   "part": "Robot Shell",
+   "die": "housing",
+   "pattern": "robotshell",
+   "blank": "hollow 80x185x45 steel"
+  },
+  {
+   "part": "Manned Manoeuvring Unit",
+   "die": "housing",
+   "pattern": "mmu",
+   "blank": "hollow 70x105x35 steel"
   }
  ]
 }

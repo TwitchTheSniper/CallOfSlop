@@ -2841,6 +2841,22 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   cloth, rubber or concrete sheet nothing brings it, and the Assembler that could build the part refused it for good. The station
   line check (`LineLacks`) and the one-piece feed (`DirectExtruder`) both ask it, so the Assembler fallback stands until the material comes. The capital
   thrusters and the Capital Lift Cell (16 m) need a bigger bed. Works II's frigate: 17 of 346 in 300 s, as main (no tool row is in it).
+ - **Phase 5 (this change; `ZeroDayWorks2.NoAssembler.cs`, `ZeroDayWorks.NoAssembler.cs`).** The Zero Day Works lose their
+   Assemblers; nothing Sean placed moved. Works II: each press line's Assembler gives way to a third Press (Ring Die, Bearings) on a
+   2 x 3 low bed over the Assembler's cells and one free row, its Core on the one free cell beside it (a Press bed is low, so the line's
+   runs end on it and start off it, only with three rows across the line); its Run comes from the main station's console. The big
+   Assembler and its arm go. Works I: bay 3's block Assembler (and its Block Rack, Sewing Table Block and Thruster Jig) gives way to a
+   small Press with a Cable Die, belted into the small presses' join. Every kit line's Extruder is chuted from the copper, concrete,
+   rubber and (Works II only: Works I has none) cloth bins beside its steel, by way of its own bin (a straight drop near freeform welds
+   was refused, "a segment reaches at most 8 m"); Works II's electronics Extruders take bronze too (Bearing rounds). Works II's frigate:
+   16 and 19 of 346 in 300 s (main 16 to 19), 18 with the rows below. The frigate's last Assembler kinds moved too: the **Server Rack**,
+   **Robot Shell** and **Manned Manoeuvring Unit** are pressed (Housing die patterns appended at the die's end, a die both works carry;
+   `PressParts.Phase2.cs`; bay 2 takes one kit, so each is a steel box round its Circuit Boards, a Wiring Loom counted as one more Board
+   and the Robot Shell's copper and rubber dropped), their rows gone under rows mark 6 (protocol 491); a run-time **Ord Rack** or
+   **ordnance design** (AssembledParts) bakes from a kit by the rule (`BakeKits.IsMadeKind`: its boxes and its made recipe's components,
+   an ordnance round's sections among them; kept by its key, never its id), as a named oven order (`WorkOrder.IsMade`). The station
+   check's start report lists oven orders as "NOTHING MAKES" before the line's bins fill, though they queue and bake. A saved works keeps
+   its Assemblers (tools/MIGRATING.md).
 
 ### Sub-kits (2026-11-28)
 
