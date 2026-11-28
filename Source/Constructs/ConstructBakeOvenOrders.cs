@@ -42,7 +42,7 @@ public static partial class ConstructBakeOven
     /// <summary>Server: will this oven take the order? Null, or why not (<paramref name="say"/> false: <see cref="No"/>, its own checks making no text).</summary>
     public static string? OrderRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o, bool say = true)
     {
-        if (o.IsPiece || o.Name != null && !o.IsSub || BakeKits.OvenDef(o) is not { } made)
+        if (o.IsPiece || o.Name != null && !o.IsSub && !o.IsMade || BakeKits.OvenDef(o) is not { } made)
             return !say ? No : $"the {d.Name} bakes parts made from kits: {ConstructCrafting.NameOf(o)} isn't one";
         if (!BakeKits.Bakes(made) || BakeKits.PrintOfOrder(made) == null)
             return !say ? No : $"the {made.Name} isn't made from a kit: an oven bakes only what Constructs/BakeKits.json and Constructs/BakeKits/ list";

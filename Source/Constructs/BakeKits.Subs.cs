@@ -87,6 +87,8 @@ public static partial class BakeKits
             return null;
         if (o.Name == null)
             return ConstructParts.Get(o.Part);
+        if (o.IsMade) // (an Ord Rack or ordnance design by its key, phase 5: its kit's, when it has one)
+            return (ConstructParts.Get(o.Part) is { } got && got.Name == o.Name ? got : AssembledParts.Def(o.Name)) is { } md && Has(md) ? md : null;
         return o.IsSub && SubOf(o.Name) != null ? ConstructParts.Get(o.Part) ?? BakedParts.Parse(o.Name) : null;
     }
 
