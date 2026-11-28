@@ -11,7 +11,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// part, or the row's second material). "presetsOnly": a stretched copy would keep its like's thrust, payload or sensing.
 ///
 /// What a press can't make stays on the Assembler: a row with two kinds of part input (bay 2 takes one kit), and assemblies of unlike
-/// parts (a Server Rack's Boards and Looms, a Robot Shell, an MMU). A new kind is a row appended here (a Press saves its Pattern
+/// parts (phase 5 pressed the Server Rack, Robot Shell and MMU round their Circuit Boards, a Loom counted as one more). A new kind is a row appended here (a Press saves its Pattern
 /// setting as 1 + the pattern's place on its die: never insert).
 /// </summary>
 public sealed partial class PressParts
@@ -115,6 +115,12 @@ public sealed partial class PressParts
         // Phase 4 (2026-11-28): the Thruster Jig's one item, the Decoupler, a bolted plate with its charge's board: on the Button die. Its
         // placed rows (jets, lift fans, rockets, repulsors) and the Sewing Table's placed Lift Cells bake from kits instead (BakeKits.ByRule).
         ("Decoupler", "button", "decoupler", "plate", "steel", "Circuit Board", true, 1),
+        // Phase 5 (2026-11-28): the Zero Day frigate's three assemblies the works' Assemblers made, now that the works have none (each
+        // pattern at its die's end). Bay 2 takes one kit, so each is a steel box round its boards: a Wiring Loom it took is one more Circuit
+        // Board (as the Control Unit became 2 Boards), and the Robot Shell's copper and rubber go with the Assembler row.
+        ("Server Rack", "housing", "serverrack", "hollow", "steel", "Circuit Board", true, 5),
+        ("Robot Shell", "housing", "robotshell", "hollow", "steel", "Circuit Board", true, 2),
+        ("Manned Manoeuvring Unit", "control", "mmu", "hollow", "steel", "Circuit Board", true, 6),
     ];
 
     private static DieSpec RangeOf(string die) =>
