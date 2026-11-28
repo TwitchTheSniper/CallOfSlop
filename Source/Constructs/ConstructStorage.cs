@@ -95,6 +95,7 @@ public sealed class CStore
     public double StrokeSince, StrokeEnd, StrokeAt; // ...StrokeAt: the frame it was last looked at
     public ConstructPartDef? StrokeBlank, StrokeMade, StrokeLast, StrokeBlankPrev; // ...the blank on the die, the part it makes, the last stroke's part, the last blank on this die (the jaws run from its size)
     public PressDie? StrokeDie; // ...the die the stroke pressed with
+    public uint ShortAt; // an Assembler on orders (server only): the server tick its head order last went short, or last looked past it (ConstructAssembling.ReadyFirst; never sent or saved)
     public uint DoorAt; // a Press (server only): the server tick it last looked for a later order whose blank is at its door (ConstructPress.DoorFirst; never sent or saved)
     public bool PressRepeat, StrokeRepeat; // a Press: the stroke under way is a repeat, the lid kept shut (server only, ConstructPress.SameWaiting); StrokeRepeat: this peer drew it so (StrokeUpdate)
     public byte RepeatHold; // a Press (server only): press steps the shut lid still waits for the same-size blank on its way in
