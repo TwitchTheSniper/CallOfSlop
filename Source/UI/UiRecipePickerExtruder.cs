@@ -288,7 +288,7 @@ public sealed partial class Ui
         }
         ImGui.SameLine();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextColored(Dim, unit == SizeUnit.Metres ? "m"u8 : unit == SizeUnit.Cm ? "cm"u8 : "pieces"u8);
+        ImGuiSafe.TextColored(Dim, unit == SizeUnit.Metres ? "m"u8 : unit == SizeUnit.Cm ? "cm"u8 : "pieces"u8);
         ImGui.PopID();
         return v != was;
     }
