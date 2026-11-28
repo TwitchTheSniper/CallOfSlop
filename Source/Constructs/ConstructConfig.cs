@@ -265,6 +265,7 @@ public sealed class CConfigDef
     public bool CreativeOnly; // set only in creative worlds: the server refuses it in survival, the panel shows it read-only, a blueprint's value is left out there
     public bool Bound; // kept in CPart.Setting (the part's legacy choice: the linking tool's R cycles it) rather than CPart.Cfg
     public float[] Presets = []; // the values the linking tool's R cycles a number through (the part's old "settings" list)
+    public float Fine; // > 0: a typed number keeps this fine a value (m: 0.001) and only the slider snaps to Step (Sean, 2026-11-28: a socket's depth typed in isn't rounded); 0: every value snaps to Step
     public float Rated; // a rotary joint's speed: its rated speed (deg/s) when the range runs from stopped to twice it, so the panel's slider shows -100% to +100% of it; else 0
 
     // Text made once at load (the panel draws without allocating)
@@ -288,11 +289,15 @@ public sealed class CConfigDef
                 return Math.Clamp(MathF.Round(v), 0, 0xFFFF);
             default:
                 v = Math.Clamp(v, Min, Max);
-                if (Step > 0)
-                    v = Math.Clamp(Min + MathF.Round((v - Min) / Step) * Step, Min, Max);
+                var step = Fine > 0 ? Fine : Step;
+                if (step > 0)
+                    v = Math.Clamp(Min + MathF.Round((v - Min) / step) * step, Min, Max);
                 return v;
         }
     }
+
+    /// <summary>A slider's value: on its Step even when a typed value may be finer (<see cref="Fine"/>).</summary>
+    public float Snap(float v) => Step > 0 && Fine > 0 ? Clamp(Min + MathF.Round((v - Min) / Step) * Step) : Clamp(v);
 
     /// <summary>The value as the panel and the HUD show it ("2.5 s", "on", "fire", "#ffd080").</summary>
     public string Show(float v) => Type switch
@@ -300,7 +305,7 @@ public sealed class CConfigDef
         CfgType.Toggle => v >= 0.5f ? "on" : "off",
         CfgType.Choice or CfgType.Key => Options.Length > 0 ? Options[(int)Math.Clamp(v, 0, Options.Length - 1)] : "",
         CfgType.Colour => "#" + ((int)v).ToString("x6", CultureInfo.InvariantCulture),
-        _ => v.ToString(Step >= 1 ? "0" : Step >= 0.1f ? "0.#" : "0.##", CultureInfo.InvariantCulture) + (Unit.Length > 0 ? " " + Unit : ""),
+        _ => v.ToString(Fine > 0 ? "0.###" : Step >= 1 ? "0" : Step >= 0.1f ? "0.#" : "0.##", CultureInfo.InvariantCulture) + (Unit.Length > 0 ? " " + Unit : ""),
     };
 }
 
@@ -621,7 +626,8 @@ public static class ConstructConfig
             e.InputId = $"##cfgi{a}";
             e.ResetId = $"x##cfgr{a}";
             e.CaptureId = $"##cfgk{a}";
-            e.Format = e.Type == CfgType.Number ? "%." + (e.Step >= 1 ? 0 : e.Step >= 0.1f || e.Step == 0 && e.Max - e.Min >= 20 ? 1 : 2) + "f" + (e.Unit.Length > 0 ? " " + e.Unit.Replace("%", "%%") : "") : "";
+            e.Format = e.Type != CfgType.Number ? ""
+                : (e.Fine > 0 ? "%g" : "%." + (e.Step >= 1 ? 0 : e.Step >= 0.1f || e.Step == 0 && e.Max - e.Min >= 20 ? 1 : 2) + "f") + (e.Unit.Length > 0 ? " " + e.Unit.Replace("%", "%%") : ""); // (%g: a fine value shows as typed, 1.234 m)
             e.DefaultText = "Default: " + e.Show(e.Default);
             e.TooltipText = (e.Tooltip.Length > 0 ? e.Tooltip + "\n" : "") + (e.Type == CfgType.Number ? $"{e.Show(e.Min)} to {e.Show(e.Max)}. " : "") + e.DefaultText;
         }

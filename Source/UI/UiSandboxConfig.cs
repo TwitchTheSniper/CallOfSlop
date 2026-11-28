@@ -611,8 +611,11 @@ public sealed partial class Ui
                         changed = true;
                     }
                 }
-                else if (ImGui.SliderFloat(e.UiId, ref v, e.Min, e.Max, e.Format, ImGuiSliderFlags.AlwaysClamp))
+                else if (ImGui.SliderFloat(e.UiId, ref v, e.Min, e.Max, e.Format, e.Fine > 0 ? ImGuiSliderFlags.AlwaysClamp | ImGuiSliderFlags.NoInput : ImGuiSliderFlags.AlwaysClamp))
+                {
+                    v = e.Snap(v); // (the slider snaps to Step; a value typed in the box beside keeps its Fine precision, so a fine slider takes no Ctrl+click typing)
                     changed = true;
+                }
                 if (ImGui.IsItemHovered())
                     ImGuiSafe.SetTooltip(e.TooltipText);
                 ImGui.SameLine();

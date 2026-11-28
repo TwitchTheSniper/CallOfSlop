@@ -91,6 +91,7 @@ public sealed class ModuleSocketTable
     public static bool ValidCells(int w, int l) => w >= 1 && l >= w && l <= ModuleSockets.MostCells;
 
     public const float CellStep = 0.05f; // m: a cell-class socket's depth and room steps
+    public const float FineStep = 0.001f; // m: a depth or room typed in keeps millimetres (only the slider snaps to the steps above; Sean, 2026-11-28)
 
     /// <summary>A socket's depth step: the table's, or 5 cm for a cell-class one.</summary>
     public float StepOf(bool cells) => cells ? CellStep : DepthStep;
