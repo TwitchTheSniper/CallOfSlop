@@ -40,6 +40,7 @@ public struct CMachineAsm
     public byte Tool; // the tool block docked in an Assembler's Tool Bay: an index of AssemblingTable.Machines (1 thruster, 2 tailor), 0 none
     public ushort ToolPart; // that block's part (ushort.MaxValue: none)
     public int OutPad; // the pick pad its Out Table butts, plus 1 (0: not looked for since the rebuild, -1: none; ConstructConveyor.OutPad)
+    public byte OvenWay; // a Bake Oven's tunnel as its roller runs lay it (ConstructRollOut.OvenWays): 0 none (its Core's place decides), else bit 0 set, bit 1 along the Core's x, bit 2 reversed
     public bool LowBed; // a Press whose bed between its housings' rows is Press Bed Blocks, at the rollers' height: runs roll blanks on and made parts off (its Core's Bed in and Bed out)
     // A Core that splits its blocks into squares ("squares": the refiners, docs/sandbox/constructs/production.md "Refiners as block machines"):
     public short SquareFirst; // its first square in Construct.MachineSquares
@@ -627,6 +628,7 @@ public static class MachineBlocks
                 Assemble(c, i, queue, cx, cy, cz, steps, sum, mark, sqOf, over);
         ConstructPads.Build(c);
         RollerRuns.Note(c);
+        ConstructRollOut.OvenWays(c); // (after the runs' tiles have their assemblies: a run's line tells an oven its way in)
         SeamSame(c);
     }
 

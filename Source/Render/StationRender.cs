@@ -97,16 +97,25 @@ public static class StationRender
                 p.CarryTimes(out var lift, out var over, out var place);
                 var hv = pd.BoundsMax - pd.BoundsMin;
                 var lng = MathF.Max(hv.X, hv.Z);
-                var flat = hv.Y < 0.6f && lng > 1.5f;
                 var sgn = (j.ArmSeq[a] & 1) != 0 ? 1f : -1f;
                 var sw = over > lift + 0.05f ? MathF.Sin(MathF.PI * StationRovers.Ease((u - lift) / (over - lift))) : 0f;
                 if (u < lift || u > over)
                     sw = 0;
-                var pitch = sw * (flat ? 0.55f : lng > 3 ? 0.3f : 0.15f) * sgn;
+                var pitch = sw * StationRovers.TiltOf(hv) * sgn;
                 var yaw = sw * (lng > 3 ? 1.1f : 0.7f) * -sgn;
                 var wrist = Math.Clamp((u - p.GripT) / MathF.Max(0.5f, (p.FitT - p.GripT) * 0.7f), 0f, 1f);
                 var turned = u < p.GripT ? Quaternion.Identity : Quaternion.Slerp(Quaternion.Identity, p.Turn, StationRovers.Ease(wrist));
                 piece = Matrix4x4.CreateFromQuaternion(turned) * Matrix4x4.CreateRotationY(yaw); // (its pitch goes on in Rover, about the turret's side)
+                if (pitch != 0)
+                {
+                    // (never tilted down into the floor: a carry its arm can't lift high enough hangs flatter, Sean 2026-11-28)
+                    var room = p.HookAt(u).Y - 0.15f;
+                    var q = Quaternion.CreateFromRotationMatrix(piece);
+                    for (var tries = 0; tries < 4 && StationRovers.HangDepth(hv, q, MathF.Abs(pitch)) > room; tries++)
+                        pitch *= 0.5f;
+                    if (StationRovers.HangDepth(hv, q, MathF.Abs(pitch)) > room)
+                        pitch = 0;
+                }
                 headYaw = JawsYaw(piece);
                 headPitch = pitch;
                 headE = u < p.GripT ? StationRovers.Ease(1f - (p.GripT - u)) : u < p.FitT ? 1f : StationRovers.Ease(1f - (u - p.FitT) / 1.5f);

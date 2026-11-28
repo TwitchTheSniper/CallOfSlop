@@ -264,7 +264,8 @@ public static class ConstructLogisticsPlan
             // What its input holds counts only when no other order is queued ahead of this one: else that order uses it first. (A station
             // orders every lacking part at once, so a Swing Arm queued behind a Differential counted the Differential's Bearings as its
             // own, was asked short, and waited for one Bearing for good: the Factory Showcase, 2026-11-14.)
-            var ahead = QueuedAhead(c, m, product, parent); // (another order is before this one: what the hopper holds is that one's)
+            var ahead = QueuedAhead(c, m, product, parent) // (another order is before this one: what the hopper holds is that one's)
+                || parent.Depth > 0 && parent.Dest == m; // (made in place for an order on this machine, which counted the hopper when it was asked: a Control Unit for a Computer shares its Circuit Boards)
             foreach (var (rp, rn) in r.Parts)
                 if (inputs < kinds.Length)
                 {
@@ -1049,8 +1050,8 @@ public static class ConstructLogisticsPlan
         for (var i = 0; i < world.ChainCount; i++)
         {
             ref readonly var e = ref world.Chains[i];
-            if (e.Body != c.Id || e.Dest != dest || e.Kind != d.Id || !Wants(world, c, e))
-                continue;
+            if (e.Body != c.Id || e.Dest != dest || e.Kind != d.Id || e.Maker == dest && maker == dest || !Wants(world, c, e))
+                continue; // (a link made in place takes no piece off its own machine's out: ConstructAssembling.ToOwnHopper)
             if (maker < 0 || e.Maker == maker)
                 return e.Id;
             if (any == 0)
@@ -1070,7 +1071,7 @@ public static class ConstructLogisticsPlan
         for (var i = 0; i < world.ChainCount; i++)
         {
             ref readonly var e = ref world.Chains[i];
-            if (e.Body == c.Id && e.Maker == maker && e.Kind == d.Id && e.Dest < c.PartCount && Wants(world, c, e))
+            if (e.Body == c.Id && e.Maker == maker && e.Dest != maker && e.Kind == d.Id && e.Dest < c.PartCount && Wants(world, c, e)) // (a link made in place never leaves: ConstructAssembling.ToOwnHopper)
             {
                 dest = e.Dest;
                 stamp = e.Stamp;

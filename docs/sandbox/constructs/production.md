@@ -1804,8 +1804,11 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
 - **Classes** (`StationRovers.Classes`): Small 9 m reach, 8 t, 5 m/s, 4 wheels, 5 m mast; Medium 15 m, 52 t, 3 m/s, 6 wheels, 9 m;
   Large 26 m, 120 t, 1.5 m/s, 8 wheels, 13 m. A piece up to 8 t and 3 m wants a small rover, up to 52 t and 10 m a medium, the rest a
   large; another class takes it only when it would be 90 s per class sooner (`ClassPenalty`).
-- **Trips**: a rover drives (it never teleports): it turns on the spot, then drives straight, round the build by the corners of its
-  keep-out ring (the build's footprint grown by the rover's half width and 0.6 m); out of and into its dock straight by the mouth; it
+- **Trips**: a rover drives (it never teleports): it turns on the spot, then drives straight, round the parts already fitted (Sean
+  2026-11-28: `RoverFloor`, the bay in 1 m cells marked where the class's body would be over a fitted step's footprint; the cheapest
+  way over the cells, a metre over a fitted part costing 25 of free floor, pulled straight between corners; over the build only when
+  there is no room, as a large rover in Works II's 24 m bay). It stands at the nearest spot off the build's footprint (its ring) that
+  reaches, moved off fitted parts when a spot within half its reach still reaches (`StationRovers.FreeStand`); out of and into its dock straight by the mouth; it
   squares up with its short end to the work, never drives onto a pick pad (a piece lies against the pad's bay-side edge) and swings its
   arm rather than drive. A piece swings round the mast in an arc. Rovers keep apart: a spot beside along the lane first, then a later
   start, waiting up to 300 s. An idle rover drives home at once when no ready step is its own (a piece it lifts, of no nearer class at another dock), else after 15 s; its arm folds as it sets off, and a rover standing in its way doesn't hold it back (Sean 2026-11-27). On a home trip, and on an empty drive over 6 m to a pick (`StationRovers.TuckDrive`), the hook tucks in by the mast and the rover is drawn in its driving pose: mast down, lower arm up, forearm hung beside it. Plans are sent whole (keys of base and hook), and both peers
@@ -1823,6 +1826,11 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
   by trip), on top of its turn towards its place. The gripper's head turns about its knuckle to keep the jaws across the piece and tilts
   with it, easing back once it lets go. While a piece is held on its place before it is let go a pale blue shell flickers round it. Times
   come from the trip's hook keys (`RoverPlan.CarryTimes`), so a client draws the same with nothing more on the wire.
+- **Clearance** (Sean 2026-11-28, "keep their pieces from clipping through the floor and each other"): the carry height puts the
+  piece's lowest point, as it hangs turned and tilted at the top of its swing (`StationRovers.HangDepth`, `TiltOf`), 0.6 m over the
+  highest fitted part, as high as the arm lifts it; a piece drawn where its arm can't lift it that high hangs flatter, never tilted
+  into the floor. A trip's tries (a spot beside, a later start) also keep its piece apart from another rover's carried piece at a
+  height they share, and low pieces off another rover's chassis (`FirstClash`, `PieceAt`).
 - **The build order** (`BuildOrder`): Keel pieces first, then what lies wholly under the lowest deck, then deck by deck (structure, then
   fittings); a step never goes before its parent's rank. With nothing fitted for 30 s the next rank may go (`StallTicks`).
 - **Zero Day Works**: every station keeps its Core's Small rover; the yard has two Large Dock Expansions between and east of its pick
@@ -2348,7 +2356,11 @@ tunnel with swing doors): a Recuperator Core (the Oven Core's part, still named 
 Masts are gone. A welded group rolled or set on the hearth bakes into one part, or a baked part un-bakes back into its subparts (the
 Core's Mode setting: Bake or Un-bake). The code is `BakedParts.cs`; the looks are `BakeOvenRender.cs`.
 
-- **The tunnel.** It runs along the bed's edge the Core stands beside; its in end is the end nearer the Core. `ConstructBakeOven.Bed`
+- **The tunnel.** Its Roller Tile runs lay it (Sean, 2026-11-28: a Core may stand anywhere round its bed, so a layout puts it where
+  nothing else needs the floor): a run whose line meets one end of the bed heading along it makes that end the way in, else a run that
+  leaves one end makes that end the way out (`ConstructRollOut.OvenWays`, at the rebuild, into `CMachineAsm.OvenWay`; the first run in
+  link order wins, runs along the way the Core's place would give first: a run onto the bed's side turns the tunnel only when no run meets an end that way). An oven with no run in or out falls back to its Core's place: the tunnel runs along the bed's edge the Core stands
+  beside, its in end the end nearer the Core. `--station-check` prints each oven's way ("tunnel laid by its runs", its way out). `ConstructBakeOven.Bed`
   gives its frame (`ToCore`: x across, z along from the in end, y up from the foot; a turn about y, never a mirror): 0.4 m walls on the
   bed's outer cells, a swing door zone 0.45 m deep at each end, the hearth's roll line at 1.0 m (`rollTop`, an Out Table's work height:
   the Bed Block is solid to it, so a kit rests on the rollers) and a clear height from the Core's Tunnel height setting (1.5 to 12 m,
