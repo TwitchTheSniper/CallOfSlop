@@ -5,6 +5,7 @@ namespace CallOfSlop;
 public sealed partial class Construct
 {
     public bool RollersStale; // a rebuild found Roller Tiles or a run's conveyor: the server lays the runs again (RollerRuns.Sync)
+    public bool TileLinksOpened; // RollerRuns.OpenTileLinks ran on this body since it was loaded or made (not saved: once a load, so a link a player sets to 2 m later stays)
 }
 
 /// <summary>
@@ -254,10 +255,13 @@ public static class RollerRuns
     /// A conveyor linked to a Roller Tile's or a Turntable Tile's port that is still at a tile's old widest (2 m, before the tiles'
     /// openings took the run's overhang, <see cref="OverhangCm"/>) opens to what its ends take now, so a saved world's link carries
     /// what the runs either side of it carry (Sean, 2026-11-28: a 2.2 m Fuel Pump M blank waited for good at the end of Works II's
-    /// second press-line Extruder's run, whose way on to the turntable is such a link). One pass over the links, on a rebuild only.
+    /// second press-line Extruder's run, whose way on to the turntable is such a link). One pass over the links, on the body's first Sync after a load.
     /// </summary>
     private static void OpenTileLinks(ConstructWorld world, Construct c)
     {
+        if (c.TileLinksOpened)
+            return;
+        c.TileLinksOpened = true;
         const int Old = (int)(Cell * 100);
         for (var k = 0; k < c.RouteCount; k++)
         {
@@ -268,7 +272,7 @@ public static class RollerRuns
             var td = c.DefOf(r.To);
             if (!(fd.IsRollerTile || fd.IsTurntable || td.IsRollerTile || td.IsTurntable))
                 continue;
-            ConstructConveyor.Limit(c, k, out var w, out var h);
+            ConstructRoutes.ConveyorMax(c, k, out var w, out var h); // (the most its ends take and its turns leave room for, as the linking tool's widest)
             if (w <= Old)
                 continue;
             r.ConvW = w;
