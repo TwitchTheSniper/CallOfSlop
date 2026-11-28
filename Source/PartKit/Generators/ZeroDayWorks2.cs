@@ -98,6 +98,7 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             var items = doc.RootElement.GetProperty("blankFactory").GetProperty("items").EnumerateArray().Select(Revised).Select(Restocked).Select(MovedOut).Select(NarrowOut).Select(PadGrown).Concat(Additions.Concat(ElectronicsAdditions()).Select(a => JsonDocument.Parse(a).RootElement.Clone())).ToList();
             items.AddRange(DeepPads(items));
             items.AddRange(NarrowStrip(items));
+            items.AddRange(CompactCellAdditions().Select(a => JsonDocument.Parse(a).RootElement.Clone())); // (the compact extruder cells: ZeroDayWorks2.CompactCells.cs)
             s.Lay(items);
             s.LayLinks();
             s.StationConsoles();

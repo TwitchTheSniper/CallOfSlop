@@ -39,6 +39,13 @@ takes about 25 minutes on the cloud box.
 machines' cells meet on the 2 m grid (a Mast Block's stripe against a Roller Tile's or a Laser Bed Block's edge detail). They come
 from the parts' own details sitting on their cell faces, not from the layout, so they are fixed in those parts' generators.
 
+**Zero Day Works II: compact extruder cells** (`ZeroDayWorks2.CompactCells.cs`, Sean 2026-11-28: most of the frigate's parts are small
+extrusions). Five one-die Extruders (a Core and one Die Block) stand north of the main station's bay at layout x -9 to 7, z -48, flowing
+south, each fed steel by one chute from its side's first steel silo and run from the main station's ordering console. Each Run-out Table
+ends on one Roller Tile whose run ends straight on a 9 x 2 Pad Tile pick pad past the bay's north end (x -10 to 8, z -40 to -44), so the
+station's small-extrusion orders go to the cells first and are shared over them. Each cell costs three of a body's 254 links (its run,
+chute and Run); Works II stood at 237, so it is at 252 now and has no room for more machines without freeing links.
+
 ## The shed's shell parts
 
 The steel shed over the bays is built from part kit generator `factory_shell` (`Source/PartKit/Generators/FactoryShellParts.Mill.cs`), parts in `Constructs/Parts/Factory/Shed`, section "Factory shell". Nothing places them yet: the works generator does that.
