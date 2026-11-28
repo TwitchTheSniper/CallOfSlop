@@ -221,6 +221,8 @@ public static class StationCheck
                         if (WorkOrders.TakesOrders(c.DefOf(i)) && !c.DefOf(i).IsBakeOven)
                             Console.WriteLine($"  why {wd.Name}: {c.DefOf(i).Name} {i} at {c.Parts[i].Pos.X:0},{c.Parts[i].Pos.Z:0}: {WorkOrders.Refusal(w, c, i, ConstructStation.OrderFor(wd, 1)) ?? "takes it"}"
                                 + (wd.IsExtrusion && c.DefOf(i).IsExtruder && !c.DefOf(i).IsPanelFormer ? (ConstructExtruder.Feeds(w, c, i, wd.ExKey.Material) ? ", fed" : ", NOT fed its material") : ""));
+        if (Arg("--oven-bake") is { } ovenBake) // (--oven-bake PART [--oven-at X,Z]: its kit set on the nearest oven's bed by hand and baked: an oven alone, no station)
+            return OvenBake(w, q, c, place, ovenBake, Arg("--oven-at"), seconds);
         if (t < 0)
         {
             Console.WriteLine("  no Building Station in it");
@@ -725,6 +727,65 @@ public static class StationCheck
     {
         ConstructRackPack.Hold(rd, out var lo, out var hi);
         return $"{hi - lo}";
+    }
+
+    /// <summary>
+    /// <c>--oven-bake PART [--oven-at X,Z]</c>: the oven nearest the point (its size class and its answer to an order for the part), then the
+    /// part's kit built from its blueprint and set on that oven's bed as a crane would set it, the site run until the kit bakes into the part.
+    /// For a site that is only an oven (the Bake Oven XL's 50 x 34 m bed, 2026-11-28). Exit code 0 when the part came out.
+    /// </summary>
+    private static int OvenBake(ConstructWorld w, SelfTest.DriveWorld q, Construct c, VehicleDriveCheck.CheckPlace place, string partName, string? at, int seconds)
+    {
+        if (ConstructParts.Find(partName) is not { } d || BakeKits.FindPrint(d.Name + BakeKits.KitSuffix) is not { } kp)
+        {
+            Console.WriteLine($"--oven-bake: no part \"{partName}\" made from a kit");
+            return 1;
+        }
+        var point = at?.Split(',') is [var xs, var zs] && float.TryParse(xs, out var x) && float.TryParse(zs, out var z) ? new Vector2(x, z) : Vector2.Zero;
+        var oven = Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).IsBakeOven).OrderBy(i => Vector2.Distance(point, new Vector2(c.Parts[i].Pos.X, c.Parts[i].Pos.Z))).FirstOrDefault(-1);
+        if (oven < 0 || !MachineBlocks.TryOf(c, oven, out var asm) || asm.W == 0)
+        {
+            Console.WriteLine("  no Bake Oven with a bed on the site");
+            return 1;
+        }
+        var kitSize = BakeKits.BakeSize(d);
+        Console.WriteLine(FormattableString.Invariant($"  the {c.DefOf(oven).Name} at {c.Parts[oven].Pos.X:0}, {c.Parts[oven].Pos.Z:0} (part {oven}): {MachineBlocks.Describe(c, asm)}, {MakerRoutes.OvenName(ConstructBakeOven.SizeClass(c, oven))}; ")
+            + FormattableString.Invariant($"the {d.Name} kit {kitSize.X:0.##} x {kitSize.Y:0.##} x {kitSize.Z:0.##} m, the smallest oven for it {MakerRoutes.OvenName(MakerRoutes.HearthFor(kitSize))}; bed: {ConstructBakeOven.BedLacks(c, asm, kitSize) ?? "fits"}; an order: {WorkOrders.Refusal(w, c, oven, ConstructStation.OrderFor(d, 1)) ?? "takes it"}"));
+        Construct? kb;
+        using (place.In())
+            kb = ConstructBuild.Build(w, kp, c.Pos + new Vector3(0, 60, 0), Quaternion.Identity, out var bwhy) ?? throw new FactoryKitException($"the {d.Name} kit doesn't build: {bwhy}");
+        if (ConstructBakeOven.Landing(c, oven, kb, out var lp, out var lr) is { } no)
+        {
+            Console.WriteLine($"  the kit doesn't land: {no}");
+            return 1;
+        }
+        (kb.Pos, kb.PrevPos, kb.Rot, kb.PrevRot, kb.Vel, kb.AngVel) = (lp, lp, lr, lr, Vector3.Zero, Vector3.Zero);
+        kb.Wake();
+        Console.WriteLine($"  the kit (body {kb.Id}, {kb.PartCount} parts) set on the bed");
+        // (the order queued by hand, past its refusal: a site of an oven alone has no station to build the kit at, and a rule kit is matched by its oven's orders)
+        c.Parts[oven].Orders ??= new OrderList();
+        c.Parts[oven].Orders!.Add(ConstructStation.OrderFor(d, 1));
+        w.OrdersChanged(c);
+        var lastStall = (byte)255;
+        using (place.In())
+            for (var k = 0; k < seconds * World.TickRate; k++)
+            {
+                MoverPhysics.Clock++;
+                w.Step(q, World.TickDt);
+                if (w.StoreOf(c, oven) is { } ost && ost.Refused != lastStall)
+                {
+                    lastStall = ost.Refused;
+                    Console.WriteLine($"  {k / (float)World.TickRate,6:0.0} s: oven: {ConstructBakeOven.StallText((OvenStall)ost.Refused)}");
+                }
+                foreach (var b in w.Bodies)
+                    if (Enumerable.Range(0, b.PartCount).Any(i => b.DefOf(i).Name == d.Name))
+                    {
+                        Console.WriteLine($"  {k / (float)World.TickRate,6:0.0} s: the {d.Name} came out (body {b.Id}, {b.PartCount} part(s))");
+                        return 0;
+                    }
+            }
+        Console.WriteLine($"  after {seconds} s no {d.Name} came out");
+        return 1;
     }
 
     private static int OvenOrder(ConstructWorld w, SelfTest.DriveWorld q, Construct c, VehicleDriveCheck.CheckPlace place, string partName, string? at, int seconds, bool trace,

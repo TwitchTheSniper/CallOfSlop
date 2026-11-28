@@ -20,14 +20,16 @@ public static class MakerRoutes
     /// <summary>
     /// Oven sizes, smallest first: (name, the bed's two sides and the tunnel's height, m), from Zero Day Works II's ovens (10 x 3 and
     /// 10 x 10 cells of <see cref="MachineBlocks.DefaultCell"/> m, tunnels 4 and 6 m) and the largest bed a Core takes (MachineBlocks'
-    /// default 16 a side, 128 cells, so 16 x 8; the tunnel's top setting 12 m). Past the last: a bigger bed (Sean: only for parts that
-    /// can't be split).
+    /// default 16 a side, 128 cells, so 16 x 8; the tunnel's top setting 12 m), then the Bake Oven XL's (2026-11-28: 25 x 17 cells, its
+    /// tunnel to 17 m; BakeOvenParts.XlSide), the bed for the parts no smaller oven holds whole (Sean: bigger beds only for parts that
+    /// can't be split). Past the last: no oven.
     /// </summary>
     public static readonly (string Name, float Along, float Across, float High)[] Ovens =
     [
         ("small oven 20 x 6 m", 20, 6, 4),
         ("big oven 20 x 20 m", 20, 20, 6),
         ("largest bed 32 x 16 m", 32, 16, 12),
+        ("XL oven 50 x 34 m", 50, 34, 17),
     ];
 
     /// <summary>The route an Assembler recipe's part takes now (phase 3: every placed part by the rule is baked, BakeKits.Has).</summary>
@@ -53,7 +55,7 @@ public static class MakerRoutes
     }
 
     /// <summary>The smallest oven whose bed and tunnel hold the part laid any way up (its bounds' sides sorted), or Ovens.Length: none.</summary>
-    public static int OvenFor(ConstructPartDef d) => BakeKits.KitSize(d) is { X: > 0 } k ? OvenFor(k) : OvenFor(d.BoundsMax - d.BoundsMin);
+    public static int OvenFor(ConstructPartDef d) => BakeKits.KitSize(d) is { X: > 0 } k ? HearthFor(k) : HearthFor(d.BoundsMax - d.BoundsMin); // (its hearth: what a real oven's tunnel holds, as BedLacks and the split ask)
 
     public static int OvenFor(Vector3 size)
     {
@@ -83,7 +85,7 @@ public static class MakerRoutes
         return Ovens.Length;
     }
 
-    public static string OvenName(int k) => k < Ovens.Length ? Ovens[k].Name : "bigger bed (split it, or a bigger oven)";
+    public static string OvenName(int k) => k < Ovens.Length ? Ovens[k].Name : $"no oven (past the {Ovens[^1].Name}'s hearth: its Assembler row stays its maker)";
 
     /// <summary>The longest side of each kit piece, m (one a solid drawn box): what an Extruder must reach.</summary>
     private static void PieceSizes(ConstructPartDef d, List<float> into)
@@ -119,6 +121,7 @@ public static class MakerRoutes
         var lines = new List<string>[RouteNames.Length];
         for (var k = 0; k < lines.Length; k++)
             lines[k] = new List<string>();
+        var noOven = new List<string>(); // (placed parts no oven's hearth holds whole: still the Assembler's)
         foreach (var r in asm.Recipes)
         {
             var d = r.Output;
@@ -127,6 +130,11 @@ public static class MakerRoutes
             var oven = route is Route.OneBake or Route.Kit or Route.KitNow ? OvenFor(d) : -1;
             if (oven >= 0)
                 byOven[oven]++;
+            if (oven == Ovens.Length)
+            {
+                var ks = BakeKits.KitSize(d) is { X: > 0 } kz ? kz : d.BoundsMax - d.BoundsMin;
+                noOven.Add(FormattableString.Invariant($"{r.Name} {ks.X:0.#} x {ks.Y:0.#} x {ks.Z:0.#} m"));
+            }
             if (r.Tool.Length > 0)
                 tools++;
             var size = d.BoundsMax - d.BoundsMin;
@@ -149,6 +157,7 @@ public static class MakerRoutes
         summary.AppendLine("  placed parts by the smallest oven that holds them whole (a big one is made as sub-assemblies where it splits):");
         for (var k = 0; k <= Ovens.Length; k++)
             summary.AppendLine($"    {OvenName(k)}: {byOven[k]}");
+        summary.AppendLine($"  placed parts no oven holds whole, still the Assembler's: {noOven.Count}{(noOven.Count > 0 ? " (" + string.Join(", ", noOven.Take(8)) + (noOven.Count > 8 ? ", ..." : "") + ")" : "")}");
         summary.AppendLine($"  rows naming a tool block (Thruster Jig, Sewing Table: an Assembler's fallback where no oven serves): {tools}");
         summary.AppendLine($"  baked parts split into sub-kits for smaller ovens: {split}");
         ShareLines(summary, "every baked part, one of each", wholeShare, splitShare);
@@ -162,6 +171,12 @@ public static class MakerRoutes
             Build(bp, summary);
         }
         sb.Append(summary);
+        if (noOven.Count > 0)
+        {
+            sb.AppendLine().AppendLine($"no oven holds whole ({noOven.Count}):");
+            foreach (var l in noOven)
+                sb.AppendLine("  " + l);
+        }
         for (var k = 0; k < RouteNames.Length; k++)
         {
             sb.AppendLine().AppendLine($"{RouteNames[k]} ({lines[k].Count}):");

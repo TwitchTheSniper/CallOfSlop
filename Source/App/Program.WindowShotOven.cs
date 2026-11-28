@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The window tool's verb for Bake Ovens (ConstructBakeOven.cs): <c>oven</c> prints every oven as this peer has it (its tunnel,
 /// clear height, way out, phase, why it waits and what is on its bed); <c>oven put NAME</c> (host) sets a new body of one part NAME (or the
-/// blueprint NAME) down in the middle of the first oven's hearth, as a crane would leave it.
+/// blueprint NAME, or a kit's: "PART kit") down in the middle of the first oven's hearth, as a crane would leave it.
 /// </summary>
 public static unsafe partial class Program
 {
@@ -44,7 +44,7 @@ public static unsafe partial class Program
                         made = WsOvenGroup(w, name.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries), at, ConstructBakeOven.CoreFrame(c, asm.Core));
                     else if (ConstructParts.Find(name) is { } pd)
                         made = ConstructBuild.PlaceNew(w, pd, at, 0);
-                    else if (ConstructBuild.FindBlueprint(name) is { } bp)
+                    else if ((ConstructBuild.FindBlueprint(name) ?? BakeKits.FindPrint(name)) is { } bp) // (a kit's blueprint too: "oven put Zero Day Railgun kit")
                         made = ConstructBuild.Build(w, bp, at, Quaternion.Identity, out _);
                     WsSay($"oven: put {name} at {at:0.00}: {(made == null ? "refused" : $"body {made.Id}, {made.PartCount} parts")}");
                     _wsWait = 3;

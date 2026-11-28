@@ -26,6 +26,15 @@ public sealed class BakeOvenParts : IPartGenerator
     private const double OriginY = BedTop / 2; // the Core names its cell's middle at the bed layer's, so bed blocks are its layer and masts the ones over it
     private const int BlockKw = 3500, CoreMass = 2600, BlockMass = 1800;
 
+    /// <summary>
+    /// The XL Core's bed (2026-11-28, retiring the Assembler; Sean: bigger beds only for parts that can't be split): 25 x 17 cells, a
+    /// 50 x 34 m bed with a 49 x 33 m hearth, and a tunnel up to 17 m clear. It takes the parts no smaller oven holds whole, since a split
+    /// kit's last bake holds the whole kit (the capital drive shafts, the 16 m capital cubes, the Zero Day Railgun's 32.9 m kit); its
+    /// sub-kits still bake on the smaller ovens. MakerRoutes.Ovens' last class is this bed.
+    /// </summary>
+    public const int XlSide = 25, XlCells = 25 * 17;
+    public const int XlHeight = 17;
+
     private static PyDict BlockKey(string role) => role == "core"
         ? Kw(("family", "oven"), ("role", "core"), ("origin", Py.L(0, OriginY, 0)))
         : Kw(("family", "oven"), ("role", role));
@@ -41,10 +50,12 @@ public sealed class BakeOvenParts : IPartGenerator
     /// frame, its lamp and buttons, a HOT sign; a gauge on the drums, a red gas pipe with a valve and a beacon on a post that glows while
     /// it bakes. Bed blocks weld to any of its four sides at the foot.
     /// </summary>
-    private static Part Core()
+    private static Part Core(bool xl = false)
     {
-        var p = new Part("Bake Oven", Small, Section,
-            "An Oven Core, the Recuperator: bakes a welded group of subparts in a roller hearth tunnel. Weld Oven Bed Blocks beside it (the bed is their rectangle, up to 32 x 32 m): the oven draws a tunnel over the bed, along the side the Core is welded to, with swing doors at both ends. A kit rolls in on a Roller Tile run that meets the end nearer the Core, the doors shut, it bakes, the doors open, and it rolls out along a run that starts at the far end (or waits for a crane or an arm). Its Tunnel height setting is the clear height over the rollers. Needs power.",
+        var p = new Part(xl ? "Bake Oven XL" : "Bake Oven", Small, Section,
+            xl
+            ? "The XL Oven Core: a Bake Oven for the parts no smaller bed holds whole (capital shafts, capital blocks, a railgun barrel). Weld Oven Bed Blocks beside it: its bed is their rectangle, up to 50 x 34 m, and its Tunnel height goes to 17 m. Orders go to the smallest oven that holds the kit, so it takes only what nothing smaller can, and a big part's sub-assemblies still bake on the smaller ovens. Needs power."
+            : "An Oven Core, the Recuperator: bakes a welded group of subparts in a roller hearth tunnel. Weld Oven Bed Blocks beside it (the bed is their rectangle, up to 32 x 32 m): the oven draws a tunnel over the bed, along the side the Core is welded to, with swing doors at both ends. A kit rolls in on a Roller Tile run that meets the end nearer the Core, the doors shut, it bakes, the doors open, and it rolls out along a run that starts at the far end (or waits for a crane or an arm). Its Tunnel height setting is the clear height over the rollers. Needs power.",
             role: "storage", group: "Production", color: Body);
         const double e = 0.997;
         const string Drum = "#a9aeb2";
@@ -64,6 +75,8 @@ public sealed class BakeOvenParts : IPartGenerator
         }
         p.Add(Box([-0.08, 0.2, 0.02], [0.88, 3.28, 0.48], hidden: true)); // (the drums' solid, for collision: they are round looks)
         p.Add(Box([-0.05, 3.3, -0.05], [0.85, 3.62, 0.55], Drum)); // (the header)
+        if (xl)
+            p.Add(L([-0.07, 3.31, -0.07], [0.87, 3.35, 0.57], MachineLook.Accent)); // (the XL's yellow band round the header's foot)
         foreach (var x in new[] { -0.03, 0.83 })
             foreach (var z in new[] { -0.03, 0.53 })
                 p.Add(L([x - 0.02, 3.36, z - 0.02], [x + 0.02, 3.6, z + 0.02], MachineLook.Steel, "steel")); // (its corner bolts)
@@ -92,13 +105,13 @@ public sealed class BakeOvenParts : IPartGenerator
         p.Sock("-x", [-1, OriginY, 0], "-x");
         p.Sock("+z", [0, OriginY, 1], "+z");
         p.Sock("-z", [0, OriginY, -1], "-z");
-        p.Stats(CoreMass, 3000, 8, 10);
-        p.Set(("power", 2000), ("storage", Kw(("bake", Kw(("bedTop", BedTop), ("rollTop", RollTop), ("kwBlock", BlockKw / 1000.0), ("doorSeconds", 3), ("partSeconds", 2), ("partsBlock", 16), ("maxParts", 255))))),
-            ("machineBlock", BlockKey("core")),
+        p.Stats(xl ? CoreMass * 2 : CoreMass, xl ? 6000 : 3000, 8, 10);
+        p.Set(("power", xl ? 4000 : 2000), ("storage", Kw(("bake", Kw(("bedTop", BedTop), ("rollTop", RollTop), ("kwBlock", BlockKw / 1000.0), ("doorSeconds", 3), ("partSeconds", 2), ("partsBlock", 16), ("maxParts", 255))))),
+            ("machineBlock", xl ? BlockKey("core").Update(("maxSide", XlSide), ("maxCells", XlCells)) : BlockKey("core")),
             ("config", Py.L(
                 Kw(("key", "mode"), ("label", "Mode"), ("group", "Oven"), ("options", Py.L("Bake", "Un-bake")), ("default", 0),
                     ("tooltip", "Bake: the welded group in the tunnel becomes one part. Un-bake: a baked part in the tunnel is set back out as its subparts.")),
-                Kw(("key", "height"), ("label", "Tunnel height"), ("group", "Oven"), ("unit", "m"), ("min", 1.5), ("max", 12), ("step", 0.5), ("default", 3),
+                Kw(("key", "height"), ("label", "Tunnel height"), ("group", "Oven"), ("unit", "m"), ("min", 1.5), ("max", xl ? XlHeight : 12), ("step", 0.5), ("default", 3),
                     ("tooltip", "The tunnel's clear height over the rollers: the tallest kit it bakes.")),
                 Kw(("key", "ink"), ("type", "colour"), ("label", "Screen colour"), ("group", "Display"), ("default", "#000000"), ("tooltip", "The colour of what its screen shows. Black: its own colours.")))),
             ("collider", "boxes"));
@@ -187,5 +200,5 @@ public sealed class BakeOvenParts : IPartGenerator
         return p;
     }
 
-    public void Make(PartOutput o) => WriteParts(o, Out, [("", Core()), ("", BedBlock())]);
+    public void Make(PartOutput o) => WriteParts(o, Out, [("", Core()), ("", Core(xl: true)), ("", BedBlock())]);
 }
