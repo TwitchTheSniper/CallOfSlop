@@ -205,13 +205,12 @@ public sealed partial class Game
         _airEscortAt = 0;
         OpeningReset(); // (no beats, no colony yet: GameSandboxOpening.cs)
         ShellResetAll(); // (nobody wears a robot shell: GameRobotShell.cs)
+        if (SandboxOn)
+            BakeKits.Warm(); // (once a process, either peer: the listed kits and every rule kit, here and not on the first bake's or Catalogue's tick)
         if (!IsServer)
             return;
         if (SandboxOn)
-        {
             VehicleKit.VehicleGenJob.Warm(); // (once a process: the first faction vehicle's compile cost here, at the match's start, not on its ticks: VehicleSpawn.cs)
-            BakeKits.Warm(); // (once a process: dressing the listed kits, about 200 ms, here and not on the first bake's tick)
-        }
         if (had || SandboxOn)
         {
             ConstructNet.WriteClear(SbW);
@@ -2577,6 +2576,7 @@ public sealed partial class Game
             Constructs.NetRenderTick = _clockStarted ? RenderTick - ConstructNet.BodyExtraDelayTicks : double.NaN; // (cj01: bodies drawn on the server's ticks)
             ConstructNet.Blend(Constructs, now, dt);
             ConstructSeal.Step(Constructs, null, ref Constructs._sealTicks, server: false);
+            BakeKits.WarmOnce(); // (a client that joined a running match: its kits made once here, not in its first Catalogue)
             Constructs.LoadStep(server: false); // (the bins' loads as heard: this copy's mass and centre of mass follow the server's)
             ConstructConveyor.ClientStep(Constructs); // (pieces ride on between the server's word: ConstructConveyor.cs)
             SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)

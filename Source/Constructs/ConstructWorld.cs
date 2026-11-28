@@ -462,6 +462,8 @@ public sealed partial class ConstructWorld
         Designs.Clear(); // (a world's shared panel designs go with it: PanelDesigns.cs)
         ClearShipDesigns(); // (the ship designs' list too: DesignParts.cs)
         ClearBaked(); // (and its baked designs' list; the shared table keeps them by hash: BakedParts.cs)
+        OvenServed.Clear(); // (and which rule kits its ovens take: the next world's bodies reuse the ids, BakeKits.OvenServes)
+        OvenServeTold.Clear();
         DesignStamp++;
         foreach (var c in Bodies)
             Removed.Add(c.Id);

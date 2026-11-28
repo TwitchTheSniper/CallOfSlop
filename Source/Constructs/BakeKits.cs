@@ -222,33 +222,46 @@ public static class BakeKits
     public static bool AssemblerRefuses(ConstructWorld world, Construct c, ConstructPartDef made) =>
         Has(made) && (IsNamed(made.Name) || OvenServes(world, c, made));
 
-    private static readonly Dictionary<int, (int Look, bool Takes)> Served = new(64);
-    private static readonly HashSet<int> Told = new(64);
+    /// <summary>The oven work-outs <see cref="OvenServes"/> may redo in one SealTick (a quarter second), past the first look of each.</summary>
+    public const int ServeBudget = 8;
+
+    /// <summary>SealTicks (4 a second, either peer: ConstructSeal) an answer of <see cref="OvenServes"/> stands, its body unchanged.</summary>
+    private const int ServeEvery = 8;
 
     /// <summary>
-    /// Server: does a Bake Oven on <paramref name="c"/> take an order for this part (its kit's pieces made on a station's line or by an Extruder
-    /// into the bed, its tunnel big enough: ConstructBakeOven.OrderRefusal)? Worked out once a second a construct and part; said in the log once
-    /// a construct and part, which way it goes. Allocates only the first time.
+    /// Either peer: does a Bake Oven on <paramref name="c"/> take an order for this part (its kit's pieces made on a station's line or by an
+    /// Extruder into the bed, its tunnel big enough: ConstructBakeOven.OrderRefusal, asked quietly)? Kept in the world a construct and part,
+    /// worked out again when the body is rebuilt or every <see cref="ServeEvery"/> SealTicks, staggered by the key, at most
+    /// <see cref="ServeBudget"/> times a SealTick (an answer older than that stands meanwhile); the first look of each is always made. Said in
+    /// the log once a construct, part and way. Makes text only the first time it says one.
     /// </summary>
     public static bool OvenServes(ConstructWorld world, Construct c, ConstructPartDef made)
     {
         var key = c.Id << 16 | made.Id;
-        var look = world.OvenLooks / 10;
-        if (Served.TryGetValue(key, out var got) && got.Look == look)
+        var tick = world.SealTick;
+        var look = (tick + (int)((uint)key * 2654435761u >> 29)) / ServeEvery; // (a key's own eighth of the window: not every answer at once)
+        var had = world.OvenServed.TryGetValue(key, out var got);
+        if (had && got.Look == look && got.Stamp == c.RebuildStamp && got.Parts == c.PartCount)
             return got.Takes;
+        if (world.OvenServeTick != tick)
+            (world.OvenServeTick, world.OvenServeLeft) = (tick, ServeBudget);
+        if (had && world.OvenServeLeft <= 0)
+            return got.Takes; // (this SealTick's work-outs are spent: the last answer until the next)
+        world.OvenServeLeft--;
         var takes = false;
         var o = new WorkOrder { Part = (ushort)made.Id, Count = 1 };
-        string? why = null;
+        int oven = -1;
         for (var m = 0; m < c.PartCount && !takes; m++)
             if (c.DefOf(m).IsBakeOven && !c.Parts[m].Broken)
             {
-                why = ConstructBakeOven.OrderRefusal(world, c, m, c.DefOf(m), o);
-                takes = why == null;
+                oven = m;
+                takes = ConstructBakeOven.OrderRefusal(world, c, m, c.DefOf(m), o, say: false) == null;
             }
-        Served[key] = (look, takes);
-        if (Told.Add(key << 1 | (takes ? 1 : 0)))
+        world.OvenServed[key] = (c.RebuildStamp, c.PartCount, look, takes);
+        if (world.OvenServeTold.Add(key << 1 | (takes ? 1 : 0)))
             Console.WriteLine(takes ? $"[bake kits] construct {c.Id}: the {made.Name} goes to a Bake Oven (its kit)"
-                : $"[bake kits] construct {c.Id}: the {made.Name} falls back to its Assembler row: {why ?? "no Bake Oven here"}");
+                : $"[bake kits] construct {c.Id}: the {made.Name} falls back to its Assembler row: "
+                  + (oven >= 0 ? ConstructBakeOven.OrderRefusal(world, c, oven, c.DefOf(oven), o) : "no Bake Oven here"));
         return takes;
     }
 
@@ -720,8 +733,35 @@ public static class BakeKits
     /// The part whose kit a design's hash is, at the turn it was baked (null: none). Every kit at every turn, worked out once. Two parts can
     /// share a kit (the keel's bands where the hull runs straight): <paramref name="want"/>, the oven's order, picks between them.
     /// </summary>
-    /// <summary>Every kit resolved and its hashes made now (a match's start), not on the tick of the first bake or order.</summary>
-    public static void Warm() => Target("");
+    /// <summary>
+    /// Every kit resolved and its hashes made now (a match's start, either peer), not on the tick of the first bake or order: the listed
+    /// kits, then every placed part's answer to <see cref="Has"/> and its rule kit (the first Catalogue after a load asked hundreds in one
+    /// tick). Said in the log with its time. Again only when the Assembler table changes (a mod's).
+    /// </summary>
+    public static void Warm()
+    {
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        Target("");
+        var table = AssemblingTable.Current;
+        if (ReferenceEquals(_warmTable, table))
+            return;
+        var all = ConstructParts.All;
+        var kits = 0;
+        for (var k = 0; k < all.Count; k++)
+            if (all[k] is { } d && Has(d) && !IsNamed(d.Name))
+                kits++;
+        _warmTable = table;
+        Console.WriteLine($"[bake kits] warmed: {kits} rule kits of {all.Count} parts in {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms");
+    }
+
+    private static AssemblingTable? _warmTable;
+
+    /// <summary>A peer's look (a joined client's tick: a client that joins a running match gets no match start): <see cref="Warm"/> unless done. One compare.</summary>
+    public static void WarmOnce()
+    {
+        if (!ReferenceEquals(_warmTable, AssemblingTable.Current))
+            Warm();
+    }
 
     public static Hit? Target(string hash, ushort want = 0, OrderList? queue = null)
     {

@@ -7,6 +7,14 @@ public sealed partial class ConstructWorld
     /// <summary>Server: each Bake Oven's kit on a lifter's hook or just set on its bed, by the oven ((body &lt;&lt; 16) | part): the kit's body. Not saved.</summary>
     internal readonly Dictionary<int, ushort> OvenKits = new(4);
     internal int OvenLooks; // oven steps so far (a kit look a second an oven)
+
+    /// <summary>
+    /// Either peer: does an oven on a construct take a rule kit's part ((body &lt;&lt; 16) | part: BakeKits.OvenServes), with the body's
+    /// RebuildStamp and part count and the SealTick window it was worked out at. Per world (a world swap brings its own), not saved.
+    /// </summary>
+    internal readonly Dictionary<int, (int Stamp, int Parts, int Look, bool Takes)> OvenServed = new(64);
+    internal readonly HashSet<int> OvenServeTold = new(64); // (what the log said, once a construct and part and way)
+    internal int OvenServeTick = int.MinValue, OvenServeLeft; // (the work-outs left in this SealTick: BakeKits.ServeBudget)
 }
 
 /// <summary>
@@ -23,26 +31,29 @@ public static partial class ConstructBakeOven
 {
     private const int KitEvery = 10; // oven steps (1 s)
 
-    /// <summary>Server: will this oven take the order? Null, or why not.</summary>
-    public static string? OrderRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
+    /// <summary>The refusal a quiet <see cref="OrderRefusal"/> gives (say: false): no text made.</summary>
+    internal const string No = "no";
+
+    /// <summary>Server: will this oven take the order? Null, or why not (<paramref name="say"/> false: <see cref="No"/>, its own checks making no text).</summary>
+    public static string? OrderRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o, bool say = true)
     {
         if (o.IsPiece || o.Name != null)
-            return $"the {d.Name} bakes parts made from kits: {ConstructCrafting.NameOf(o)} isn't one";
+            return !say ? No : $"the {d.Name} bakes parts made from kits: {ConstructCrafting.NameOf(o)} isn't one";
         var made = ConstructParts.Def(o.Part);
         if (!BakeKits.Has(made) || BakeKits.BlueprintOf(made) == null)
-            return $"the {made.Name} isn't made from a kit: an oven bakes only what Constructs/BakeKits.json and Constructs/BakeKits/ list";
+            return !say ? No : $"the {made.Name} isn't made from a kit: an oven bakes only what Constructs/BakeKits.json and Constructs/BakeKits/ list";
         if (Unbaking(c.Parts[part], d))
-            return $"the {d.Name} is set to Un-bake";
+            return !say ? No : $"the {d.Name} is set to Un-bake";
         if (o.Count is < 1 or > WorkOrders.MaxCount)
-            return $"an order is for 1 to {WorkOrders.MaxCount} parts";
+            return !say ? No : $"an order is for 1 to {WorkOrders.MaxCount} parts";
         if (c.Parts[part].Orders is { Count: >= WorkOrders.MaxOrders })
-            return $"the {d.Name}'s queue is full ({WorkOrders.MaxOrders} orders)";
+            return !say ? No : $"the {d.Name}'s queue is full ({WorkOrders.MaxOrders} orders)";
         if (!MachineBlocks.TryOf(c, part, out var asm) || asm.W == 0)
-            return $"the {d.Name} has no bed: weld Oven Bed Blocks beside it";
+            return !say ? No : $"the {d.Name} has no bed: weld Oven Bed Blocks beside it";
         if (BakeKits.MinBedCells(made) is var least and > 0 && asm.W * asm.L < least)
-            return $"the {made.Name} bakes on a bed of {least} cells or more (Constructs/BakeKits.json \"bigBed\"): this one has {asm.W * asm.L}";
-        if (BakeKits.ByRule(made) && BedLacks(c, asm, BakeKits.KitSize(made)) is { } small)
-            return $"the {made.Name} kit ({small}) fits no way in this oven's tunnel";
+            return !say ? No : $"the {made.Name} bakes on a bed of {least} cells or more (Constructs/BakeKits.json \"bigBed\"): this one has {asm.W * asm.L}";
+        if (BakeKits.ByRule(made) && !BedFits(c, asm, BakeKits.KitSize(made)))
+            return !say ? No : $"the {made.Name} kit ({BedLacks(c, asm, BakeKits.KitSize(made))}) fits no way in this oven's tunnel";
         // A one-piece bake (Sean, 2026-11-28: "Yes, skip the station"): an Extruder whose pieces reach the bed makes its piece, no station.
         if (BakeKits.OnePiece(made) && DirectExtruder(world, c, part, BakeKits.KitOf(made)![0].Key) >= 0)
             return null;
@@ -53,7 +64,7 @@ public static partial class ConstructBakeOven
         var nearDist = float.MaxValue;
         for (var s = 0; s < c.PartCount; s++)
         {
-            if (!c.DefOf(s).IsBuildStation || c.Parts[s].Broken || ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, s)) != null)
+            if (!c.DefOf(s).IsBuildStation || c.Parts[s].Broken || !ConstructStation.QuickFits(bp, ConstructStation.BaySize(c, s)))
                 continue;
             var rolls = ConstructRollOut.RunOut(c, s) is var run and >= 0 ? ConstructRollOut.OvenOf(c, run) : -1;
             if (rolls >= 0 && rolls != part)
@@ -63,18 +74,28 @@ public static partial class ConstructBakeOven
                 (near, nearDist) = (s, dist);
         }
         if (near < 0)
-            return $"no Building Station on this construct has a bay that holds the {made.Name} kit (and doesn't roll its kits to another oven)";
+            return !say ? No : $"no Building Station on this construct has a bay that holds the {made.Name} kit (and doesn't roll its kits to another oven)";
         if (!OrdersConsole(c, near) && AnyOrdersConsole(c, bp)) // (none has one: a plain station orders by its own links, as any build)
-            return $"the Building Station nearest the {d.Name} that holds the {made.Name} kit has no Line Console wired into its Orders, so it can't order the kit's pieces";
+            return !say ? No : $"the Building Station nearest the {d.Name} that holds the {made.Name} kit has no Line Console wired into its Orders, so it can't order the kit's pieces";
         if (OrdersConsole(c, near) && LineLacks(world, c, near, bp) is { } lacks)
-            return $"nothing on the line of the Building Station nearest the {d.Name} makes the {made.Name} kit's {lacks}"; // (a deck's 10 m plates on line A's 6 m Sheet Extruder: Sean, 2026-11-23, decks on line C, walls on A and B)
+            return !say ? No : $"nothing on the line of the Building Station nearest the {d.Name} makes the {made.Name} kit's {lacks}"; // (a deck's 10 m plates on line A's 6 m Sheet Extruder: Sean, 2026-11-23, decks on line C, walls on A and B)
         if (PadLacks(world, c, near, bp) is { } wide)
-            return $"the {made.Name} kit's {wide} fits none of the pick pads of the Building Station nearest the {d.Name}"; // (a 2.75 m wall plate and a narrow line's 2 m strip pad, 2026-11-26)
+            return !say ? No : $"the {made.Name} kit's {wide} fits none of the pick pads of the Building Station nearest the {d.Name}"; // (a 2.75 m wall plate and a narrow line's 2 m strip pad, 2026-11-26)
         return null;
     }
 
     /// <summary>Why a kit of these sides (m) fits no way up in the oven's tunnel (the hearth between its walls and doors, under its roof), or null.</summary>
     internal static string? BedLacks(Construct c, in CMachineAsm asm, Vector3 kit)
+    {
+        if (BedFits(c, asm, kit))
+            return null;
+        var bed = new Bed(c, asm);
+        var room = bed.InMax - bed.InMin;
+        return FormattableString.Invariant($"{kit.X:0.#} x {kit.Y:0.#} x {kit.Z:0.#} m, the hearth {room.X:0.#} x {room.Z:0.#} m, {room.Y:0.#} m clear");
+    }
+
+    /// <summary>Does a kit of these sides lie some way in the oven's tunnel (any of the six ways a box lies)? Allocates nothing.</summary>
+    internal static bool BedFits(Construct c, in CMachineAsm asm, Vector3 kit)
     {
         var bed = new Bed(c, asm);
         var room = bed.InMax - bed.InMin; // (x across, y the clear height, z along)
@@ -84,9 +105,9 @@ public static partial class ConstructBakeOven
             // (each of the six ways a box lies: which side goes across, up and along)
             var (a, b, l) = k switch { 0 => (0, 1, 2), 1 => (0, 2, 1), 2 => (1, 0, 2), 3 => (1, 2, 0), 4 => (2, 0, 1), _ => (2, 1, 0) };
             if (s[a] <= room.X + 0.05f && s[b] <= room.Y + 0.05f && s[l] <= room.Z + 0.05f)
-                return null;
+                return true;
         }
-        return FormattableString.Invariant($"{kit.X:0.#} x {kit.Y:0.#} x {kit.Z:0.#} m, the hearth {room.X:0.#} x {room.Z:0.#} m, {room.Y:0.#} m clear");
+        return false;
     }
 
     /// <summary>
@@ -291,7 +312,7 @@ public static partial class ConstructBakeOven
     private static bool AnyOrdersConsole(Construct c, ConstructBuild.Blueprint bp)
     {
         for (var s = 0; s < c.PartCount; s++)
-            if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, s)) == null && OrdersConsole(c, s))
+            if (c.DefOf(s).IsBuildStation && !c.Parts[s].Broken && ConstructStation.QuickFits(bp, ConstructStation.BaySize(c, s)) && OrdersConsole(c, s))
                 return true;
         return false;
     }
@@ -377,7 +398,7 @@ public static partial class ConstructBakeOven
             }
             if (ConstructStationTree.Idle(world, c, s) && ConstructRecycler.Powered(world, c, s))
             {
-                if (dist < idleDist && ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, s)) == null)
+                if (dist < idleDist && ConstructStation.QuickFits(bp, ConstructStation.BaySize(c, s)))
                     (idle, idleDist) = (s, dist);
                 if (rolls == part && ahead < 0)
                     ahead = s;
@@ -426,7 +447,7 @@ public static partial class ConstructBakeOven
         }
         // Kits under way: the next order's kit starts ahead, only at a station whose builds roll onto this bed (it waits at the run's end
         // behind the one before; a crane-fed station's kit would wait in its bay and hold the station for another oven's kit).
-        if (ahead < 0 || KitAfter(c, part, under) is not { } next || ConstructStation.QuickRefusal(next, ConstructStation.BaySize(c, ahead)) != null)
+        if (ahead < 0 || KitAfter(c, part, under) is not { } next || !ConstructStation.QuickFits(next, ConstructStation.BaySize(c, ahead)))
             return;
         if (ConstructStation.Start(world, c, ahead, next.Name, 0) is { } no2)
             Console.WriteLine($"[oven] construct {c.Id} part {part}: the next kit ({next.Name}) can't start ahead: {no2}");
