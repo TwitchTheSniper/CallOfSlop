@@ -703,12 +703,12 @@ public sealed partial class ZeroDayWorks2 : IPartGenerator
             Vector2 Cell(int i, int j) => Local(x, z, rot, -sx / 2 + 1 + 2 * i, -sz / 2 + 1 + 2 * j);
             // (the row furthest down the flow: a former's and a cutter's Out Tables)
             var lastRow = Vector2.Dot(Cell(0, l - 1) - Cell(0, 0), flow) > 0 ? l - 1 : 0;
-            // A Bake Oven's tunnel runs from its Core's row (its way in) to the far row (its way out): its Core stands by the row up the
-            // flow, so a kit rolled out of its line's station bay comes in at the in end and the baked part rolls on toward the main station
-            // (Sean's layout drew each oven's Core at its down-flow end, where the kits rolled into the tunnel's out end: 2026-11-26).
+            // A Bake Oven's Core stands where Sean's layout draws it (its down-flow end): the oven's runs lay its tunnel, the station's run
+            // in and the run on to the main station (ConstructRollOut.OvenWays, 2026-11-28). It stood by the up-flow row from 2026-11-26,
+            // when the Core's row was the way in, and a station's rover dock beside that row clashed with it.
             // A Panel Former's Core likewise stands by the up-flow row: on the narrow lines' 10 x 3 formers the layout's Core row was the Out
             // Table row, and a Core welded only to Out Tables has no bed (2026-11-26: those two formers had no cells, so nothing ran there).
-            var far = id is "bake-oven" or "panel-former" ? lastRow == 0 && l > 1 : Flag(it, "coreFar");
+            var far = id == "panel-former" ? lastRow == 0 && l > 1 : Flag(it, "coreFar");
             var coreLocal = new Vector2(coreSide * (sx / 2 + 1), far ? sz / 2 - 1 : -sz / 2 + 1);
             var core = Local(x, z, rot, coreLocal.X, coreLocal.Y);
 
