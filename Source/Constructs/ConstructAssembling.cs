@@ -319,7 +319,10 @@ public static class ConstructAssembling
     /// II's main Assembler stood for good behind 4 Drive Bells waiting on Gear Sets, its lockers, crates and Bearings queued behind them).
     /// Ready means it builds here (tier, modules, bed, tool), every part input is in the hopper over what the orders ahead of it need
     /// (it never takes the head's gathered inputs), and every material is in the hopper or in a store chuted into it. No batch of the head
-    /// is under way (it is short), so nothing is lost; the head stays next. True when one moved.
+    /// is under way (it is short), so nothing is lost; it goes back one place, and takes the head again when the order then at the head
+    /// finishes or is itself short for <see cref="ShortWait"/> with the old head ready (the search runs in queue order). A chained order
+    /// moves only once its link has asked for its own inputs (<see cref="ConstructLogisticsPlan.Settled"/>), so its count of the hopper stands.
+    /// True when one moved.
     /// </summary>
     private static bool ReadyFirst(ConstructWorld world, AssemblingTable table, Construct c, int part, CStore st, ConstructPartDef d, in AsmFit fit)
     {
@@ -335,7 +338,7 @@ public static class ConstructAssembling
         var q = c.Parts[part].Orders!;
         for (var k = 1; k < q.Count; k++)
         {
-            if (q.Items[k].IsPiece || table.Of(q.Items[k].Part) is not { } r || r.Machine != d.AsmMachine || r.MinTier > d.Tier
+            if (q.Items[k].IsPiece || !ConstructLogisticsPlan.Settled(world, c, q.Items[k].Chain) || table.Of(q.Items[k].Part) is not { } r || r.Machine != d.AsmMachine || r.MinTier > d.Tier
                 || fit.Missing(r) != 0 || fit.LacksTool(r) || fit.AtOnce(r.Output) == 0 || !CanStart(world, table, c, part, st, q, k, r))
                 continue;
             var o = q.Items[k];
@@ -356,13 +359,21 @@ public static class ConstructAssembling
             var have = st.KindIndex(p.Id) is var i and >= 0 ? st.KindCount![i] : 0;
             for (var j = 0; j < k && have >= count; j++)
                 if (!q.Items[j].IsPiece && table.Of(q.Items[j].Part) is { } rj)
-                    have -= rj.CountOf(p.Id) * q.Items[j].Left;
+                    have -= rj.CountOf(p.Id) * ((q.Items[j].Left + rj.Count - 1) / rj.Count); // (whole batches: a recipe makes Count a batch)
             if (have < count)
                 return false;
         }
         foreach (var (m, units) in r.Materials)
-            if (st.MixOf(m) < units && !Chuted(world, c, part, m))
-                return false;
+        {
+            var have = st.MixOf(m);
+            for (var j = 0; j < k && have >= units; j++)
+                if (!q.Items[j].IsPiece && table.Of(q.Items[j].Part) is { } rj)
+                    foreach (var (mj, uj) in rj.Materials)
+                        if (mj == m)
+                            have -= uj * ((q.Items[j].Left + rj.Count - 1) / rj.Count);
+            if (have < units && !Chuted(world, c, part, m))
+                return false; // (what the hopper holds over the orders ahead, or a chute that brings more: a tipped-in material is kept for them)
+        }
         return true;
     }
 
