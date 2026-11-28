@@ -216,6 +216,7 @@ public static class StationRovers
         new("Large rover", 26f, 120000f, 1.5f, 0.6f, 13f, 5.0f, 3.25f, 3.6f, 4.0f, 12f, 8f, 8),
     ];
 
+    public const float HandSpeed = 2f; // the hand swings round the mast this many times its rover's drive speed (Sean 2026-11-28)
     public const float VSpeed = 1.5f; // m/s the hook rises and falls
     public const float DropSpeed = 4f; // m/s the hook goes down onto a piece or its place and back up (Sean 2026-11-27: the drive is the time, the drop in is quick)
     public const float DropSeconds = 0.5f; // s a rover holds a piece on its place before it lets go (the fit; a crane's weld time is the station's own)
@@ -283,7 +284,7 @@ public static class StationRovers
     {
         float ra = MathF.Sqrt(a.X * a.X + a.Z * a.Z), rb = MathF.Sqrt(b.X * b.X + b.Z * b.Z);
         var arc = MathF.Abs(Wrap(MathF.Atan2(b.X, b.Z) - MathF.Atan2(a.X, a.Z))) * MathF.Max(1f, (ra + rb) * 0.5f);
-        return 0.4f + (arc + MathF.Abs(rb - ra)) / rc.Speed + MathF.Abs(b.Y - a.Y) / VSpeed;
+        return 0.4f + (arc + MathF.Abs(rb - ra)) / (rc.Speed * HandSpeed) + MathF.Abs(b.Y - a.Y) / VSpeed;
     }
 
     /// <summary>
