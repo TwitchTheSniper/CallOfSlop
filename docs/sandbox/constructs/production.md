@@ -2784,3 +2784,40 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   start kit carries a Ring Die. Left on the Assembler: rows with two kinds of part input (bay 2 takes one kit: Heat, Laser and Seeker
   Heads, AA Sight, Glide Guidance Kit, Server Rack), assemblies (Robot Shell, MMU, Jetpack), the Thruster Jig rows (phase 4), and the
   long tail of the press chain list (371 rows) not yet sorted die by die.
+- **Phase 3 (this change; `BakeKits.cs`, `ConstructBakeOvenOrders.cs`).** `BakeKits` is a rule, not a list: every placed part
+  (`PhysicsOnly`) with an Assembler row, no press preset and no tool block is made from a box kit worked out from its own boxes
+  (`BakeKits.ByRule`, `Make`) and baked into the catalogue part (name, sockets, mass, job unchanged). BakeKits.json and
+  `Constructs/BakeKits/` still list kits by hand and win over the rule. The row stays in Assembling.json as the bill (costs, loot,
+  market, `--bill`). A rule kit is extruded in its row's main material where an Extruder takes it (else steel); a part drawn only by
+  detail and lathe shapes (wheels, domes, bombs) takes its hidden solid boxes. Its row's **components** (Bearings, Circuit Boards, Wiring
+  Looms...) are kit pieces laid in rows on the part's top face, and its **rubber or concrete**, where that isn't the kit's own
+  material, a 1 cm sheet piece over the top face (the Extruder now takes rubber: Extrusion.json's `materials`; it recycles and colours as
+  any rubber part). A kit is at most 193 pieces (one body's freeform welds) and one part's boxes. The kit stands on its biggest extrusion.
+  A part whose kit is **one extrusion** bakes alone (a one-piece bake, Sean: "Yes, skip the station"): the piece is unpainted, a lone
+  extrusion on a bed bakes when it is a known one-piece kit (`BakeKits.IsOnePieceKey`), and an oven whose head order is one orders the
+  piece of an Extruder whose conveyors reach a run the oven takes (`DirectExtruder`, `OnePieceFeed`, one or two pieces under way; the
+  reach walk counts such a run as the oven's way in) and the piece rolls off the run's end onto the bed; with no such Extruder the
+  one-step kit is built at a station as any other. A rule kit is matched by its oven's orders (its head, then its queue: rule kits are
+  too many to hash at a match's start). **Which oven:** an order goes to the smallest oven whose tunnel holds the kit
+  (`ConstructBakeOven.BedLacks` refuses the rest), by size class (MakerRoutes.Ovens): a bigger oven takes one only when every smaller
+  one that fits has `SpillAt` (4) more orders queued (`ConstructBakeOven.Rank`, used by a station's ask and by chains). **Assemblers:** the
+  Assembler stays a fallback until phase 6. A listed kit's part no Assembler builds, as before; a rule kit's part an Assembler refuses
+  only while a Bake Oven on its construct takes the order (`BakeKits.OvenServes`: `OrderRefusal`, the kit's pieces made on a station's
+  line, its tunnel big enough; asked quietly, with no text made, and kept in the world (`ConstructWorld.OvenServed`) a construct and part:
+  again when the body is rebuilt or every 2 s of `SealTick`, which both peers advance, staggered by the key, at most `ServeBudget` (8)
+  work-outs a quarter second; the log says once which way each part went), else its
+  row builds it (orders, chains, the catalogue, `MachineMakes`). A component a station asks for a bake kit it builds ranks Low at its
+  maker (`ConstructCrafting.AskRank`), so the fittings' Bearings never hold the ship's own pressed parts. **`--maker-report`** prints each baked part's tree (its
+  pieces, sub-kits and the oven each bakes on) and the work per oven size, whole kits against split ones: a kit too big for the small oven
+  is split along its boxes (`BakeKits.Split`: the gap along its longest side that leaves the smallest ovens) until each sub-kit fits it
+  or is one piece. 2026-11-28: 140 one-piece bakes, 2,104 station kits, 70 listed, 38 still Assembler (the tool rows); 326 parts split;
+  every baked part's subparts, whole 69% small oven, split 82%. The frigate: 1 one-piece and 46 station-kit kinds (its fittings carry
+  Circuit Boards or rubber), its oven work 96% small whole, 97% split. **Not yet:** the split is planned and reported, not built: the
+  factory still bakes a big kit whole on the oven that holds it (sub-kits as their own orders, baked pieces fitted as the next level's
+  kit, need an order for a baked sub-assembly: the next phase). `--bake-kit rule:N` checks every Nth rule kit. A one-piece kit's direct
+  feed needs an Extruder whose conveyor reaches a run into the oven, which no shipped works has yet. On Zero Day Works II (300 s,
+  `--station-check ... --build "Zero Day Frigate" --dies`) the frigate fitted 16 of 346 parts (main 17; the leg pod parts come off the presses in another
+  order): its kits with a rubber or concrete sheet (Lift, Retro and Drive Jets, Heavy RCS Thrusters, ladders, lockers) fall back to its
+  Assemblers, since no line's Extruder there is fed rubber; its doors and hatches go to the ovens. The works rebuild (phase 5) gives
+  them their lines. The
+  Railgun's 32.9 m kit fits no oven (it never fitted an Assembler bed either).

@@ -420,6 +420,7 @@ public static partial class BakedParts
     public static string? CanBake(Construct c, bool tell = true)
     {
         var bake = 0;
+        var lone = -1;
         var boxes = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -431,9 +432,12 @@ public static partial class BakedParts
             if (BakeRefusal(d, tell) is { } why)
                 return tell ? $"{Shown(d)} can't be baked: {why}" : No;
             bake++;
+            lone = i;
             boxes += d.Boxes.Length;
         }
-        if (bake < 2)
+        if (bake == 1 && !(lone >= 0 && c.DefOf(lone).IsExtrusion && BakeKits.IsOnePieceKey(c.DefOf(lone).ExKey)))
+            return "nothing to bake: weld two or more subparts"; // (or one extrusion that is a part's whole kit: a one-piece bake, BakeKits.cs)
+        if (bake < 1)
             return "nothing to bake: weld two or more subparts";
         if (bake > MaxSubparts)
             return tell ? $"over {MaxSubparts} subparts" : No;
@@ -532,7 +536,7 @@ public static partial class BakedParts
     /// Server: bakes body <paramref name="c"/> into a new body of one baked part (and its socket plates), where it stood. The old body goes.
     /// Null: it can't (<see cref="LastRefusal"/>). The design is kept in the world (sent to everyone with the next flush, before the body).
     /// </summary>
-    public static Construct? Bake(ConstructWorld world, Construct c, ushort want = 0)
+    public static Construct? Bake(ConstructWorld world, Construct c, ushort want = 0, OrderList? queue = null)
     {
         if (CanBake(c) is { } why)
         {
@@ -563,8 +567,13 @@ public static partial class BakedParts
         }
         var text = DesignText(group, out var origin);
         // A bake kit's design (BakeKits.cs) comes out as the part it is the kit of, turned as the kit was.
-        if (BakeKits.Target(HashOf(text), want) is { } kit) // (want: the oven's order, when two parts share a kit)
+        if (BakeKits.Target(HashOf(text), want, queue) is { } kit) // (want: the oven's order, when two parts share a kit; queue: a rule kit is matched by the oven's orders)
             return Swap(world, c, kit.Part, origin + kit.Offset, kit.Rot, health / Math.Max(full, 1e-3f), plates, parts.Count);
+        if (parts.Count < 2)
+        {
+            LastRefusal = "one piece bakes only into a part it is the whole kit of, and no order of this oven's is that part";
+            return null;
+        }
         if (Register(text) is not { } hash)
             return null;
         if (Parse(KeyOf(hash)) is not { } def)

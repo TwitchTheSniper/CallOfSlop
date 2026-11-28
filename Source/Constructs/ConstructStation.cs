@@ -362,10 +362,27 @@ public static partial class ConstructStation
         if (bay.X <= 0)
             return FitRefusal(Vector3.Zero, bay);
         var room = bay.X * bay.Y * bay.Z;
+        if (QuickLack(bp, bay, out var volume) is { } d)
+        {
+            var s = d.BoundsMax - d.BoundsMin;
+            return $"doesn't fit the bay: its {d.Name} alone is {s.X:0.0} x {s.Y:0.0} x {s.Z:0.0} m, the bay {bay.X:0.0} x {bay.Z:0.0} m and {HeightText(bay)} ({(IsOpen(bay) ? "add Bay Blocks for room" : "add Bay Blocks for room, or clear what is over the bay")})";
+        }
+        return volume > room * 1.5
+            ? $"doesn't fit the bay: its {bp.Steps.Count} parts take about {volume:0} m3, the bay holds {room:0} m3 ({bay.X:0.0} x {bay.Z:0.0} m and {HeightText(bay)}: add Bay Blocks)"
+            : null;
+    }
 
-        double volume = 0;
+    /// <summary><see cref="QuickRefusal"/> as yes or no (true: only a build can tell), making no text. Allocates nothing.</summary>
+    public static bool QuickFits(ConstructBuild.Blueprint bp, Vector3 bay) =>
+        bay.X > 0 && QuickLack(bp, bay, out var volume) == null && volume <= bay.X * bay.Y * bay.Z * 1.5;
+
+    /// <summary>The first part of a blueprint that no turn puts inside the bay (null: none), and the parts' boxes' volume up to it.</summary>
+    private static ConstructPartDef? QuickLack(ConstructBuild.Blueprint bp, Vector3 bay, out double volume)
+    {
+        volume = 0;
         string last = "";
         ConstructPartDef? d = null;
+        var (b0, b1, b2) = Sorted(bay);
         foreach (var step in bp.Steps)
         {
             if (step.Part != last)
@@ -375,14 +392,11 @@ public static partial class ConstructStation
             var s = d.BoundsMax - d.BoundsMin;
             // (a part fits when its sides, longest first, are no longer than the bay's, longest first)
             var (p0, p1, p2) = Sorted(s);
-            var (b0, b1, b2) = Sorted(bay);
             if (p0 > b0 + 0.01f || p1 > b1 + 0.01f || p2 > b2 + 0.01f)
-                return $"doesn't fit the bay: its {d.Name} alone is {s.X:0.0} x {s.Y:0.0} x {s.Z:0.0} m, the bay {bay.X:0.0} x {bay.Z:0.0} m and {HeightText(bay)} ({(IsOpen(bay) ? "add Bay Blocks for room" : "add Bay Blocks for room, or clear what is over the bay")})";
+                return d;
             volume += s.X * s.Y * s.Z;
         }
-        return volume > room * 1.5
-            ? $"doesn't fit the bay: its {bp.Steps.Count} parts take about {volume:0} m3, the bay holds {room:0} m3 ({bay.X:0.0} x {bay.Z:0.0} m and {HeightText(bay)}: add Bay Blocks)"
-            : null;
+        return null;
     }
 
     /// <summary>What a built body takes up, wheels' travel included: its low corner and its size, body frame.</summary>

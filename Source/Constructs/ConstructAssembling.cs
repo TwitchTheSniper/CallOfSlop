@@ -231,7 +231,7 @@ public static class ConstructAssembling
             return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine ? r : null;
         var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
         var list = table.ByMachine[d.AsmMachine];
-        return k >= 0 && k < list.Length && !BakeKits.Has(list[k].Output) ? list[k] : null; // (a part made from a kit is baked, never assembled: BakeKits.cs; its row stays for saved settings)
+        return k >= 0 && k < list.Length && !BakeKits.ListedKit(list[k].Output) ? list[k] : null; // (a part made from a listed kit is baked, never assembled: BakeKits.cs; its row stays for saved settings. A rule kit's part an Assembler still builds when no oven takes it: BakeKits.OvenServes)
     }
 
     private static void Work(ConstructWorld world, IWorldQuery query, AssemblingTable table, Construct c, int part, CStore st)
