@@ -1489,6 +1489,24 @@
       "max": 2
      },
      "presetsOnly": true
+    },
+    {
+     "id": "mmu",
+     "like": "Manned Manoeuvring Unit",
+     "label": "manned manoeuvring unit",
+     "preset": "hollow 70x105x35 steel",
+     "auto": false,
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 6.0,
+      "rate": 0.0,
+      "by": "mass",
+      "max": 6
+     },
+     "presetsOnly": true
     }
    ]
   },
@@ -4875,24 +4893,6 @@
       "rate": 0.0,
       "by": "mass",
       "max": 4
-     },
-     "presetsOnly": true
-    },
-    {
-     "id": "mmu",
-     "like": "Manned Manoeuvring Unit",
-     "label": "manned manoeuvring unit",
-     "preset": "hollow 70x105x35 steel",
-     "auto": false,
-     "blanks": [
-      "hollow"
-     ],
-     "bay2": {
-      "part": "Circuit Board",
-      "base": 6.0,
-      "rate": 0.0,
-      "by": "mass",
-      "max": 6
      },
      "presetsOnly": true
     }
@@ -11528,7 +11528,7 @@
   },
   {
    "part": "Manned Manoeuvring Unit",
-   "die": "control",
+   "die": "housing",
    "pattern": "mmu",
    "blank": "hollow 70x105x35 steel"
   }

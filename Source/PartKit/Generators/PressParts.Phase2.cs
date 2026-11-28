@@ -120,7 +120,7 @@ public sealed partial class PressParts
         // Board (as the Control Unit became 2 Boards), and the Robot Shell's copper and rubber go with the Assembler row.
         ("Server Rack", "housing", "serverrack", "hollow", "steel", "Circuit Board", true, 5),
         ("Robot Shell", "housing", "robotshell", "hollow", "steel", "Circuit Board", true, 2),
-        ("Manned Manoeuvring Unit", "control", "mmu", "hollow", "steel", "Circuit Board", true, 6),
+        ("Manned Manoeuvring Unit", "housing", "mmu", "hollow", "steel", "Circuit Board", true, 6),
     ];
 
     private static DieSpec RangeOf(string die) =>

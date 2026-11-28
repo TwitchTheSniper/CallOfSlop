@@ -2850,7 +2850,7 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
    rubber and (Works II only: Works I has none) cloth bins beside its steel, by way of its own bin (a straight drop near freeform welds
    was refused, "a segment reaches at most 8 m"); Works II's electronics Extruders take bronze too (Bearing rounds). Works II's frigate:
    16 and 19 of 346 in 300 s (main 16 to 19), 18 with the rows below. The frigate's last Assembler kinds moved too: the **Server Rack**,
-   **Robot Shell** and **Manned Manoeuvring Unit** are pressed (Housing, Housing and Control die patterns appended at the dies' ends,
+   **Robot Shell** and **Manned Manoeuvring Unit** are pressed (Housing die patterns appended at the die's end, a die both works carry;
    `PressParts.Phase2.cs`; bay 2 takes one kit, so each is a steel box round its Circuit Boards, a Wiring Loom counted as one more Board
    and the Robot Shell's copper and rubber dropped), their rows gone under rows mark 6 (protocol 490); a run-time **Ord Rack** or
    **ordnance design** (AssembledParts) bakes from a kit by the rule (`BakeKits.IsMadeKind`: its boxes and its made recipe's components,
