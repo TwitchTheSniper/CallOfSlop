@@ -2812,4 +2812,9 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   every baked part's subparts, whole 69% small oven, split 82%. The frigate: 1 one-piece and 46 station-kit kinds (its fittings carry
   Circuit Boards or rubber), its oven work 96% small whole, 97% split. **Not yet:** the split is planned and reported, not built: the
   factory still bakes a big kit whole on the oven that holds it (sub-kits as their own orders, baked pieces fitted as the next level's
-  kit, need an order for a baked sub-assembly: the next phase). `--bake-kit rule:N` checks every Nth rule kit.
+  kit, need an order for a baked sub-assembly: the next phase). `--bake-kit rule:N` checks every Nth rule kit. A one-piece kit's direct
+  feed needs an Extruder whose conveyor reaches a run into the oven, which no shipped works has yet. On Zero Day Works II (300 s,
+  `--station-check ... --build "Zero Day Frigate" --dies`) the frigate fitted 14 of 346 parts (main 17): its Lift, Retro and Drive Jets
+  and Heavy RCS Thrusters now wait for a rubber sheet no line's Extruder is fed rubber for, and the fittings' kits order Circuit Boards
+  and Bearings from the same presses as the frigate's own pressed parts; the works rebuild (phase 5) gives them their lines. The
+  Railgun's 32.9 m kit fits no oven (it never fitted an Assembler bed either).
