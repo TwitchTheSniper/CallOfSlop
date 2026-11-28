@@ -437,7 +437,7 @@ public static class ConstructCrafting
             {
                 foreach (var r in AssemblingTable.Current.ByMachine[md.AsmMachine])
                 {
-                    if (r.Pressed || r.MinTier > md.Tier || BakeKits.Has(r.Output) || !ConstructAssembling.Takes(c, m, r))
+                    if (r.Pressed || r.MinTier > md.Tier || BakeKits.AssemblerRefuses(world, c, r.Output) || !ConstructAssembling.Takes(c, m, r))
                         continue; // (a block Assembler lists only what its modules and bed build: WorkOrders refuses the rest)
                     var row = Row(new WorkOrder { Part = (ushort)r.Output.Id }, r.Output);
                     if (row.Make == 1)
@@ -754,9 +754,10 @@ public static class ConstructCrafting
 
     private static string? MachineMakes(ConstructWorld world, Construct c, CraftNet net, ushort part)
     {
-        if (ConstructParts.Get(part) is { } kd && BakeKits.Has(kd))
+        if (ConstructParts.Get(part) is { } kd && BakeKits.AssemblerRefuses(world, c, kd))
         {
-            // (a part made from a kit: an oven on the net bakes it, a station builds its kit: BakeKits.cs)
+            // (a part made from a kit: an oven on the net bakes it, a station builds its kit: BakeKits.cs; a rule kit's part no oven here
+            // takes falls back to its Assembler row, below: phase 3)
             for (var i = 0; i < net.MachineN; i++)
                 if (c.DefOf(net.Machines[i]) is { IsBakeOven: true } od)
                     return od.Name;
@@ -1184,6 +1185,20 @@ public static class ConstructCrafting
     /// Of the Bake Ovens on <paramref name="net"/> in the same pass (with a way to the tray or not) that take <paramref name="what"/>, the one
     /// with the shortest queue, the smaller bed on a tie (as chains rank them: ConstructLogisticsPlan.FindMaker), or -1. Allocates nothing.
     /// </summary>
+    /// <summary>
+    /// The rank a terminal's line takes at its maker (ConstructLogisticsPlan.Ranked: its feed class + 2). A component (an item, a Bearing or
+    /// a Circuit Board) a Building Station asks for a bake kit it builds ranks Low (Assembler retirement phase 3: the fittings' kits asked
+    /// for their Bearings at the presses that make the ship's own pressed parts, and the ship's waited behind them). Allocates nothing.
+    /// </summary>
+    private static byte AskRank(Construct c, int t, in WorkOrder what)
+    {
+        var rank = (byte)(StockTargets.FeedClass(c, t) + 2);
+        if (rank > 2 && !what.IsPiece && what.Name == null && c.DefOf(t).IsBuildStation && c.Parts[t].Station is { } j
+            && j.Name.EndsWith(BakeKits.KitSuffix, StringComparison.OrdinalIgnoreCase) && ConstructParts.Get(what.Part) is { PhysicsOnly: false })
+            return 2;
+        return rank;
+    }
+
     private static int LeastOven(ConstructWorld world, Construct c, CraftNet net, bool way, in WorkOrder what)
     {
         var best = -1;
@@ -1193,7 +1208,7 @@ public static class ConstructCrafting
             var m = net.Machines[i];
             if (net.MachineWay[i] != way || !c.DefOf(m).IsBakeOven || WorkOrders.Refusal(world, c, m, what) != null)
                 continue;
-            var score = (c.Parts[m].Orders?.Count ?? 0) * 256 + (MachineBlocks.TryOf(c, m, out var a) ? Math.Min(255, a.W * a.L) : 0);
+            var score = ConstructBakeOven.Rank(c, m); // (the smallest bed that holds it, then the shortest queue: Sean, 2026-11-28)
             if (score < bestScore)
                 (best, bestScore) = (m, score);
         }
@@ -1294,7 +1309,7 @@ public static class ConstructCrafting
             if (share[at] > most)
                 (most, maker) = (share[at], ms[at]); // (the order waits on its biggest share's machine; the others count by AskedAt)
             o.Split |= share[at] < ask;
-            ConstructLogisticsPlan.Ranked(world, c, ms[at], (byte)(StockTargets.FeedClass(c, t) + 2));
+            ConstructLogisticsPlan.Ranked(world, c, ms[at], AskRank(c, t, o.What));
             ConstructLogisticsPlan.Asked(world, c, net, t, o, ms[at], share[at]);
             o.Asked += (ushort)share[at];
             asked += share[at];
@@ -1535,7 +1550,7 @@ public static class ConstructCrafting
                     var why = LooseRefusal(world, c, m) ?? WorkOrders.Queue(world, c, m, o.What with { Count = (ushort)ask, Made = 0 }, blanks: false); // (its inputs are chained just below: Asked; never asked of a machine that drops it loose)
                     if (why == null)
                     {
-                        ConstructLogisticsPlan.Ranked(world, c, m, (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)
+                        ConstructLogisticsPlan.Ranked(world, c, m, AskRank(c, t, o.What)); // (a High terminal's line goes ahead of Normal ones: phase 5)
                         ConstructLogisticsPlan.Asked(world, c, net, t, o, m, ask); // (the parts its recipe needs: asked of other machines)
                         o.Asked += (ushort)ask;
                         ask = 0;

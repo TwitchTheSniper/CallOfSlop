@@ -149,15 +149,226 @@ public static class BakeKits
             : ps.FindIndex(p => p.Rot >= Rot24.Count) is var i and >= 0 ? $"piece {i}: turn {ps[i].Rot} (0 to {Rot24.Count - 1})" : null;
     }
 
-    /// <summary>Is this part made from a kit (baked, never assembled)?</summary>
+    /// <summary>
+    /// Is this part made from a kit (baked, never assembled by a block Assembler)? A part BakeKits.json or Constructs/BakeKits/ names, or by
+    /// the rule (Assembler retirement phase 3, Sean 2026-11-28): every placed part with an Assembler row, no press preset and no tool block
+    /// whose own boxes make a kit (<see cref="ByRule"/>). Worked out once a part and kept by its id: it is asked in looks that must not allocate.
+    /// </summary>
     public static bool Has(ConstructPartDef d)
     {
-        if (d.IsNamedRuntime || d.IsExtrusion)
-            return false;
-        foreach (var n in Names) // (no lambda: it is asked in looks that must not allocate)
-            if (n.Equals(d.Name, StringComparison.OrdinalIgnoreCase))
-                return !IsListed(d.Name) || KitOf(d, true) != null; // (a listed kit that can't be made leaves its part to the Assembler: else nothing makes it)
+        if (d.IsNamedRuntime || d.IsExtrusion || Extrusion.IsRuntimeId((ushort)d.Id))
+            return false; // (a run-time part, an Ord Rack or an ordnance design, AssembledParts: the Assembler's still)
+        var id = d.Id;
+        var defs = _hasDef;
+        if ((uint)id < (uint)defs.Length && ReferenceEquals(defs[id], d) && ReferenceEquals(_hasTable, AssemblingTable.Current))
+            return _has[id];
+        return HasNow(d);
+    }
+
+    private static ConstructPartDef?[] _hasDef = [];
+    private static bool[] _has = [];
+    private static AssemblingTable? _hasTable;
+
+    private static bool HasNow(ConstructPartDef d)
+    {
+        bool v;
+        if (IsNamed(d.Name))
+            v = !IsListed(d.Name) || KitOf(d, true) != null; // (a listed kit that can't be made leaves its part to the Assembler: else nothing makes it)
+        else
+            v = ByRule(d) && KitOf(d, true) != null;
+        lock (Gate)
+        {
+            if (!ReferenceEquals(_hasTable, AssemblingTable.Current))
+            {
+                (_hasTable, _hasDef, _has) = (AssemblingTable.Current, [], []);
+            }
+            var n = Math.Max(ConstructParts.All.Count, d.Id + 1);
+            if (_hasDef.Length < n)
+            {
+                Array.Resize(ref _hasDef, n);
+                Array.Resize(ref _has, n);
+            }
+            if (d.Id >= 0 && d.Id < _hasDef.Length)
+                (_hasDef[d.Id], _has[d.Id]) = (d, v);
+        }
+        return v;
+    }
+
+    private static bool IsNamed(string name)
+    {
+        foreach (var n in Names)
+            if (n.Equals(name, StringComparison.OrdinalIgnoreCase))
+                return true;
         return false;
+    }
+
+    /// <summary>
+    /// Is this part baked by the rule (Assembler retirement phase 3): a placed part (welded on, never in the hands) with an Assembler row,
+    /// no press preset (a die makes it) and no tool block (the Thruster Jig and Sewing Table rows are phase 4)? Its kit is worked out from
+    /// its own boxes, its components and its rubber or concrete (<see cref="Make"/>).
+    /// </summary>
+    public static bool ByRule(ConstructPartDef d) =>
+        d.PhysicsOnly && !d.IsNamedRuntime && !d.IsExtrusion && AssemblingTable.Current.Problem.Length == 0
+        && AssemblingTable.Current.Of((ushort)d.Id) is { Tool.Length: 0 } && PressTable.Current.PresetKeyOf(d) == null;
+
+    /// <summary>Is this part made from a kit BakeKits.json or Constructs/BakeKits/ lists (an Assembler never builds it, as before phase 3)?</summary>
+    public static bool ListedKit(ConstructPartDef made) => Has(made) && IsNamed(made.Name);
+
+    /// <summary>
+    /// Does an Assembler refuse to build this part, on construct <paramref name="c"/>? A listed kit's part always (as before); a rule kit's
+    /// part only while an oven on the construct takes its order (<see cref="OvenServes"/>): the Assembler stays a fallback until phase 6
+    /// (the plan: nothing stalls halfway), so a works whose lines can't make a kit's pieces (no Extruder fed rubber) still gets the part.
+    /// </summary>
+    public static bool AssemblerRefuses(ConstructWorld world, Construct c, ConstructPartDef made) =>
+        Has(made) && (IsNamed(made.Name) || OvenServes(world, c, made));
+
+    /// <summary>The oven work-outs <see cref="OvenServes"/> may redo in one SealTick (a quarter second), past the first look of each.</summary>
+    public const int ServeBudget = 8;
+
+    /// <summary>SealTicks (4 a second, either peer: ConstructSeal) an answer of <see cref="OvenServes"/> stands, its body unchanged.</summary>
+    private const int ServeEvery = 8;
+
+    /// <summary>
+    /// Either peer: does a Bake Oven on <paramref name="c"/> take an order for this part (its kit's pieces made on a station's line or by an
+    /// Extruder into the bed, its tunnel big enough: ConstructBakeOven.OrderRefusal, asked quietly)? Kept in the world a construct and part,
+    /// worked out again when the body is rebuilt or every <see cref="ServeEvery"/> SealTicks, staggered by the key, at most
+    /// <see cref="ServeBudget"/> times a SealTick (an answer older than that stands meanwhile); the first look of each is always made. Said in
+    /// the log once a construct, part and way. Makes text only the first time it says one.
+    /// </summary>
+    public static bool OvenServes(ConstructWorld world, Construct c, ConstructPartDef made)
+    {
+        var key = c.Id << 16 | made.Id;
+        var tick = world.SealTick;
+        var look = (tick + (int)((uint)key * 2654435761u >> 29)) / ServeEvery; // (a key's own eighth of the window: not every answer at once)
+        var had = world.OvenServed.TryGetValue(key, out var got);
+        if (had && got.Look == look && got.Stamp == c.RebuildStamp && got.Parts == c.PartCount)
+            return got.Takes;
+        if (world.OvenServeTick != tick)
+            (world.OvenServeTick, world.OvenServeLeft) = (tick, ServeBudget);
+        if (had && world.OvenServeLeft <= 0)
+            return got.Takes; // (this SealTick's work-outs are spent: the last answer until the next)
+        world.OvenServeLeft--;
+        var takes = false;
+        var o = new WorkOrder { Part = (ushort)made.Id, Count = 1 };
+        int oven = -1;
+        for (var m = 0; m < c.PartCount && !takes; m++)
+            if (c.DefOf(m).IsBakeOven && !c.Parts[m].Broken)
+            {
+                oven = m;
+                takes = ConstructBakeOven.OrderRefusal(world, c, m, c.DefOf(m), o, say: false) == null;
+            }
+        world.OvenServed[key] = (c.RebuildStamp, c.PartCount, look, takes);
+        if (world.OvenServeTold.Add(key << 1 | (takes ? 1 : 0)))
+            Console.WriteLine(takes ? $"[bake kits] construct {c.Id}: the {made.Name} goes to a Bake Oven (its kit)"
+                : $"[bake kits] construct {c.Id}: the {made.Name} falls back to its Assembler row: "
+                  + (oven >= 0 ? ConstructBakeOven.OrderRefusal(world, c, oven, c.DefOf(oven), o) : "no Bake Oven here"));
+        return takes;
+    }
+
+    /// <summary>
+    /// A kit's split into sub-kits (Sean, 2026-11-28: "utilize the different oven sizes in the factory layout"): a node's pieces, its
+    /// bounds' sides, the smallest oven that holds it (<see cref="MakerRoutes.Ovens"/>; their count: none) and its sub-kits. A leaf of two
+    /// or more pieces bakes them on its oven; a node with sub-kits bakes the baked sub-kits (and nothing else) on its own; a leaf of one
+    /// piece is the piece itself.
+    /// </summary>
+    public sealed class SplitNode
+    {
+        public List<int> Pieces = [];
+        public Vector3 Size;
+        public int Oven;
+        public List<SplitNode> Kids = [];
+    }
+
+    /// <summary>
+    /// A kit split along its boxes until every sub-kit fits the smallest oven, or is one piece (a piece no small bed holds, a railgun
+    /// barrel's, needs its own bigger bed). Each cut is the gap between pieces along the bounds' longest side that leaves the smaller
+    /// halves' ovens (then the more even halves). Null: no kit.
+    /// </summary>
+    public static SplitNode? Split(ConstructPartDef d)
+    {
+        if (KitOf(d) is not { } kit)
+            return null;
+        var all = new List<int>(kit.Length);
+        for (var i = 0; i < kit.Length; i++)
+            all.Add(i);
+        return SplitOf(kit, all, 0);
+    }
+
+    private static SplitNode SplitOf(Piece[] kit, List<int> set, int depth)
+    {
+        var (lo, hi) = Bounds(kit, 0, 0, set);
+        var node = new SplitNode { Pieces = set, Size = hi - lo, Oven = MakerRoutes.OvenFor(hi - lo) };
+        if (node.Oven == 0 || set.Count < 2 || depth > 16)
+            return node;
+        // Along the bounds' longest side, the pieces by their middles; each gap between two is a cut.
+        var size = hi - lo;
+        var ax = size.X >= size.Y && size.X >= size.Z ? 0 : size.Y >= size.Z ? 1 : 2;
+        var mids = new float[set.Count];
+        for (var k = 0; k < set.Count; k++)
+        {
+            var (plo, phi) = Bounds(kit, 0, 0, [set[k]]);
+            mids[k] = Axis((plo + phi) * 0.5f, ax);
+        }
+        var order = set.ToArray();
+        Array.Sort(mids, order);
+        int best = -1, bestOven = int.MaxValue, bestEven = int.MaxValue;
+        for (var cut = 1; cut < order.Length; cut++)
+        {
+            if (mids[cut] - mids[cut - 1] < 1e-3f)
+                continue;
+            var (alo, ahi) = Bounds(kit, 0, 0, [.. order[..cut]]);
+            var (blo, bhi) = Bounds(kit, 0, 0, [.. order[cut..]]);
+            var ov = Math.Max(MakerRoutes.OvenFor(ahi - alo), MakerRoutes.OvenFor(bhi - blo));
+            var even = Math.Abs(order.Length - 2 * cut);
+            if (ov < bestOven || ov == bestOven && even < bestEven)
+                (best, bestOven, bestEven) = (cut, ov, even);
+        }
+        if (best < 0)
+            return node; // (every piece's middle in one place: it doesn't split)
+        node.Kids.Add(SplitOf(kit, [.. order[..best]], depth + 1));
+        node.Kids.Add(SplitOf(kit, [.. order[best..]], depth + 1));
+        // (a halving that frees nothing, both halves on this node's own oven, is no help: kept whole)
+        if (node.Kids.TrueForAll(k => k.Oven >= node.Oven && k.Kids.Count == 0))
+            node.Kids.Clear();
+        return node;
+    }
+
+    private static readonly HashSet<ExtrusionKey> OnePieceKeys = [];
+
+    /// <summary>Is this extrusion the whole kit of a part worked out so far (a one-piece bake)? Allocates nothing.</summary>
+    public static bool IsOnePieceKey(in ExtrusionKey k)
+    {
+        lock (Gate)
+            return OnePieceKeys.Contains(k with { Growing = false });
+    }
+
+    /// <summary>Is this part's kit one extrusion (a one-piece bake: it rolls from an Extruder straight onto an oven's bed, no station)?</summary>
+    public static bool OnePiece(ConstructPartDef d) => KitOf(d) is { Length: 1 } k && k[0].Name == null;
+
+    /// <summary>A kit's bounds (m): its pieces' solid boxes at their places, components and sheets with them. Zero: no kit.</summary>
+    public static Vector3 KitSize(ConstructPartDef d)
+    {
+        if (KitOf(d) is not { } kit)
+            return Vector3.Zero;
+        var (lo, hi) = Bounds(kit, 0, kit.Length, null);
+        return hi - lo;
+    }
+
+    /// <summary>The solid bounds of pieces <paramref name="from"/> to <paramref name="to"/> (or those <paramref name="only"/> lists) in the part's frame.</summary>
+    internal static (Vector3 Lo, Vector3 Hi) Bounds(Piece[] kit, int from, int to, List<int>? only)
+    {
+        Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
+        var n = only?.Count ?? to - from;
+        for (var k = 0; k < n; k++)
+        {
+            var p = kit[only != null ? only[k] : from + k];
+            if (p.Def is not { } pd)
+                continue;
+            var c = p.Pos + Rot24.Apply(p.Rot, (pd.BoundsMin + pd.BoundsMax) * 0.5f);
+            var h = Rot24.ApplyHalf(p.Rot, (pd.BoundsMax - pd.BoundsMin) * 0.5f);
+            (lo, hi) = (Vector3.Min(lo, c - h), Vector3.Max(hi, c + h));
+        }
+        return lo.X > hi.X ? (Vector3.Zero, Vector3.Zero) : (lo, hi);
     }
 
     private static bool IsListed(string name)
@@ -175,21 +386,38 @@ public static class BakeKits
         {
             if (Kits.TryGetValue(d.Name, out var have))
                 return have;
-            var kit = Listed.TryGetValue(d.Name, out var listed) ? Resolve(d, listed) : Make(d);
+            var kit = Listed.TryGetValue(d.Name, out var listed) ? Resolve(d, listed) : Make(d, IsNamed(d.Name) ? null : AssemblingTable.Current.Of((ushort)d.Id));
             Kits[d.Name] = kit;
+            if (kit is { Length: 1 } one && one[0].Name == null)
+                OnePieceKeys.Add(one[0].Key);
             return kit;
         }
     }
 
-    /// <summary>One extrusion a box: its longest side the length (5 cm steps), the thinner of the others its height (a Sheet under 10 cm).</summary>
-    private static Piece[]? Make(ConstructPartDef d)
+    /// <summary>The most pieces a kit takes: its root and the freeform welds one body holds (<see cref="Freeform.MaxPerConstruct"/>).</summary>
+    public const int MaxPieces = Freeform.MaxPerConstruct + 1;
+
+    /// <summary>
+    /// One extrusion a box: its longest side the length (5 cm steps), the thinner of the others its height (a Sheet under 10 cm). A part by
+    /// the rule (<paramref name="r"/>: its Assembler row, the bill) is extruded in its row's main material where an Extruder takes it,
+    /// keeps a lone box as one piece (a one-piece bake), and adds its row's components as kit pieces and its rubber or concrete as a sheet
+    /// piece (Sean, 2026-11-28), laid on the part's top face; the oven consumes them, so they still count.
+    /// </summary>
+    private static Piece[]? Make(ConstructPartDef d, AssembleRecipe? r = null)
     {
         var mat = RecyclingTable.Current.IdOf(_material);
+        if (r != null && MainMaterial(r) is var main and not 0 && ExtrusionTable.Current.Find(main) != null)
+            mat = main;
         var pieces = new List<Piece>();
+        // (a part drawn only by detail and lathe shapes, a wheel or a bomb, has no drawn solid box: its kit is its hidden solid boxes, the
+        // shape it collides as)
+        var anyDrawn = false;
+        for (var i = 0; i < d.SolidBoxes && !anyDrawn; i++)
+            anyDrawn = !d.Boxes[i].Hidden;
         for (var i = 0; i < d.SolidBoxes; i++)
         {
             var b = d.Boxes[i];
-            if (b.Hidden)
+            if (b.Hidden && (anyDrawn || r == null))
                 continue; // (detail boxes, seams and markings, come with the bake: the kit is the part's solid plates and members)
             var size = b.Half * 2 * 100; // cm
             int la = size.X >= size.Y && size.X >= size.Z ? 0 : size.Y >= size.Z ? 1 : 2;
@@ -212,12 +440,12 @@ public static class BakeKits
             var key = new ExtrusionKey(ulong.MaxValue, (ushort)w, (ushort)h, (ushort)Math.Min(len, Extrusion.MaxLengthCm), mat, false);
             if (Extrusion.KeyRefusal(key) is { } why)
             {
-                Console.WriteLine($"[bake kits] REFUSED {d.Name}: box {i} ({size.X:0} x {size.Y:0} x {size.Z:0} cm) makes no piece: {why}");
+                Console.WriteLine($"[bake kits] {(r != null ? "no kit by the rule (its Assembler row stays): " : "REFUSED ")}{d.Name}: box {i} ({size.X:0} x {size.Y:0} x {size.Z:0} cm) makes no piece: {why}");
                 return null;
             }
             if (TurnFor(wa, ha, la) is not { } rot)
             {
-                Console.WriteLine($"[bake kits] REFUSED {d.Name}: box {i}: no grid turn lays a piece along it");
+                Console.WriteLine($"[bake kits] {(r != null ? "no kit by the rule (its Assembler row stays): " : "REFUSED ")}{d.Name}: box {i}: no grid turn lays a piece along it");
                 return null;
             }
             // The piece's own frame: its width along x, height along y, length along z from 0 (ConstructExtrusion.BuildSection).
@@ -242,7 +470,21 @@ public static class BakeKits
                 if (!Extrusion.IsSheet(pieces[i].Key) && pieces[i].Key with { Mask = mask } is var cored && Extrusion.KeyRefusal(cored) == null && Extrusion.Def(cored) != null)
                     pieces[i] = pieces[i] with { Key = cored };
         }
-        if (pieces.Count == 1 && pieces[0].Key.L >= 2 * Extrusion.StepCm)
+        if (r != null)
+        {
+            var extras = Extras(d, r, mat, pieces);
+            if (extras == null)
+                return null;
+            if (pieces.Count == 1 && extras.Count == 0)
+            {
+                // A one-piece bake (Sean, 2026-11-28: "Yes, skip the station"): the lone extrusion rolls off an Extruder onto the bed as it was
+                // made, unpainted, so its design is the plain piece's; the part comes out in its own paint.
+                pieces[0] = pieces[0] with { Paint = 0, Finish = "" };
+                return [.. pieces];
+            }
+            pieces.AddRange(extras);
+        }
+        else if (pieces.Count == 1 && pieces[0].Key.L >= 2 * Extrusion.StepCm)
         {
             // One plate (a plain wall with no doorway): two lengths welded end to end, as a bake takes two or more subparts.
             var p = pieces[0];
@@ -252,14 +494,92 @@ public static class BakeKits
             pieces[0] = p with { Key = p.Key with { L = (ushort)l0 } };
             pieces.Add(p with { Key = p.Key with { L = (ushort)(p.Key.L - l0) }, Pos = second });
         }
-        if (pieces.Count < 2 || pieces.Count > BakedParts.MaxSubparts)
+        if (pieces.Count < 2 || pieces.Count > MaxPieces)
         {
-            Console.WriteLine($"[bake kits] REFUSED {d.Name}: {pieces.Count} pieces (2 to {BakedParts.MaxSubparts})");
+            Console.WriteLine($"[bake kits] {(r != null ? "no kit by the rule (its Assembler row stays): " : "REFUSED ")}{d.Name}: {pieces.Count} pieces (2 to {MaxPieces})");
             return null;
         }
-        Order(pieces);
+        var boxes = 0;
+        foreach (var p in pieces)
+            boxes += p.Def?.Boxes.Length ?? 0;
+        if (boxes > ConstructParts.MaxBoxes)
+        {
+            Console.WriteLine($"[bake kits] {(r != null ? "no kit by the rule (its Assembler row stays): " : "REFUSED ")}{d.Name}: its kit is {boxes} boxes, at most {ConstructParts.MaxBoxes} bake into one part");
+            return null;
+        }
+        Order(pieces, r != null);
         return [.. pieces];
     }
+
+    /// <summary>A row's main material: the one it takes most units of (0: none).</summary>
+    private static byte MainMaterial(AssembleRecipe r)
+    {
+        byte best = 0;
+        var most = 0;
+        foreach (var (m, u) in r.Materials)
+            if (u > most)
+                (best, most) = (m, u);
+        return best;
+    }
+
+    /// <summary>
+    /// A rule kit's extra pieces: a rubber or concrete sheet for each of those its row takes that isn't the kit's own material, then its
+    /// component parts (each batch's count), laid in rows on the part's top face, a layer over the last when one is full. Null: one can't be
+    /// made (the log says which).
+    /// </summary>
+    private static List<Piece>? Extras(ConstructPartDef d, AssembleRecipe r, byte mat, List<Piece> boxes)
+    {
+        var extras = new List<Piece>();
+        var lo = d.BoundsMin;
+        var hi = d.BoundsMax;
+        if (boxes.Count == 0)
+            return extras;
+        var top = hi.Y;
+        var size = hi - lo;
+        // The sheets: as wide as the part's top face is (0.1 to 32 m), as long as it (5 cm steps), 1 cm thick, along its longer side.
+        foreach (var (m, _) in r.Materials)
+        {
+            if (m == mat || RecyclingTable.Current.NameOf(m) is not ("rubber" or "concrete"))
+                continue;
+            var alongX = size.X >= size.Z;
+            var w = Math.Clamp((int)MathF.Round((alongX ? size.Z : size.X) * 100), Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
+            var len = Math.Clamp((int)MathF.Round((alongX ? size.X : size.Z) * 100 / Extrusion.StepCm) * Extrusion.StepCm, Extrusion.StepCm, Extrusion.MaxLengthCm);
+            var key = new ExtrusionKey(ulong.MaxValue, (ushort)w, (ushort)Extrusion.MinSheetCm, (ushort)len, m, false);
+            if (Extrusion.KeyRefusal(key) is { } why)
+            {
+                Console.WriteLine($"[bake kits] {(r != null ? "no kit by the rule (its Assembler row stays): " : "REFUSED ")}{d.Name}: its {RecyclingTable.Current.NameOf(m)} sheet makes no piece: {why}");
+                return null;
+            }
+            if (TurnFor(alongX ? 2 : 0, 1, alongX ? 0 : 2) is not { } rot)
+                return null;
+            // (the sheet's frame: width along x, thickness along y, length along z from 0; its middle over the top face's middle)
+            var mid = new Vector3((lo.X + hi.X) * 0.5f, top + Extrusion.MinSheetCm / 200f, (lo.Z + hi.Z) * 0.5f);
+            var pos = mid - Rot24.Apply(rot, new Vector3(0, 0, len / 200f));
+            extras.Add(new Piece(key, Cm(pos), rot, 0, ""));
+            top += Extrusion.MinSheetCm / 100f;
+        }
+        // The components, in rows over the top face.
+        var batches = Math.Max(1, r.Count);
+        foreach (var (part, count) in r.Parts)
+        {
+            var n = (count + batches - 1) / batches;
+            var foot = part.BoundsMax - part.BoundsMin + new Vector3(0.01f);
+            var cols = Math.Max(1, (int)(size.X / foot.X));
+            var rows = Math.Max(1, (int)(size.Z / foot.Z));
+            for (var i = 0; i < n; i++)
+            {
+                var layer = i / (cols * rows);
+                var cell = i % (cols * rows);
+                var at = new Vector3(lo.X + (cell % cols + 0.5f) * foot.X, top + layer * foot.Y, lo.Z + (cell / cols + 0.5f) * foot.Z)
+                    - new Vector3((part.BoundsMin.X + part.BoundsMax.X) * 0.5f, part.BoundsMin.Y, (part.BoundsMin.Z + part.BoundsMax.Z) * 0.5f);
+                extras.Add(new Piece(default, Cm(at), 0, 0, "", part.Name));
+            }
+            top += ((n - 1) / (cols * rows) + 1) * foot.Y;
+        }
+        return extras;
+    }
+
+    private static Vector3 Cm(Vector3 v) => new Vector3(MathF.Round(v.X * 100), MathF.Round(v.Y * 100), MathF.Round(v.Z * 100)) / 100f;
 
     /// <summary>A listed kit: every piece's part known (null: one isn't, the log says which), the biggest first, as <see cref="Make"/> lays them.</summary>
     private static Piece[]? Resolve(ConstructPartDef d, Piece[] listed)
@@ -325,10 +645,11 @@ public static class BakeKits
     }
 
     /// <summary>The biggest piece first: the kit's blueprint stands on it (step 0, unturned when it can be).</summary>
-    private static void Order(List<Piece> pieces)
+    private static void Order(List<Piece> pieces, bool rule = false)
     {
         pieces.Sort((p, q) => Volume(q).CompareTo(Volume(p)));
-        var first = pieces.FindIndex(p => p.Rot == 0);
+        // (a rule kit stands on its biggest extrusion, unturned if one is: never on a component it carries, a Bulkhead Door on a Bearing)
+        var first = rule ? pieces.FindIndex(p => p.Rot == 0 && p.Name == null) : pieces.FindIndex(p => p.Rot == 0);
         if (first > 0)
             (pieces[0], pieces[first]) = (pieces[first], pieces[0]);
     }
@@ -412,13 +733,38 @@ public static class BakeKits
     /// The part whose kit a design's hash is, at the turn it was baked (null: none). Every kit at every turn, worked out once. Two parts can
     /// share a kit (the keel's bands where the hull runs straight): <paramref name="want"/>, the oven's order, picks between them.
     /// </summary>
-    /// <summary>Every kit resolved and its hashes made now (a match's start), not on the tick of the first bake or order.</summary>
-    public static void Warm() => Target("");
-
-    public static Hit? Target(string hash, ushort want = 0)
+    /// <summary>
+    /// Every kit resolved and its hashes made now (a match's start, either peer), not on the tick of the first bake or order: the listed
+    /// kits, then every placed part's answer to <see cref="Has"/> and its rule kit (the first Catalogue after a load asked hundreds in one
+    /// tick). Said in the log with its time. Again only when the Assembler table changes (a mod's).
+    /// </summary>
+    public static void Warm()
     {
-        if (Names.Length == 0)
-            return null;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        Target("");
+        var table = AssemblingTable.Current;
+        if (ReferenceEquals(_warmTable, table))
+            return;
+        var all = ConstructParts.All;
+        var kits = 0;
+        for (var k = 0; k < all.Count; k++)
+            if (all[k] is { } d && Has(d) && !IsNamed(d.Name))
+                kits++;
+        _warmTable = table;
+        Console.WriteLine($"[bake kits] warmed: {kits} rule kits of {all.Count} parts in {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms");
+    }
+
+    private static AssemblingTable? _warmTable;
+
+    /// <summary>A peer's look (a joined client's tick: a client that joins a running match gets no match start): <see cref="Warm"/> unless done. One compare.</summary>
+    public static void WarmOnce()
+    {
+        if (!ReferenceEquals(_warmTable, AssemblingTable.Current))
+            Warm();
+    }
+
+    public static Hit? Target(string hash, ushort want = 0, OrderList? queue = null)
+    {
         lock (Gate)
         {
             if (_targets == null)
@@ -446,13 +792,45 @@ public static class BakeKits
                     }
                 }
             }
-            if (!_targets.TryGetValue(hash, out var list))
-                return null;
-            foreach (var h in list)
-                if (h.Part.Id == want)
-                    return h;
-            return list[0];
+            if (_targets.TryGetValue(hash, out var list))
+            {
+                foreach (var h in list)
+                    if (h.Part.Id == want)
+                        return h;
+                return list[0];
+            }
+            // A rule kit (every placed part with an Assembler row: too many to hash at a match's start): the oven's order's part, then the
+            // rest of its queue, each part's 24 turns hashed once.
+            if (ConstructParts.Get(want) is { } wd && RuleHit(wd, hash) is { } hw)
+                return hw;
+            if (queue is { Bill: false })
+                for (var k = 0; k < queue.Count; k++)
+                    if (queue.Items[k] is { IsPiece: false, Name: null } o && o.Part != want && ConstructParts.Get(o.Part) is { } qd && RuleHit(qd, hash) is { } hq)
+                        return hq;
+            return null;
         }
+    }
+
+    private static readonly Dictionary<ConstructPartDef, Dictionary<string, Hit>> RuleHashes = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>A rule kit's part at the turn whose design hash is <paramref name="hash"/> (null: not its kit). Under <see cref="Gate"/>.</summary>
+    private static Hit? RuleHit(ConstructPartDef d, string hash)
+    {
+        if (IsNamed(d.Name) || !Has(d) || KitOf(d, true) is not { } kit)
+            return null;
+        if (!RuleHashes.TryGetValue(d, out var turns))
+        {
+            RuleHashes[d] = turns = new Dictionary<string, Hit>(StringComparer.Ordinal);
+            for (byte r = 0; r < Rot24.Count; r++)
+            {
+                var subs = new (ConstructPartDef Def, Vector3 Pos, byte Rot, uint Paint, string Finish)[kit.Length];
+                for (var i = 0; i < kit.Length; i++)
+                    subs[i] = (kit[i].Def!, Rot24.Apply(r, kit[i].Pos), Rot24.Compose(r, kit[i].Rot), kit[i].Paint, kit[i].Finish);
+                var h = BakedParts.HashOf(BakedParts.DesignText(subs, out var origin));
+                turns.TryAdd(h, new Hit(d, r, -origin)); // (a kit alike at two turns: the first turn)
+            }
+        }
+        return turns.TryGetValue(hash, out var hit) ? hit : null;
     }
 }
 
@@ -466,7 +844,11 @@ public static class BakeKitCheck
     {
         var at = Array.FindIndex(args, a => a.Equals("--bake-kit", StringComparison.OrdinalIgnoreCase));
         var list = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--", StringComparison.Ordinal) ? args[at + 1] : "all";
-        var names = list.Equals("all", StringComparison.OrdinalIgnoreCase) ? BakeKits.Names : list.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        // ("rule:N": every Nth part the rule bakes, a sample: a check that loops over every part samples them)
+        var names = list.Equals("all", StringComparison.OrdinalIgnoreCase) ? BakeKits.Names
+            : list.StartsWith("rule:", StringComparison.OrdinalIgnoreCase) && int.TryParse(list.AsSpan(5), out var every) && every > 0
+                ? [.. ConstructParts.All.Where(p => BakeKits.ByRule(p) && BakeKits.Has(p)).Where((_, i) => i % every == 0).Select(p => p.Name)]
+                : list.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         var fails = 0;
         void Fail(string why)
         {
@@ -513,7 +895,9 @@ public static class BakeKitCheck
         {
             // A box kit's solid bounds are its part's; a listed kit of formed skins isn't the part box for box (its plates are drawn shapes,
             // its solids the voids behind them), so the part's origin is held to the kit frame's origin instead (both in the body's frame).
-            var listed = c.DefOf(0).IsNamedRuntime;
+            // (a rule kit too: its pieces are the boxes rounded to whole sections and 5 cm lengths, with components and sheets on top, so
+            // its bounds aren't the part's; the part's origin is held to the kit frame's)
+            var listed = c.DefOf(0).IsNamedRuntime || !BakeKits.Names.Contains(d.Name, StringComparer.OrdinalIgnoreCase);
             var (lo, hi) = Solid(c);
             if (BakedParts.Bake(world, c, (ushort)d.Id) is not { } b)
             {

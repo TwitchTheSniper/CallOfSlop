@@ -13,9 +13,9 @@ namespace CallOfSlop;
 /// </summary>
 public static class MakerRoutes
 {
-    public enum Route : byte { Press, OneBake, Kit, KitNow, PressedNow }
+    public enum Route : byte { Press, OneBake, Kit, KitNow, PressedNow, Assembler }
 
-    public static readonly string[] RouteNames = ["press chain", "one-piece bake", "station kit + bake", "kit already", "pressed already"];
+    public static readonly string[] RouteNames = ["press chain", "one-piece bake", "station kit + bake", "listed kit", "pressed already", "still Assembler"];
 
     /// <summary>
     /// Oven sizes, smallest first: (name, the bed's two sides and the tunnel's height, m), from Zero Day Works II's ovens (10 x 3 and
@@ -30,16 +30,16 @@ public static class MakerRoutes
         ("largest bed 32 x 16 m", 32, 16, 12),
     ];
 
-    /// <summary>The route for an Assembler recipe's part.</summary>
+    /// <summary>The route an Assembler recipe's part takes now (phase 3: every placed part by the rule is baked, BakeKits.Has).</summary>
     public static Route Of(ConstructPartDef d)
     {
         if (BakeKits.Has(d))
-            return Route.KitNow;
+            return !BakeKits.ByRule(d) || BakeKits.Names.Contains(d.Name, StringComparer.OrdinalIgnoreCase) ? Route.KitNow : BakeKits.OnePiece(d) ? Route.OneBake : Route.Kit;
         if (PressTable.Current.PresetKeyOf(d) != null)
             return Route.PressedNow;
         if (!d.PhysicsOnly)
-            return Route.Press; // (an item: a hand carries it, so a press line's pieces size it)
-        return Pieces(d) <= 1 ? Route.OneBake : Route.Kit;
+            return Route.Press; // (an item: a hand carries it, so a press line's pieces size it; not yet sorted die by die)
+        return Route.Assembler; // (a tool block's row, phase 4, or a part whose boxes make no kit: the log says why)
     }
 
     /// <summary>How many extrusions its box kit would hold: its solid, drawn boxes (BakeKits.Make's rule).</summary>
@@ -49,11 +49,11 @@ public static class MakerRoutes
         for (var i = 0; i < d.SolidBoxes && i < d.Boxes.Length; i++)
             if (!d.Boxes[i].Hidden)
                 n++;
-        return n;
+        return n > 0 ? n : Math.Min(d.SolidBoxes, d.Boxes.Length); // (none drawn: its hidden solid boxes, as BakeKits.Make takes them)
     }
 
     /// <summary>The smallest oven whose bed and tunnel hold the part laid any way up (its bounds' sides sorted), or Ovens.Length: none.</summary>
-    public static int OvenFor(ConstructPartDef d) => OvenFor(d.BoundsMax - d.BoundsMin);
+    public static int OvenFor(ConstructPartDef d) => BakeKits.KitSize(d) is { X: > 0 } k ? OvenFor(k) : OvenFor(d.BoundsMax - d.BoundsMin);
 
     public static int OvenFor(Vector3 size)
     {
@@ -95,6 +95,9 @@ public static class MakerRoutes
         var byRoute = new int[RouteNames.Length];
         var byOven = new int[Ovens.Length + 1];
         var tools = 0;
+        var split = 0;
+        var wholeShare = new int[Ovens.Length + 1];
+        var splitShare = new int[Ovens.Length + 1];
         var lines = new List<string>[RouteNames.Length];
         for (var k = 0; k < lines.Length; k++)
             lines[k] = new List<string>();
@@ -110,8 +113,17 @@ public static class MakerRoutes
                 tools++;
             var size = d.BoundsMax - d.BoundsMin;
             var parts = r.Parts.Length == 0 ? "" : "; fits " + string.Join(" + ", r.Parts.Select(p => $"{p.Count} {p.Part.Name}"));
+            var kitN = BakeKits.KitOf(d)?.Length ?? Pieces(d);
             lines[(int)route].Add(FormattableString.Invariant(
-                $"  {r.Name} ({size.X:0.##} x {size.Y:0.##} x {size.Z:0.##} m, {d.Mass:0.#} kg, {Pieces(d)} pieces{(oven >= 0 ? ", " + OvenName(oven) : "")}{(r.Tool.Length > 0 ? ", needs the " + r.Tool + " tool" : "")}{parts})"));
+                $"  {r.Name} ({size.X:0.##} x {size.Y:0.##} x {size.Z:0.##} m, {d.Mass:0.#} kg, {kitN} pieces{(oven >= 0 ? ", " + OvenName(oven) : "")}{(r.Tool.Length > 0 ? ", needs the " + r.Tool + " tool" : "")}{parts})"));
+            if (oven >= 0 && BakeKits.Split(d) is { } tree)
+            {
+                if (tree.Kids.Count > 0)
+                    split++;
+                if (tree.Kids.Count > 0 || tree.Oven > 0)
+                    Tree(BakeKits.KitOf(d)!, tree, lines[(int)route], "    ");
+                Share(tree, BakeKits.KitOf(d)!.Length, 1, wholeShare, splitShare);
+            }
         }
         summary.AppendLine($"maker-report: {asm.Recipes.Length} Assembler recipes");
         for (var k = 0; k < RouteNames.Length; k++)
@@ -120,6 +132,8 @@ public static class MakerRoutes
         for (var k = 0; k <= Ovens.Length; k++)
             summary.AppendLine($"    {OvenName(k)}: {byOven[k]}");
         summary.AppendLine($"  rows needing a tool block (Thruster Jig, Sewing Table): {tools}");
+        summary.AppendLine($"  baked parts split into sub-kits for smaller ovens: {split}");
+        ShareLines(summary, "every baked part, one of each", wholeShare, splitShare);
         if (Arg("--build") is { } build)
         {
             if (ConstructBuild.FindBlueprint(build) is not { } bp)
@@ -154,6 +168,9 @@ public static class MakerRoutes
         var gears = 0;
         var bearings = 0;
         var pressNames = new List<string>();
+        var splitKinds = new List<string>();
+        var wholeShare = new int[Ovens.Length + 1];
+        var splitShare = new int[Ovens.Length + 1];
         foreach (var (_, d, n) in bill.Parts)
         {
             if (d == null || AssemblingTable.Current.Of(d.Id) is not { } r)
@@ -168,6 +185,12 @@ public static class MakerRoutes
                 oven[OvenFor(d)] += n;
                 for (var i = 0; i < n; i++)
                     PieceSizes(d, sizes);
+                if (BakeKits.Split(d) is { } tree)
+                {
+                    Share(tree, BakeKits.KitOf(d)!.Length, n, wholeShare, splitShare);
+                    if (tree.Kids.Count > 0)
+                        splitKinds.Add($"{d.Name} x{n}");
+                }
             }
             foreach (var (p, c) in r.Parts)
             {
@@ -196,6 +219,49 @@ public static class MakerRoutes
         }
         if (pressNames.Count > 0)
             sb.AppendLine($"  press chain kinds: {string.Join(", ", pressNames)}");
+        ShareLines(sb, bp.Name, wholeShare, splitShare);
+        if (splitKinds.Count > 0)
+            sb.AppendLine($"  split into sub-kits: {string.Join(", ", splitKinds)}");
         sb.AppendLine($"  components its recipes fit (direct): {gears} Gear Sets, {boards} Circuit Boards, {bearings} Bearings");
+    }
+
+    /// <summary>A kit's tree, one line a node: its pieces (or sub-kits), its size and the oven it bakes on.</summary>
+    private static void Tree(BakeKits.Piece[] kit, BakeKits.SplitNode n, List<string> into, string indent)
+    {
+        var what = n.Kids.Count > 0 ? $"{n.Kids.Count} baked sub-kits" : n.Pieces.Count == 1 ? $"one piece ({kit[n.Pieces[0]].PartName})" : $"{n.Pieces.Count} pieces";
+        into.Add(FormattableString.Invariant($"{indent}{what}, {n.Size.X:0.##} x {n.Size.Y:0.##} x {n.Size.Z:0.##} m: {(n.Kids.Count == 0 && n.Pieces.Count == 1 ? "no bake" : OvenName(n.Oven))}"));
+        foreach (var k in n.Kids)
+            Tree(kit, k, into, indent + "  ");
+    }
+
+    /// <summary>
+    /// The subparts each oven size bakes for <paramref name="n"/> of a part: whole (its kit on the smallest oven that holds it all) and split
+    /// (each sub-kit on the smallest that holds it, the joins of baked sub-kits on theirs).
+    /// </summary>
+    private static void Share(BakeKits.SplitNode tree, int pieces, int n, int[] whole, int[] split)
+    {
+        whole[tree.Oven] += pieces * n;
+        Walk(tree);
+        void Walk(BakeKits.SplitNode node)
+        {
+            if (node.Kids.Count > 0)
+            {
+                split[node.Oven] += node.Kids.Count * n;
+                foreach (var k in node.Kids)
+                    Walk(k);
+            }
+            else if (node.Pieces.Count > 1 || node == tree)
+                split[node.Oven] += node.Pieces.Count * n;
+        }
+    }
+
+    private static void ShareLines(StringBuilder sb, string what, int[] whole, int[] split)
+    {
+        var tw = Math.Max(1, whole.Sum());
+        var ts = Math.Max(1, split.Sum());
+        sb.AppendLine($"  oven work for {what} (subparts baked; whole kits -> split into sub-kits):");
+        for (var k = 0; k <= Ovens.Length; k++)
+            if (whole[k] > 0 || split[k] > 0)
+                sb.AppendLine(FormattableString.Invariant($"    {OvenName(k)}: {whole[k]} ({whole[k] * 100f / tw:0}%) -> {split[k]} ({split[k] * 100f / ts:0}%)"));
     }
 }
