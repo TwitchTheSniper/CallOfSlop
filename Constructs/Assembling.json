@@ -2725,6 +2725,7 @@
     {"output": "Shredder Block", "materials": {"steel": 600}, "parts": {"Gear Set": 6}, "seconds": 50, "techTier": 2},
     {"output": "Die Wall", "materials": {"steel": 120, "rubber": 10}, "seconds": 12},
     {"output": "Heavy Power Terminal", "materials": {"steel": 36, "copper": 60}, "parts": {"Circuit Board": 8}, "seconds": 7.4, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
-    {"output": "Station Console", "materials": {"steel": 8, "copper": 13}, "parts": {"Circuit Board": 1}, "seconds": 3.2, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]}
+    {"output": "Station Console", "materials": {"steel": 8, "copper": 13}, "parts": {"Circuit Board": 1}, "seconds": 3.2, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]},
+    {"output": "Bake Oven XL", "materials": {"steel": 1800, "copper": 240, "rubber": 120}, "parts": {"Circuit Board": 4, "Wiring Loom": 4}, "seconds": 300, "techTier": 3, "needs": ["Power Coupling", "Servo Rack"]}
   ]
 }

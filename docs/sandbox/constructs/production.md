@@ -2821,7 +2821,8 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   pieces, sub-kits and the oven each bakes on) and the work per oven size, whole kits against split ones: a kit too big for the small oven
   is split along its boxes (`BakeKits.Split`: the gap along its longest side that leaves the smallest ovens) until each sub-kit fits it
   or is one piece. 2026-11-28: 140 one-piece bakes, 2,104 station kits, 70 listed, 38 still Assembler (the tool rows); 326 parts split;
-  every baked part's subparts, whole 69% small oven, split 82%. The frigate: 1 one-piece and 46 station-kit kinds (its fittings carry
+  every baked part's subparts, whole 69% small oven, split 82%. With the Bake Oven XL (Sub-kits, below): 168 placed parts need the XL
+  whole, 93 fit no oven (83 of them past 50 m), and the report lists those (its oven column is now the hearth's, as the split's). The frigate: 1 one-piece and 46 station-kit kinds (its fittings carry
   Circuit Boards or rubber), its oven work 96% small whole, 97% split. The split is built since 2026-11-28 ([Sub-kits](#sub-kits-2026-11-28)). `--bake-kit rule:N` checks every Nth rule kit. A one-piece kit's direct
   feed needs an Extruder whose conveyor reaches a run into the oven, which no shipped works has yet. On Zero Day Works II (300 s,
   `--station-check ... --build "Zero Day Frigate" --dies`) the frigate fitted 16 of 346 parts (main 17; the leg pod parts come off the presses in another
@@ -2898,9 +2899,23 @@ the work spreads over every oven size instead of everything waiting on the big o
   print counts as the order's (`BakeKits.IsKitOf`), so a change between them never starts a second. A saved `{part} split kit` job whose
   split this build doesn't make takes the whole kit (said once); a saved sub-assembly order this build has no sub-kit for is left out, said
   in the log.
-- **Not split:** a kit that fits no oven whole (184 parts at the warm, the Zero Day Railgun's 32.9 m among them, the capital drive
-  shafts and axles): the split kit's last bake holds the whole kit as its own does, so splitting can't bring it onto any oven, and its
-  Assembler row stays its maker. 56 more split into nothing smaller.
+- **Not split:** a kit that fits no oven whole: the split kit's last bake holds the whole kit as its own does, so splitting can't bring
+  it onto any oven, and its Assembler row stays its maker. 184 parts at the warm before the Bake Oven XL (below), 64 since (every one
+  past its 49 x 33 m hearth or 17 m tunnel: the 112 m capital drive shafts, 64 m capital plates, 48 m capital wheels and buckets).
+- **The Bake Oven XL (2026-11-28).** Sean: bigger beds only for parts that can't be split. A second Oven Core (`BakeOvenParts.cs`,
+  `Core(xl: true)`; a yellow band round its header) takes the same Oven Bed Blocks in a bed of up to 25 x 17 cells (`"maxSide"` 25,
+  `"maxCells"` 425: 50 x 34 m, a 49.1 x 33.1 m hearth) and a Tunnel height of up to 17 m (the Bed's clear height is clamped at
+  `ConstructBakeOven.MaxClear`, 24 m; each Core's setting limits it). It is `MakerRoutes.Ovens`' last class ("XL oven 50 x 34 m",
+  17 m high), so everything that reads the classes takes it: `HearthFor`, the split (a kit that fits the XL whole now splits into
+  sub-kits for the smaller ovens, 230 split kits at the warm, 436 sub-kits; the warm takes about 200 ms against 150 before), `Rank`
+  (an order goes to the smallest oven that holds it; a sub-kit never to a bigger class) and `OvenServes` (where an XL oven on the
+  construct takes a part's order the Assembler refuses it, else its row stays the fallback). No row moved: the 120 parts it brings in
+  were rule kits already, built by the Assembler only because no oven held them. Its row is the last of the table (`Tail`, `AfterCloche`).
+  No works carries one yet: the Zero Day Railgun's kit (a 28.5 m steel bar and a 32.9 m rubber sheet among its 4 pieces) needs an XL
+  oven on Works II, a station whose bay holds 33 m, and Extruders whose conveyors carry 33 m pieces (Sean places the layouts).
+  `--station-check SITE --oven-bake PART [--oven-at X,Z]` sets a part's kit on the nearest oven's bed by hand, queues its order and
+  bakes it (a site of an oven alone): on a 25 x 17 bed at 17 m the Railgun, the Capital Axle and the Capital Burner come out as the
+  parts in 5, 14 and 4 s.
 - **Trying it.** `--bake-kit split:N` builds every Nth split part's sub-kits from their blueprints and at a turn, bakes each into its baked
   part, then builds the split kit with them and bakes it into the part (2026-11-28: all 103 split parts with a big-oven whole pass).
   `--station-check SITE --oven-order PART` lists every oven's answer and the Extruders when the order is refused; `--fill-extruder
