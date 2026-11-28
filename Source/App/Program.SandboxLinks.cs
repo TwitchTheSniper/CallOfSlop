@@ -589,7 +589,7 @@ public static partial class Program
         picker.Preselect(best);
         _lkPickPart = part;
         _lkPickEnd = end;
-        _lkPickStamp = LinkStamp(c, part, 255, 0);
+        _lkPickStamp = LinkStamp(c, part, CRoute.NoParent, 0);
         return true;
     }
 
@@ -605,7 +605,7 @@ public static partial class Program
         _lkType = type;
         var pn = ConstructRoutes.PortName(c.DefOf(from), type, port, input: false);
         _lkLabel = $"{Cap(ConstructRoutes.Name(type))} from {c.DefOf(from).Name}{(pn.Length > 0 ? ": " + pn : "")}";
-        _lkStamp = LinkStamp(c, from, 255, 0);
+        _lkStamp = LinkStamp(c, from, CRoute.NoParent, 0);
         BuildSounds.Play(BuildSound.LinkNode, default);
     }
 
@@ -616,7 +616,7 @@ public static partial class Program
         _lkRevPart = to;
         _lkRevPort = port;
         _lkRevType = type;
-        _lkRevStamp = LinkStamp(c, to, 255, 0);
+        _lkRevStamp = LinkStamp(c, to, CRoute.NoParent, 0);
         var pn = ConstructRoutes.PortName(c.DefOf(to), type, port, input: true);
         _lkRevLabel = $"{c.DefOf(to).Name}{(pn.Length > 0 ? ": " + pn : "")}";
         BuildSounds.Play(BuildSound.LinkNode, default);
@@ -784,7 +784,7 @@ public static partial class Program
     /// <summary>What a link being made (or a picker open) was made from: the part's type and place, or the link it branches from. A part taken off before it shifts the indices, so the stamp changes.</summary>
     private static long LinkStamp(Construct c, int part, int route, int routeSeg)
     {
-        if (route != 255)
+        if (route != CRoute.NoParent)
         {
             if (route < 0 || route >= c.RouteCount)
                 return -1;
@@ -821,14 +821,14 @@ public static partial class Program
         {
             if (g.Constructs.Get(_lkRevBody) is not { } vc || _lkRevPart < 0 || _lkRevPart >= vc.PartCount)
                 why = "the part is gone";
-            else if (LinkStamp(vc, _lkRevPart, 255, 0) != _lkRevStamp)
+            else if (LinkStamp(vc, _lkRevPart, CRoute.NoParent, 0) != _lkRevStamp)
                 why = "the construct was changed";
         }
         if (why == null && _lkPicker.IsOpen)
         {
             if (g.Constructs.Get(_lkPickEnd ? _lkBody : _lkPickBody) is not { } pc || _lkPickPart < 0 || _lkPickPart >= pc.PartCount)
                 why = "the part is gone";
-            else if (LinkStamp(pc, _lkPickPart, 255, 0) != _lkPickStamp)
+            else if (LinkStamp(pc, _lkPickPart, CRoute.NoParent, 0) != _lkPickStamp)
                 why = "the construct was changed";
         }
         if (why == null && _lkMoveRoute >= 0)

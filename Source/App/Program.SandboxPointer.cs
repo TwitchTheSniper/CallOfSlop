@@ -119,7 +119,7 @@ public static partial class Program
     {
         _scrWheelKey = -1;
         // A drag holds on past the panel's edge, until the button comes up or the part is gone.
-        if (_scrDown && g.Constructs.Get(_scrBody) is { } held && _scrPart < held.PartCount && LinkStamp(held, _scrPart, 255, 0) == _scrStamp && h.Tool == ConstructTool.Hands)
+        if (_scrDown && g.Constructs.Get(_scrBody) is { } held && _scrPart < held.PartCount && LinkStamp(held, _scrPart, CRoute.NoParent, 0) == _scrStamp && h.Tool == ConstructTool.Hands)
         {
             if (Down(GameAction.Fire))
             {
@@ -142,7 +142,7 @@ public static partial class Program
         var part = -1;
         var n = -1;
         Vector2 spot = default;
-        if (able && _scrPart >= 0 && g.Constructs.Get(_scrBody) is { } was && _scrPart < was.PartCount && LinkStamp(was, _scrPart, 255, 0) == _scrStamp && !was.Parts[_scrPart].Broken
+        if (able && _scrPart >= 0 && g.Constructs.Get(_scrBody) is { } was && _scrPart < was.PartCount && LinkStamp(was, _scrPart, CRoute.NoParent, 0) == _scrStamp && !was.Parts[_scrPart].Broken
             && PanelRender.DrawnSpot(PanelRender.Key(_scrBody, _scrPart, _scrPanel), out spot) && InPanel(was.DefOf(_scrPart).Panels[_scrPanel], spot))
         {
             c = was;
@@ -190,7 +190,7 @@ public static partial class Program
         _scrBody = c.Id;
         _scrPart = part;
         _scrPanel = n;
-        _scrStamp = LinkStamp(c, part, 255, 0);
+        _scrStamp = LinkStamp(c, part, CRoute.NoParent, 0);
         _lvWheelOk = onPicture;
         var key = PanelRender.Key(c.Id, part, n);
         if (onPicture)

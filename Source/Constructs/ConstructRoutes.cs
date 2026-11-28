@@ -81,8 +81,8 @@ public struct CRoute
 public sealed partial class Construct
 {
     public const int MaxRoutes = 1000; // (a route's index is a u16: CRoute.NoParent and CRider.NoRoute, 65535, are none)
-    public const int MaxRouteNodes = 8192; // a construct's storage for link nodes, 65 km of link at a full span each; a link's length has no limit of its own
-    public const int MaxNodesPerRoute = MaxRouteNodes;
+    public const int MaxRouteNodes = 32768; // a construct's storage for link nodes (grown as used; Start is a u16): 1,000 links at Zero Day Works II's 13 nodes each fit (it was 8,192 with 254 links)
+    public const int MaxNodesPerRoute = 8192; // one link's nodes, 65 km at a full span each (the tool's buffers and a probe's stackalloc are this size)
 
     public CRoute[] Routes = [];
     public int RouteCount;
@@ -275,7 +275,7 @@ public static partial class ConstructRoutes
 
     /// <summary>
     /// Does a click on part <paramref name="part"/> end a link of type <paramref name="type"/> being routed from part
-    /// <paramref name="from"/> (<paramref name="parent"/> 255; else a branch)? On an input of its type, not back on its own
+    /// <paramref name="from"/> (<paramref name="parent"/> CRoute.NoParent; else a branch)? On an input of its type, not back on its own
     /// output (a logic part may feed itself). Never with <paramref name="free"/> routing (board item ls01: the device is
     /// then only a surface for an ordinary node, so a link can run along a device with a matching port).
     /// </summary>

@@ -38,7 +38,7 @@ public static partial class Program
         _tyBody = c.Id;
         _tyPart = part;
         _tySlot = slot;
-        _tyStamp = LinkStamp(c, part, 255, 0);
+        _tyStamp = LinkStamp(c, part, CRoute.NoParent, 0);
         _tyOn = _tyStart = true;
         _tyInput ??= new ImInputString(LogicText.MaxChars + 1);
         ImGuiSafe.SetInput(_tyInput, start);
@@ -49,7 +49,7 @@ public static partial class Program
     {
         if (!_tyOn || _session is not { } g)
             return;
-        if (g.Constructs.Get(_tyBody) is not { } c || _tyPart >= c.PartCount || LinkStamp(c, _tyPart, 255, 0) != _tyStamp || c.Parts[_tyPart].Broken
+        if (g.Constructs.Get(_tyBody) is not { } c || _tyPart >= c.PartCount || LinkStamp(c, _tyPart, CRoute.NoParent, 0) != _tyStamp || c.Parts[_tyPart].Broken
             || g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen
             || Vector3.Distance(me.RenderEye, ConstructEdits.ReachPoint(c, _tyPart, me.RenderEye)) > ConstructConfig.Reach)
         {

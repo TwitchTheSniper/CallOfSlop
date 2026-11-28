@@ -84,7 +84,7 @@ public static partial class Program
     /// <summary>The lever held, as it is now: null when the construct changed under it (a part taken off shifts the indices).</summary>
     private static Construct? LeverNow(Game g)
     {
-        if (_lvPart < 0 || g.Constructs.Get(_lvBody) is not { } c || _lvPart >= c.PartCount || LinkStamp(c, _lvPart, 255, 0) != _lvStamp || c.DefOf(_lvPart).Logic != CLogic.AnalogLever)
+        if (_lvPart < 0 || g.Constructs.Get(_lvBody) is not { } c || _lvPart >= c.PartCount || LinkStamp(c, _lvPart, CRoute.NoParent, 0) != _lvStamp || c.DefOf(_lvPart).Logic != CLogic.AnalogLever)
             return null;
         return c;
     }
@@ -144,7 +144,7 @@ public static partial class Program
     {
         _lvBody = c.Id;
         _lvPart = part;
-        _lvStamp = LinkStamp(c, part, 255, 0);
+        _lvStamp = LinkStamp(c, part, CRoute.NoParent, 0);
         _lvHeld = true;
         _lvSeated = seated;
         _lvMoved = false;
@@ -299,7 +299,7 @@ public static partial class Program
         var step = ConstructConfig.Get(p, d, CfgKey.Snap, 0);
         _lvBody = c.Id;
         _lvPart = part;
-        _lvStamp = LinkStamp(c, part, 255, 0);
+        _lvStamp = LinkStamp(c, part, CRoute.NoParent, 0);
         _lvStick = false;
         _lvValueY = 0;
         _lvValue = AnalogLever.Snapped(p, d, AnalogLever.Value(p, d) + (float)_lvScroll * (step > 0 ? step : AnalogLever.WheelStep));

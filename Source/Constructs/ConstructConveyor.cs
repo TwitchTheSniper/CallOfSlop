@@ -1162,10 +1162,16 @@ public static class ConstructConveyor
         }
         _throughN = 0;
         // Leads at junctions go on, the one that waited longest first (a join takes its inputs in turn: Timer is the last served, plus one).
+        Span<int> turns = stackalloc int[16]; // (each one's turn once: Turn walks the links)
+        for (var a = 0; a < nWaiting; a++)
+            turns[a] = Turn(c, waiting[a]);
         for (var a = 0; a < nWaiting; a++)
             for (var b = a + 1; b < nWaiting; b++)
-                if (Turn(c, waiting[b]) < Turn(c, waiting[a]))
+                if (turns[b] < turns[a])
+                {
                     (waiting[a], waiting[b]) = (waiting[b], waiting[a]);
+                    (turns[a], turns[b]) = (turns[b], turns[a]);
+                }
         for (var w = 0; w < nWaiting; w++)
             for (var lead = 0; lead < c.ConveyedCount; lead++)
                 if (c.Conveyed[lead].Route == waiting[w])
@@ -1178,13 +1184,15 @@ public static class ConstructConveyor
     }
 
     /// <summary>A waiting input's place in its junction's turn: how far after the input it served last (0: next).</summary>
+    private const int TurnSpan = Construct.MaxRoutes + 1; // (Timer is a link index plus one: 0 to MaxRoutes; it was 256 while links were at most 254)
+
     private static int Turn(Construct c, int k)
     {
         int j = c.Routes[k].To;
         for (var o = 0; o < c.RouteCount; o++)
             if (c.Routes[o].Type == RouteType.Conveyor && c.Routes[o].Parent == CRoute.NoParent && c.Routes[o].From == j)
-                return j * 256 + ((k - (int)c.Routes[o].Timer + 256) & 255);
-        return j * 256;
+                return j * TurnSpan + ((k - (int)c.Routes[o].Timer) % TurnSpan + TurnSpan) % TurnSpan;
+        return j * TurnSpan;
     }
 
     /// <summary>
