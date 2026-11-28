@@ -156,8 +156,8 @@ public static class BakeKits
     /// </summary>
     public static bool Has(ConstructPartDef d)
     {
-        if (d.IsNamedRuntime || d.IsExtrusion)
-            return false;
+        if (d.IsNamedRuntime || d.IsExtrusion || Extrusion.IsRuntimeId((ushort)d.Id))
+            return false; // (a run-time part, an Ord Rack or an ordnance design, AssembledParts: the Assembler's still)
         var id = d.Id;
         var defs = _hasDef;
         if ((uint)id < (uint)defs.Length && ReferenceEquals(defs[id], d) && ReferenceEquals(_hasTable, AssemblingTable.Current))

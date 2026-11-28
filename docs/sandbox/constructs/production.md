@@ -2803,8 +2803,9 @@ only a part that can't be split (a railgun barrel) needs a bigger bed. The Assem
   one that fits has `SpillAt` (4) more orders queued (`ConstructBakeOven.Rank`, used by a station's ask and by chains). **Assemblers:**
   a block Assembler refuses every baked part (`BakeKits.AssemblerRefuses`: its recipe choice, its orders, the catalogue and the recipe
   picker, where it shows dimmed "baked in a Bake Oven"); a queued order for one is dropped with a log line and the station that asked
-  orders it from an oven. The survival start's tray Assembler (no bed) still builds the rule's parts until the start gets its own
-  station and oven (phase 6), so a survival world can make its first ones. **`--maker-report`** prints each baked part's tree (its
+  orders it from an oven. A bare Assembler Core (no Assembly Bed Blocks: the survival start's Starter Assembler; `ConstructAssembling.HasBed`, passed to
+  `RecipeOf` and its picker as the variant "bare") still builds the rule's parts until the start gets its own station and oven (phase 6),
+  so a survival world can make its first ones. **`--maker-report`** prints each baked part's tree (its
   pieces, sub-kits and the oven each bakes on) and the work per oven size, whole kits against split ones: a kit too big for the small oven
   is split along its boxes (`BakeKits.Split`: the gap along its longest side that leaves the smallest ovens) until each sub-kit fits it
   or is one piece. 2026-11-28: 140 one-piece bakes, 2,104 station kits, 70 listed, 38 still Assembler (the tool rows); 326 parts split;

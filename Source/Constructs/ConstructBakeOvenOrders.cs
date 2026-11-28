@@ -275,6 +275,8 @@ public static partial class ConstructBakeOven
                 ? Extrusion.Def(key with { Growing = false }) : null);
             if (pd == null || ConstructStation.IsLaid(pd))
                 continue;
+            if (!pd.IsExtrusion && !pd.IsNamedRuntime && !pd.PhysicsOnly)
+                continue; // (a rule kit's component, a Bearing or a Circuit Board: a press or stock on the station's network makes it, not its line)
             var o = ConstructStation.OrderFor(pd, 1);
             var any = false;
             for (var m = 0; m < mn && !any; m++)
