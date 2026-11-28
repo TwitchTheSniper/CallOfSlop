@@ -6,10 +6,11 @@ namespace CallOfSlop;
 /// <summary>
 /// The Extruder's recipe picker (docs/sandbox/design/recipe-select-notes.md, option A, the user's choice of 2026-11-13): one tile per
 /// Profile, its picture the section itself (drawn from its 8 by 8 mask; Round, Pipe and the foils drawn as their shape); under the tiles
-/// Width and Height steppers (a Round's or a Pipe's diameter; a Pipe's wall), held to what this machine's die makes now, the piece that
-/// will come out in words, then Set. Custom opens the cell grid beside the steppers (the configure panel's own, <see cref="SectionCells"/>).
-/// Set sends the whole section as one act (CActKind.ExtruderSection), which the server checks as <see cref="ExtruderPicks.Refusal"/> does
-/// here. Opened from the machine's own Recipe button (Program.MachineRecipePicker); a frame allocates nothing until a value changes.
+/// a slider and a typed box for each size (Width and Height, a Round's or a Pipe's diameter, a Pipe's wall), the slider's range what this
+/// machine's die makes now; then the piece's Length (its Cut every, up to what its Run-out Tables reach) and the Quantity its Queue asks for;
+/// the piece that will come out in words, then Set (the settings) or Queue (the settings and one order of Quantity pieces). Custom opens the
+/// cell grid beside the sizes (the configure panel's own, <see cref="SectionCells"/>). Either sends the whole pick as one act
+/// (CActKind.ExtruderSection), which the server checks as <see cref="ExtruderPicks.Refusal"/> does here. Opened from the machine's own Recipe button (Program.MachineRecipePicker); a frame allocates nothing until a value changes.
 /// </summary>
 public sealed partial class Ui
 {
@@ -23,7 +24,9 @@ public sealed partial class Ui
     private string? _exWhy;
     private ExtruderPick _exLabelOf = new(255, 0, 0, 0, 0);
     private int _exDieOf = -1;
-    private (int V, string S) _exWText = (-1, ""), _exHText = (-1, ""), _exWallText = (-1, "");
+    private (int V, string S) _exQueueText = (-1, "");
+    private string _exLongText = "";
+    private int _exLongOf = -1;
 
     private static readonly ImColor8 ExSection = new(214, 160, 92, 255), ExBore = new(20, 22, 26, 255);
 
@@ -68,7 +71,7 @@ public sealed partial class Ui
         var (dw, dh) = ExtruderPicks.DieCm(c, _rcpMachine); // (Die Blocks welded on or shot off while it is open)
         _exDieW = dw;
         _exDieH = dh;
-        _exLongCm = ConstructExtruder.MaxLengthCm(c, _rcpMachine); // (and Run-out Tables)
+        _exLongCm = ExtruderPicks.LongestCm(c, _rcpMachine); // (and Run-out Tables)
         if (_rcpTestPick >= 0)
         {
             if (_rcpTestPick < _exNames.Length)
@@ -78,16 +81,17 @@ public sealed partial class Ui
         HoldSizes();
         var open = true;
         var send = false;
+        var queue = _exTestSet == 2; // (a window shot's "picker queue")
         var vp = ImGui.GetMainViewport();
         var w = MathF.Min(900 * _scale, vp.WorkSize.X * 0.9f);
-        var h = MathF.Min(640 * _scale, vp.WorkSize.Y * 0.88f);
+        var h = MathF.Min(720 * _scale, vp.WorkSize.Y * 0.88f);
         ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + (vp.WorkSize.X - w) * 0.5f, vp.WorkPos.Y + (vp.WorkSize.Y - h) * 0.5f), ImGuiCond.Appearing);
         ImGui.SetNextWindowSize(new float2(w, h), ImGuiCond.Appearing);
         ImGui.SetNextWindowBgAlpha(0.95f);
         ImGui.SetNextWindowFocus();
         if (ImGui.Begin(_exTitle, ref open, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoCollapse))
         {
-            ImGui.TextColored(Dim, "Pick a section, then its size, then Set. Esc closes."u8);
+            ImGui.TextColored(Dim, "Pick a section, then its size and length, then Set (or Queue that many pieces). Esc closes."u8);
             ImGui.Separator();
             SectionTiles();
             ImGui.Separator();
@@ -96,30 +100,42 @@ public sealed partial class Ui
             var shape = Extrusion.ShapeOf(_exPick.Profile);
             var wv = (int)_exPick.W;
             var round = shape != ExShape.Section;
-            if (Stepper(round ? "Diameter"u8 : "Width"u8, "##exw"u8, ref wv, 5, Extrusion.MinSectionCm, round ? Math.Min(dw, dh) : dw, ref _exWText, true))
+            if (SizeRow(round ? "Diameter"u8 : "Width"u8, "##exw"u8, ref wv, Extrusion.StepCm, Extrusion.MinSectionCm, round ? Math.Min(dw, dh) : dw, SizeUnit.Metres))
                 _exPick = _exPick with { W = (ushort)wv };
             if (_exPick.Profile == Extrusion.SheetProfile)
             {
                 var tv = (int)_exPick.H;
-                if (Stepper("Thickness"u8, "##exh"u8, ref tv, 1, Extrusion.MinSheetCm, ExtruderPicks.SheetMaxCm(dh), ref _exHText, false))
+                if (SizeRow("Thickness"u8, "##exh"u8, ref tv, 1, Extrusion.MinSheetCm, ExtruderPicks.SheetMaxCm(dh), SizeUnit.Cm))
                     _exPick = _exPick with { H = (ushort)tv };
             }
             else if (!round)
             {
                 var hv = (int)_exPick.H;
-                if (Stepper("Height"u8, "##exh"u8, ref hv, 5, Extrusion.MinSectionCm, dh, ref _exHText, true))
+                if (SizeRow("Height"u8, "##exh"u8, ref hv, Extrusion.StepCm, Extrusion.MinSectionCm, dh, SizeUnit.Metres))
                     _exPick = _exPick with { H = (ushort)hv };
             }
             if (shape == ExShape.Pipe)
             {
                 var lv = (int)_exPick.Wall;
-                if (Stepper("Pipe wall"u8, "##exl"u8, ref lv, 1, 1, ExtruderPicks.MaxWallCm(_exPick.W), ref _exWallText, false))
+                if (SizeRow("Pipe wall"u8, "##exl"u8, ref lv, 1, 1, ExtruderPicks.MaxWallCm(_exPick.W), SizeUnit.Cm))
                     _exPick = _exPick with { Wall = (ushort)lv };
             }
+            var len = (int)_exPick.L;
+            if (SizeRow("Length"u8, "##exlen"u8, ref len, Extrusion.StepCm, 0, _exLongCm, SizeUnit.Metres))
+                _exPick = _exPick with { L = (ushort)len };
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetTooltip("Cut every: the piece is cut off at the die by itself at this length. 0: only when a signal comes into Cut."u8);
+            var qty = (int)_exPick.Count;
+            if (SizeRow("Quantity"u8, "##exqty"u8, ref qty, 1, 1, WorkOrders.MaxCount, SizeUnit.Count))
+                _exPick = _exPick with { Count = (ushort)qty };
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetTooltip("Pieces Queue asks for: one order of these settings (its Order count). Set alone makes pieces for as long as it runs."u8);
             ImGui.Spacing();
             ImGui.Text("Makes: "u8);
             ImGui.SameLine();
             ImGuiSafe.TextColored(new float4(0.55f, 0.86f, 0.6f, 1), _exLabel);
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, _exLongText);
             ImGuiSafe.TextColored(Dim, _exDieText);
             if (_exWhy != null)
                 ImGuiSafe.TextColored(new float4(0.94f, 0.43f, 0.35f, 1), _exWhy);
@@ -139,6 +155,20 @@ public sealed partial class Ui
             ImGui.Spacing();
             ImGui.BeginDisabled(_exWhy != null);
             send = ImGui.Button("Set"u8, new float2(110 * _scale, 0));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGuiSafe.SetTooltip("Sets the section, size and length: it makes pieces for as long as it runs (on its own settings, not on orders)."u8);
+            ImGui.EndDisabled();
+            ImGui.SameLine();
+            if (_exQueueText.V != _exPick.Count)
+                _exQueueText = (_exPick.Count, $"Queue {_exPick.Count}###exqueue");
+            ImGui.BeginDisabled(_exWhy != null || _exPick.L < Extrusion.StepCm);
+            if (ImGui.Button(_exQueueText.S, new float2(110 * _scale, 0)))
+            {
+                send = true;
+                queue = true;
+            }
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGuiSafe.SetTooltip(_exPick.L < Extrusion.StepCm ? "An order is a length: set Length first."u8 : "Sets all this and queues one order of Quantity pieces at this length."u8);
             ImGui.EndDisabled();
             ImGui.SameLine();
             if (ImGui.Button("Close"u8))
@@ -152,7 +182,7 @@ public sealed partial class Ui
         }
         if (send && _exWhy == null)
         {
-            game.SandboxExtruderSection(_rcpBody, _rcpMachine, _exPick);
+            game.SandboxExtruderSection(_rcpBody, _rcpMachine, _exPick, queue);
             open = false;
         }
         if (!open)
@@ -178,8 +208,10 @@ public sealed partial class Ui
         var h = _exPick.Profile == Extrusion.SheetProfile ? Math.Clamp((int)_exPick.H, Extrusion.MinSheetCm, ExtruderPicks.SheetMaxCm(_exDieH))
             : Math.Clamp((int)_exPick.H, Extrusion.MinSectionCm, _exDieH);
         var wall = Math.Clamp((int)_exPick.Wall, 1, ExtruderPicks.MaxWallCm(w));
-        if (w != _exPick.W || h != _exPick.H || wall != _exPick.Wall)
-            _exPick = _exPick with { W = (ushort)w, H = (ushort)h, Wall = (ushort)wall };
+        var len = Math.Clamp((int)_exPick.L / Extrusion.StepCm * Extrusion.StepCm, 0, _exLongCm);
+        var count = Math.Clamp((int)_exPick.Count, 1, WorkOrders.MaxCount);
+        if (w != _exPick.W || h != _exPick.H || wall != _exPick.Wall || len != _exPick.L || count != _exPick.Count)
+            _exPick = _exPick with { W = (ushort)w, H = (ushort)h, Wall = (ushort)wall, L = (ushort)len, Count = (ushort)count };
     }
 
     /// <summary>The piece's words, the die's and the refusal, made again only when the pick or the die changes.</summary>
@@ -189,6 +221,11 @@ public sealed partial class Ui
         {
             _exLabelOf = _exPick;
             _exLabel = ExtruderPicks.Label(_exPick);
+            if (_exPick.L != _exLongOf)
+            {
+                _exLongOf = _exPick.L;
+                _exLongText = _exPick.L == 0 ? "(cut only on a signal)" : $"{_exPick.L / 100f:0.##} m long";
+            }
             _exWhy = ExtruderPicks.Refusal(c, _rcpMachine, _exPick);
             if (_exWhy != null)
                 _exWhy = Cap(_exWhy) + ".";
@@ -205,28 +242,53 @@ public sealed partial class Ui
         }
     }
 
-    /// <summary>A size row: its label, a minus and a plus button round its value (cm; shown in m or cm), held to [lo, hi]. True when it changed.</summary>
-    private bool Stepper(ReadOnlySpan<byte> label, ReadOnlySpan<byte> id, ref int v, int step, int lo, int hi, ref (int V, string S) text, bool metres)
+    private enum SizeUnit : byte { Metres, Cm, Count }
+
+    /// <summary>
+    /// A size row: its label, a slider over [lo, hi] and a box to type the number in (cm shown in m or cm, or a plain count). Either snaps to
+    /// <paramref name="step"/> (the server's own lattice: sizes and lengths 5 cm, walls 1 cm) and holds to the range. True when it changed.
+    /// A typed number is taken as it is typed (the box keeps its text while it has the keyboard) and shows snapped once it lets go.
+    /// </summary>
+    private bool SizeRow(ReadOnlySpan<byte> label, ReadOnlySpan<byte> id, ref int v, int step, int lo, int hi, SizeUnit unit)
     {
         ImGui.AlignTextToFramePadding();
         ImGui.Text(label);
         ImGui.SameLine(110 * _scale);
         ImGui.PushID(id);
         var was = v;
-        ImGui.BeginDisabled(v <= lo);
-        if (ImGui.Button("-"u8, new float2(30 * _scale, 0)))
-            v = Math.Max(lo, v - step);
-        ImGui.EndDisabled();
+        hi = Math.Max(lo, hi);
+        int Snap(float cm) => Math.Clamp((int)MathF.Round(cm / step) * step, lo, hi);
+        ImGui.SetNextItemWidth(320 * _scale);
+        var flags = ImGuiSliderFlags.AlwaysClamp | (unit == SizeUnit.Count ? ImGuiSliderFlags.Logarithmic : ImGuiSliderFlags.None);
+        if (unit == SizeUnit.Metres)
+        {
+            var m = v / 100f;
+            if (ImGui.SliderFloat("##s"u8, ref m, lo / 100f, hi / 100f, "%.2f m"u8, flags | ImGuiSliderFlags.NoInput))
+                v = Snap(m * 100);
+        }
+        else
+        {
+            var n = v;
+            if (ImGui.SliderInt("##s"u8, ref n, lo, hi, unit == SizeUnit.Cm ? "%d cm"u8 : "%d"u8, flags | ImGuiSliderFlags.NoInput))
+                v = Snap(n);
+        }
         ImGui.SameLine();
-        if (text.V != v)
-            text = (v, metres ? $"{v / 100f:0.00} m" : $"{v} cm");
+        ImGui.SetNextItemWidth(80 * _scale);
+        if (unit == SizeUnit.Metres)
+        {
+            var t = v / 100f;
+            if (ImGui.InputFloat("##t"u8, ref t, 0, 0, "%.2f"u8, ImGuiInputTextFlags.CharsDecimal))
+                v = Snap(t * 100);
+        }
+        else
+        {
+            var t = v;
+            if (ImGui.InputInt("##t"u8, ref t, 0, 0, ImGuiInputTextFlags.CharsDecimal))
+                v = Snap(t);
+        }
+        ImGui.SameLine();
         ImGui.AlignTextToFramePadding();
-        ImGui.Text(text.S);
-        ImGui.SameLine(110 * _scale + 30 * _scale + 90 * _scale);
-        ImGui.BeginDisabled(v >= hi);
-        if (ImGui.Button("+"u8, new float2(30 * _scale, 0)))
-            v = Math.Min(hi, v + step);
-        ImGui.EndDisabled();
+        ImGuiSafe.TextColored(Dim, unit == SizeUnit.Metres ? "m"u8 : unit == SizeUnit.Cm ? "cm"u8 : "pieces"u8);
         ImGui.PopID();
         return v != was;
     }
@@ -360,11 +422,11 @@ public sealed partial class Ui
     /// <summary>Window shots: the open Extruder picker as text (its tiles, the pick, the piece, the die, any refusal).</summary>
     private string ExtruderPickerDump() =>
         $"{_exTitle.Split("###")[0]}, {_exNames.Length} tiles: {string.Join("; ", _exNames.Select((n, k) => $"{k} {n}{(k == _exSet.Profile ? " (set)" : "")}"))}"
-        + $" | picked {_exPick.Profile} {_exNames.ElementAtOrDefault(_exPick.Profile)}, {_exPick.W} x {_exPick.H} cm, wall {_exPick.Wall} cm, cells {_exPick.Mask:x16}"
+        + $" | picked {_exPick.Profile} {_exNames.ElementAtOrDefault(_exPick.Profile)}, {_exPick.W} x {_exPick.H} cm, wall {_exPick.Wall} cm, length {_exPick.L} cm, count {_exPick.Count}, cells {_exPick.Mask:x16}"
         + $" | makes {_exLabel} | die {_exDieW} x {_exDieH} cm{(_exWhy != null ? " | refused: " + _exWhy : "")}";
 
     /// <summary>
-    /// Window shots (--do "picker size W H [WALL]", "picker cell N", "picker set"): the steppers set to those cm (held to the die, as the buttons
+    /// Window shots (--do "picker size W H [WALL]", "picker length CM", "picker count N", "picker cell N", "picker set", "picker queue"): the steppers set to those cm (held to the die, as the buttons
     /// are), a Custom grid's cell flipped, or Set clicked next frame. Null when the Extruder picker isn't open.
     /// </summary>
     public string? ExtruderPickerDo(string arg)
@@ -383,11 +445,20 @@ public sealed partial class Ui
                     SelectProfile(Extrusion.Presets.Length);
                 _exPick = _exPick with { Mask = _exPick.Mask ^ 1ul << b };
                 return $"cell {b}: cells {_exPick.Mask:x16}";
+            case "length":
+                _exPick = _exPick with { L = (ushort)Math.Max(0, Num(1, _exPick.L)) };
+                return $"length {_exPick.L} cm (held to the machine next frame)";
+            case "count":
+                _exPick = _exPick with { Count = (ushort)Math.Max(0, Num(1, _exPick.Count)) };
+                return $"count {_exPick.Count}";
             case "set":
                 _exTestSet = 1;
                 return "set clicked";
+            case "queue":
+                _exTestSet = 2;
+                return "queue clicked";
             default:
-                return "picker size W H [WALL] | cell N | set";
+                return "picker size W H [WALL] | length CM | count N | cell N | set | queue";
         }
     }
 }

@@ -1808,7 +1808,7 @@ the driving and carrying plans), `ConstructStationRoverJob.cs` (the build order,
   (to the piece, then to its place) shortest (`PickNear`).
 - **Trips**: a rover drives (it never teleports): it turns on the spot to face its way, then drives on through its corners in arcs of
   about one and a half body lengths (Sean 2026-11-28, `StationRovers.Path`: the keys it drives on through are `RoverPlan.Smooth`'s bits,
-  protocol 490, eased once over a run by distance), stopping only at the end or at a corner sharper than 120 degrees; round the parts already fitted (Sean
+  protocol 491, eased once over a run by distance), stopping only at the end or at a corner sharper than 120 degrees; round the parts already fitted (Sean
   2026-11-28: `RoverFloor`, the bay in 1 m cells marked where the class's body would be over a fitted step's footprint; the cheapest
   way over the cells, a metre over a fitted part costing 25 of free floor, pulled straight between corners; over the build only when
   there is no room, as a large rover in Works II's 24 m bay). It stands at the nearest spot off the ring round what is fitted so far

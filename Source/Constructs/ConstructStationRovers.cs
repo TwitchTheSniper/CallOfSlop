@@ -18,7 +18,7 @@ public readonly record struct RoverClass(string Name, float Reach, float Kg, flo
 /// </summary>
 public sealed class RoverPlan
 {
-    public const int MaxBase = 64, MaxHook = 14; // (protocol 486: 40 keys, for drives round what is fitted; 490: 64, for curves through corners, Smooth's bits)
+    public const int MaxBase = 64, MaxHook = 14; // (protocol 486: 40 keys, for drives round what is fitted; 491: 64, for curves through corners, Smooth's bits)
     public int NB, NH;
     public ulong Smooth; // bit k: the body drives on through key k without a stop (a curve's point: Sean 2026-11-28, curve through corners)
     public readonly float[] Bt = new float[MaxBase], Bx = new float[MaxBase], Bz = new float[MaxBase], Bh = new float[MaxBase];

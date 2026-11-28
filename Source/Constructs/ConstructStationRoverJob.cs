@@ -836,7 +836,7 @@ public static partial class ConstructStation
             w.U8((byte)p.NB);
             for (var k = 0; k < p.NB; k++)
                 w.U16(Ticks(p.Bt[k])).Cm(p.Bx[k]).Cm(p.Bz[k]).U16(Angle(p.Bh[k]));
-            w.U64(p.Smooth); // (protocol 490: the keys it drives on through, a curve's)
+            w.U64(p.Smooth); // (protocol 491: the keys it drives on through, a curve's)
             w.U8((byte)p.NH);
             for (var k = 0; k < p.NH; k++)
                 w.U16(Ticks(p.Ht[k])).CmVec(p.Ho[k]);
