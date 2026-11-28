@@ -233,6 +233,7 @@ public sealed partial class ZeroDayWorks2
             {
                 Refinery(s);
                 BackRow(s);
+                BackRowElectronics(s);
                 Lines(s);
             }
             Orders();
@@ -334,7 +335,7 @@ public sealed partial class ZeroDayWorks2
                             .OrderBy(e => Vector2.Distance(e.At, l.At)).Select(e => e.P).FirstOrDefault() is { } con)
                         ownConsole[l.Core] = con;
                 }
-            foreach (var (id, at, core, flow) in _labs.Where(l => l.Id == "extruder" && MathF.Sign(l.At.X) == s).OrderByDescending(l => l.At.Y))
+            foreach (var (id, at, core, flow) in _labs.Where(l => l.Id == "extruder" && MathF.Sign(l.At.X) == s && !IsElectronics(l.At)).OrderByDescending(l => l.At.Y))
             {
                 var bin = Nearest("Materials Bin", at, 20); // (16 m, and 20 since the bins stand BinBack behind the moved Extruder)
                 var console = ownConsole.GetValueOrDefault(core);
@@ -352,6 +353,8 @@ public sealed partial class ZeroDayWorks2
                 Cable(console, core, "Run", 6f); // (its Panel Former's, presses' and Assembler's Runs come from a station's console: Orders)
                 _consoles.Add((at, console));
             }
+            var pressConsole = NearestLab("extruder", P(s, 53, -39), 3) is { } first ? ownConsole.GetValueOrDefault(first) : null;
+            LinesElectronics(s, pressConsole, ref high);
             // A press swaps its die from a Die Rack chuted into it (PressDieSwap): each rack into the press beside it.
             foreach (var x in new[] { 39f, 47f })
             {
@@ -364,7 +367,7 @@ public sealed partial class ZeroDayWorks2
             // The Assembler's stock (Orders pull their inputs from the stores chuted in), from the back row's bins, over everything at 18 m.
             var assembler = Find("Assembler", P(s, 33, -33));
             var up = 18f;
-            foreach (var x in new[] { 36f, 26f, 41f, 46f })
+            foreach (var x in new[] { 36f, 26f, 41f, 46f, GlassBin, BronzeBin, ClothBin }) // (steel, copper, concrete, rubber; glass, bronze, cloth: ZeroDayWorks2.Electronics.cs)
             {
                 Chute(Find("Materials Bin", P(s, x, 114)), null, assembler, "Chute in", up);
                 if (s < 0 && _bigAsm != null) // (the big Assembler by the main station, from the same bins, a level up)

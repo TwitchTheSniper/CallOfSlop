@@ -172,7 +172,7 @@ public static class WorkOrders
         // Whatever no def can be made for (too thin, a round or pipe not square, a pipe's wall, a section with a wall): taken, it would stall for good.
         if (Extrusion.KeyRefusal(k) is { } invalid)
             return invalid;
-        if (world.StoreOf(c, part) is { Amount: > 0 } st && st.Material != k.Material)
+        if (world.StoreOf(c, part) is { Amount: > 0 } st && st.Material != k.Material && !ConstructExtruder.ChutedWith(world, c, part, k.Material))
             return $"the {d.Name} is fed {names.NameOf(st.Material)}: an order in {mat} is another line";
         return null;
     }
@@ -266,7 +266,7 @@ public static class WorkOrders
             return $"sizes go in {Extrusion.StepCm} cm steps";
         if (c.Parts[part].Orders is { Count: >= MaxOrders })
             return $"the {d.Name}'s queue is full ({MaxOrders} orders)";
-        if (world.StoreOf(c, part) is { Amount: > 0 } st && st.Material != k.Material)
+        if (world.StoreOf(c, part) is { Amount: > 0 } st && st.Material != k.Material && !ConstructExtruder.ChutedWith(world, c, part, k.Material))
             return $"the {d.Name} is fed {names.NameOf(st.Material)}: an order in {mat} is another line";
         return null;
     }
